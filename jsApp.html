@@ -1,0 +1,81 @@
+<script>
+/** signature of the app object */
+var app = {
+  cache:     {},                                 // data container
+  changes:   {},                                 // log user changes
+  doCommand: function(command, ...options) {},   // command switch block
+  elements:  {},                                 // top level elements e.g. global navigation
+  errors:    [],                                 // error stack to ensure all errors get displayed to user
+  handlers:  {},                                 // event methods
+  modal:     {},                                 // the modal pop up window
+  omnibox:   {},                                 // possibly should be under pages.form
+  pages:     {},                                 // the different single page views
+  refresh:   function(response) {},              // server callback switch block
+  run:       null,                               // defined in jsInit, main server call
+  showPage:  function(page) {},                  // shows a single view to the user
+  spinner:   {},                                 // the spinner object
+  strings:   {},                                 // top level strings
+  withErrorHandler: null,                        // defined in jsInit, main server error handler
+};
+
+app.cache = {
+  archive:          [],
+  archiveFiltered:  [],
+  currentFormstack: "",
+  currentIndex:      0,
+  items:            [],
+  openForms:        [],
+  savedForm:        {},
+  students:         [],
+};
+
+app.pages = {      // must have refreshId property and setInterval method
+  archive:     {},
+  form:        {},
+  openForms:   {},
+};
+
+app.showPage = function(page) {
+  for(let key in app.pages) {
+    if(page == app.pages[key]) {
+      page.elements.container.classList.remove('hidden');
+      page.setInterval();
+    } else {
+      let otherPage = app.pages[key];
+      otherPage.elements.container.classList.add('hidden');
+      if(!isNaN(otherPage.refreshId)) {
+        window.clearInterval(otherPage.refreshId);
+        otherPage.refreshId = NaN;
+      }
+    }
+  }
+};
+
+app.strings = {
+  // icon of a paper document
+  documentIcon: '<img src="' +
+    'data:image/png;base64,' +
+    'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABCElEQVR4XmNgoCbQ0tJiU5SVb1aUl2+BYSU5hU5FWUU3dL' +
+    'VYgYKCgoCCnPxROTk5LSDbAITl5eUVFeXkPyjKyYWiq8cAIAOU5OXXo4sDDfgFxJ+U5OSc0eVQAMgARTmFVUCFPgpycnlK' +
+    'svJFKioqfEDN/6H4L1DOBV0fHIC9ICu/VklJSQ7odENlOTljqLgGkK8J8hrQkNfo+uAA4gL5RUBX7ALS/9DwfwVZBX8g/Q' +
+    'NdHxxADVijJCOjCww0V2QM1OwOlOcAyv9E1wcH1DKAMi8gByIaNgKpIcIFiGhExkqyCoVAeQkiDJBfjS6ODPAaoCUqygNU' +
+    '8BLogSfYMFDuKTCp30HXN7AAAKarYBD/VuTqAAAAAElFTkSuQmCC' +
+    '" width="16" height="16">',
+  locations: new Set(['Studio 505', 'Studio 510', 'Studio 21 North', 'Edit Suite 1 508', 'Edit Suite 2 509',
+                      'Lab 502', 'Lobby/Hallway']),
+  parserError: 'not found.  Try item IDs like `NEU-1`, or exact names like `Alex Bean`',
+  omniboxIdScanError: 'NYU ID scan detected, but not found in the student database.  You will be able to add this ID info to the database at this point in the real version.',
+  omniboxManualEntry: /* value + */ ' appears to be a manual entry.  This will be recorded.',
+  studentCheckOutError: 'Cannot check out student.  If this is the last student, all gear must be returned.  Otherwise try updating the form.',
+  updateEnabledHint: 'your changes are not saved yet',
+  updateDisabledHint: 'please enter start time, end time, location, and at least one student',
+  updateButton: {
+    enabled: 'Submit',
+    disabled: 'all changes saved',
+  },
+  updateHint: {
+    enabled: 'your changes are not saved yet',
+    disabled: 'please enter start time, end time, location, and at least one student',
+  },
+};
+</script>

@@ -1,0 +1,69 @@
+<script>
+/** @return {bool} */
+function isAllGearReturned() {
+  let items = JSON.parse(app.pages.form.elements.form.items.value);
+  return items.every(item => {
+    if(item.checkOut) {
+      return item.checkIn;
+    } else {
+      return true;
+    }
+  });
+}
+
+/** @return {bool} */
+function isThereAnActiveStudent() {
+  let students = JSON.parse(app.pages.form.elements.form.students.value),
+      studentCounter = function(count, student) {
+        if(student.checkIn && !student.checkOut) {
+          return count + 1;
+        } else {
+          return count;
+        }
+      };
+  let activeStudents = students.reduce(studentCounter, 0);
+  return activeStudents > 1;
+}
+
+/** @return {bool} */
+function isCheckOutStudentOk(student) {
+  // check if the student just checked in by looking at the saved form
+  console.log('savedForm students', app.cache.savedForm.students);
+  let savedStudent = app.cache.savedForm.students.find(s => s.id == student.id);
+  if(!savedStudent.checkIn) { // => this student just checked in
+    app.modal.handleError(new Error(student.name + ' was just checked-in.  Update the form before checking out.'));
+    return false;
+  }
+  return isThereAnActiveStudent() || isAllGearReturned();
+}
+
+/** @return {bool} */
+function isFormReadyToClose() {
+  let students = JSON.parse(app.pages.form.elements.form.students.value);
+  // Need at least 1 check-in, and everyone checked-in must be checked-out
+  return students.some(student => student.checkIn) && students.every(
+    student => {
+      if(student.checkIn) {
+        return student.checkOut;
+      } else {
+        return true;
+      }
+    }
+  );
+}
+
+/** @return {bool} */
+function isNoShow(form) {
+  if(!form.id) return false; // we are only looking at booked forms
+  const gracePeriod = 15; // minutes
+  let start = new Date(form.startTime),
+      end = new Date(form.endTime),
+      now = Date.now();
+  start.setMinutes(start.getMinutes() + gracePeriod);
+  if(now > start.getTime() && !form.students.some(s => s.checkIn)) {
+    return true;
+  } else {
+    return false;
+  }
+}
+</script>

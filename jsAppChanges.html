@@ -1,0 +1,24 @@
+<script>
+app.changes = {
+  add: function(change) {
+    let newChange = {
+      name: change.target.name,
+      value: change.target.value,
+      timestamp: Date.now(),
+    };
+    app.changes.stack.push(newChange);
+  },
+  clear: function() {
+    this.stack = [];
+  },
+  makeNote: function() {
+     return {
+      timestamp: Date.now(),
+      author: app.elements.usernameDisplay.textContent,
+      body: JSON.stringify(this.stack),
+    };
+  },
+  saved: true,
+  stack: [],
+};
+</script>

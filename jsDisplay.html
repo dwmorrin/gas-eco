@@ -1,0 +1,364 @@
+<script>
+/**
+ * @param {Form} form
+ * @param {bool} archived - is this a closed form?
+ * @return void
+ */
+function displayForm(form, archived) {
+  for(let key in form) {
+    switch(key) {
+      case 'items':
+        let items = form[key];
+        utility.DOM.empty(app.pages.form.elements.itemList);
+        if(items.length == 0) {
+          app.pages.form.elements.form.items.value = JSON.stringify([]);
+        } else {
+          app.pages.form.elements.form.items.value = JSON.stringify(items);
+          items.forEach(populateItemList);
+        }
+        break;
+      case 'notes':
+        utility.DOM.empty(app.pages.form.elements.noteSection);
+        let notes = form[key];
+        if(notes.length == 0) {
+          app.pages.form.elements.form.notes.value = JSON.stringify([]);
+        } else {
+          for(let note of notes) {
+            try {                    // Unintuitive use of try/catch: read carefully:
+              JSON.parse(note.body); // if successful, this is a change log, so we ignore it
+            } catch(e) {             // on error, we have a global note to display
+              let p = document.createElement('p');
+              p.textContent = 'Note: ' + '['+ note.author +'] ' + note.body;
+              app.pages.form.elements.noteSection.appendChild(p);
+            }
+          }
+          if(app.pages.form.elements.noteSection.firstChild) { // if it's not empty
+            app.pages.form.elements.noteSection.classList.remove('hidden');
+          } else {
+            app.pages.form.elements.noteSection.classList.add('hidden');
+          }
+          app.pages.form.elements.form.notes.value = JSON.stringify(notes);
+        }
+        break;
+      case 'students':
+        let students = form[key];
+        utility.DOM.empty(app.pages.form.elements.studentList);
+        if(students.length == 0) {
+          app.pages.form.elements.form.students.value = JSON.stringify([]);
+        } else {
+          app.pages.form.elements.form.students.value = JSON.stringify(students);
+          students.forEach(populateStudentList);
+        }
+        break;
+      case 'startTime':
+      case 'endTime':
+      case 'bookedStudents':
+      case 'contact':
+      case 'project':
+      case 'tape':
+      case 'overnight':
+      case 'location':
+        let td = document.querySelector('#' + key + 'Display');
+        if(form[key]) { // There's data to display
+          td.textContent = form[key];
+          td.classList.remove('hidden');
+          td.parentNode.classList.remove('hidden');
+          if(td.nextElementSibling) {
+            td.nextElementSibling.classList.add('hidden');
+          }
+          app.pages.form.elements.form[key].value = form[key];
+        } else { // There's not data, so maybe show an input for the user, and clear old data
+          switch(key) {
+            case 'startTime':
+            case 'endTime':
+              td.textContent = '';
+              app.pages.form.elements.form[key].value = '';
+              td.classList.add('hidden');
+              td.nextElementSibling.classList.remove('hidden');
+              let today = new Date(),
+                  dateInput = td.nextElementSibling.firstElementChild,
+                  hourInput = dateInput.nextElementSibling,
+                  minuteInput = hourInput.nextElementSibling,
+                  ampmInput = minuteInput.nextElementSibling;
+              let hour = today.getHours(),
+                  minutes = today.getMinutes();
+                  
+              minuteInput.value = utility.date.roundMinutes(minutes);
+              hourInput.value = utility.date.parseHours(hour);
+              ampmInput.value = utility.date.parseAMPM(hour);
+              dateInput.value = '' + today.getFullYear() + '-' +
+                utility.date.zeropad((today.getMonth() + 1)) + '-' +
+                utility.date.zeropad(today.getDate());
+                
+              break;
+            case 'location':
+              td.classList.add('hidden');
+              td.nextElementSibling.classList.remove('hidden');
+              app.pages.form.elements.locationSelect.value = 'none';
+              break;
+            default:
+              td.parentNode.classList.add('hidden');
+              app.pages.form.elements.form[key].value = '';
+          }
+        }
+        break;
+      case 'id':
+      case 'bookingId':
+        app.pages.form.elements.form[key].value = form[key];
+        break;
+    }
+  }
+        
+  // copy form
+  app.cache.savedForm = Object.assign({}, form);
+  
+  // clear changes
+  app.changes.clear();
+  
+  // clear omnibox
+  app.omnibox.clear();
+  
+  // init update button
+  if(!form.id) {
+    app.pages.form.elements.updateFormButton.textContent = app.strings.updateButton.enabled;
+  } else {
+    app.pages.form.elements.updateFormButton.textContent = app.strings.updateButton.disabled;
+    app.pages.form.elements.updateFormButton.classList.remove('create');
+  }
+  
+  // indicate where this form is in the current `stack' (e.g. open or closed/archive)
+  app.pages.form.elements.currentFormstackDisplay.textContent = (app.cache.currentIndex + 1) +
+    "/" + app.cache[app.cache.currentFormstack].length;
+  
+  // this was added to handle displaying closed forms
+  // @todo - should this be combined with the other update init section above?
+  if(archived) {
+    app.omnibox.element.setAttribute('disabled', true);
+    app.pages.form.elements.newNoteButton.setAttribute('disabled', true);
+    app.pages.form.elements.updateButtonHint.textContent = 'This is a closed form.  You cannot edit it.';
+  } else {
+    app.omnibox.element.removeAttribute('disabled');
+    app.omnibox.element.focus();
+    app.pages.form.elements.newNoteButton.removeAttribute('disabled');
+    app.pages.form.elements.updateButtonHint.textContent = '';
+  }
+  
+  app.spinner.element.classList.add('hidden');
+  app.showPage(app.pages.form);
+  
+}
+
+/**
+ * Displays a blank form to the user.
+ */
+function displayNewForm() {
+  app.cache.savedForm = {
+    id: null, bookingId: null, bookedStudents: null, endTime: null,
+    location: null, overnight: null, project: null, contact: null,
+    startTime: null, tape: null, students: [], items: [], notes: []
+  };
+  displayForm(app.cache.savedForm);
+}
+
+/**
+ * @param {[Form]} forms - an array of Forms
+ * @param {string} sortBy - sort option
+ */
+function displayOpenForms(forms, sortBy) {
+  console.log('displayOpenForms');
+  if(!sortBy) {
+    sortBy = app.pages.openForms.sortBy;
+  } else {
+    app.pages.openForms.sortBy = sortBy;
+  }
+  let compare;
+  switch(sortBy) {
+    case 'startTime':
+    case 'endTime':
+      compare = function(a,b) {
+        let dateA = utility.date.parseFormattedDate(a[sortBy]).getTime(),
+            dateB = utility.date.parseFormattedDate(b[sortBy]).getTime();
+        if(dateA < dateB) return -1;
+        if(dateA > dateB) return 1;
+        if(dateA == dateB) return 0;
+      };
+      break;
+    case 'location':
+      compare = function(a,b) {
+        if(a[sortBy] < b[sortBy]) return -1;
+        if(a[sortBy] > b[sortBy]) return 1;
+        if(a[sortBy] == b[sortBy]) return 0;
+      };
+      break;
+    case 'students':
+      compare = function(a,b) {
+        let nameSort = function(c,d) {
+          if(c.name < d.name) return -1;
+          if(c.name > d.name) return 1;
+          if(c.name == d.name) return 0;
+        };
+        a.students.sort(nameSort);
+        b.students.sort(nameSort);
+        if(a.students[0].name < b.students[0].name) return -1;
+        if(a.students[0].name > b.students[0].name) return 1;
+        if(a.students[0].name == b.students[0].name) return 0;
+      };
+      break;
+    case 'type':
+      compare = function(a,b) {
+        let active = function(student) {
+          return student.checkIn;
+        }
+        a = +(a.students.some(active));
+        b = +(b.students.some(active));
+        if(a > b) return -1;
+        if(a < b) return 1;
+        if(a == b) return 0;
+      };
+      break;
+  }
+  forms.sort(compare);
+  populateFormsTable(forms);
+}
+
+/**
+ * This is a procedure to display to the user a compact list of the open forms
+ * @param {object []} forms - an array of Forms
+ * @return {undefined} - updates html display for user
+ */
+function populateFormsTable(forms) {
+  utility.DOM.empty(app.pages.openForms.elements.formsTableBody);
+  utility.DOM.empty(app.pages.openForms.elements.equipmentTableBody);
+  
+  // if there's no forms...
+  if(forms.length == 0) {
+    let cell = document.createElement('td'),
+        row = document.createElement('tr');
+    cell.textContent = 'No open forms';
+    row.appendChild(cell);
+    row.classList.add('hoveroff');
+    app.pages.openForms.elements.formsTableBody.appendChild(row);
+    
+    return;
+  }
+  
+  // else populate
+  forms.forEach(makeOpenFormTableRows);
+  
+  // if makeOpenFormTableRows found no equipment out...
+  if(!app.pages.openForms.elements.equipmentTableBody.firstChild) {
+    let row = document.createElement('tr'),
+        cell = document.createElement('td');
+    cell.textContent = 'No equipment checked-out.'
+    cell.style.pointerEvents = 'none';
+    row.appendChild(cell);
+    app.pages.openForms.elements.equipmentTableBody.appendChild(row);
+  }
+}
+
+function makeOpenFormTableRows(form) {
+  form.items.forEach(function(item) {
+    if(item.checkedOut) {
+      let itemInfo = [
+        item.description, item.id, form.location,
+        form.students, form.endTime, form.id
+      ];
+      populateEquipmentOutList(itemInfo);
+    }
+  });
+  
+  let row = utility.DOM.makeTableRow(
+    'td',
+    app.strings.documentIcon,
+    form.startTime,
+    form.endTime,
+    form.location,
+    (form.bookedStudents || form.students.map(student => student.name).join(', '))
+  );
+  let type = 'inactive', // assume inactive
+      endTime = utility.date.parseFormattedDate(form.endTime),
+      now = Date.now();
+  
+  row.setAttribute('data-id', form.id);
+  // determine if active, ending soon, or late (green, yellow, red)
+  if(form.students.some(student => student.checkIn)) {
+    type = 'active';
+  }
+  if(type == 'active' && now > endTime) {
+    type = 'late';
+  }
+  endTime.setMinutes(-15);
+  if(type == 'active' && now > endTime) {
+    type = 'endingSoon';
+  }
+  row.classList.add(type);
+  app.pages.openForms.elements.formsTableBody.appendChild(row);
+}
+
+function populateEquipmentOutList(item) {
+  let row = utility.DOM.makeTableRow(
+    'td', item[0], item[1], item[2], item[3].map(student => student.name).join(', '), item[4]
+  );
+  row.setAttribute('data-id', item[5]);
+  app.pages.openForms.elements.equipmentTableBody.appendChild(row);
+}
+
+function populateItemList(item) {
+  let noteRow = document.createElement('tr'),
+      notes = document.createElement('td');
+      
+  app.pages.form.elements.itemList.appendChild(utility.DOM.makeTableRow(
+    'td', item.quantity, item.description,
+    item.id, item.checkOut, item.checkIn
+  ));
+  
+  notes.setAttribute('colspan', 4);
+  notes.classList.add('itemnotes');
+  notes.textContent = 'Notes: ';
+  noteRow.appendChild(notes);
+  app.pages.form.elements.itemList.appendChild(noteRow);
+}
+
+function populateStudentList(student) {
+  app.pages.form.elements.studentList.appendChild(utility.DOM.makeTableRow(
+    'td', student.name, student.netId, student.checkIn, student.checkOut
+  ));
+}
+
+function displayArchivedForms(forms) {
+  console.log('displayArchivedForms');
+  populateArchiveTable(forms);
+}
+
+function populateArchiveTable(forms) {
+  utility.DOM.empty(app.pages.archive.elements.tableBody);
+  
+  // if there's no forms...
+  if(forms.length == 0) {
+    let cell = document.createElement('td'),
+        row = document.createElement('tr');
+    cell.textContent = 'No archived forms';
+    row.appendChild(cell);
+    row.classList.add('hoveroff');
+    app.pages.archive.elements.tableBody.appendChild(row);
+    
+    return;
+  }
+  
+  // else populate
+  forms.forEach(makeArchiveTableRows);
+}
+
+function makeArchiveTableRows(form) {
+  let hasItems = (form.items.length > 0) ? 'YES' : 'NO';
+  let row = utility.DOM.makeTableRow(
+    'td', app.strings.documentIcon, form.startTime, form.endTime,
+    form.location, form.bookingId, form.bookedStudents, form.contact,
+    form.project, form.tape, form.overnight,
+    (form.bookedStudents || form.students.map(student => student.name).join(', ')),
+    hasItems
+  );
+  row.setAttribute('data-id', form.id);
+  app.pages.archive.elements.tableBody.appendChild(row);
+}
+</script>

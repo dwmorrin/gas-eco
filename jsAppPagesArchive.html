@@ -1,0 +1,249 @@
+<script>
+app.pages.archive = {
+  elements: {
+    container:   document.querySelector('div.archiveContainer'),
+    queryButton: document.querySelector('button[value="query"]'),
+    queryCount:  document.querySelector('span.querycount'),
+    queryInputs: document.querySelector('form.query'),
+    tableBody:   document.querySelector('tbody.archive'),
+  },
+  handleChange: function(change) {
+    if(change.target.getAttribute('type') == 'date') {
+      // see if new date range exceeds old date range
+      let range    = app.pages.archive.range,
+          inputs   = app.pages.archive.elements.queryInputs,
+          z = utility.date.zeropad;
+      let start    = new Date(inputs.start.value + 'T00:00:00'),
+          end      = new Date(inputs.end.value   + 'T23:59:59'),
+          oldStart = new Date(range.start + 'T00:00:00'),
+          oldEnd   = new Date(range.end   + 'T23:59:59');
+      // cancel change if start > end
+      if(start.getTime() > end.getTime()) {
+        inputs.start.value = range.start;
+        inputs.end.value = range.end;
+        app.modal.handleError(new Error('Range start can not be after end'));
+        change.preventDefault();
+        return;
+      }
+      if(start.getTime() < oldStart.getTime() || end.getTime() > oldEnd.getTime()) {
+        app.pages.archive.update();
+      } else {
+        app.pages.archive.query();
+      }
+      // update range
+      range.start = start.getFullYear() + '-'
+        + z(start.getMonth() + 1) + '-' + z(start.getDate());
+      range.end = end.getFullYear() + '-'
+        + z(end.getMonth() + 1) + '-' + z(end.getDate());
+    }
+  },
+  handleClickTable: function(click) {
+    let findForm = function(form) {
+      return form.id == click.target.parentNode.getAttribute('data-id');
+    }
+    let index = app.cache.archive.findIndex(findForm);
+    if (index < 0) {
+      return;
+    }
+    app.cache.currentIndex = index;
+    app.doCommand('displayForm', app.cache.archive[index], true);
+  },
+  getDateRangeAsJSON: function() {
+    let inputs = app.pages.archive.elements.queryInputs;
+    let range = {};
+    range.start = utility.date.getFormattedDate(new Date(inputs.start.value + 'T00:00:00'));
+    range.end   = utility.date.getFormattedDate(new Date(inputs.end.value   + 'T23:59:59'));
+    return JSON.stringify(range);
+  },
+  init: function() {
+    let inputs = app.pages.archive.elements.queryInputs,
+        today = new Date();
+    today = today.getFullYear() +
+      '-' + utility.date.zeropad(today.getMonth() + 1) +
+      '-' + utility.date.zeropad(today.getDate());
+    inputs.start.value = today;
+    inputs.end.value = today;
+    app.pages.archive.range.start = today;
+    app.pages.archive.range.end   = today;
+  },
+  query: function() {
+    // use app.cache.archive, app.pages.archive.elements.queryInputs[input]
+    let dateInputs = app.pages.archive.elements.container.querySelectorAll('input[type="date"]'),
+        inputs = app.pages.archive.elements.queryInputs;
+    if(!dateInputs[0].value) { // initialize date range inputs
+      app.pages.archive.init();
+    }
+    let forms,
+        startRange   = new Date(inputs.start.value + 'T00:00:00'),
+        endRange     = new Date(inputs.end.value  + 'T23:59:59'),
+        itemQuery    = inputs.items.value, 
+        studentQuery = inputs.students.value,
+        cleanStudent = function(value, index, array) {
+          array[index] = array[index].replace(/\s/g, '');
+        },
+        cleanItem    = function(value, index, array) {
+          array[index] = array[index].replace(/\s/g, '').replace(/-0+/, '-');
+        };
+
+    if(studentQuery) {
+      studentQuery = studentQuery.toLowerCase().split(',');
+      studentQuery.forEach(cleanStudent);
+    }
+
+    if(itemQuery) {
+      itemQuery = itemQuery.toLowerCase().split(',');
+      itemQuery.forEach(cleanItem);
+    }
+
+    app.cache.archiveFiltered = app.cache.archive.filter(function archivedFormsFilter(form) {
+      // filter by date range
+      let start = utility.date.parseFormattedDate(form.startTime);
+      if((start.getTime() <= startRange.getTime()) || (start.getTime() >= endRange.getTime())) {
+        return false;
+      }
+      
+      // filter by location
+      if(inputs.location.value != 'All') {
+        if(inputs.location.value != 'Other') {
+          if(form.location != inputs.location.value) {
+            return false;
+          }
+        } else {
+          if(app.strings.locations.has(form.location)) {
+            return false;
+          }
+        }
+      }
+
+      // filter by booked/not booked, tape
+      if(!inputs.booked.checked && form.bookingId) {
+        return false;
+      }
+      if(!inputs.nonbooked.checked && !form.bookingId) {
+        return false;
+      }
+      if(inputs.tape.checked && !form.tape) {
+        return false;
+      }
+
+      // filter by student names
+      if(inputs.students.value) {
+        let found = studentQuery.find(queryArg => {
+          return form.students.find(student => {
+            return (student.name.toLowerCase().replace(/\s/g, '').search(queryArg) > -1)
+          });
+        });
+        if(!found) {
+          return false;
+        }
+      }
+
+      // filter by item id
+      if(inputs.items.value) {
+        let found = itemQuery.find(queryArg => {
+          return form.items.find(item => {
+            return (item.id.toLowerCase().replace(/-0+/, '-').search(queryArg) > -1);
+          });
+        });
+        if(!found) {
+          return false;
+        }
+      }
+
+      // filter by errors
+      // filter by manual entry
+      if(inputs.manual.checked) {
+        let found = false;
+        // dig through the notes
+        checkManual: for(let note of form.notes) {
+          try {
+            let changes = JSON.parse(note.body);
+            for(let change of changes) {
+              if(change.name == 'manual') {
+                found = true;
+                break checkManual;
+              }
+            }
+          } catch(e) {
+            ; // not changes, ignore
+          }
+        }
+        if(!found) {
+          return false;
+        }
+      }
+      
+      // filter by late students
+      if(inputs.late.checked) {
+        const gracePeriod = 15; // minutes
+        let found = false,
+            start = utility.date.parseFormattedDate(form.startTime),
+            end   = utility.date.parseFormattedDate(form.endTime);
+        start.setMinutes(start.getMinutes() + gracePeriod);
+        
+        let checkedInOnTime = function(student) {
+          if(!student.checkIn) {
+            return true; // i.e. no show != late
+          }
+          let checkIn = utility.date.parseFormattedDate(student.checkIn).getTime();
+          return (checkIn <= start.getTime());
+        };
+        
+        let checkedOutLate = function(student) {
+          if(student.checkIn && !student.checkOut) {
+            return true; // checked-in student never checked-out
+          }
+          if(student.checkOut) {
+            let checkOut = utility.date.parseFormattedDate(student.checkOut).getTime();
+            return (checkOut > end.getTime());
+          } else { // must be a no show student
+            return false;
+          }
+        };
+        
+        // late check-ins
+        if(!form.students.every(checkedInOnTime)) {
+          found = true;
+        }
+        // late check-outs
+        if(form.students.some(checkedOutLate)) {
+          found = true;
+        }
+        if(!found) {
+          return false;
+        }
+        
+      }
+      
+      // filter by no show
+      if(inputs.noshow.checked) {
+        // check for some check-ins
+        if(form.students.some(s => s.checkIn)) { // not a no show
+          return false;
+        }
+      }
+
+      return true;
+    });
+    if (app.cache.archiveFiltered.length == 1) {
+      app.pages.archive.elements.queryCount.textContent = app.cache.archiveFiltered.length + ' form';
+    } else {
+      app.pages.archive.elements.queryCount.textContent = app.cache.archiveFiltered.length + ' forms';
+    } 
+    displayArchivedForms(app.cache.archiveFiltered);
+  },
+  range: {
+    start: '', // 'yyyy-mm-dd'
+    end: '',   // 'yyyy-mm-dd'
+  },
+  refreshId: NaN,
+  setInterval: function() {},
+  update: function() {
+    app.spinner.inside(app.pages.archive.elements.queryButton);
+    app.run.doGet({
+      get: 'archive',
+      dateRangeJSON: app.pages.archive.getDateRangeAsJSON(),
+    });
+  },
+};
+</script>

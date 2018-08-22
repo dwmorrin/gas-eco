@@ -1,0 +1,301 @@
+<link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
+<style>
+button.buttonSmall {
+  border-radius: 3px;
+  margin-left: 0;
+  min-width: 10px;
+  vertical-align: bottom;
+}
+
+button[value="demo"] {
+  position: absolute;
+  right: 0;
+}
+
+button > svg {
+  pointer-events: none;
+}
+
+div.dropdown {
+  position: absolute;
+}
+
+div.dropdown button {
+  border: none;
+  display: block;
+  margin: 0;
+  text-align: left;
+  width: 100%;
+}
+
+div.dropdownContainer {
+  display: inline;
+}
+
+div.modal {
+  background-color: white;
+  border: solid;
+  font-size: larger;
+  left: 50%;
+  max-width: 100%;
+  max-height: 100%;
+  position: fixed;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 600px;
+  z-index: 2; /* Should be highest */
+  -webkit-transform-style: preserve-3d;
+}
+
+div.modal div.buttonContainer {
+  bottom: 0;
+  position: absolute;
+  right: 0;
+}
+
+div.modal h2 {
+  margin-left: 17px;
+}
+
+div.modal input {
+  margin: 5px;
+}
+
+div.modal p {
+  height: 100%;
+  margin: 0;
+  overflow: auto;
+  padding: 20px 20px 5px 20px;
+  width: 90%;
+}
+
+div.modal table {
+  display: block;
+  max-height: 300px;
+  overflow: auto;
+}
+
+div.modal textarea {
+  width: 100%;
+}
+
+div.modal td, div.modal th {
+  padding: 10px;
+}
+
+div.spinner {
+  border: 6px solid #f3f3f3;
+  border-radius: 50%;
+  border-top: 6px solid #3498db;
+  margin-left: 14px;
+  width: 10px;
+  height: 10px;
+  animation: spin 2s linear infinite;
+}
+
+div.openFormsContainer tbody tr:not(.hoveroff):hover,
+tbody.archive tr:not(.hoveroff):hover {
+  background-color: lightcyan;
+  cursor: pointer;
+}
+
+div.overlay {
+  background-color: black;
+  height: 100%;
+  left: 0;
+  opacity: 0.5;
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 1; /* Must be second highest to modal */
+}
+
+header h1 {
+  display: inline-block;
+}
+
+html {
+  max-width: 900px;
+}
+
+input.error {
+  background-color: pink !important; /* !important used because of specificity */
+}
+
+input.omnibox, button {
+  margin: 10px;
+}
+
+input.omnibox:focus {
+  background-color: lightcyan;
+}
+
+label {
+  float: left;
+  margin-right: 10px;
+  text-align: right;
+  width: 200px;
+}
+
+section {
+  border: 1px solid black;
+  margin: 2px;
+}
+
+section h4 {
+  margin: 2px 0 7px 5px;
+}
+
+span.updateButtonHint {
+  color: grey;
+  font-style: italic;
+}
+
+span.usernameContainer {
+  position: absolute;
+  right: 0;
+}
+
+table {
+  table-layout: fixed;
+  width: 99%;
+  margin-left: 5px;
+}
+
+th {
+  font-weight: bold;
+}
+
+th > img {
+  pointer-events: none;
+}
+
+tr.inactive img {
+  background-color: gainsboro;
+}
+
+tr.active img {
+  background-color: forestgreen;
+}
+
+tr.late img {
+  background-color: red;
+}
+
+tr.endingSoon img {
+  background-color: yellow;
+}
+
+td.new {
+  background-color: yellow;
+}
+
+tbody.archive td,
+thead.archive th {
+  border: 1px solid #999;
+  padding: 0.5rem;
+  text-align: left;
+  overflow: hidden;
+}
+
+tbody.archive tr > td:nth-Child(1),
+thead.archive tr > th:nth-Child(1) {
+  padding: 0;
+}
+
+thead.archive th:nth-Child(1) {
+  width: 20px;
+} 
+
+thead.form th {
+  /*font: normal 14px Arial;*/
+  border-bottom: 1px solid grey;
+}
+
+thead.formItems th:nth-child(1) {
+  width: 10%;
+}
+
+thead.formItems th:nth-child(2) {
+  width: 30%;
+}
+
+thead.formItems th:nth-child(3) {
+  width: 20%;
+}
+
+thead.formItems th:nth-child(4) {
+  width: 20%;
+}
+
+thead.formItems th:nth-child(5) {
+  width: 20%;
+}
+
+thead.formStudents th:nth-child(1) {
+  width: 40%;
+}
+
+thead.formStudents th:nth-child(2) {
+  width: 20%;
+}
+
+thead.formStudents th:nth-child(3) {
+  width: 20%;
+}
+
+thead.formStudents th:nth-child(4) {
+  width: 20%;
+}
+
+tbody.open td {
+  padding: 0;
+}
+
+thead.open th:hover,
+tbody.studentList tr:hover
+/*, tbody.itemList tr:hover*/ {
+  color: blue;
+  cursor: pointer;
+}
+
+thead.open th:nth-child(1) {
+  width:20px;
+}
+
+table.staticFields td {
+  border: none;
+  padding-bottom: 0;
+  width: 70%;
+}
+
+table.staticFields th {
+  border: none;
+  font: bold 14px Arial;
+  padding-bottom: 0;
+  padding-top: 9px;
+  width: 20%;
+}
+
+td.itemnotes {
+  padding: 0;
+  cursor: pointer;
+}
+
+td.itemnotes > input {
+  width: 100%;
+}
+
+tr.inactive td:not(:first-child) {
+  font-style: italic;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.hidden {
+  display: none !important; /* class selector is low specificity, doesn't apply to specific styles without !important */
+}
+</style>

@@ -1,0 +1,29 @@
+<script>
+app.pages.openForms = {
+  elements: {
+    container:          document.querySelector('div.openFormsContainer'),
+    equipmentTableBody: document.querySelector('tbody.equipmentOut'),
+    formsTableBody:     document.querySelector('tbody.open'),
+    formsTableHead:     document.querySelector('thead.open'),
+  },
+  handleClickTable: function(click) {
+    let findForm = function(form) {
+      return form.id == click.target.parentNode.getAttribute('data-id');
+    }
+    let index = app.cache.openForms.findIndex(findForm);
+    if (index < 0) {
+      return;
+    }
+    app.cache.currentIndex = index;
+    app.doCommand('displayForm', app.cache.openForms[index], false);
+  },
+  handleClickTableHead: function(click) {
+    app.doCommand('sortOpenForms', click.target.dataset.sort);
+  },
+  refreshId: NaN,
+  setInterval: function() {
+    app.pages.openForms.refreshId = window.setInterval(displayOpenForms, 60000, app.cache.openForms);
+  },
+  sortBy: 'startTime',
+};
+</script>

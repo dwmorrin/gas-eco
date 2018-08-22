@@ -1,0 +1,252 @@
+<script>
+app.pages.form = {
+  elements: {
+    container:               document.querySelector('div.formContainer'),
+    currentFormstackDisplay: document.querySelector('span.currentFormstackDisplay'),
+    focusGuardTop:           document.querySelector('.focusGuardTop'),
+    focusGuardBottom:        document.querySelector('.focusGuardBottom'),
+    form:                    document.querySelector('form.model'),
+    itemList:                document.querySelector('tbody.itemList'),
+    locationSelect:          document.querySelector('form.model select[name="location"]'),
+    locationOtherOption:     document.querySelector('form.model option[value="Other"]'),
+    newNoteButton:           document.querySelector('button[value="newNote"]'),
+    noteSection:             document.querySelector('section.globalnotes'),
+    studentList:             document.querySelector('tbody.studentList'),
+    tableStaticFields:       document.querySelector('table.staticFields'),
+    updateButtonHint:        document.querySelector('span.updateButtonHint'),
+    updateFormButton:        document.querySelector('button[value="updateForm"]'),
+    undoButton:              document.querySelector('button[value="undo"]'),
+  },
+  getNext: function() {
+    // get the next form from either the open stack or the archive stack
+    //let stack = app.pages.form.getFormStack();
+    let stack = app.cache[app.cache.currentFormstack];
+    let isArchive = (app.cache.currentFormstack == 'archive') ? true : false;
+    
+    if (app.cache.currentIndex == stack.length - 1) { // we're already at the end
+      return;
+    } else {
+      let nextForm = stack[++app.cache.currentIndex];
+      displayForm(nextForm, isArchive);
+    }
+  },
+  getPrevious: function() {
+    let stack = app.cache[app.cache.currentFormstack];
+    let isArchive = (app.cache.currentFormstack == 'archive') ? true : false;
+
+    if(app.cache.currentIndex == 0) { // we're already at the beginning
+      return;
+    } else {
+      let previousForm = stack[--app.cache.currentIndex];
+      displayForm(previousForm, isArchive);
+    }
+  },
+  /** for form validation and attach beforeunload listener for unsaved changes */
+  handleChange: function(change) {
+    app.changes.saved = false;
+    app.pages.form.elements.undoButton.removeAttribute('disabled');
+    if(!app.pages.form.elements.form.id) {
+      app.pages.form.elements.updateFormButton.textContent = "Submit";
+    } else {
+      app.pages.form.elements.updateFormButton.textContent = "Update";
+    }
+    app.pages.form.elements.updateFormButton.classList.add('create');
+
+    switch(change.target.name) {
+      case 'location':
+        app.pages.form.handleChangeLocation(change);
+        break;
+      case 'startDate':
+      case 'startHour':
+      case 'startMinute':
+      case 'startAMPM':
+      case 'endDate':
+      case 'endHour':
+      case 'endMinute':
+      case 'endAMPM':
+        app.pages.form.handleChangeTime(change);
+        break;
+      case 'items':
+      case 'manual':
+      case 'notes':
+      case 'students':
+        app.changes.add(change);
+        break;
+    }
+
+    /* validation to release update button */ {
+      let okToPost = true;
+      // Check if inputs are OK
+      if(app.pages.form.elements.locationSelect.value == 'none') {
+        okToPost = false;
+      }
+      if(app.pages.form.elements.form.startTime.value == app.pages.form.elements.form.endTime.value) { // default value
+        okToPost = false;
+      }
+      /** @see handleChangeTime */
+      if(app.pages.form.elements.form.endDate.classList.contains('error')) {
+        okToPost = false;
+      }
+      if(app.pages.form.elements.form.students.value.length < 3) { // null value is '[]', length == 2
+        okToPost = false;
+      } else { // Check the status of the students on the form against the status of the items on the form
+        let students = JSON.parse(app.pages.form.elements.form.students.value),
+            items = JSON.parse(app.pages.form.elements.form.items.value);
+        let someStudentsAreActive = students.some(s => (s.checkIn && !s.checkOut));
+        let someItemsAreOut = items.some(i => (i.checkOut && !i.checkIn));
+        if(someItemsAreOut && !someStudentsAreActive) {
+          okToPost = false;
+        }
+      }
+      if(okToPost) {
+        // are we ready to close?
+        if(isFormReadyToClose()) {
+          app.pages.form.elements.updateFormButton.textContent = 'Update and Close';
+        } // Enable update button
+        app.pages.form.elements.updateFormButton.removeAttribute('disabled');
+        app.pages.form.elements.updateButtonHint.textContent = app.strings.updateEnabledHint;
+      } else { // Disable update button
+        app.pages.form.elements.updateFormButton.setAttribute('disabled', true);
+        app.pages.form.elements.updateButtonHint.textContent = app.strings.updateDisabledHint;
+      }
+    }
+  },
+  handleChangeLocation: function(change) {
+    console.log('handleChangeLocation');
+    if(change.target.value == 'Other') {
+      change.target.value = 'none'; // in case the modal is cancelled
+      app.modal.getLocation();
+    } else { // it's not other, make sure 'Other' label is reset, log the change
+      app.pages.form.elements.locationOtherOption.textContent = 'Other';
+      app.changes.add(change);
+    }
+  },
+  handleChangeTime: function(change) {
+    let t = utility.date.parseDateAndTimeInputs(),
+        type = change.target.name.slice(0,1),
+        newChange = { target: {} };
+    
+    // CHECK #1: If start is after end, try flipping end AM -> PM first
+    if(t.endTime.getTime() <= t.startTime.getTime()) {
+      if(app.pages.form.elements.form.endAMPM.value == 'AM') {
+        app.pages.form.elements.form.endAMPM.value = 'PM';
+        t = utility.date.parseDateAndTimeInputs();
+      }
+    }
+    
+    // CHECK #2: If start is still after end, display error to user
+    if(t.endTime.getTime() <= t.startTime.getTime()) {
+      app.pages.form.elements.form.endDate.classList.add('error');
+      app.pages.form.elements.form.endHour.classList.add('error');
+      app.pages.form.elements.form.endMinute.classList.add('error');
+      app.pages.form.elements.form.endAMPM.classList.add('error');
+      app.modal.handleError(new Error('Start time is after end time.'));
+      return;
+    } else { // In case there was an error before, reset the classLists
+      app.pages.form.elements.form.endDate.classList.remove('error');
+      app.pages.form.elements.form.endHour.classList.remove('error');
+      app.pages.form.elements.form.endMinute.classList.remove('error');
+      app.pages.form.elements.form.endAMPM.classList.remove('error');
+    }
+    app.pages.form.elements.form.startTime.value = utility.date.getFormattedDate(t.startTime);
+    app.pages.form.elements.form.endTime.value = utility.date.getFormattedDate(t.endTime);
+    if(type == 's') {
+      newChange.target.name = 'startTime';
+      newChange.target.value = app.pages.form.elements.form.startTime.value;
+    } else if (type == 'e') {
+      newChange.target.name = 'endTime';
+      newChange.target.value = app.pages.form.elements.form.endTime.value;
+    }
+    app.changes.add(newChange);
+  },
+  handleClickItem: function(click) {
+    if(click.target.parentNode.classList.contains('itemnotes')) return;
+    if(click.metaKey) return;
+    // find item barcode
+    let id, item, node;
+    node = utility.DOM.getFirstChild(click.target.parentNode);
+    node = utility.DOM.getNextSibling(node); // description
+    id = utility.DOM.getNextSibling(node).textContent; // id
+    item = JSON.parse(app.pages.form.elements.form.notes.value).find(i => i.id == id);
+    if(!item) {
+      app.modal.handleError(new Error('cannot take note for ' + id));
+    }
+    app.modal.handleItemNote(item);
+  },
+  handleClickTable: function(click) {
+    if(click.target.tagName != 'TD') {
+      return;
+    }
+    if(click.target.classList.contains('itemnotes')) {
+      let input = document.createElement('input');
+      input.setAttribute('type', 'text');
+      input.setAttribute('value', click.target.textContent);
+      input.classList.add('itemnotesinput');
+      input.addEventListener('blur', app.pages.form.handleItemNoteInput);
+      click.target.innerHTML = '';
+      click.target.appendChild(input);
+      input.focus();
+      input.selectionStart = input.selectionEnd = input.value.length;
+    }
+    if(click.target.classList.contains('editable')) {
+      if(!app.omnibox.element.disabled) {
+        let inputCell = utility.DOM.getNextSibling(click.target);
+        let input = utility.DOM.getFirstChild(inputCell);
+        switch(input.name) {
+          case 'location':
+            input.value = click.target.textContent;
+            break;
+          case 'startDate':
+          case 'endDate':
+            let value = utility.date.parseFormattedDate(click.target.textContent);
+            let hour = utility.DOM.getNextSibling(input);
+            let minute = utility.DOM.getNextSibling(hour);
+            let ampm = utility.DOM.getNextSibling(minute);
+            input.value = value.getFullYear() +
+              '-' + utility.date.zeropad(value.getMonth() + 1) +
+              '-' + utility.date.zeropad(value.getDate());
+            minute.value = utility.date.roundMinutes(value.getMinutes());
+            hour.value = utility.date.parseHours(value.getHours());
+            ampm.value = utility.date.parseAMPM(value.getHours());
+          break;
+        }
+        click.target.classList.add('hidden');
+        inputCell.classList.remove('hidden');
+      }
+    }
+    // cmd clicks only from here on
+    if(!click.metaKey) {
+      return;
+    }
+    let cells = click.target.parentNode.getElementsByTagName('td');
+    let index = 1, // assumes id in the 2nd cell for 'studentList'
+        id;
+    if(click.target.parentNode.parentNode.classList.contains('itemList')) {
+      index = 2; // assumes id in the 3rd cell
+    }
+    id = cells[index].textContent;
+    app.omnibox.element.value = id;
+    app.omnibox.parse();
+  },
+  handleClickStudent: function(click) {
+    if(click.metaKey) return;
+    let netId = utility.DOM.getNextSibling(utility.DOM.getFirstChild(click.target.parentNode)).textContent,
+        student,
+        students = JSON.parse(app.pages.form.elements.form.students.value);
+    student = students.find(s => s.netId == netId);
+    if(!student) {
+      app.modal.handleError(new Error('could not find student with NetID ' + netId));
+      return;
+    }
+    app.modal.handleStudentNote(student);
+  },
+  handleItemNoteInput: function(event) { // could be keydown.key == 'Enter' or blur
+    let value = event.target.value,
+        parent = event.target.parentNode;
+    parent.removeChild(event.target);
+    parent.textContent = value;
+  },
+  refreshId: NaN,
+  setInterval: function() {},
+};
+</script>

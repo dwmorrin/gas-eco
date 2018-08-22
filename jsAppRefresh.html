@@ -1,0 +1,56 @@
+<script>
+/**
+ * main server callback function
+ * @see jsInit
+ * this is attached to google.script.run.withSuccessHandler
+ */
+app.refresh = function(response) {
+  console.log('REFRESH:', response);
+  switch(response.target) {
+    case 'archive':
+      if(response.unlock) {
+        app.elements.archiveButton.removeAttribute('disabled');
+      } else { // remove spinner from query button
+        app.pages.archive.elements.queryButton.innerHTML = 'Update View';
+      }
+      app.cache.archive = JSON.parse(response.formList);
+      app.pages.archive.query();
+      break;
+    case 'updateForm':
+      app.changes.saved = true;
+      app.pages.form.elements.undoButton.setAttribute('disabled', true);
+      app.pages.form.elements.updateButtonHint.textContent = '';
+      app.pages.form.elements.updateFormButton.setAttribute('disabled', true);
+      displayForm(JSON.parse(response.form));
+      break;
+    case 'items':
+      app.cache.items = JSON.parse(response.items);
+      break;
+    case 'signature':
+      app.cache.students = JSON.parse(response.students);
+      app.omnibox.parse();
+      break;
+    case 'students':
+      if(response.unlock) {
+        app.elements.newFormButton.removeAttribute('disabled');
+      }
+      app.cache.students = JSON.parse(response.students);
+      break;
+    case 'user':
+      app.elements.usernameDisplay.textContent = response.user;
+      break;
+    case 'openForms':
+      if(response.unlock) {
+        app.elements.openFormsButton.removeAttribute('disabled');
+      }
+      app.changes.saved = true;
+      app.cache.openForms = JSON.parse(response.formList);
+      app.spinner.off();
+      app.showPage(app.pages.openForms);
+      displayOpenForms(app.cache.openForms);
+      app.cache.currentFormstack = 'openForms';
+      break;
+  }
+  
+};
+</script>

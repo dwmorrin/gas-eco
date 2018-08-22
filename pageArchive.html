@@ -1,0 +1,79 @@
+<div class="archiveContainer hidden">
+  <h2>Closed Forms</h2>
+  <form class="query">
+    Start Time Range (Required):
+    <br>
+    <label for="start">Range Start</label>
+    <input name="start" type="date" placeholder="yyyy-mm-dd"/>
+    <br>
+    <label for="end">Range End</label>
+    <input name="end" type="date" placeholder="yyyy-mm-dd"/>
+    <br>
+    Search By:
+    <br>
+    <label for="location">Location</label>
+    <select name="location">
+      <option value="All">All</option>
+      <option value="Studio 505">Studio 505</option>
+      <option value="Studio 510">Studio 510</option>
+      <option value="Studio 21 North">Studio 21 North</option>
+      <option value="Edit Suite 1 508">Edit Suite 1 508</option>
+      <option value="Edit Suite 2 509">Edit Suite 2 509</option>
+      <option value="Lab 502">Lab 502</option>
+      <option value="Lobby/Hallway">Lobby/Hallway</option>
+      <option value="Other">Other</option>
+    </select>
+    <br>
+    <label for="students">Students</label>
+    <input type="text" name="students" />
+    <br>
+    <label for="items">Items</label>
+    <input type="text" name="items" />
+    <br>
+    Show Only Session Type:
+    <br>
+    <label for="booked">Booked Sessions</label>
+    <input type="checkbox" name="booked" checked />
+    <br>
+    <label for="nonbooked">Not Booked Sessions</label>
+    <input type="checkbox" name="nonbooked" checked />
+    <br>
+    <label for="tape">Tape Sessions</label>
+    <input type="checkbox" name="tape" />
+    <br>
+    Show Only Error Type:
+    <br>
+    <label for="manual">Manual Entries</label>
+    <input type="checkbox" name="manual" />
+    <br>
+    <label for="late">Late Students</label>
+    <input type="checkbox" name="late" />
+    <br>
+    <label for="noshow">No Show Students</label>
+    <input type="checkbox" name="noshow" />
+    <br>
+  </form>
+  <button class="action" value="query">Update View</button>Matched <span class="querycount"></span>
+  <table>
+    <thead class="archive">
+      <tr>
+        <th>
+          <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABCElEQVR4XmNgoCbQ0tJiU5SVb1aUl2+BYSU5hU5FWUU3dLVYgYKCgoCCnPxROTk5LSDbAITl5eUVFeXkPyjKyYWiq8cAIAOU5OXXo4sDDfgFxJ+U5OSc0eVQAMgARTmFVUCFPgpycnlKsvJFKioqfEDN/6H4L1DOBV0fHIC9ICu/VklJSQ7odENlOTljqLgGkK8J8hrQkNfo+uAA4gL5RUBX7ALS/9DwfwVZBX8g/QNdHxxADVijJCOjCww0V2QM1OwOlOcAyv9E1wcH1DKAMi8gByIaNgKpIcIFiGhExkqyCoVAeQkiDJBfjS6ODPAaoCUqygNU8BLogSfYMFDuKTCp30HXN7AAAKarYBD/VuTqAAAAAElFTkSuQmCC"
+            width="16" height="16"/>
+        </th>
+        <th data-sort="startTime">Start Time</th>
+        <th data-sort="endTime">End Time</th>
+        <th data-sort="location">Location</th>
+        <th data-sort="bookingId">Booking ID</th>
+        <th data-sort="bookedStudents">Booked Students</th>
+        <th data-sort="contact">Contact</th>
+        <th data-sort="project">Project</th>
+        <th data-sort="tape">Tape</th>
+        <th data-sort="overnight">Overnight</th>
+        <th data-sort="students">Students</th>
+        <th data-sort="items">Items</th><!-- simple YES or NO display -->
+      </tr>
+    </thead>
+    <tbody class="archive"><!-- populated by script --></tbody>
+  </table>
+</div>

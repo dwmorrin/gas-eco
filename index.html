@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<head>
+    <base target="_top">
+    <?!= include_('cssStyle'); ?>
+</head>
+
+<header>
+  <h1>Equipment Check-Out</h1>
+  <span class="usernameContainer">signed in as 
+  <span class="usernameDisplay"></span></span>
+</header>
+
+<nav>
+  <button class="action"
+          value="displayNewForm"
+          disabled="true">New Form</button>
+  <button value="openForms"
+          disabled="true">View Open Forms</button>
+  <button value="archivedForms"
+          disabled="true">View Closed Forms</button>
+  <button value="demo">Reset Forms (for demo only)</button>
+</nav>
+
+<!-- page sections (only one can be visible at a time) -->
+<?!= include_('pageOpenForms'); ?>
+<?!= include_('pageForm'); ?>
+<?!= include_('pageArchive'); ?>
+
+<!-- page fragments (can be visible at any time)-->
+<div class="spinner hidden"></div>
+<?!= include_('pageModal'); ?>
+
+<!-- javascript -->
+
+<!-- external code for signature pad -->
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@2.3.2/dist/signature_pad.min.js"></script>
+
+<!-- function definitions -->
+<?!= include_('jsLogic'); ?>
+<?!= include_('jsUtility'); ?>
+<?!= include_('jsDisplay'); ?>
+
+<!-- app object containing global variables -->
+<?!= include_('jsApp'); ?>
+<?!= include_('jsAppChanges'); ?>
+<?!= include_('jsAppDoCommand'); ?>
+<?!= include_('jsAppElements'); ?>
+<?!= include_('jsAppHandlers'); ?>
+<?!= include_('jsAppModal'); ?>
+<?!= include_('jsAppOmnibox'); ?>
+<?!= include_('jsAppPagesArchive'); ?>
+<?!= include_('jsAppPagesForm'); ?>
+<?!= include_('jsAppPagesOpenForms'); ?>
+<?!= include_('jsAppRefresh'); ?>
+<?!= include_('jsAppSpinner'); ?>
+
+<!-- run commands -->
+<?!= include_('jsInit'); ?>

@@ -1,0 +1,305 @@
+<script>
+app.modal = {
+  body:         document.querySelector('div.modal p'),
+  cancel:       document.querySelector('button.modalcancel'),
+  canvas:       document.querySelector('div.modal canvas'),
+  clear:        document.querySelector('button.signatureclear'),
+  container:    document.querySelector('div.modal'),
+  heading:      document.querySelector('div.modal h1'),
+  input:        document.querySelector('div.modal input'),
+  ok:           document.querySelector('button.modalok'),
+  overlay:      document.querySelector('div.overlay'),
+  signaturePad: new SignaturePad(document.querySelector('div.modal canvas')),
+  table:        document.querySelector('div.modal table'),
+  textarea:     document.querySelector('div.modal textarea'),
+
+  strings: {
+    changes: {
+      heading: 'Change Log',
+      body:    '',
+      ok:      '',
+    },
+    init: { // as defined in pageModal.html
+      heading: 'Attention',
+      body:    'choose an option to exit',
+      ok:      'Ok',    
+    },
+    error: {
+      heading: 'Error',
+      body:    'an error has occured',
+      ok:      'ok',
+    },
+    itemNote: {
+      heading: 'Add notes to item',
+      body:    '',
+      ok:      'Submit',
+    },
+    location: {
+      heading: 'Location: Other',
+      body:    'Equipment may not be taken off of the 5th floor of 194 Mercer Street.',
+      ok:      'Set location',
+    },
+    note: {
+      heading: 'New note',
+      body:    'Enter a note',
+      ok:      'Save note',
+    },
+    signature: {
+      heading: 'Signature Confirmation:',
+      body:    'My signature here confirms that I have read and understand Recorded Music\'s policies governing the use of its music production facilities.  I am aware that I am responsible for the conduct of my guests (including my teammates and other Recorded Music Students), and I understand that failure to follow those policies could result in fines and/or the loss of privileges.',
+      ok:      'Submit Signature',
+    },
+    studentNote: {
+      heading: 'Add notes to student',
+      body:    '',
+      ok:      'Submit',
+    },
+    undo: {
+      heading: 'Undo all changes',
+      body:    'Do you want to undo all changes since the last save?',
+      ok:      'Revert to saved form',
+    },
+    unsaved: {
+      heading: 'Warning, your changes are not saved',
+      body:    'Are you sure?',
+      ok:      'Lose Changes',
+    },
+  },
+
+  // modal methods
+  /**
+   @param {[]} notes - saved notes, query changes for pending changes 
+   */
+  displayChangeLog: function(notes) {
+    utility.DOM.empty(app.modal.table);
+    app.modal.table.appendChild(utility.DOM.makeTableRow('th', 'Time', 'User', 'Field', 'Value'));
+    // display saved changes
+    for(let note of notes) {
+      try {
+        let changes = JSON.parse(note.body);
+        let user = note.author;
+        for(let change of changes) {
+          app.modal.table.appendChild(
+            utility.DOM.makeTableRow(
+              'td',
+              utility.date.getFormattedDate(new Date(change.timestamp)),
+              note.author,
+              utility.uncamelCase(change.name),
+              change.value
+            )
+          );
+        }
+      } catch(e) {
+        ; // this is a global note
+      }
+    }
+    // display pending changes
+    for(let change of app.changes.stack) {
+      app.modal.table.appendChild(
+        utility.DOM.makeTableRow(
+          'td',
+          utility.date.getFormattedDate(new Date(change.timestamp)),
+          app.elements.usernameDisplay.textContent, // note difference with saved changes!
+          utility.uncamelCase(change.name),
+          change.value
+        )
+      );
+    }
+
+    app.modal.setStrings('changes');
+    app.modal.show(app.modal.container, app.modal.table);
+  },
+
+  blurAllTextInputs: function() {
+    let textInputs = document.querySelectorAll('input[type="text"]');
+    for(var i = 0, l = textInputs.length; i < l; i++) {
+      textInputs[i].blur();
+    }
+  },
+
+  getInput: function () {
+    return app.modal.getValueAndClear(app.modal.input);
+  },
+
+  getLocation: function() {
+    app.modal.blurAllTextInputs();
+    app.modal.setStrings('location');
+    app.modal.show(app.modal.container, app.modal.ok, app.modal.input);
+    app.modal.input.setAttribute('placeholder', 'enter location name');
+    app.modal.ok.setAttribute('value', 'setLocationOther');
+  },
+
+  getNote: function() {
+    app.modal.setStrings('note');
+    app.modal.show(app.modal.container, app.modal.ok, app.modal.textarea);
+    app.modal.ok.setAttribute('value', 'saveNote');
+    app.modal.textarea.focus();
+  },
+
+  getSignature: function(student) {
+    app.modal.blurAllTextInputs();
+    app.modal.setStrings('signature');
+    // important: call show() before setting canvas width, otherwise signature pad will have size of 0
+    app.modal.show(app.modal.container, app.modal.ok, app.modal.clear, app.modal.canvas);
+    app.modal.canvas.width = app.modal.container.getBoundingClientRect().width;
+    app.modal.ok.setAttribute('value', 'signatureSubmit');
+    app.modal.input.setAttribute('value', student.netId);
+  },
+
+  getText: function() {
+    return app.modal.getValueAndClear(app.modal.textarea);
+  },
+
+  // Interface for inputs, this is a private function, public calls getInput, getText
+  getValueAndClear: function(inputElement) {
+    let value = inputElement.value;
+    inputElement.value = '';
+    return value;
+  },
+
+  handleError: function(error) {  
+    console.error(error);
+    app.errors.push(error);
+    if(app.modal.heading.textContent != app.modal.strings.error.heading) {
+      app.modal.showNextError();
+    } // else the user is already seeing an error message; modal.hide will call showNextError when user is ready
+  },
+  
+  showNextError: function() {
+    let error = app.errors.shift();
+    if(!error) return;
+    app.modal.blurAllTextInputs();
+    app.modal.setStrings('error');
+    if(error && error.message) {
+      app.modal.body.textContent = error.message;
+    }
+    app.modal.show(app.modal.container);
+  },
+
+  handleItemNote: function(item) {
+   let m = app.modal;
+    let makeRadio = function(name, ...values) {
+      let radio = {};
+      for(let value of values) {
+        radio[value] = '<input type="radio" name="' + name + '" value="' + value + '" ';
+        if(value == 'other') {
+          radio[value] += 'checked';
+        }
+        radio[value] += '/>';
+      }
+      return radio;
+    };
+    let radio = makeRadio('itemOptions', 'missing', 'other');
+    m.blurAllTextInputs();
+    m.setStrings('itemNote');
+    m.body.textContent = 'Item: ' + item.description;
+    // build table/form
+    utility.DOM.empty(m.table);
+    if(!item.checkIn) {
+      m.table.appendChild(
+        utility.DOM.makeTableRow(
+          'td', 'Item cannot be found', radio['missing']
+        )
+      );
+    }
+    m.table.appendChild(
+      utility.DOM.makeTableRow(
+        'td', 'Other (please specify below)', radio['other']
+      )
+    );
+    app.modal.ok.setAttribute('value', 'itemNote');
+    app.modal.input.setAttribute('value', student.id);
+    m.show(m.container, m.table, m.textarea, m.ok);
+    m.textarea.focus();
+  },
+
+  /** using the table as a form container, along with the textarea for open ended input */
+  handleStudentNote: function(student) {
+    let m = app.modal;
+    let makeRadio = function(name, ...values) {
+      let radio = {};
+      for(let value of values) {
+        radio[value] = '<input type="radio" name="' + name + '" value="' + value + '" ';
+        if(value == 'other') {
+          radio[value] += 'checked';
+        }
+        radio[value] += '/>';
+      }
+      return radio;
+    };
+    let radio = makeRadio('studentOptions', 'no show', 'left', 'other');
+    m.blurAllTextInputs();
+    m.setStrings('studentNote');
+    m.body.textContent = 'Name: ' + student.name;
+    // build table/form
+    utility.DOM.empty(m.table);
+    if(!student.checkIn) {
+      m.table.appendChild(
+        utility.DOM.makeTableRow(
+          'td', 'Student never showed up', radio['no show']
+        )
+      );
+    } else if(!student.checkOut) {
+      m.table.appendChild(
+        utility.DOM.makeTableRow(
+          'td', 'Student left without checking out', radio['left']
+        )
+      );
+    }
+    m.table.appendChild(
+      utility.DOM.makeTableRow(
+        'td', 'Other (please specify below)', radio['other']
+      )
+    );
+    m.ok.setAttribute('value', 'studentNote');
+    m.input.value = student.name;
+    m.show(m.container, m.table, m.textarea, m.ok);
+    m.textarea.focus();
+  },
+
+  handleUndo: function() {
+    app.modal.blurAllTextInputs();
+    app.modal.setStrings('undo');
+    app.modal.ok.setAttribute('value', 'revert');
+    app.modal.show(app.modal.container, app.modal.ok);
+  },
+
+  handleUnsavedForm: function(buttonValue) {
+    app.modal.blurAllTextInputs();
+    app.modal.setStrings('unsaved');
+    app.modal.ok.setAttribute('value', 'loseData_' + buttonValue);
+    app.modal.show(app.modal.container, app.modal.ok);
+  },
+
+  hide: function() {
+    // check if more errors need to be displayed
+    if(app.errors.length > 0) {
+      app.modal.showNextError();
+      return;
+    }
+    // hide whatever is hidden by default
+    let elements = [
+      app.modal.container, app.modal.ok, app.modal.canvas, app.modal.clear,
+      app.modal.input, app.modal.overlay, app.modal.table, app.modal.textarea
+    ];
+    for(let el of elements) {
+      el.classList.add('hidden');
+    }
+    // use default heading so we can check heading for state
+    app.modal.heading.textContent = app.modal.strings.init.heading;
+  },
+
+  setStrings: function(key) {
+    for(let element in app.modal.strings[key]) {
+      app.modal[element].textContent = app.modal.strings[key][element];
+    }
+  },
+
+  show: function(...elements) {
+    app.modal.overlay.classList.remove('hidden');
+    for(let el of elements) {
+      el.classList.remove('hidden');
+    }
+  },
+};
+</script>
