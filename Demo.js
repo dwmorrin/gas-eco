@@ -144,6 +144,7 @@ function updateBookingDatesDemo() {
     dates[0] = id();
     dates[1].setDate(today.getDate());
     dates[1].setMonth(today.getMonth());
+    dates[1].setFullYear(today.getFullYear());
     dates[2].setTime(dates[1].getTime() + (1000 * 60 * 60 * 3));
   });
   range.setValues(values);

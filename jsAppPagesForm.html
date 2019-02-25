@@ -19,7 +19,6 @@ app.pages.form = {
   },
   getNext: function() {
     // get the next form from either the open stack or the archive stack
-    //let stack = app.pages.form.getFormStack();
     let stack = app.cache[app.cache.currentFormstack];
     let isArchive = (app.cache.currentFormstack == 'archive') ? true : false;
     
@@ -74,45 +73,20 @@ app.pages.form = {
         break;
     }
 
-    /* validation to release update button */ {
-      let okToPost = true;
-      // Check if inputs are OK
-      if(app.pages.form.elements.locationSelect.value == 'none') {
-        okToPost = false;
-      }
-      if(app.pages.form.elements.form.startTime.value == app.pages.form.elements.form.endTime.value) { // default value
-        okToPost = false;
-      }
-      /** @see handleChangeTime */
-      if(app.pages.form.elements.form.endDate.classList.contains('error')) {
-        okToPost = false;
-      }
-      if(app.pages.form.elements.form.students.value.length < 3) { // null value is '[]', length == 2
-        okToPost = false;
-      } else { // Check the status of the students on the form against the status of the items on the form
-        let students = JSON.parse(app.pages.form.elements.form.students.value),
-            items = JSON.parse(app.pages.form.elements.form.items.value);
-        let someStudentsAreActive = students.some(s => (s.checkIn && !s.checkOut));
-        let someItemsAreOut = items.some(i => (i.checkOut && !i.checkIn));
-        if(someItemsAreOut && !someStudentsAreActive) {
-          okToPost = false;
-        }
-      }
-      if(okToPost) {
-        // are we ready to close?
-        if(isFormReadyToClose()) {
-          app.pages.form.elements.updateFormButton.textContent = 'Update and Close';
-        } // Enable update button
-        app.pages.form.elements.updateFormButton.removeAttribute('disabled');
-        app.pages.form.elements.updateButtonHint.textContent = app.strings.updateEnabledHint;
-      } else { // Disable update button
-        app.pages.form.elements.updateFormButton.setAttribute('disabled', true);
-        app.pages.form.elements.updateButtonHint.textContent = app.strings.updateDisabledHint;
-      }
+    let okToPost = isFormOkToPost();
+    if(okToPost) {
+      // are we ready to close?
+      if(isFormReadyToClose()) {
+        app.pages.form.elements.updateFormButton.textContent = 'Update and Close';
+      } // Enable update button
+      app.pages.form.elements.updateFormButton.removeAttribute('disabled');
+      app.pages.form.elements.updateButtonHint.textContent = app.strings.updateEnabledHint;
+    } else { // Disable update button
+      app.pages.form.elements.updateFormButton.setAttribute('disabled', true);
+      app.pages.form.elements.updateButtonHint.textContent = app.strings.updateDisabledHint;
     }
   },
   handleChangeLocation: function(change) {
-    console.log('handleChangeLocation');
     if(change.target.value == 'Other') {
       change.target.value = 'none'; // in case the modal is cancelled
       app.modal.getLocation();
@@ -125,7 +99,23 @@ app.pages.form = {
     let t = utility.date.parseDateAndTimeInputs(),
         type = change.target.name.slice(0,1),
         newChange = { target: {} };
-    
+    // CHECK #0: Are t.start and t.end valid?
+    if (window.isNaN(t.startTime.getTime())) {
+        app.pages.form.elements.form.startDate.classList.add('error');
+        app.pages.form.elements.form.startHour.classList.add('error');
+        app.pages.form.elements.form.startMinute.classList.add('error');
+        app.pages.form.elements.form.startAMPM.classList.add('error');
+        app.modal.handleError(new Error('please enter a valid start time.'));
+        return;
+    } else if (window.isNaN(t.endTime.getTime())) {
+        app.pages.form.elements.form.endDate.classList.add('error');
+        app.pages.form.elements.form.endHour.classList.add('error');
+        app.pages.form.elements.form.endMinute.classList.add('error');
+        app.pages.form.elements.form.endAMPM.classList.add('error');
+        app.modal.handleError(new Error('please enter a valid end time.'));
+        return;
+    }
+
     // CHECK #1: If start is after end, try flipping end AM -> PM first
     if(t.endTime.getTime() <= t.startTime.getTime()) {
       if(app.pages.form.elements.form.endAMPM.value == 'AM') {
@@ -147,6 +137,10 @@ app.pages.form = {
       app.pages.form.elements.form.endHour.classList.remove('error');
       app.pages.form.elements.form.endMinute.classList.remove('error');
       app.pages.form.elements.form.endAMPM.classList.remove('error');
+      app.pages.form.elements.form.startDate.classList.remove('error');
+      app.pages.form.elements.form.startHour.classList.remove('error');
+      app.pages.form.elements.form.startMinute.classList.remove('error');
+      app.pages.form.elements.form.startAMPM.classList.remove('error');
     }
     app.pages.form.elements.form.startTime.value = utility.date.getFormattedDate(t.startTime);
     app.pages.form.elements.form.endTime.value = utility.date.getFormattedDate(t.endTime);
@@ -176,6 +170,13 @@ app.pages.form = {
   handleClickTable: function(click) {
     if(click.target.tagName != 'TD') {
       return;
+    }
+    if(click.target.parentNode.firstChild == click.target) { // first child? then its quantity
+      // handle quantity changes
+      const indexOfItemId = 2;
+      let cells = click.target.parentNode.getElementsByTagName('td');
+      let itemId = cells[indexOfItemId].textContent;
+      app.modal.handleQuantityChange(itemId);
     }
     if(click.target.classList.contains('itemnotes')) {
       let input = document.createElement('input');

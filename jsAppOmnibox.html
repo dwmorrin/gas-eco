@@ -55,12 +55,9 @@ app.omnibox = {
     }
   },
   /** @todo */
-  handleNewCodabar: function(value) {
+  handleNewCodabar: function(codabar /* string */) {
     // use modal
-    app.omnibox.element.classList.add('error');
-    // @todo: let some logic release the error class, not a timeout
-    window.setTimeout(() => app.omnibox.element.classList.remove('error'), 2000);
-    app.modal.handleError(new Error(app.strings.omniboxIdScanError));
+    app.modal.getNewCodabar(codabar);
   },
   /** @param {Student} input */
   handleStudent: function(student) {
@@ -72,10 +69,17 @@ app.omnibox = {
         value: student.name
       } 
     };
-
+    
+    //debugger;
+    
     if(!studentOnForm) {
       if(!student.signatureOnFile) {
-        app.modal.getSignature(student);
+        //app.modal.getSignature(student);
+        app.modal.signatureWait();
+        app.run.doPost({ post: 'startSignature', netid: student.netId});
+        app.cache.signatureTimeoutId = window.setTimeout(
+          () => app.run.doPost({ post: 'signatureTimeout' }),
+          (10 * 60 * 1000) /* 10 minutes */);
         return;
       }
       student.checkIn = utility.date.getFormattedDate(new Date());
@@ -94,7 +98,12 @@ app.omnibox = {
           }
         } else {
           if(!student.signatureOnFile) {
-            app.modal.getSignature(student);
+            //app.modal.getSignature(student);
+            app.modal.signatureWait();
+            app.run.doPost({ post: 'startSignature', netid: student.netId});
+            app.cache.signatureTimeoutId = window.setTimeout(
+              () => app.run.doPost({ post: 'signatureTimeout' }),
+              (10 * 60 * 1000) /* 10 minutes */);
             return;
           } else {
             studentOnForm.checkIn = utility.date.getFormattedDate(new Date());
@@ -120,7 +129,7 @@ app.omnibox = {
     app.pages.form.handleChange(change);
   },
   parse: function() {
-    let codabar = /^[a-d][0-9]*[a-d]$/, // regex to capture (a123...789b) pattern
+    let codabar = /^[a-d][0-9]{5,}[a-d]$/, // regex to capture (a123...789b) pattern
         parsed,
         value = app.omnibox.element.value;
 
@@ -151,7 +160,7 @@ app.omnibox = {
       if(parsed) {
         app.omnibox.handleStudent(parsed);
         // MANUAL ENTRY ALERT!
-        app.modal.handleError(new Error(value + app.strings.omniboxManualEntry));
+        app.modal.handleInfo(new Error(value + app.strings.omniboxManualEntry));
         app.pages.form.handleChange({ target: { name: 'manual', value: value }});
       }
     }
@@ -164,7 +173,7 @@ app.omnibox = {
         value = value.replace(dashzero, '-'); // strip leading zeroes
         parsed = app.cache.items.find(item => item.id.toLowerCase().replace(dashzero, '-') == value);
         // MANUAL ENTRY ALERT!
-        app.modal.handleError(new Error(value + app.strings.omniboxManualEntry));
+        app.modal.handleInfo(new Error(value + app.strings.omniboxManualEntry));
         app.pages.form.handleChange({ target: { name: 'manual', value: value }});
       } else if(barcoderegex.test(value)) { // assume it's a barcode
         parsed = app.cache.items.find(item => item.barcode.toLowerCase() == value);

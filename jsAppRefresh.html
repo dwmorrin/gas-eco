@@ -16,6 +16,11 @@ app.refresh = function(response) {
       app.cache.archive = JSON.parse(response.formList);
       app.pages.archive.query();
       break;
+    case 'codabar':
+      app.cache.students = JSON.parse(response.students);
+      app.modal.hide();
+      app.omnibox.parse();
+      break;
     case 'updateForm':
       app.changes.saved = true;
       app.pages.form.elements.undoButton.setAttribute('disabled', true);
@@ -30,11 +35,16 @@ app.refresh = function(response) {
       app.cache.students = JSON.parse(response.students);
       app.omnibox.parse();
       break;
-    case 'students':
+    case 'startSignature':
+      app.modal.signatureReady();
+      break;
+    case 'students': // doCommand 'signatureRecheck' refreshes here
+      app.cache.students = JSON.parse(response.students);
       if(response.unlock) {
         app.elements.newFormButton.removeAttribute('disabled');
+      } else {
+        app.omnibox.parse();
       }
-      app.cache.students = JSON.parse(response.students);
       break;
     case 'user':
       app.elements.usernameDisplay.textContent = response.user;

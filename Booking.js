@@ -46,7 +46,7 @@ function Booking_(id) {
     return this;
   };
   
-  // Note: setId not allowed, use new Booking_(id) as setId
+  /** Note: setId not allowed, use new Booking_(id) as setId */
   
   /** @param {string} - formatted date */
   this.setEndTime = function(endTime) {

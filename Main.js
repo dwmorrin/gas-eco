@@ -87,6 +87,10 @@ function doGet(request) {
 function doPost(request) {
   var response = {};
   switch(request.post) {
+    case 'codabar':
+      postCodabar_(request.netId, request.codabar);
+      response.students = getAllStudents_();
+      break;
     case 'demo':
       resetDEMO_();
       request.post = 'openForms';
@@ -95,6 +99,12 @@ function doPost(request) {
     case 'signature':
       postSignature_(request);
       response.students = getAllStudents_();
+      break;
+    case 'signatureTimeout':
+      clearSignatureValidationGAS_();
+      break;
+    case 'startSignature':
+      startSignature_(request.netid);
       break;
     case 'updateForm':
       var form = readForm_(request.form);
@@ -181,8 +191,10 @@ function handleUnload_() {
     case 'demo':
       // Reset demo
       resetDEMO_();
-      return;
+      // fallthrough
     case 'GAS':
+      // clear signature validation
+      clearSignatureValidationGAS_();
       return;
     case 'SQL':
       return;
@@ -289,6 +301,10 @@ function isValidForm_(form) {
     }
   }
   return form;
+}
+
+function postCodabar_(netId, codabar) {
+  writeCodabarGAS_(netId, codabar);
 }
 
 /** @see doPost */

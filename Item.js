@@ -1,23 +1,49 @@
 function Item_(id) {
-  this.barcode;         // string
-  this.id = id;         // string or undefined
-  this.checkedOut;      // boolean
-  this.checkIn = null;  // string formatted date
-  this.checkOut = null; // string formatted date
-  this.description;     // string, let implementation handle merging make, model, etc into this
-  this.quantity = 1;    // 1 if there is an id, else integer
+  this.barcode;          // string
+  this.id = id;          // string or undefined
+  this.checkedOut;       // boolean
+  this.checkIn = null;   // string formatted date
+  this.checkOut = null;  // string formatted date
+  this.description;      // string, let implementation handle merging make, model, etc into this
+  this.quantity = 1;     // 1 if there is an id, else integer
+
+  if (/NS$/.test(this.id)) { // NS means Not Serialized 
+    this.serialized = false
+  } else {
+    this.serialized = true
+  }
   
   this.getId = function() { return this.id; };
   this.getQuantity = function() { return this.quantity; };
   this.getDescription = function() { return this.description; };
   this.isCheckedOut = function() { return this.checkedOut; };
   
+  this.incrementQuantity = function() {
+    if (this.serialized) {
+      // cannot change quantity
+      throw new Error(this.id + " is serialized and cannot have quantity changed, increment method called");
+    } else {
+      this.quantity++;
+      return this;
+    }
+  }
+  this.decrementQuantity = function () {
+    if (this.serialized) {
+      // cannot change quantity
+      throw new Error(this.id + " is serialized and cannot have quantity changed, decrement method called");
+    } else if (this.quantity == 1) {
+      throw new Error(this.id + " cannot have quantity less than 1, decrement method called");
+    } else {
+      this.quantity--;
+      return this;
+    }
+  }
   this.setQuantity = function(integer) {
-    if(this.id) {
+    if (this.serialized) {
       // cannot have quantity > 1 if item Id exists, silent fail
       return this;
     } else {
-      if(integer != Math.floor(integer) || integer != Math.abs(integer)) { // not a good input
+      if (integer != Math.floor(integer) || integer != Math.abs(integer)) { // not a good input
         throw new Error('item.setQuantity requires positive integer values only, recieved ' + integer);
       }
       this.quantity = integer;

@@ -172,6 +172,13 @@ app.pages.archive = {
           return false;
         }
       }
+
+      // filter by global notes
+      if(inputs.notes.checked) {
+        if(form.notes.length == 0) {
+          return false;
+        }
+      }
       
       // filter by late students
       if(inputs.late.checked) {

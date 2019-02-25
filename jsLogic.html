@@ -38,6 +38,35 @@ function isCheckOutStudentOk(student) {
 }
 
 /** @return {bool} */
+function isFormOkToPost() {
+    let elements = app.pages.form.elements;
+    if (elements.locationSelect.value == 'none') {
+        return false;
+    }
+    if (elements.form.startTime.value == elements.form.endTime.value) {
+        return false;
+    }
+    if (elements.form.endDate.classList.contains('error')) {
+        return false;
+    }
+    if (elements.form.startDate.classList.contains('error')) {
+        return false;
+    }
+    let students = JSON.parse(app.pages.form.elements.form.students.value),
+        items = JSON.parse(app.pages.form.elements.form.items.value);
+    let someStudentsAreActive = students.some(s => (s.checkIn && !s.checkOut));
+    let someItemsAreOut = items.some(i => (i.checkOut && !i.checkIn));
+    if(someItemsAreOut && !someStudentsAreActive) {
+      return false;
+    }
+    // finally, is anybody on the form??
+    if (students.length == 0) {
+      return false;
+    }
+    return true;
+}
+
+/** @return {bool} */
 function isFormReadyToClose() {
   let students = JSON.parse(app.pages.form.elements.form.students.value);
   // Need at least 1 check-in, and everyone checked-in must be checked-out

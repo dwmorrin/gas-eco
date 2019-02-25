@@ -18,15 +18,17 @@ var app = {
   withErrorHandler: null,                        // defined in jsInit, main server error handler
 };
 
+/** app state */
 app.cache = {
-  archive:          [],
-  archiveFiltered:  [],
-  currentFormstack: "",
-  currentIndex:      0,
-  items:            [],
-  openForms:        [],
-  savedForm:        {},
-  students:         [],
+  archive:             [],
+  archiveFiltered:     [],
+  currentFormstack:    "",
+  currentIndex:         0,
+  items:               [],
+  openForms:           [],
+  savedForm:           {},
+  signatureTimeoutId: NaN,
+  students:            [],
 };
 
 app.pages = {      // must have refreshId property and setInterval method
@@ -63,9 +65,9 @@ app.strings = {
     '" width="16" height="16">',
   locations: new Set(['Studio 505', 'Studio 510', 'Studio 21 North', 'Edit Suite 1 508', 'Edit Suite 2 509',
                       'Lab 502', 'Lobby/Hallway']),
-  parserError: 'not found.  Try item IDs like `NEU-1`, or exact names like `Alex Bean`',
-  omniboxIdScanError: 'NYU ID scan detected, but not found in the student database.  You will be able to add this ID info to the database at this point in the real version.',
+  parserError: 'not found.  You can type in item IDs like "NEU-1", or names like "John Smith".',
   omniboxManualEntry: /* value + */ ' appears to be a manual entry.  This will be recorded.',
+  signatureAppUrl: 'https://script.google.com/macros/s/AKfycbzoGVb3LFX-Sfxy3_EyMtRYv1TPylDitmuUc-3F7g9mppa_ihEc/exec',
   studentCheckOutError: 'Cannot check out student.  If this is the last student, all gear must be returned.  Otherwise try updating the form.',
   updateEnabledHint: 'your changes are not saved yet',
   updateDisabledHint: 'please enter start time, end time, location, and at least one student',

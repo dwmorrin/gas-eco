@@ -22,6 +22,7 @@ function displayForm(form, archived) {
         let notes = form[key];
         if(notes.length == 0) {
           app.pages.form.elements.form.notes.value = JSON.stringify([]);
+          app.pages.form.elements.noteSection.classList.add('hidden');
         } else {
           for(let note of notes) {
             try {                    // Unintuitive use of try/catch: read carefully:
@@ -276,9 +277,9 @@ function makeOpenFormTableRows(form) {
     (form.bookedStudents || form.students.map(student => student.name).join(', '))
   );
   let type = 'inactive', // assume inactive
-      endTime = utility.date.parseFormattedDate(form.endTime),
+      endTime = utility.date.parseFormattedDate(form.endTime).getTime(),
+      fifteenMinutes = (15 * 60 * 1000), // milliseconds
       now = Date.now();
-  
   row.setAttribute('data-id', form.id);
   // determine if active, ending soon, or late (green, yellow, red)
   if(form.students.some(student => student.checkIn)) {
@@ -287,8 +288,7 @@ function makeOpenFormTableRows(form) {
   if(type == 'active' && now > endTime) {
     type = 'late';
   }
-  endTime.setMinutes(-15);
-  if(type == 'active' && now > endTime) {
+  if(type == 'active' && now > (endTime - fifteenMinutes)) {
     type = 'endingSoon';
   }
   row.classList.add(type);

@@ -55,6 +55,7 @@ var index = {
   students: {
     SHEET_ID   : '126XmGFPuNPJpJPF7aKNFSeaOAgvFNerMYdnFg2F7YAA',
     SHEET_NAME : 'Students',
+    SIGNATURE  : 'Validation',
     ID         : 0,
     NAME       : 1,
     NETID      : 2,
@@ -301,6 +302,17 @@ function makeStudentFromDataGAS_(studentData) {
 
 /********** WRITERS ************/
 
+function writeCodabarGAS_(netId, codabar) {
+  var sheet = SpreadsheetApp.openById(index.students.SHEET_ID).getSheetByName(index.students.SHEET_NAME);
+  var data = sheet.getDataRange().getValues();
+  var i = data.findRowContaining(netId, index.students.NETID, true);
+  if(!i) {
+    throw 'Could not match ' + netId;
+  } else {
+    sheet.getRange(i + 1, index.students.ID + 1).setValue(codabar);
+  }
+}
+
 function writeFormToSheetGAS_(form, closeAndArchive) {
   var ss = SpreadsheetApp.openById(index.forms.SHEET_ID);
   var formSheet = ss.getSheetByName(index.forms.SHEET_NAME);
@@ -371,4 +383,14 @@ function writeSignatureToSheetGAS_(request) {
   } else {
     sheet.getRange(i + 1, index.students.SIGNATURE + 1).setValue(request.dataURL);
   }
+}
+
+function startSignature_(netid) {
+  var sheet = SpreadsheetApp.openById(index.students.SHEET_ID).getSheetByName('Validation');
+  sheet.getRange('A1').setValue(netid);
+}
+
+function clearSignatureValidationGAS_() {
+  var sheet = SpreadsheetApp.openById(index.students.SHEET_ID).getSheetByName('Validation');
+  sheet.getRange('A1').clear();
 }
