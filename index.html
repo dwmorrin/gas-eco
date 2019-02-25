@@ -1,13 +1,15 @@
 <!DOCTYPE html>
+<html>
 <head>
     <base target="_top">
     <?!= include_('cssStyle'); ?>
 </head>
 
+<body>
 <header>
   <h1>Equipment Check-Out</h1>
   <span class="usernameContainer">signed in as 
-  <span class="usernameDisplay"></span></span>
+  <span class="usernameDisplay"><!-- populated by js --></span></span>
 </header>
 
 <nav>
@@ -55,3 +57,5 @@
 
 <!-- run commands -->
 <?!= include_('jsInit'); ?>
+</body>
+</html>
