@@ -43,7 +43,7 @@ function doGet(request) {
   var response = {},
       webpage;
   if(!request.get) {
-    webpage = HtmlService.createTemplateFromFile('index').evaluate();  
+    webpage = HtmlService.createTemplateFromFile('html/index').evaluate();  
     webpage.setTitle('Equipment Check-Out');
     if(runWith == 'demo') {
       resetDEMO_();
