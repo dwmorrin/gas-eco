@@ -2,7 +2,7 @@
 <html>
 <head>
     <base target="_top">
-    <?!= include_('cssStyle'); ?>
+    <?!= include_('css/Style'); ?>
 </head>
 
 <body>
@@ -23,13 +23,13 @@
 </nav>
 
 <!-- page sections (only one can be visible at a time) -->
-<?!= include_('pageOpenForms'); ?>
-<?!= include_('pageForm'); ?>
-<?!= include_('pageArchive'); ?>
+<?!= include_('html/OpenForms'); ?>
+<?!= include_('html/Form'); ?>
+<?!= include_('html/Archive'); ?>
 
 <!-- page fragments (can be visible at any time)-->
 <div class="spinner hidden"></div>
-<?!= include_('pageModal'); ?>
+<?!= include_('html/Modal'); ?>
 
 <!-- javascript -->
 
@@ -37,25 +37,25 @@
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@2.3.2/dist/signature_pad.min.js"></script>
 
 <!-- function definitions -->
-<?!= include_('jsLogic'); ?>
-<?!= include_('jsUtility'); ?>
-<?!= include_('jsDisplay'); ?>
+<?!= include_('js/Logic'); ?>
+<?!= include_('js/Utility'); ?>
+<?!= include_('js/Display'); ?>
 
 <!-- app object containing global variables -->
-<?!= include_('jsApp'); ?>
-<?!= include_('jsAppChanges'); ?>
-<?!= include_('jsAppDoCommand'); ?>
-<?!= include_('jsAppElements'); ?>
-<?!= include_('jsAppHandlers'); ?>
-<?!= include_('jsAppModal'); ?>
-<?!= include_('jsAppOmnibox'); ?>
-<?!= include_('jsAppPagesArchive'); ?>
-<?!= include_('jsAppPagesForm'); ?>
-<?!= include_('jsAppPagesOpenForms'); ?>
-<?!= include_('jsAppRefresh'); ?>
-<?!= include_('jsAppSpinner'); ?>
+<?!= include_('js/app/main'); ?>
+<?!= include_('js/app/Changes'); ?>
+<?!= include_('js/app/DoCommand'); ?>
+<?!= include_('js/app/Elements'); ?>
+<?!= include_('js/app/Handlers'); ?>
+<?!= include_('js/app/Modal'); ?>
+<?!= include_('js/app/Omnibox'); ?>
+<?!= include_('js/app/pages/Archive'); ?>
+<?!= include_('js/app/pages/Form'); ?>
+<?!= include_('js/app/pages/OpenForms'); ?>
+<?!= include_('js/app/Refresh'); ?>
+<?!= include_('js/app/Spinner'); ?>
 
 <!-- run commands -->
-<?!= include_('jsInit'); ?>
+<?!= include_('js/Init'); ?>
 </body>
 </html>
