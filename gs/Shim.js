@@ -1,28 +1,26 @@
 /**
  * Utility for searching double arrays
- * param {integer} column - optional column to search by
+ * param {integer} column - optional column to search by, otherwise search all
  * param {bool} findIndex - if true then returns index of row only
  */
 Array.prototype.findRowContaining = function(value, column, findIndex) {
-  if(column) {
-    for(var i = 0, l1 = this.length; i < l1; i++) {
-      if(this[i][column] == value) {
-        if(findIndex) {
+  if (column) {
+    for (var i = 0, l1 = this.length; i < l1; i++) {
+      if (this[i][column] == value) {
+        if (findIndex) {
           return i;
-        } else {
-          return this[i];
         }
+        return this[i];
       }
     }
   } else {
-    for(var i = 0, l1 = this.length; i < l1; i++) {
-      for(var j = 0, l2 = this[i].length; j < l2; j++) {
-        if(this[i][j] == value) {
-          if(findIndex) {
+    for (var i = 0, l1 = this.length; i < l1; i++) {
+      for (var j = 0, l2 = this[i].length; j < l2; j++) {
+        if (this[i][j] == value) {
+          if (findIndex) {
             return i;
-          } else {
-            return this[i];
           }
+          return this[i];
         }
       }
     }

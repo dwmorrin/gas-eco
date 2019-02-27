@@ -1,5 +1,5 @@
 function Booking_(id) {
-  if(!id) {
+  if (!id) {
     throw 'Booking ID cannot be generated';
   }
   this.id = id;
@@ -18,7 +18,7 @@ function Booking_(id) {
   // Appropriate for object because we have to follow RMSS for getting bookings
   // This would be updated if the bookings stop coming from RMSS/MySQL
   this.nullStringHandler = function(input) {
-    if(input === 'NULL') {
+    if (input === 'NULL') {
       return null;
     } else {
       return input;

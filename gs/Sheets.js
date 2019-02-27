@@ -73,10 +73,10 @@ function checkItemsGAS_(form) {
   var sheet = SpreadsheetApp.openById(index.items.SHEET_ID).getSheetByName(index.items.SHEET_NAME);
   var data = sheet.getDataRange().getValues();
   form.items.forEach(function checkItems(item) {
-    if(!item.checkIn && item.checkOut && !item.checkedOut) { // requesting checkout
-      for(var i = 0, l = data.length; i < l; i++) {
-        if(data[i][index.items.ID] != item.id) continue;
-        if(!data[i][index.items.CHECKED_OUT]) {
+    if (!item.checkIn && item.checkOut && !item.checkedOut) { // requesting checkout
+      for (var i = 0, l = data.length; i < l; i++) {
+        if (data[i][index.items.ID] != item.id) continue;
+        if (!data[i][index.items.CHECKED_OUT]) {
           sheet.getRange(i + 1, index.items.CHECKED_OUT + 1).setValue(true);
           item.checkedOut = true;
           return;
@@ -84,10 +84,10 @@ function checkItemsGAS_(form) {
           throw item.description + item.id + ' is already checked out';
         }
       }
-    } else if(item.checkIn && item.checkedOut) { // requesting check-in
-      for(var i = 0, l = data.length; i < l; i++) {
-        if(data[i][index.items.ID] != item.id) continue;
-        if(data[i][index.items.CHECKED_OUT]) {
+    } else if (item.checkIn && item.checkedOut) { // requesting check-in
+      for (var i = 0, l = data.length; i < l; i++) {
+        if (data[i][index.items.ID] != item.id) continue;
+        if (data[i][index.items.CHECKED_OUT]) {
           sheet.getRange(i + 1, index.items.CHECKED_OUT + 1).clear();
           item.checkedOut = false;
           return;
@@ -134,7 +134,7 @@ function createBookingFormGAS_(booking) {
   });
   
   // handle booking items -> form items
-  if(itemStringArray) {
+  if (itemStringArray) {
     itemStringArray = itemStringArray.split(',');
     itemStringArray.forEach(function getArrayOfItemsById(stringData) {
       var bookingData = stringData.split(';'); // [desc, id, qty]
@@ -176,7 +176,7 @@ function getAllItemsGAS_() {
   var itemIdregex = /[A-Za-z]+-[A-Za-z0-9]+/; // one or more letters, hyphen, one or more digits/letters
   data.forEach(function getArrayOfItemsByData(itemData) {
     // @todo just stuff with an item ID to start - reevaluate later
-    if(itemIdregex.test(itemData[index.items.ID])) {
+    if (itemIdregex.test(itemData[index.items.ID])) {
       items.push(makeItemFromDataGAS_(itemData));
     }
   });
@@ -272,7 +272,7 @@ function makeItemFromDataGAS_(itemData) {
   
   // Item has only a simple 'description' field
   // Sheet implementation (this) must distill available fields into description
-  if(itemData[index.items.MAKE] && itemData[index.items.MODEL]) {
+  if (itemData[index.items.MAKE] && itemData[index.items.MODEL]) {
     description = itemData[index.items.MAKE] + ' ' + itemData[index.items.MODEL];
   } else {
     description = itemData[index.items.DESCRIPTION];
@@ -289,7 +289,7 @@ function makeStudentFromDataGAS_(studentData) {
   var student = new Student_(studentData[index.students.ID]),
       signature = false;
   
-  if(studentData[index.students.SIGNATURE]) {
+  if (studentData[index.students.SIGNATURE]) {
     signature = true;
   }
   
@@ -306,7 +306,7 @@ function writeCodabarGAS_(netId, codabar) {
   var sheet = SpreadsheetApp.openById(index.students.SHEET_ID).getSheetByName(index.students.SHEET_NAME);
   var data = sheet.getDataRange().getValues();
   var i = data.findRowContaining(netId, index.students.NETID, true);
-  if(!i) {
+  if (!i) {
     throw 'Could not match ' + netId;
   } else {
     sheet.getRange(i + 1, index.students.ID + 1).setValue(codabar);
@@ -334,13 +334,13 @@ function writeFormToSheetGAS_(form, closeAndArchive) {
       ];
   var row;
   
-  if(closeAndArchive) {
+  if (closeAndArchive) {
     var archive = ss.getSheetByName('Archive');
     archive.appendRow(values);
     
     // Note: do not shift data
     row = data.findRowContaining(form.id, 0, true);
-    if(!row) {
+    if (!row) {
       throw 'could not delete form ' + form;
     } else {
       row++;
@@ -350,7 +350,7 @@ function writeFormToSheetGAS_(form, closeAndArchive) {
     return;
   }
   
-  if(!form.id) { // create
+  if (!form.id) { // create
     form.createId();
     formSheet.appendRow(values);
   } else { // update
@@ -362,7 +362,7 @@ function writeFormToSheetGAS_(form, closeAndArchive) {
     // Note: do not shift data
     row = data.findRowContaining(form.id, 0, true);
     
-    if(!row) {
+    if (!row) {
       throw 'could not find form ' + form;
     } else {
       row++;
@@ -378,7 +378,7 @@ function writeSignatureToSheetGAS_(request) {
   var sheet = SpreadsheetApp.openById(index.students.SHEET_ID).getSheetByName(index.students.SHEET_NAME);
   var data = sheet.getDataRange().getValues();
   var i = data.findRowContaining(request.id, index.students.NETID, true);
-  if(!i) {
+  if (!i) {
     throw 'Could not match ' + request.id;
   } else {
     sheet.getRange(i + 1, index.students.SIGNATURE + 1).setValue(request.dataURL);
