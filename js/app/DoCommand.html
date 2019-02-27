@@ -4,15 +4,15 @@
  * most of these are primarily driven by mouse clicks, usually on button elements
  */
 app.doCommand = function(command,...options) {
-  switch(command) {
+  switch (command) {
     case 'archivedForms':
-      if(!app.changes.saved) {
+      if (!app.changes.saved) {
         app.modal.handleUnsavedForm(command);
         return;
       }
       let today = new Date();
       today.setHours(0); today.setMinutes(0); today.setSeconds(0); today.setMilliseconds(0);
-      if(new Date(app.pages.archive.range.end + 'T00:00:00').getTime() >= today.getTime()) {
+      if (new Date(app.pages.archive.range.end + 'T00:00:00').getTime() >= today.getTime()) {
         app.pages.archive.update();
       } else {
         app.pages.archive.query();
@@ -38,7 +38,7 @@ app.doCommand = function(command,...options) {
       displayForm(form, isArchive);
       break;
     case 'displayNewForm':
-      if(!app.changes.saved) {
+      if (!app.changes.saved) {
         app.modal.handleUnsavedForm(command);
         return;
       }
@@ -80,7 +80,7 @@ app.doCommand = function(command,...options) {
       app.pages.form.getNext(); 
       break;
     case 'openForms':
-      if(!app.changes.saved) {
+      if (!app.changes.saved) {
         app.modal.handleUnsavedForm(command);
         return;
       }
@@ -126,7 +126,7 @@ app.doCommand = function(command,...options) {
 
         app.pages.form.elements.noteSection.appendChild(p);
       }
-      if(app.pages.form.elements.noteSection.classList.contains('hidden')) {
+      if (app.pages.form.elements.noteSection.classList.contains('hidden')) {
         app.pages.form.elements.noteSection.classList.remove('hidden');
       }
       break;
@@ -160,9 +160,9 @@ app.doCommand = function(command,...options) {
     case 'studentNote':
       let radio = app.modal.table.querySelectorAll('input[type="radio"]'),
           value;
-      for(let i = 0; i < radio.length; i++) {
-        if(radio[i].checked) {
-          if(radio[i].value == 'other') {
+      for (let i = 0; i < radio.length; i++) {
+        if (radio[i].checked) {
+          if (radio[i].value == 'other') {
             value = app.modal.getText();
             break;
           } else {
@@ -171,7 +171,7 @@ app.doCommand = function(command,...options) {
           }
         }
       }
-      if(!value) {
+      if (!value) {
         app.modal.handleError(new Error('an error has occured while getting student note'));
       }
       // @todo this is just a cut and paste and modified version of 'saveNote' - refactor
@@ -196,7 +196,7 @@ app.doCommand = function(command,...options) {
       app.pages.form.handleChange(changeNote);
 
       app.pages.form.elements.noteSection.appendChild(para);
-      if(app.pages.form.elements.noteSection.classList.contains('hidden')) {
+      if (app.pages.form.elements.noteSection.classList.contains('hidden')) {
         app.pages.form.elements.noteSection.classList.remove('hidden');
       }
       break;

@@ -7,7 +7,7 @@ var runWith = 'demo';
  * @todo setup daily trigger
  */
 function createDailyForms_() {
-  switch(runWith) {
+  switch (runWith) {
     case 'demo':
       break;
     case 'GAS':
@@ -22,7 +22,7 @@ function createDailyForms_() {
  */
 function closeForm_(form) {
   form = isValidForm_(form);
-  switch(runWith) {
+  switch (runWith) {
     case 'demo':
       return writeFormToSheetDEMO_(form, true);
     case 'GAS':
@@ -51,7 +51,7 @@ function doGet(request) {
     return webpage;
   }
   
-  switch(request.get) {
+  switch (request.get) {
     case 'archive':
       response.formList = getArchive_(request.dateRangeJSON);
       break;
@@ -86,7 +86,7 @@ function doGet(request) {
  */
 function doPost(request) {
   var response = {};
-  switch(request.post) {
+  switch (request.post) {
     case 'codabar':
       postCodabar_(request.netId, request.codabar);
       response.students = getAllStudents_();
@@ -133,7 +133,7 @@ function deleteForm_() {
 
 /** @see doGet */
 function getAllItems_() {
-  switch(runWith) {
+  switch (runWith) {
     case 'demo':
       return JSON.stringify(getAllItemsDemo_());
     case 'GAS':
@@ -145,7 +145,7 @@ function getAllItems_() {
 
 /** @see doGet */
 function getAllStudents_() {
-  switch(runWith) {
+  switch (runWith) {
     case 'demo':
       // fallthrough
     case 'GAS':
@@ -156,7 +156,7 @@ function getAllStudents_() {
 }
 
 function getArchive_(dateRangeJSON) {
-  switch(runWith) {
+  switch (runWith) {
     case 'demo':
       return JSON.stringify(getArchivedFormsDEMO_(dateRangeJSON));
     case 'GAS':
@@ -166,7 +166,7 @@ function getArchive_(dateRangeJSON) {
 
 /** @see doGet */
 function getOpenForms_() {
-  switch(runWith) {
+  switch (runWith) {
     case 'demo':
       return JSON.stringify(getOpenFormsDEMO_());
     case 'GAS':
@@ -187,7 +187,7 @@ function getUser_() {
  * @see doPost
  */
 function handleUnload_() {
-  switch(runWith) {
+  switch (runWith) {
     case 'demo':
       // Reset demo
       resetDEMO_();
@@ -291,7 +291,7 @@ function isThereAnActiveStudent_(form) {
  */
 function isValidForm_(form) {
   if (form.items) {
-    switch(runWith) {
+    switch (runWith) {
       case 'demo':
         form = checkItemsDemo_(form);
         break;
@@ -310,7 +310,7 @@ function postCodabar_(netId, codabar) {
 /** @see doPost */
 function postForm_(form) {
   form = isValidForm_(form);
-  switch(runWith) {
+  switch (runWith) {
     case 'demo':
       return writeFormToSheetDEMO_(form);
     case 'GAS':
@@ -322,7 +322,7 @@ function postForm_(form) {
 
 // //run.doPost({ post: 'signature', dataURL: dataURL, id: studentId }); 
 function postSignature_(request) {
-  switch(runWith) {
+  switch (runWith) {
     case 'demo': // fallthrough
     case 'GAS':
       return writeSignatureToSheetGAS_(request);

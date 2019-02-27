@@ -6,9 +6,9 @@
  */
 app.refresh = function(response) {
   console.log('REFRESH:', response);
-  switch(response.target) {
+  switch (response.target) {
     case 'archive':
-      if(response.unlock) {
+      if (response.unlock) {
         app.elements.archiveButton.removeAttribute('disabled');
       } else { // remove spinner from query button
         app.pages.archive.elements.queryButton.innerHTML = 'Update View';
@@ -40,7 +40,7 @@ app.refresh = function(response) {
       break;
     case 'students': // doCommand 'signatureRecheck' refreshes here
       app.cache.students = JSON.parse(response.students);
-      if(response.unlock) {
+      if (response.unlock) {
         app.elements.newFormButton.removeAttribute('disabled');
       } else {
         app.omnibox.parse();
@@ -50,7 +50,7 @@ app.refresh = function(response) {
       app.elements.usernameDisplay.textContent = response.user;
       break;
     case 'openForms':
-      if(response.unlock) {
+      if (response.unlock) {
         app.elements.openFormsButton.removeAttribute('disabled');
       }
       app.changes.saved = true;
