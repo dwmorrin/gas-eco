@@ -33,7 +33,7 @@ app.pages.form = {
     let stack = app.cache[app.cache.currentFormstack];
     let isArchive = (app.cache.currentFormstack == 'archive') ? true : false;
 
-    if(app.cache.currentIndex == 0) { // we're already at the beginning
+    if (app.cache.currentIndex == 0) { // we're already at the beginning
       return;
     } else {
       let previousForm = stack[--app.cache.currentIndex];
@@ -44,14 +44,14 @@ app.pages.form = {
   handleChange: function(change) {
     app.changes.saved = false;
     app.pages.form.elements.undoButton.removeAttribute('disabled');
-    if(!app.pages.form.elements.form.id) {
+    if (!app.pages.form.elements.form.id) {
       app.pages.form.elements.updateFormButton.textContent = "Submit";
     } else {
       app.pages.form.elements.updateFormButton.textContent = "Update";
     }
     app.pages.form.elements.updateFormButton.classList.add('create');
 
-    switch(change.target.name) {
+    switch (change.target.name) {
       case 'location':
         app.pages.form.handleChangeLocation(change);
         break;
@@ -74,9 +74,9 @@ app.pages.form = {
     }
 
     let okToPost = isFormOkToPost();
-    if(okToPost) {
+    if (okToPost) {
       // are we ready to close?
-      if(isFormReadyToClose()) {
+      if (isFormReadyToClose()) {
         app.pages.form.elements.updateFormButton.textContent = 'Update and Close';
       } // Enable update button
       app.pages.form.elements.updateFormButton.removeAttribute('disabled');
@@ -87,7 +87,7 @@ app.pages.form = {
     }
   },
   handleChangeLocation: function(change) {
-    if(change.target.value == 'Other') {
+    if (change.target.value == 'Other') {
       change.target.value = 'none'; // in case the modal is cancelled
       app.modal.getLocation();
     } else { // it's not other, make sure 'Other' label is reset, log the change
@@ -117,15 +117,15 @@ app.pages.form = {
     }
 
     // CHECK #1: If start is after end, try flipping end AM -> PM first
-    if(t.endTime.getTime() <= t.startTime.getTime()) {
-      if(app.pages.form.elements.form.endAMPM.value == 'AM') {
+    if (t.endTime.getTime() <= t.startTime.getTime()) {
+      if (app.pages.form.elements.form.endAMPM.value == 'AM') {
         app.pages.form.elements.form.endAMPM.value = 'PM';
         t = utility.date.parseDateAndTimeInputs();
       }
     }
     
     // CHECK #2: If start is still after end, display error to user
-    if(t.endTime.getTime() <= t.startTime.getTime()) {
+    if (t.endTime.getTime() <= t.startTime.getTime()) {
       app.pages.form.elements.form.endDate.classList.add('error');
       app.pages.form.elements.form.endHour.classList.add('error');
       app.pages.form.elements.form.endMinute.classList.add('error');
@@ -144,7 +144,7 @@ app.pages.form = {
     }
     app.pages.form.elements.form.startTime.value = utility.date.getFormattedDate(t.startTime);
     app.pages.form.elements.form.endTime.value = utility.date.getFormattedDate(t.endTime);
-    if(type == 's') {
+    if (type == 's') {
       newChange.target.name = 'startTime';
       newChange.target.value = app.pages.form.elements.form.startTime.value;
     } else if (type == 'e') {
@@ -154,31 +154,31 @@ app.pages.form = {
     app.changes.add(newChange);
   },
   handleClickItem: function(click) {
-    if(click.target.parentNode.classList.contains('itemnotes')) return;
-    if(click.metaKey) return;
+    if (click.target.parentNode.classList.contains('itemnotes')) return;
+    if (click.metaKey) return;
     // find item barcode
     let id, item, node;
     node = utility.DOM.getFirstChild(click.target.parentNode);
     node = utility.DOM.getNextSibling(node); // description
     id = utility.DOM.getNextSibling(node).textContent; // id
     item = JSON.parse(app.pages.form.elements.form.notes.value).find(i => i.id == id);
-    if(!item) {
+    if (!item) {
       app.modal.handleError(new Error('cannot take note for ' + id));
     }
     app.modal.handleItemNote(item);
   },
   handleClickTable: function(click) {
-    if(click.target.tagName != 'TD') {
+    if (click.target.tagName != 'TD') {
       return;
     }
-    if(click.target.parentNode.firstChild == click.target) { // first child? then its quantity
+    if (click.target.parentNode.firstChild == click.target) { // first child? then its quantity
       // handle quantity changes
       const indexOfItemId = 2;
       let cells = click.target.parentNode.getElementsByTagName('td');
       let itemId = cells[indexOfItemId].textContent;
       app.modal.handleQuantityChange(itemId);
     }
-    if(click.target.classList.contains('itemnotes')) {
+    if (click.target.classList.contains('itemnotes')) {
       let input = document.createElement('input');
       input.setAttribute('type', 'text');
       input.setAttribute('value', click.target.textContent);
@@ -189,11 +189,11 @@ app.pages.form = {
       input.focus();
       input.selectionStart = input.selectionEnd = input.value.length;
     }
-    if(click.target.classList.contains('editable')) {
-      if(!app.omnibox.element.disabled) {
+    if (click.target.classList.contains('editable')) {
+      if (!app.omnibox.element.disabled) {
         let inputCell = utility.DOM.getNextSibling(click.target);
         let input = utility.DOM.getFirstChild(inputCell);
-        switch(input.name) {
+        switch (input.name) {
           case 'location':
             input.value = click.target.textContent;
             break;
@@ -216,13 +216,13 @@ app.pages.form = {
       }
     }
     // cmd clicks only from here on
-    if(!click.metaKey) {
+    if (!click.metaKey) {
       return;
     }
     let cells = click.target.parentNode.getElementsByTagName('td');
     let index = 1, // assumes id in the 2nd cell for 'studentList'
         id;
-    if(click.target.parentNode.parentNode.classList.contains('itemList')) {
+    if (click.target.parentNode.parentNode.classList.contains('itemList')) {
       index = 2; // assumes id in the 3rd cell
     }
     id = cells[index].textContent;
@@ -230,12 +230,12 @@ app.pages.form = {
     app.omnibox.parse();
   },
   handleClickStudent: function(click) {
-    if(click.metaKey) return;
+    if (click.metaKey) return;
     let netId = utility.DOM.getNextSibling(utility.DOM.getFirstChild(click.target.parentNode)).textContent,
         student,
         students = JSON.parse(app.pages.form.elements.form.students.value);
     student = students.find(s => s.netId == netId);
-    if(!student) {
+    if (!student) {
       app.modal.handleError(new Error('could not find student with NetID ' + netId));
       return;
     }

@@ -5,12 +5,12 @@
  * @return void
  */
 function displayForm(form, archived) {
-  for(let key in form) {
-    switch(key) {
+  for (let key in form) {
+    switch (key) {
       case 'items':
         let items = form[key];
         utility.DOM.empty(app.pages.form.elements.itemList);
-        if(items.length == 0) {
+        if (items.length == 0) {
           app.pages.form.elements.form.items.value = JSON.stringify([]);
         } else {
           app.pages.form.elements.form.items.value = JSON.stringify(items);
@@ -20,11 +20,11 @@ function displayForm(form, archived) {
       case 'notes':
         utility.DOM.empty(app.pages.form.elements.noteSection);
         let notes = form[key];
-        if(notes.length == 0) {
+        if (notes.length == 0) {
           app.pages.form.elements.form.notes.value = JSON.stringify([]);
           app.pages.form.elements.noteSection.classList.add('hidden');
         } else {
-          for(let note of notes) {
+          for (let note of notes) {
             try {                    // Unintuitive use of try/catch: read carefully:
               JSON.parse(note.body); // if successful, this is a change log, so we ignore it
             } catch(e) {             // on error, we have a global note to display
@@ -33,7 +33,7 @@ function displayForm(form, archived) {
               app.pages.form.elements.noteSection.appendChild(p);
             }
           }
-          if(app.pages.form.elements.noteSection.firstChild) { // if it's not empty
+          if (app.pages.form.elements.noteSection.firstChild) { // if it's not empty
             app.pages.form.elements.noteSection.classList.remove('hidden');
           } else {
             app.pages.form.elements.noteSection.classList.add('hidden');
@@ -44,7 +44,7 @@ function displayForm(form, archived) {
       case 'students':
         let students = form[key];
         utility.DOM.empty(app.pages.form.elements.studentList);
-        if(students.length == 0) {
+        if (students.length == 0) {
           app.pages.form.elements.form.students.value = JSON.stringify([]);
         } else {
           app.pages.form.elements.form.students.value = JSON.stringify(students);
@@ -60,16 +60,16 @@ function displayForm(form, archived) {
       case 'overnight':
       case 'location':
         let td = document.querySelector('#' + key + 'Display');
-        if(form[key]) { // There's data to display
+        if (form[key]) { // There's data to display
           td.textContent = form[key];
           td.classList.remove('hidden');
           td.parentNode.classList.remove('hidden');
-          if(td.nextElementSibling) {
+          if (td.nextElementSibling) {
             td.nextElementSibling.classList.add('hidden');
           }
           app.pages.form.elements.form[key].value = form[key];
         } else { // There's not data, so maybe show an input for the user, and clear old data
-          switch(key) {
+          switch (key) {
             case 'startTime':
             case 'endTime':
               td.textContent = '';
@@ -120,7 +120,7 @@ function displayForm(form, archived) {
   app.omnibox.clear();
   
   // init update button
-  if(!form.id) {
+  if (!form.id) {
     app.pages.form.elements.updateFormButton.textContent = app.strings.updateButton.enabled;
   } else {
     app.pages.form.elements.updateFormButton.textContent = app.strings.updateButton.disabled;
@@ -133,7 +133,7 @@ function displayForm(form, archived) {
   
   // this was added to handle displaying closed forms
   // @todo - should this be combined with the other update init section above?
-  if(archived) {
+  if (archived) {
     app.omnibox.element.setAttribute('disabled', true);
     app.pages.form.elements.newNoteButton.setAttribute('disabled', true);
     app.pages.form.elements.updateButtonHint.textContent = 'This is a closed form.  You cannot edit it.';
@@ -167,42 +167,42 @@ function displayNewForm() {
  */
 function displayOpenForms(forms, sortBy) {
   console.log('displayOpenForms');
-  if(!sortBy) {
+  if (!sortBy) {
     sortBy = app.pages.openForms.sortBy;
   } else {
     app.pages.openForms.sortBy = sortBy;
   }
   let compare;
-  switch(sortBy) {
+  switch (sortBy) {
     case 'startTime':
     case 'endTime':
       compare = function(a,b) {
         let dateA = utility.date.parseFormattedDate(a[sortBy]).getTime(),
             dateB = utility.date.parseFormattedDate(b[sortBy]).getTime();
-        if(dateA < dateB) return -1;
-        if(dateA > dateB) return 1;
-        if(dateA == dateB) return 0;
+        if (dateA < dateB) return -1;
+        if (dateA > dateB) return 1;
+        if (dateA == dateB) return 0;
       };
       break;
     case 'location':
       compare = function(a,b) {
-        if(a[sortBy] < b[sortBy]) return -1;
-        if(a[sortBy] > b[sortBy]) return 1;
-        if(a[sortBy] == b[sortBy]) return 0;
+        if (a[sortBy] < b[sortBy]) return -1;
+        if (a[sortBy] > b[sortBy]) return 1;
+        if (a[sortBy] == b[sortBy]) return 0;
       };
       break;
     case 'students':
       compare = function(a,b) {
         let nameSort = function(c,d) {
-          if(c.name < d.name) return -1;
-          if(c.name > d.name) return 1;
-          if(c.name == d.name) return 0;
+          if (c.name < d.name) return -1;
+          if (c.name > d.name) return 1;
+          if (c.name == d.name) return 0;
         };
         a.students.sort(nameSort);
         b.students.sort(nameSort);
-        if(a.students[0].name < b.students[0].name) return -1;
-        if(a.students[0].name > b.students[0].name) return 1;
-        if(a.students[0].name == b.students[0].name) return 0;
+        if (a.students[0].name < b.students[0].name) return -1;
+        if (a.students[0].name > b.students[0].name) return 1;
+        if (a.students[0].name == b.students[0].name) return 0;
       };
       break;
     case 'type':
@@ -212,9 +212,9 @@ function displayOpenForms(forms, sortBy) {
         }
         a = +(a.students.some(active));
         b = +(b.students.some(active));
-        if(a > b) return -1;
-        if(a < b) return 1;
-        if(a == b) return 0;
+        if (a > b) return -1;
+        if (a < b) return 1;
+        if (a == b) return 0;
       };
       break;
   }
@@ -232,7 +232,7 @@ function populateFormsTable(forms) {
   utility.DOM.empty(app.pages.openForms.elements.equipmentTableBody);
   
   // if there's no forms...
-  if(forms.length == 0) {
+  if (forms.length == 0) {
     let cell = document.createElement('td'),
         row = document.createElement('tr');
     cell.textContent = 'No open forms';
@@ -247,7 +247,7 @@ function populateFormsTable(forms) {
   forms.forEach(makeOpenFormTableRows);
   
   // if makeOpenFormTableRows found no equipment out...
-  if(!app.pages.openForms.elements.equipmentTableBody.firstChild) {
+  if (!app.pages.openForms.elements.equipmentTableBody.firstChild) {
     let row = document.createElement('tr'),
         cell = document.createElement('td');
     cell.textContent = 'No equipment checked-out.'
@@ -259,7 +259,7 @@ function populateFormsTable(forms) {
 
 function makeOpenFormTableRows(form) {
   form.items.forEach(function(item) {
-    if(item.checkedOut) {
+    if (item.checkedOut) {
       let itemInfo = [
         item.description, item.id, form.location,
         form.students, form.endTime, form.id
@@ -282,13 +282,13 @@ function makeOpenFormTableRows(form) {
       now = Date.now();
   row.setAttribute('data-id', form.id);
   // determine if active, ending soon, or late (green, yellow, red)
-  if(form.students.some(student => student.checkIn)) {
+  if (form.students.some(student => student.checkIn)) {
     type = 'active';
   }
-  if(type == 'active' && now > endTime) {
+  if (type == 'active' && now > endTime) {
     type = 'late';
   }
-  if(type == 'active' && now > (endTime - fifteenMinutes)) {
+  if (type == 'active' && now > (endTime - fifteenMinutes)) {
     type = 'endingSoon';
   }
   row.classList.add(type);
@@ -334,7 +334,7 @@ function populateArchiveTable(forms) {
   utility.DOM.empty(app.pages.archive.elements.tableBody);
   
   // if there's no forms...
-  if(forms.length == 0) {
+  if (forms.length == 0) {
     let cell = document.createElement('td'),
         row = document.createElement('tr');
     cell.textContent = 'No archived forms';
