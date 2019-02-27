@@ -42,10 +42,10 @@ function closeForm_(form) {
 function doGet(request) {
   var response = {},
       webpage;
-  if(!request.get) {
+  if (!request.get) {
     webpage = HtmlService.createTemplateFromFile('html/index').evaluate();  
     webpage.setTitle('Equipment Check-Out');
-    if(runWith == 'demo') {
+    if (runWith == 'demo') {
       resetDEMO_();
     }
     return webpage;
@@ -69,7 +69,7 @@ function doGet(request) {
       break;
   }
   
-  if(request.init) {
+  if (request.init) {
     response.unlock = true;
   }
   
@@ -108,7 +108,7 @@ function doPost(request) {
       break;
     case 'updateForm':
       var form = readForm_(request.form);
-      if(isFormReadyToClose_(form) || isNoShow_(form)) {
+      if (isFormReadyToClose_(form) || isNoShow_(form)) {
         closeForm_(form);
         request.post = 'openForms';
         response.formList = getOpenForms_();
@@ -211,7 +211,7 @@ function include_(filename) {
 
 function isAllGearReturned_(form) {
   return form.items.every(function(item) {
-    if(item.checkOut) return item.checkIn; else return true;
+    if (item.checkOut) return item.checkIn; else return true;
   });
 }
 
@@ -229,11 +229,11 @@ function isCheckOutStudentOk_(form) {
  * @see doPost
  */
 function isFormReadyToClose_(form) {
-  if(!isCheckOutStudentOk_(form)) return false;
+  if (!isCheckOutStudentOk_(form)) return false;
   return form.students.some(
     function(student) { return student.checkIn; }
   ) && form.students.every(
-    function(student) { if(student.checkIn) return student.checkOut; else return true }
+    function(student) { if (student.checkIn) return student.checkOut; else return true }
   );
 }
 
@@ -242,7 +242,7 @@ function isFormReadyToClose_(form) {
  * check if the form has no students checked-in after the grace period
  */
 function isNoShow_(form) {
-  if(!form.id) return false;
+  if (!form.id) return false;
   var gracePeriod = 30, // minutes
       start = new Date(form.startTime),
       end   = new Date(form.endTime),
@@ -252,7 +252,7 @@ function isNoShow_(form) {
   
   start.setMinutes(start.getMinutes() + gracePeriod);
   
-  if(now > start.getTime() && !form.students.some(checkedIn)) {
+  if (now > start.getTime() && !form.students.some(checkedIn)) {
     return true;
   } else {
     return false;
@@ -264,10 +264,10 @@ function isNoShow_(form) {
  */
 function isMissingStudentCheckout_(form) {
   var isCheckedOut = function(student) {
-    if(student.checkIn) return student.checkOut;
+    if (student.checkIn) return student.checkOut;
     else return true; // never checked-in
   };
-  if(now > end.getTime() && !form.students.every(isCheckedOut)) {
+  if (now > end.getTime() && !form.students.every(isCheckedOut)) {
     return true;
   } else {
     return false;
@@ -279,7 +279,7 @@ function isMissingStudentCheckout_(form) {
  */
 function isThereAnActiveStudent_(form) {
   var activeStudents = form.students.reduce(function(count, student) {
-        if(student.checkIn && !student.checkOut) return count + 1;
+        if (student.checkIn && !student.checkOut) return count + 1;
         else return count;
       }, 0);
   return activeStudents > 1;
@@ -290,7 +290,7 @@ function isThereAnActiveStudent_(form) {
  * @see doPost
  */
 function isValidForm_(form) {
-  if(form.items) {
+  if (form.items) {
     switch(runWith) {
       case 'demo':
         form = checkItemsDemo_(form);
@@ -339,7 +339,7 @@ function postSignature_(request) {
 function readForm_(formObj) {
   formObj = JSON.parse(formObj);
   var form;
-  if(!formObj.id) {
+  if (!formObj.id) {
     form = new Form_();
   } else {
     form = new Form_(formObj.id);
@@ -374,11 +374,11 @@ utility.date.getFormattedDate = function(date) {
       minutes = date.getMinutes(),
       ampm = 'am';
       
-      if(hour > 11) {
+      if (hour > 11) {
         ampm = 'pm';
         hour = hour % 12;
       }
-      if(hour == 0) {
+      if (hour == 0) {
         hour = 12;
       }
       return utility.date.zeropad(month) + '/' + utility.date.zeropad(day) + '/' +
@@ -399,7 +399,7 @@ utility.date.parseFormattedDate = function(dateString) {
       minutes = dateString.slice(14,16),
       ampm    = dateString.slice(17,19);
   // convert ampm to 24 hour
-  if(ampm == 'pm') {
+  if (ampm == 'pm') {
     ampm = 12;
   } else {
     ampm = 0;
@@ -415,7 +415,7 @@ utility.date.parseFormattedDate = function(dateString) {
 /** Helper function for handling date strings */
 utility.date.zeropad = function(x) {
   x = +x;
-  if(x < 10) {
+  if (x < 10) {
     return '0' + x;
   } else {
     return x;
