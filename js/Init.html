@@ -9,7 +9,7 @@ app.modal.cancel.addEventListener('click', app.modal.hide);
 app.modal.clear.addEventListener('click', () => app.modal.signaturePad.clear());
 app.modal.ok.addEventListener('click', app.modal.hide);
 app.modal.textarea.addEventListener('keydown', function(keydown) {
-  if(keydown.key == 'Enter' && (keydown.metaKey || keydown.ctrlKey)) {
+  if (keydown.key == 'Enter' && (keydown.metaKey || keydown.ctrlKey)) {
     app.modal.hide();
     app.doCommand(app.modal.ok.value);
     keydown.stopPropagation(); // because same keycommand actives update button as well
