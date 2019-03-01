@@ -3,6 +3,21 @@
 
 /** End everything with Demo */
 
+/* global
+Form_
+Note_
+getSheetDataByIdGAS_
+getUser_
+index
+makeBookingFromDataGAS_
+makeFormFromDataGAS_
+makeItemFromDataGAS_
+makeItemFromDataGAS_
+makeStudentFromDataGAS_
+utility
+*/
+
+/* exported makeFakeArchive */
 function makeFakeArchive() {
   // step through dates from Jan 1 to now
   var today = new Date();
@@ -12,12 +27,13 @@ function makeFakeArchive() {
       d.setDate(d.getDate() + 1);
       return d;
     }
-    return function() { return nextDay() };
-  }
+    return function() { return nextDay(); };
+  };
   var day = makeDays(),
-      time;
-  while (time = day().getTime() < today.getTime()) {
+    time = day().getTime();
+  while (time < today.getTime()) {
     makeRandomForm(time);
+    time = day().getTime();
   }
 }
 
@@ -26,24 +42,23 @@ function rndNumber(max) {
   return Math.floor(Math.floor(max) * Math.random());
 }
 
-function makeRandomForm(time) {
-  var startTime = new Date(time);
+function makeRandomForm() {
   var students = [];
   var studentIds = ['jjv298', 'ajb814', 'sy1470', 'vq435', 'dls2135', 'abc651', 'jpk385'];
   for (var i = 0; i < rndNumber(3)+1; i++) {
     var studentData = getSheetDataByIdGAS_(studentIds[rndNumber(studentIds.length + 1)],
-                                           index.students.SHEET_ID, index.students.SHEET_NAME,
-                                          index.students.NETID);
+      index.students.SHEET_ID, index.students.SHEET_NAME,
+      index.students.NETID);
     students.push(makeStudentFromDataGAS_(studentData));
     Logger.log(students[i].name);
   }
 }
 
+/* exported lookAtAnArchive */
 function lookAtAnArchive() {
   var sheet = SpreadsheetApp.openById(index.forms.DEMO_ID).getSheetByName('dm187@nyu.edu_Archive');
   var notes = sheet.getRange(3, 13).getValue();
   notes = JSON.parse(notes);
-//  Logger.log(notes);
   notes.forEach(function(note){
     Logger.log(JSON.parse(note.body));
   });
@@ -52,6 +67,7 @@ function lookAtAnArchive() {
 /**
  Temp function just for making the fake archive!
  */
+/* exported fixArchives */
 function fixArchives() {
   var sheet = SpreadsheetApp.openById(index.forms.DEMO_ID).getSheetByName('Archive');
   var data = sheet.getDataRange().getValues();
@@ -124,6 +140,7 @@ function updateRow(row) {
  * Change fake booked sessions to today's date
  * trigger set for daily 3am-4am
  */
+/* exported updateBookingDatesDemo */
 function updateBookingDatesDemo() {
   var today = new Date();
   var makeId = function() {
@@ -135,7 +152,7 @@ function updateBookingDatesDemo() {
       increment(100);
       return timestamp;
     };
-  }
+  };
   var id = makeId();
   var masterSheet = SpreadsheetApp.openById(index.forms.DEMO_ID).getSheetByName(index.forms.SHEET_NAME);
   var range = masterSheet.getRange(2, 1, 5, 3); // all bookings, id, start and end columns
@@ -150,6 +167,7 @@ function updateBookingDatesDemo() {
   range.setValues(values);
 }
 
+/* exported checkItemsDemo_ */
 function checkItemsDemo_(form) {  
   form.items.forEach(function(item) {
     if (!item.checkIn && item.checkOut && !item.checkedOut) { // requesting checkout
@@ -170,6 +188,7 @@ function checkItemsDemo_(form) {
  * Each user copies the master form to create their own forms for their session.
  * @return undefined
  */
+/* exported createDailyFormsDEMO_ */
 function createDailyFormsDEMO_() {
   var bookingSheet = SpreadsheetApp.openById(index.bookings.DEMO_ID).getSheetByName(index.bookings.SHEET_NAME);
   var data = bookingSheet.getDataRange().getValues();
@@ -183,6 +202,7 @@ function createDailyFormsDEMO_() {
  * Converts a 600+ set of bookings into forms for the archive.
  * @return undefined
  */
+/* exported createFormsArchiveDEMO */
 function createFormsArchiveDEMO() {
   var bookingSheet = SpreadsheetApp.openById(index.bookings.FALL_17).getSheetByName(index.bookings.SHEET_NAME);
   var data = bookingSheet.getDataRange().getValues();
@@ -195,11 +215,11 @@ function createFormsArchiveDEMO() {
 /** @see createDailyFormsDEMO_ */
 function createBookingFormDEMO_(booking, forArchive) {
   var form = new Form_(),
-      bookedStudents = booking.getBookedStudents(),
-      itemStringArray = booking.getItems(),
-      items = [],
-      studentStringArray,
-      students = [];
+    bookedStudents = booking.getBookedStudents(),
+    itemStringArray = booking.getItems(),
+    items = [],
+    studentStringArray,
+    students = [];
   
   // handle booking students -> form students
   studentStringArray = bookedStudents.replace(/, /g, ',').split(',');
@@ -217,24 +237,24 @@ function createBookingFormDEMO_(booking, forArchive) {
       try {
         var item = makeItemFromDataGAS_(itemData);
         item.setDescription(bookingData[0])
-            .setQuantity(bookingData[2]);
+          .setQuantity(bookingData[2]);
         items.push(item);
       } catch(e) {
-        ;
+        // ignore error
       }
     });
   }
   
   form.setBookedStudents(bookedStudents)
-      .setBookingId(booking.getId())
-      .setItems(items)
-      .setStartTime(booking.getStartTime())
-      .setEndTime(booking.getEndTime())
-      .setLocation(booking.getLocation())
-      .setContact(booking.getContact())
-      .setTape(booking.getTape())
-      .setProject(booking.getProject())
-      .setStudents(students);
+    .setBookingId(booking.getId())
+    .setItems(items)
+    .setStartTime(booking.getStartTime())
+    .setEndTime(booking.getEndTime())
+    .setLocation(booking.getLocation())
+    .setContact(booking.getContact())
+    .setTape(booking.getTape())
+    .setProject(booking.getProject())
+    .setStudents(students);
   
   if (!forArchive) {
     writeFormToSheetDEMO_(form);
@@ -245,6 +265,7 @@ function createBookingFormDEMO_(booking, forArchive) {
   return form;
 }
 
+/* exported getAllItemsDemo_ */
 function getAllItemsDemo_() {
   var sheet = SpreadsheetApp.openById(index.items.DEMO_ID).getSheetByName(index.items.DEMO_NAME);
   var data = sheet.getDataRange().getValues();
@@ -299,13 +320,14 @@ function getArchiveDEMO_(reset) {
   return archiveSheet;
 }
 
+/* exported getArchivedFormsDEMO_ */
 function getArchivedFormsDEMO_(dateRangeJSON) {
   var dateRange = JSON.parse(dateRangeJSON); // dateRange.start, dateRange.end
   dateRange.start = utility.date.parseFormattedDate(dateRange.start);
   dateRange.end = utility.date.parseFormattedDate(dateRange.end);
   var sheet = getArchiveDEMO_();
   var data = sheet.getDataRange().getValues(),
-      forms = [];
+    forms = [];
   data.shift();
   data.forEach(function(row) { forms.push(makeFormFromDataGAS_(row)); });
   forms = forms.filter(function(form) {
@@ -317,10 +339,11 @@ function getArchivedFormsDEMO_(dateRangeJSON) {
 }
 
 /** @see getOpenFormsGAS_ */
+/* exported getOpenFormsDEMO_ */
 function getOpenFormsDEMO_() {
   var formsSheet = getSheetDEMO_();
   var data = formsSheet.getDataRange().getValues(),
-      forms = [];
+    forms = [];
   data.shift();
   data.forEach(function getArrayOfForms(sheetData) {
     forms.push(makeFormFromDataGAS_(sheetData));
@@ -329,6 +352,7 @@ function getOpenFormsDEMO_() {
 }
 
 /** a driver for getSheetDEMO_ */
+/* exported resetDEMO_ */
 function resetDEMO_() {
   var formSheet = getSheetDEMO_();
   formSheet.clear();
@@ -382,12 +406,10 @@ function writeFormToSheetDEMO_(form, closeAndArchive, forArchive) {
     formSheet.appendRow(values);
   } else { // update
     var column = 1,
-        numRows = 1,
-        numColumns = 13,
-        data = formSheet.getDataRange().getValues(),
-        range,
-        row;
-    
+      numRows = 1,
+      numColumns = 13,
+      range;
+    data = formSheet.getDataRange().getValues();
     // Note: do not shift data
     row = data.findRowContaining(form.id, 0, true);
 

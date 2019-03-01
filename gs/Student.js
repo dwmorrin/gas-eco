@@ -1,3 +1,4 @@
+/* exported Student_ */
 function Student_(id) {
   this.id = id;         // string corresponding to ID barcode or RFID
   this.checkIn = null;  // string formatted date

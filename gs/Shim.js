@@ -14,7 +14,7 @@ Array.prototype.findRowContaining = function(value, column, findIndex) {
       }
     }
   } else {
-    for (var i = 0, l1 = this.length; i < l1; i++) {
+    for (i = 0, l1 = this.length; i < l1; i++) {
       for (var j = 0, l2 = this[i].length; j < l2; j++) {
         if (this[i][j] == value) {
           if (findIndex) {
@@ -25,4 +25,4 @@ Array.prototype.findRowContaining = function(value, column, findIndex) {
       }
     }
   }
-}
+};

@@ -6,6 +6,7 @@
  * The writer can then call createId on the form when an id is needed.
  */
 
+/* exported Form_ */
 function Form_(id) {
   // Static properties
   this.bookedStudents = null;  // string
@@ -58,7 +59,10 @@ function Form_(id) {
   };
   
   // Note: setId not allowed, use new Form(id) as setId
-  this.createId = function() { this.id = Date.now() + ""; return this.id; }
+  this.createId = function() {
+    this.id = "" + Date.now();
+    return this.id;
+  };
   
   /** @param {string} - formatted date */
   this.setEndTime = function(endTime) {
