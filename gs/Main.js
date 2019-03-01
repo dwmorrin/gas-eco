@@ -1,3 +1,22 @@
+/* global
+          Form_
+          checkItemsDemo_
+          checkItemsGAS_
+          clearSignatureValidationGAS_
+          createDailyBookingFormsGAS_
+          getAllItemsDemo_
+          getAllItemsGAS_
+          getAllStudentsGAS_
+          getArchivedFormsDEMO_
+          getOpenFormsDEMO_
+          getOpenFormsGAS_
+          resetDEMO_
+          startSignature_
+          writeCodabarGAS_
+          writeFormToSheetDEMO_
+          writeFormToSheetGAS_
+          writeSignatureToSheetGAS_
+*/
 var runWith = 'demo';
 //var runWith = 'GAS';
 
@@ -6,6 +25,7 @@ var runWith = 'demo';
  * Replaces the printing of the physical forms.
  * @todo setup daily trigger
  */
+/* exported createDailyForms_ */
 function createDailyForms_() {
   switch (runWith) {
     case 'demo':
@@ -39,9 +59,10 @@ function closeForm_(form) {
  * External programs can access this function with HTTP GET as an API.
  * @see {@link https://developers.google.com/apps-script/guides/triggers/}
  */
+/* exported doGet */
 function doGet(request) {
-  var response = {},
-      webpage;
+  var response = {};
+  var  webpage;
   if (!request.get) {
     webpage = HtmlService.createTemplateFromFile('html/index').evaluate();  
     webpage.setTitle('Equipment Check-Out');
@@ -84,6 +105,7 @@ function doGet(request) {
  * External programs can access this function with HTTP POST as an API.
  * @see {@link https://developers.google.com/apps-script/guides/triggers/}
  */
+/* exported doPost */
 function doPost(request) {
   var response = {};
   switch (request.post) {
@@ -127,6 +149,7 @@ function doPost(request) {
 }
 
 /** @todo - most likely will be called by doPost */
+/* exported deleteForm_ */
 function deleteForm_() {
   throw 'not implemented';
 }
@@ -205,6 +228,7 @@ function handleUnload_() {
  * Utility function to keep separate HTML, CSS, and JS files
  * @see {@link https://developers.google.com/apps-script/guides/html/best-practices}
  */
+/* exported include_ */
 function include_(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
@@ -233,7 +257,12 @@ function isFormReadyToClose_(form) {
   return form.students.some(
     function(student) { return student.checkIn; }
   ) && form.students.every(
-    function(student) { if (student.checkIn) return student.checkOut; else return true }
+    function(student) {
+      if (student.checkIn) { 
+        return student.checkOut;
+      }
+      return true;
+    }
   );
 }
 
@@ -244,9 +273,8 @@ function isFormReadyToClose_(form) {
 function isNoShow_(form) {
   if (!form.id) return false;
   var gracePeriod = 30, // minutes
-      start = new Date(form.startTime),
-      end   = new Date(form.endTime),
-      now   = Date.now();
+    start = new Date(form.startTime),
+    now   = Date.now();
   
   var checkedIn = function(student) { return student.checkIn; };
   
@@ -262,12 +290,14 @@ function isNoShow_(form) {
 /**
  * check if the end time has past but students have not checked out
  */
+/* exported isMissingStudentCheckout_ */
 function isMissingStudentCheckout_(form) {
   var isCheckedOut = function(student) {
     if (student.checkIn) return student.checkOut;
     else return true; // never checked-in
   };
-  if (now > end.getTime() && !form.students.every(isCheckedOut)) {
+  var end = new Date(form.endTime);
+  if (Date.now() > end.getTime() && !form.students.every(isCheckedOut)) {
     return true;
   } else {
     return false;
@@ -279,9 +309,9 @@ function isMissingStudentCheckout_(form) {
  */
 function isThereAnActiveStudent_(form) {
   var activeStudents = form.students.reduce(function(count, student) {
-        if (student.checkIn && !student.checkOut) return count + 1;
-        else return count;
-      }, 0);
+    if (student.checkIn && !student.checkOut) return count + 0;
+    else return count;
+  }, 0);
   return activeStudents > 1;
 }
 
@@ -345,17 +375,17 @@ function readForm_(formObj) {
     form = new Form_(formObj.id);
   }
   form.setBookedStudents(formObj.bookedStudents)
-  .setBookingId(formObj.bookingId)
-  .setContact(formObj.contact)
-  .setEndTime(formObj.endTime)
-  .setStartTime(formObj.startTime)
-  .setLocation(formObj.location)
-  .setProject(formObj.project)
-  .setTape(formObj.tape)
-  .setOvernight(formObj.overnight)
-  .setStudents(formObj.students)
-  .setItems(formObj.items)
-  .setNotes(formObj.notes);
+    .setBookingId(formObj.bookingId)
+    .setContact(formObj.contact)
+    .setEndTime(formObj.endTime)
+    .setStartTime(formObj.startTime)
+    .setLocation(formObj.location)
+    .setProject(formObj.project)
+    .setTape(formObj.tape)
+    .setOvernight(formObj.overnight)
+    .setStudents(formObj.students)
+    .setItems(formObj.items)
+    .setNotes(formObj.notes);
   return form;
 }
 
@@ -368,22 +398,22 @@ var utility = { date: {} };
  */
 utility.date.getFormattedDate = function(date) {
   var year = date.getFullYear(),
-      month = (date.getMonth() + 1), // zero indexed
-      day = date.getDate(),
-      hour = date.getHours(),
-      minutes = date.getMinutes(),
-      ampm = 'am';
-      
-      if (hour > 11) {
-        ampm = 'pm';
-        hour = hour % 12;
-      }
-      if (hour == 0) {
-        hour = 12;
-      }
-      return utility.date.zeropad(month) + '/' + utility.date.zeropad(day) + '/' +
-             year + ' ' + utility.date.zeropad(hour) + ':' +
-             utility.date.zeropad(minutes) + ' ' + ampm;
+    month = (date.getMonth() + 1), // zero indexed
+    day = date.getDate(),
+    hour = date.getHours(),
+    minutes = date.getMinutes(),
+    ampm = 'am';
+    
+  if (hour > 11) {
+    ampm = 'pm';
+    hour = hour % 12;
+  }
+  if (hour == 0) {
+    hour = 12;
+  }
+  return utility.date.zeropad(month) + '/' + utility.date.zeropad(day) + '/' +
+           year + ' ' + utility.date.zeropad(hour) + ':' +
+           utility.date.zeropad(minutes) + ' ' + ampm;
 };
 
 /**
@@ -393,11 +423,11 @@ utility.date.getFormattedDate = function(date) {
 utility.date.parseFormattedDate = function(dateString) {
   // mm/dd/yyyy hh:mm am
   var month   = dateString.slice(0,2),
-      day     = dateString.slice(3,5),
-      year    = dateString.slice(6,10),
-      hour    = dateString.slice(11,13),
-      minutes = dateString.slice(14,16),
-      ampm    = dateString.slice(17,19);
+    day     = dateString.slice(3,5),
+    year    = dateString.slice(6,10),
+    hour    = dateString.slice(11,13),
+    minutes = dateString.slice(14,16),
+    ampm    = dateString.slice(17,19);
   // convert ampm to 24 hour
   if (ampm == 'pm') {
     ampm = 12;
