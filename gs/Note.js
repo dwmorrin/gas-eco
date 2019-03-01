@@ -1,3 +1,4 @@
+/* exported Note_ */
 function Note_(id) {
   this.timestamp = id || String(Date.now());
   this.author;

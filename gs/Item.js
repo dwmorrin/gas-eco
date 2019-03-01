@@ -1,3 +1,4 @@
+/* exported  Item_ */
 function Item_(id) {
   this.barcode;          // string
   this.id = id;          // string or undefined
@@ -8,9 +9,9 @@ function Item_(id) {
   this.quantity = 1;     // 1 if there is an id, else integer
 
   if (/NS$/.test(this.id)) { // NS means Not Serialized 
-    this.serialized = false
+    this.serialized = false;
   } else {
-    this.serialized = true
+    this.serialized = true;
   }
   
   this.getId = function() { return this.id; };
@@ -26,7 +27,7 @@ function Item_(id) {
       this.quantity++;
       return this;
     }
-  }
+  };
   this.decrementQuantity = function () {
     if (this.serialized) {
       // cannot change quantity
@@ -37,7 +38,7 @@ function Item_(id) {
       this.quantity--;
       return this;
     }
-  }
+  };
   this.setQuantity = function(integer) {
     if (this.serialized) {
       // cannot have quantity > 1 if item Id exists, silent fail
