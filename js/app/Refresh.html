@@ -1,11 +1,15 @@
 <script>
 /**
  * main server callback function
- * @see jsInit
+ * @see js/Init
  * this is attached to google.script.run.withSuccessHandler
  */
+/* global
+app
+displayForm
+displayOpenForms
+*/
 app.refresh = function(response) {
-  console.log('REFRESH:', response);
   switch (response.target) {
     case 'archive':
       if (response.unlock) {

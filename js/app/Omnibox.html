@@ -1,10 +1,17 @@
 <script>
+/* global
+app
+isCheckOutStudentOk
+populateItemList
+populateStudentList
+utility
+*/
 app.omnibox = {
   clear: function() {
     app.omnibox.element.value = '';
   },
   element: document.querySelector('input.omnibox'),
-  /** @todo - handle qty input or multiple scans of things like cables */
+  /** TODO - handle qty input or multiple scans of things like cables */
   handleItem: function(item) {
     let items = (JSON.parse(app.pages.form.elements.form.items.value) || []);
     let itemOnForm = items.find(i => i.id == item.id);
@@ -15,17 +22,21 @@ app.omnibox = {
       }
     };
 
-    if(!itemOnForm) { // new item
+    if (! itemOnForm) { // new item
       item.checkOut = utility.date.getFormattedDate(new Date());
       items.push(item);
       change.target.value += ' check-out';
     } else {
-      if(itemOnForm.checkOut && itemOnForm.checkIn) { // trying to checkout again?
-        app.modal.handleError(new Error(itemOnForm.description + ' was already checked back in.'));
+      if (itemOnForm.checkOut && itemOnForm.checkIn) { // checkout again?
+        app.modal.handleError(
+          new Error(itemOnForm.description + ' was already checked back in.')
+        );
         app.omnibox.element.classList.add('error');
-        window.setTimeout(() => app.omnibox.element.classList.remove('error'), 2000);
+        window.setTimeout(
+          () => app.omnibox.element.classList.remove('error'), 2000
+        );
         return;
-      } else if(itemOnForm.checkOut) { // Its a check-in
+      } else if (itemOnForm.checkOut) { // Its a check-in
         itemOnForm.checkIn = utility.date.getFormattedDate(new Date());
         change.target.value += ' check-in';
       } else { // Its a check-out for reserved gear
@@ -44,24 +55,26 @@ app.omnibox = {
     app.pages.form.handleChange(change);
   },
   handleKeydown: function(keydown) {
-    if(keydown.key == 'Enter') {
+    if (keydown.key == 'Enter') {
       keydown.preventDefault();
       app.omnibox.parse();
       return;
-    } else if(keydown.key == 'Escape') {
+    } else if (keydown.key == 'Escape') {
       app.omnibox.element.blur();
     } else {
-      ; // @todo auto-complete suggestions
+      // TODO auto-complete suggestions
     }
   },
-  /** @todo */
+  /** TODO */
   handleNewCodabar: function(codabar /* string */) {
     // use modal
     app.modal.getNewCodabar(codabar);
   },
   /** @param {Student} input */
   handleStudent: function(student) {
-    let students = (JSON.parse(app.pages.form.elements.form.students.value) || []);
+    let students = (
+      JSON.parse(app.pages.form.elements.form.students.value) || []
+    );
     let studentOnForm = students.find(s => s.id == student.id);
     let change = { // fake change event
       target: {
@@ -70,10 +83,8 @@ app.omnibox = {
       } 
     };
     
-    //debugger;
-    
-    if(!studentOnForm) {
-      if(!student.signatureOnFile) {
+    if (! studentOnForm) {
+      if (! student.signatureOnFile) {
         //app.modal.getSignature(student);
         app.modal.signatureWait();
         app.run.doPost({ post: 'startSignature', netid: student.netId});
@@ -87,17 +98,17 @@ app.omnibox = {
       change.target.value += ' check-in';
     } else {
       try {
-        if(studentOnForm.checkIn && studentOnForm.checkOut) {
+        if (studentOnForm.checkIn && studentOnForm.checkOut) {
           throw new Error(studentOnForm.name + ' is already checked out.');
-        } else if(studentOnForm.checkIn) {
-          if(isCheckOutStudentOk(student)) {
+        } else if (studentOnForm.checkIn) {
+          if (isCheckOutStudentOk(student)) {
             studentOnForm.checkOut = utility.date.getFormattedDate(new Date());
             change.target.value += ' check-out';
           } else {
             throw new Error(app.strings.studentCheckOutError);
           }
         } else {
-          if(!student.signatureOnFile) {
+          if (! student.signatureOnFile) {
             //app.modal.getSignature(student);
             app.modal.signatureWait();
             app.run.doPost({ post: 'startSignature', netid: student.netId});
@@ -115,11 +126,13 @@ app.omnibox = {
       catch(error) {
         app.modal.handleError(error);
         app.omnibox.element.classList.add('error');
-        window.setTimeout(() => app.omnibox.element.classList.remove('error'), 2000);
+        window.setTimeout(
+          () => app.omnibox.element.classList.remove('error'), 2000
+        );
         return;
       }
     }
-      // Update form.students
+    // Update form.students
     app.pages.form.elements.form.students.value = JSON.stringify(students);
     // Update display
     utility.DOM.empty(app.pages.form.elements.studentList);
@@ -129,20 +142,22 @@ app.omnibox = {
     app.pages.form.handleChange(change);
   },
   parse: function() {
-    let codabar = /^[a-d][0-9]{5,}[a-d]$/, // regex to capture (a123...789b) pattern
+    let codabar = /^[a-d][0-9]{5,}[a-d]$/, // "a123...789b" pattern
         parsed,
         value = app.omnibox.element.value;
 
-    if(!value) { // nothing was entered, abort
+    if (! value) { // nothing was entered, abort
       return;
     } else {     // case insensitive
       value = value.toLowerCase();
     }
 
     // DETERMINE TYPE
-    if(codabar.test(value)) { // Check student id
-      parsed = app.cache.students.find(student => student.id.toLowerCase() == value);
-      if(parsed) {
+    if (codabar.test(value)) { // Check student id
+      parsed = app.cache.students.find(
+        student => student.id.toLowerCase() == value
+      );
+      if (parsed) {
         app.omnibox.handleStudent(parsed);
       } else {
         app.omnibox.handleNewCodabar(value);
@@ -150,43 +165,55 @@ app.omnibox = {
       }
     }
 
-    if(!parsed) { // Check student name and id
+    if (! parsed) { // Check student name and id
       let nameOrId = 'name',
           idRegex = /^[a-z]+[0-9]+/;
-      if(idRegex.test(value)) {
+      if (idRegex.test(value)) {
         nameOrId = 'netId';
       }
-      parsed = app.cache.students.find(student => student[nameOrId].toLowerCase() == value);
-      if(parsed) {
+      parsed = app.cache.students.find(
+        student => student[nameOrId].toLowerCase() == value
+      );
+      if (parsed) {
         app.omnibox.handleStudent(parsed);
         // MANUAL ENTRY ALERT!
         app.modal.handleInfo(new Error(value + app.strings.omniboxManualEntry));
-        app.pages.form.handleChange({ target: { name: 'manual', value: value }});
+        app.pages.form.handleChange(
+          { target: { name: 'manual', value: value }}
+        );
       }
     }
 
-    if(!parsed) { // Check item Ids and barcodes
-      let itemIdregex = /[A-Za-z]+-[A-Za-z0-9]+/, // one or more letters, hyphen, one or more digits/letters
+    if (! parsed) { // Check item Ids and barcodes
+      let itemIdregex = /[A-Za-z]+-[A-Za-z0-9]+/, // letter(s), hyphen, digit(s) or letter(s)
           barcoderegex = /^[0-9]+$/,              // only digits
           dashzero = /-0+/;                       // dash then one of more zeroes
-      if(itemIdregex.test(value)) {
+      if (itemIdregex.test(value)) {
         value = value.replace(dashzero, '-'); // strip leading zeroes
-        parsed = app.cache.items.find(item => item.id.toLowerCase().replace(dashzero, '-') == value);
+        parsed = app.cache.items.find(
+          item => item.id.toLowerCase().replace(dashzero, '-') == value
+        );
         // MANUAL ENTRY ALERT!
         app.modal.handleInfo(new Error(value + app.strings.omniboxManualEntry));
-        app.pages.form.handleChange({ target: { name: 'manual', value: value }});
-      } else if(barcoderegex.test(value)) { // assume it's a barcode
-        parsed = app.cache.items.find(item => item.barcode.toLowerCase() == value);
+        app.pages.form.handleChange(
+          { target: { name: 'manual', value: value }}
+        );
+      } else if (barcoderegex.test(value)) { // assume it's a barcode
+        parsed = app.cache.items.find(
+          item => item.barcode.toLowerCase() == value
+        );
       }
-      if(parsed) {
+      if (parsed) {
         app.omnibox.handleItem(parsed);
       }
     }
 
-    if(!parsed) {
+    if (! parsed) {
       app.modal.handleError(new Error(value + ' ' + app.strings.parserError));
       app.omnibox.element.classList.add('error');
-      window.setTimeout(() => app.omnibox.element.classList.remove('error'), 2000);
+      window.setTimeout(
+        () => app.omnibox.element.classList.remove('error'), 2000
+      );
     }
   },
 };

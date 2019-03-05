@@ -1,21 +1,23 @@
 <script>
-/** signature of the app object */
+/**
+ * signature of the app object
+ */
 var app = {
-  cache:     {},                                 // data container
-  changes:   {},                                 // log user changes
-  doCommand: function(command, ...options) {},   // command switch block
-  elements:  {},                                 // top level elements e.g. global navigation
-  errors:    [],                                 // error stack to ensure all errors get displayed to user
-  handlers:  {},                                 // event methods
-  modal:     {},                                 // the modal pop up window
-  omnibox:   {},                                 // possibly should be under pages.form
-  pages:     {},                                 // the different single page views
-  refresh:   function(response) {},              // server callback switch block
-  run:       null,                               // defined in jsInit, main server call
-  showPage:  function(page) {},                  // shows a single view to the user
-  spinner:   {},                                 // the spinner object
-  strings:   {},                                 // top level strings
-  withErrorHandler: null,                        // defined in jsInit, main server error handler
+  cache:     {},                         // data container
+  changes:   {},                         // log user changes
+  doCommand: function(/*command, ...options */){},// command switch block
+  elements:  {},                         // top level elements e.g. global navigation
+  errors:    [],                         // error stack to ensure all errors get displayed to user
+  handlers:  {},                         // event methods
+  modal:     {},                         // the modal pop up window
+  omnibox:   {},                         // possibly should be under pages.form
+  pages:     {},                         // the different single page views
+  refresh:   function(/* response */){}, // server callback switch block
+  run:       null,                       // defined in jsInit, main server call
+  showPage:  function(/* page */){},     // shows a single view to the user
+  spinner:   {},                         // the spinner object
+  strings:   {},                         // top level strings
+  withErrorHandler: null,                // defined in jsInit, main server error handler
 };
 
 /** app state */
@@ -57,27 +59,37 @@ app.strings = {
   // icon of a paper document
   documentIcon: '<img src="' +
     'data:image/png;base64,' +
-    'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABCElEQVR4XmNgoCbQ0tJiU5SVb1aUl2+BYSU5hU5FWUU3dL' +
-    'VYgYKCgoCCnPxROTk5LSDbAITl5eUVFeXkPyjKyYWiq8cAIAOU5OXXo4sDDfgFxJ+U5OSc0eVQAMgARTmFVUCFPgpycnlK' +
-    'svJFKioqfEDN/6H4L1DOBV0fHIC9ICu/VklJSQ7odENlOTljqLgGkK8J8hrQkNfo+uAA4gL5RUBX7ALS/9DwfwVZBX8g/Q' +
-    'NdHxxADVijJCOjCww0V2QM1OwOlOcAyv9E1wcH1DKAMi8gByIaNgKpIcIFiGhExkqyCoVAeQkiDJBfjS6ODPAaoCUqygNU' +
-    '8BLogSfYMFDuKTCp30HXN7AAAKarYBD/VuTqAAAAAElFTkSuQmCC' +
-    '" width="16" height="16">',
-  locations: new Set(['Studio 505', 'Studio 510', 'Studio 21 North', 'Edit Suite 1 508', 'Edit Suite 2 509',
-                      'Lab 502', 'Lobby/Hallway']),
-  parserError: 'not found.  You can type in item IDs like "NEU-1", or names like "John Smith".',
-  omniboxManualEntry: /* value + */ ' appears to be a manual entry.  This will be recorded.',
-  signatureAppUrl: 'https://script.google.com/macros/s/AKfycbzoGVb3LFX-Sfxy3_EyMtRYv1TPylDitmuUc-3F7g9mppa_ihEc/exec',
-  studentCheckOutError: 'Cannot check out student.  If this is the last student, all gear must be returned.  Otherwise try updating the form.',
+    'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABCElEQVR4XmNgoCbQ0tJiU5S' +
+    'Vb1aUl2+BYSU5hU5FWUU3dLVYgYKCgoCCnPxROTk5LSDbAITl5eUVFeXkPyjKyYWiq8cAIA' +
+    'OU5OXXo4sDDfgFxJ+U5OSc0eVQAMgARTmFVUCFPgpycnlKsvJFKioqfEDN/6H4L1DOBV0fH' +
+    'IC9ICu/VklJSQ7odENlOTljqLgGkK8J8hrQkNfo+uAA4gL5RUBX7ALS/9DwfwVZBX8g/QNd' +
+    'HxxADVijJCOjCww0V2QM1OwOlOcAyv9E1wcH1DKAMi8gByIaNgKpIcIFiGhExkqyCoVAeQk' +
+    'iDJBfjS6ODPAaoCUqygNU8BLogSfYMFDuKTCp30HXN7AAAKarYBD/VuTqAAAAAElFTkSuQm' +
+    'CC" width="16" height="16">',
+  locations: new Set([
+    'Studio 505', 'Studio 510', 'Studio 21 North',
+    'Edit Suite 1 508', 'Edit Suite 2 509',
+    'Lab 502', 'Lobby/Hallway'
+  ]),
+  parserError: 'not found.  You can type in item IDs like "NEU-1", or ' +
+               'names like "John Smith".',
+  omniboxManualEntry: /* value + */ ' appears to be a manual entry.  ' +
+                      'This will be recorded.',
+  signatureAppUrl: 'https://script.google.com/macros/s/' +
+               'AKfycbzoGVb3LFX-Sfxy3_EyMtRYv1TPylDitmuUc-3F7g9mppa_ihEc/exec',
+  studentCheckOutError: 'Cannot check out student.  If this is the last ' +
+      'student, all gear must be returned.  Otherwise try updating the form.',
   updateEnabledHint: 'your changes are not saved yet',
-  updateDisabledHint: 'please enter start time, end time, location, and at least one student',
+  updateDisabledHint: 'please enter start time, end time, location, ' +
+                      'and at least one student',
   updateButton: {
     enabled: 'Submit',
     disabled: 'all changes saved',
   },
   updateHint: {
     enabled: 'your changes are not saved yet',
-    disabled: 'please enter start time, end time, location, and at least one student',
+    disabled: 'please enter start time, end time, location, ' +
+              'and at least one student',
   },
 };
 </script>
