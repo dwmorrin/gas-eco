@@ -1,6 +1,6 @@
 <script>
 /** Utility */
-
+/* global app */
 var utility = { DOM: {}, date: {}, };
 
 utility.uncamelCase = function(string) {
@@ -32,7 +32,7 @@ utility.DOM.getNextSibling = function(element) {
 utility.DOM.makeTableRow = function(tagName, ...strings) {
   let row = document.createElement('tr'),
       cells = [];
-  for(let i = 0, l = strings.length; i < l ; i++) {
+  for (let i = 0, l = strings.length; i < l ; i++) {
     cells.push(document.createElement(tagName));
     cells[i].innerHTML = strings[i];
   }
@@ -50,11 +50,11 @@ utility.date.getFormattedDate = function(date) {
       minutes = date.getMinutes(),
       ampm = 'am';
       
-  if(hour > 11) {
+  if (hour > 11) {
     ampm = 'pm';
     hour = hour % 12;
   }
-  if(hour == 0) {
+  if (hour == 0) {
     hour = 12;
   }
   return utility.date.zeropad(month) + '/' + utility.date.zeropad(day) + '/' +
@@ -74,9 +74,9 @@ utility.date.parseDateAndTimeInputs = function() {
       startMinute = +app.pages.form.elements.form.startMinute.value,
       endMinute = +app.pages.form.elements.form.endMinute.value;
   function ampmConverter(ampm, hour) { 
-    if(ampm == 'PM' && hour != 12) {
+    if (ampm == 'PM' && hour != 12) {
       hour += 12;
-    } else if(ampm == 'AM' && hour == 12) { // i.e. 12 AM
+    } else if (ampm == 'AM' && hour == 12) { // i.e. 12 AM
       hour = 0;
     }
     return hour;
@@ -104,7 +104,7 @@ utility.date.parseFormattedDate = function(dateString) {
       minutes = dateString.slice(14,16),
       ampm    = dateString.slice(17,19);
   // convert ampm to 24 hour
-  if(ampm == 'pm') {
+  if (ampm == 'pm') {
     ampm = 12;
   } else {
     ampm = 0;
@@ -119,7 +119,7 @@ utility.date.parseFormattedDate = function(dateString) {
 
 utility.date.roundMinutes = function(minutes) {
   let minute = minutes % 10;
-  if(minute < 5) { // roll back to :00
+  if (minute < 5) { // roll back to :00
     minutes -= minute;
   } else { // roll back to :05
     minutes -= minute - 5;
@@ -128,17 +128,17 @@ utility.date.roundMinutes = function(minutes) {
 };
 
 utility.date.parseHours = function(hours) {
-  if(hours > 12) {
+  if (hours > 12) {
     return hours - 12;
-  } else if(hours == 0) {
+  } else if (hours == 0) {
     return hours + 12;
   } else {
-    return hours
+    return hours;
   }
 };
 
 utility.date.parseAMPM = function(hours) {
-  if(hours >= 12) {
+  if (hours >= 12) {
     return 'PM';
   } else {
     return 'AM';
@@ -147,7 +147,7 @@ utility.date.parseAMPM = function(hours) {
 
 utility.date.zeropad = function(x) {
   x = +x;
-  if(x < 10) {
+  if (x < 10) {
     return '0' + x;
   } else {
     return x;
