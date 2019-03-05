@@ -4,10 +4,11 @@
  * @param {bool} archived - is this a closed form?
  * @return void
  */
+/* global app utility */
 function displayForm(form, archived) {
   for (let key in form) {
     switch (key) {
-      case 'items':
+      case 'items': {
         let items = form[key];
         utility.DOM.empty(app.pages.form.elements.itemList);
         if (items.length == 0) {
@@ -17,7 +18,8 @@ function displayForm(form, archived) {
           items.forEach(populateItemList);
         }
         break;
-      case 'notes':
+      }
+      case 'notes': {
         utility.DOM.empty(app.pages.form.elements.noteSection);
         let notes = form[key];
         if (notes.length == 0) {
@@ -41,7 +43,8 @@ function displayForm(form, archived) {
           app.pages.form.elements.form.notes.value = JSON.stringify(notes);
         }
         break;
-      case 'students':
+      }
+      case 'students': {
         let students = form[key];
         utility.DOM.empty(app.pages.form.elements.studentList);
         if (students.length == 0) {
@@ -51,15 +54,16 @@ function displayForm(form, archived) {
           students.forEach(populateStudentList);
         }
         break;
-      case 'startTime':
-      case 'endTime':
-      case 'bookedStudents':
-      case 'contact':
-      case 'project':
-      case 'tape':
-      case 'overnight':
-      case 'location':
-        let td = document.querySelector('#' + key + 'Display');
+      }
+      case 'startTime': // fallthrough
+      case 'endTime': // fallthrough
+      case 'bookedStudents': // fallthrough
+      case 'contact': // fallthrough
+      case 'project': // fallthrough
+      case 'tape': // fallthrough
+      case 'overnight': // fallthrough
+      case 'location': // fallthrough
+        var td = document.querySelector('#' + key + 'Display');
         if (form[key]) { // There's data to display
           td.textContent = form[key];
           td.classList.remove('hidden');
@@ -76,12 +80,12 @@ function displayForm(form, archived) {
               app.pages.form.elements.form[key].value = '';
               td.classList.add('hidden');
               td.nextElementSibling.classList.remove('hidden');
-              let today = new Date(),
+              var today = new Date(),
                   dateInput = td.nextElementSibling.firstElementChild,
                   hourInput = dateInput.nextElementSibling,
                   minuteInput = hourInput.nextElementSibling,
                   ampmInput = minuteInput.nextElementSibling;
-              let hour = today.getHours(),
+              var hour = today.getHours(),
                   minutes = today.getMinutes();
                   
               minuteInput.value = utility.date.roundMinutes(minutes);
@@ -103,7 +107,7 @@ function displayForm(form, archived) {
           }
         }
         break;
-      case 'id':
+      case 'id': // fallthrough
       case 'bookingId':
         app.pages.form.elements.form[key].value = form[key];
         break;
@@ -152,6 +156,7 @@ function displayForm(form, archived) {
 /**
  * Displays a blank form to the user.
  */
+/* exported displayNewForm */
 function displayNewForm() {
   app.cache.savedForm = {
     id: null, bookingId: null, bookedStudents: null, endTime: null,
@@ -165,8 +170,8 @@ function displayNewForm() {
  * @param {[Form]} forms - an array of Forms
  * @param {string} sortBy - sort option
  */
+/* exported displayOpenForms */
 function displayOpenForms(forms, sortBy) {
-  console.log('displayOpenForms');
   if (!sortBy) {
     sortBy = app.pages.openForms.sortBy;
   } else {
@@ -209,7 +214,7 @@ function displayOpenForms(forms, sortBy) {
       compare = function(a,b) {
         let active = function(student) {
           return student.checkIn;
-        }
+        };
         a = +(a.students.some(active));
         b = +(b.students.some(active));
         if (a > b) return -1;
@@ -250,7 +255,7 @@ function populateFormsTable(forms) {
   if (!app.pages.openForms.elements.equipmentTableBody.firstChild) {
     let row = document.createElement('tr'),
         cell = document.createElement('td');
-    cell.textContent = 'No equipment checked-out.'
+    cell.textContent = 'No equipment checked-out.';
     cell.style.pointerEvents = 'none';
     row.appendChild(cell);
     app.pages.openForms.elements.equipmentTableBody.appendChild(row);
@@ -325,8 +330,8 @@ function populateStudentList(student) {
   ));
 }
 
+/* exported displayArchivedForms */
 function displayArchivedForms(forms) {
-  console.log('displayArchivedForms');
   populateArchiveTable(forms);
 }
 
