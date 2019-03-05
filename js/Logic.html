@@ -1,4 +1,5 @@
 <script>
+/* global app */
 /** @return {bool} */
 function isAllGearReturned() {
   let items = JSON.parse(app.pages.form.elements.form.items.value);
@@ -26,9 +27,9 @@ function isThereAnActiveStudent() {
 }
 
 /** @return {bool} */
+/* exported isCheckOutStudentOk */
 function isCheckOutStudentOk(student) {
   // check if the student just checked in by looking at the saved form
-  console.log('savedForm students', app.cache.savedForm.students);
   let savedStudent = app.cache.savedForm.students.find(s => s.id == student.id);
   if(!savedStudent.checkIn) { // => this student just checked in
     app.modal.handleError(new Error(student.name + ' was just checked-in.  Update the form before checking out.'));
@@ -38,35 +39,37 @@ function isCheckOutStudentOk(student) {
 }
 
 /** @return {bool} */
+/* exported isFormOkToPost */
 function isFormOkToPost() {
-    let elements = app.pages.form.elements;
-    if (elements.locationSelect.value == 'none') {
-        return false;
-    }
-    if (elements.form.startTime.value == elements.form.endTime.value) {
-        return false;
-    }
-    if (elements.form.endDate.classList.contains('error')) {
-        return false;
-    }
-    if (elements.form.startDate.classList.contains('error')) {
-        return false;
-    }
-    let students = JSON.parse(app.pages.form.elements.form.students.value),
-        items = JSON.parse(app.pages.form.elements.form.items.value);
-    let someStudentsAreActive = students.some(s => (s.checkIn && !s.checkOut));
-    let someItemsAreOut = items.some(i => (i.checkOut && !i.checkIn));
-    if(someItemsAreOut && !someStudentsAreActive) {
-      return false;
-    }
-    // finally, is anybody on the form??
-    if (students.length == 0) {
-      return false;
-    }
-    return true;
+  let elements = app.pages.form.elements;
+  if (elements.locationSelect.value == 'none') {
+    return false;
+  }
+  if (elements.form.startTime.value == elements.form.endTime.value) {
+    return false;
+  }
+  if (elements.form.endDate.classList.contains('error')) {
+    return false;
+  }
+  if (elements.form.startDate.classList.contains('error')) {
+    return false;
+  }
+  let students = JSON.parse(app.pages.form.elements.form.students.value),
+      items = JSON.parse(app.pages.form.elements.form.items.value);
+  let someStudentsAreActive = students.some(s => (s.checkIn && !s.checkOut));
+  let someItemsAreOut = items.some(i => (i.checkOut && !i.checkIn));
+  if(someItemsAreOut && !someStudentsAreActive) {
+    return false;
+  }
+  // finally, is anybody on the form??
+  if (students.length == 0) {
+    return false;
+  }
+  return true;
 }
 
 /** @return {bool} */
+/* exported isFormReadyToClose */
 function isFormReadyToClose() {
   let students = JSON.parse(app.pages.form.elements.form.students.value);
   // Need at least 1 check-in, and everyone checked-in must be checked-out
@@ -82,11 +85,13 @@ function isFormReadyToClose() {
 }
 
 /** @return {bool} */
+/* exported isNoShow */
 function isNoShow(form) {
-  if(!form.id) return false; // we are only looking at booked forms
+  if (!form.id) {
+    return false; // we are only looking at booked forms
+  }
   const gracePeriod = 15; // minutes
   let start = new Date(form.startTime),
-      end = new Date(form.endTime),
       now = Date.now();
   start.setMinutes(start.getMinutes() + gracePeriod);
   if(now > start.getTime() && !form.students.some(s => s.checkIn)) {
