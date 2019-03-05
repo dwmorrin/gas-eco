@@ -30,7 +30,7 @@ function makeFakeArchive() {
     return function() { return nextDay(); };
   };
   var day = makeDays(),
-    time = day().getTime();
+      time = day().getTime();
   while (time < today.getTime()) {
     makeRandomForm(time);
     time = day().getTime();
@@ -215,11 +215,11 @@ function createFormsArchiveDEMO() {
 /** @see createDailyFormsDEMO_ */
 function createBookingFormDEMO_(booking, forArchive) {
   var form = new Form_(),
-    bookedStudents = booking.getBookedStudents(),
-    itemStringArray = booking.getItems(),
-    items = [],
-    studentStringArray,
-    students = [];
+      bookedStudents = booking.getBookedStudents(),
+      itemStringArray = booking.getItems(),
+      items = [],
+      studentStringArray,
+      students = [];
   
   // handle booking students -> form students
   studentStringArray = bookedStudents.replace(/, /g, ',').split(',');
@@ -327,7 +327,7 @@ function getArchivedFormsDEMO_(dateRangeJSON) {
   dateRange.end = utility.date.parseFormattedDate(dateRange.end);
   var sheet = getArchiveDEMO_();
   var data = sheet.getDataRange().getValues(),
-    forms = [];
+      forms = [];
   data.shift();
   data.forEach(function(row) { forms.push(makeFormFromDataGAS_(row)); });
   forms = forms.filter(function(form) {
@@ -343,7 +343,7 @@ function getArchivedFormsDEMO_(dateRangeJSON) {
 function getOpenFormsDEMO_() {
   var formsSheet = getSheetDEMO_();
   var data = formsSheet.getDataRange().getValues(),
-    forms = [];
+      forms = [];
   data.shift();
   data.forEach(function getArrayOfForms(sheetData) {
     forms.push(makeFormFromDataGAS_(sheetData));
@@ -406,9 +406,9 @@ function writeFormToSheetDEMO_(form, closeAndArchive, forArchive) {
     formSheet.appendRow(values);
   } else { // update
     var column = 1,
-      numRows = 1,
-      numColumns = 13,
-      range;
+        numRows = 1,
+        numColumns = 13,
+        range;
     data = formSheet.getDataRange().getValues();
     // Note: do not shift data
     row = data.findRowContaining(form.id, 0, true);

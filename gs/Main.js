@@ -273,8 +273,8 @@ function isFormReadyToClose_(form) {
 function isNoShow_(form) {
   if (!form.id) return false;
   var gracePeriod = 30, // minutes
-    start = new Date(form.startTime),
-    now   = Date.now();
+      start = new Date(form.startTime),
+      now   = Date.now();
   
   var checkedIn = function(student) { return student.checkIn; };
   
@@ -398,11 +398,11 @@ var utility = { date: {} };
  */
 utility.date.getFormattedDate = function(date) {
   var year = date.getFullYear(),
-    month = (date.getMonth() + 1), // zero indexed
-    day = date.getDate(),
-    hour = date.getHours(),
-    minutes = date.getMinutes(),
-    ampm = 'am';
+      month = (date.getMonth() + 1), // zero indexed
+      day = date.getDate(),
+      hour = date.getHours(),
+      minutes = date.getMinutes(),
+      ampm = 'am';
     
   if (hour > 11) {
     ampm = 'pm';
@@ -423,11 +423,11 @@ utility.date.getFormattedDate = function(date) {
 utility.date.parseFormattedDate = function(dateString) {
   // mm/dd/yyyy hh:mm am
   var month   = dateString.slice(0,2),
-    day     = dateString.slice(3,5),
-    year    = dateString.slice(6,10),
-    hour    = dateString.slice(11,13),
-    minutes = dateString.slice(14,16),
-    ampm    = dateString.slice(17,19);
+      day     = dateString.slice(3,5),
+      year    = dateString.slice(6,10),
+      hour    = dateString.slice(11,13),
+      minutes = dateString.slice(14,16),
+      ampm    = dateString.slice(17,19);
   // convert ampm to 24 hour
   if (ampm == 'pm') {
     ampm = 12;

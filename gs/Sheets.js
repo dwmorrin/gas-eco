@@ -129,11 +129,11 @@ function createDailyBookingFormsGAS_() {
  */
 function createBookingFormGAS_(booking) {
   var form = new Form_(),
-    bookedStudents = booking.getBookedStudents(),
-    itemStringArray = booking.getItems(),
-    items = [],
-    studentStringArray,
-    students = [];
+      bookedStudents = booking.getBookedStudents(),
+      itemStringArray = booking.getItems(),
+      items = [],
+      studentStringArray,
+      students = [];
   
   // handle booking students -> form students
   studentStringArray = bookedStudents.replace(/, /g, ',').split(',');
@@ -210,7 +210,7 @@ function getAllStudentsGAS_() {
 function getOpenFormsGAS_() {
   var formsSheet = SpreadsheetApp.openById(index.forms.SHEET_ID).getSheetByName(index.forms.SHEET_NAME);
   var data = formsSheet.getDataRange().getValues(),
-    forms = [];
+      forms = [];
   data.shift();
   data.forEach(function getArrayOfForms(sheetData) {
     forms.push(makeFormFromDataGAS_(sheetData));
@@ -257,9 +257,9 @@ function makeBookingFromDataGAS_(bookingData) {
 /** @param {object []} sheetData - a row pulled from Forms Sheet */ 
 function makeFormFromDataGAS_(sheetData) {
   var form = new Form_(sheetData[index.forms.ID]),
-    studentInfo = JSON.parse(sheetData[index.forms.STUDENTS]),
-    itemsInfo = JSON.parse(sheetData[index.forms.ITEMS]),
-    notes = JSON.parse(sheetData[index.forms.NOTES]);
+      studentInfo = JSON.parse(sheetData[index.forms.STUDENTS]),
+      itemsInfo = JSON.parse(sheetData[index.forms.ITEMS]),
+      notes = JSON.parse(sheetData[index.forms.NOTES]);
   
   form.setBookingId(sheetData[index.forms.BOOKING_ID])
     .setBookedStudents(sheetData[index.forms.BOOKED_STUDENTS])
@@ -278,7 +278,7 @@ function makeFormFromDataGAS_(sheetData) {
 
 function makeItemFromDataGAS_(itemData) {
   var item = new Item_(itemData[index.items.ID]),
-    description;
+      description;
   
   // Item has only a simple 'description' field
   // Sheet implementation (this) must distill available fields into description
@@ -297,7 +297,7 @@ function makeItemFromDataGAS_(itemData) {
 
 function makeStudentFromDataGAS_(studentData) {
   var student = new Student_(studentData[index.students.ID]),
-    signature = false;
+      signature = false;
   
   if (studentData[index.students.SIGNATURE]) {
     signature = true;
@@ -366,9 +366,9 @@ function writeFormToSheetGAS_(form, closeAndArchive) {
     formSheet.appendRow(values);
   } else { // update
     var column = 1,
-      numRows = 1,
-      numColumns = 13,
-      range;
+        numRows = 1,
+        numColumns = 13,
+        range;
     
     // Note: do not shift data
     row = data.findRowContaining(form.id, 0, true);
