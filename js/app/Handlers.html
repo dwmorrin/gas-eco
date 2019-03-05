@@ -1,6 +1,7 @@
 <script>
 // Window level event handlers.
 // Page and page element handlers are found under their respective pages
+/* global app */
 app.handlers = {
   /**
    * Attach this function to the beforeunload event whevener there is a form with
@@ -12,8 +13,8 @@ app.handlers = {
    * @todo this looks promising: https://jes.al/2016/03/preventing-back-button-navigation-in-SPAs/
    */
   beforeunload: function(event) {
-    if(!app.changes.saved) {
-      var confirmationMessage = "\o/";
+    if (! app.changes.saved) {
+      var confirmationMessage = "Are you sure?";
       event.returnValue = confirmationMessage;     // Gecko, Trident, Chrome 34+
       return confirmationMessage;              // Gecko, WebKit, Chrome <34
     } else {
@@ -21,11 +22,11 @@ app.handlers = {
     }
   },
   clickButton: function(click) {
-    if(click.target.tagName != 'BUTTON') {
+    if (click.target.tagName != 'BUTTON') {
       return;
     }
 
-    if(click.target.value.slice(0,9) == 'loseData_') {
+    if (click.target.value.slice(0,9) == 'loseData_') {
       app.changes.saved = true;
       app.pages.form.elements.updateButtonHint.textContent = '';
       app.pages.form.elements.updateFormButton.disabled = true;
@@ -35,13 +36,13 @@ app.handlers = {
     app.doCommand(click.target.value);
   },
   keydown: function(keydown) {
-    if(keydown.key == 'Enter' && keydown.target.classList.contains('itemnotesinput')) {
+    if (keydown.key == 'Enter' && keydown.target.classList.contains('itemnotesinput')) {
       app.pages.form.handleItemNoteInput(keydown);
       return;
     }
     // Allow esc to safely exit error messages
-    if(keydown.key == 'Escape') {
-      if(!app.modal.container.classList.contains('hidden')) {
+    if (keydown.key == 'Escape') {
+      if (!app.modal.container.classList.contains('hidden')) {
         app.modal.hide();
       } else {
         keydown.target.blur();
@@ -49,8 +50,8 @@ app.handlers = {
     }
 
     // Allow cmd + enter to submit/update form
-    if(!app.pages.form.elements.updateFormButton.disabled && app.modal.container.classList.contains('hidden')) {
-      if((keydown.metaKey || keydown.ctrlKey) && keydown.key == 'Enter') {
+    if (!app.pages.form.elements.updateFormButton.disabled && app.modal.container.classList.contains('hidden')) {
+      if ((keydown.metaKey || keydown.ctrlKey) && keydown.key == 'Enter') {
         app.doCommand('updateForm');
         return;
       }

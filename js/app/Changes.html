@@ -1,4 +1,5 @@
 <script>
+/* global app */
 app.changes = {
   add: function(change) {
     let newChange = {
@@ -12,7 +13,7 @@ app.changes = {
     this.stack = [];
   },
   makeNote: function() {
-     return {
+    return {
       timestamp: Date.now(),
       author: app.elements.usernameDisplay.textContent,
       body: JSON.stringify(this.stack),

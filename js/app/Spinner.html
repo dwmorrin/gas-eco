@@ -1,4 +1,5 @@
 <script>
+/* global app */
 app.spinner = {
   element: document.querySelector('div.spinner'),
   /**
@@ -7,9 +8,11 @@ app.spinner = {
    */
   inside: function(element) {
     element.innerHTML = '<div class="spinner"></div>';
-    if(element == app.pages.form.elements.updateFormButton) app.pages.form.elements.updateButtonHint.textContent = '';
+    if (element == app.pages.form.elements.updateFormButton) {
+      app.pages.form.elements.updateButtonHint.textContent = '';
+    }
   },
-  /** Hides only spinner, but does not affect other pages; call showPage separately */
+  /** Hides only spinner; call showPage separately */
   off: function() {
     app.spinner.element.classList.add('hidden');
   },

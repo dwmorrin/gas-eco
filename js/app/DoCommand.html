@@ -3,9 +3,17 @@
  * client commands switch block
  * most of these are primarily driven by mouse clicks, usually on button elements
  */
+/* global
+      app
+      displayForm
+      displayNewForm
+      displayOpenForms
+      populateItemList
+      utility
+*/
 app.doCommand = function(command,...options) {
   switch (command) {
-    case 'archivedForms':
+    case 'archivedForms': {
       if (!app.changes.saved) {
         app.modal.handleUnsavedForm(command);
         return;
@@ -20,6 +28,7 @@ app.doCommand = function(command,...options) {
       app.showPage(app.pages.archive);
       app.cache.currentFormstack = 'archive';
       break;
+    }
     case 'changeLog':
       app.modal.displayChangeLog(JSON.parse(app.pages.form.elements.form.notes.value));
       break;
@@ -32,11 +41,12 @@ app.doCommand = function(command,...options) {
       app.spinner.on();
       app.run.doPost({ post: 'demo' });
       break;
-    case 'displayForm':
+    case 'displayForm': {
       let form = options[0],
           isArchive = Boolean(options[1]);
       displayForm(form, isArchive);
       break;
+    }
     case 'displayNewForm':
       if (!app.changes.saved) {
         app.modal.handleUnsavedForm(command);
@@ -48,7 +58,7 @@ app.doCommand = function(command,...options) {
     //@todo this and studentNote and saveNote are redundant and need refactoring!
       app.modal.handleError(new Error('Not available yet!'));
       break;
-    case 'itemQuantity':
+    case 'itemQuantity': {
       let itemId = app.modal.tmp;
       let quantity = +app.modal.getInput();
       let items = JSON.parse(app.pages.form.elements.form.items.value);
@@ -58,7 +68,7 @@ app.doCommand = function(command,...options) {
           name: 'items',
           value: itemId + ' qty ' + item.quantity,
         }
-      }
+      };
       if (quantity < 1 || isNaN(quantity) || Math.floor(quantity) != quantity) {
         app.modal.handleError(new Error("Invalid quantity: " + quantity + ". Use a positive number.  Scan the item again to check-in."));
         return;
@@ -73,6 +83,7 @@ app.doCommand = function(command,...options) {
       itemchange.target.value += ' to ' + quantity;
       app.pages.form.handleChange(itemchange);
       break;
+    }
     case 'newNote':
       app.modal.getNote();
       break;
@@ -116,7 +127,7 @@ app.doCommand = function(command,...options) {
             name: 'notes',
             value: note.body.length > 10 ? note.body.slice(0, 10) + '...' : note.body
           }
-        }
+        };
         let p = document.createElement('p');
         p.textContent = 'Note: ' + '[' + note.author + '] ' + note.body;
 
@@ -130,7 +141,7 @@ app.doCommand = function(command,...options) {
         app.pages.form.elements.noteSection.classList.remove('hidden');
       }
       break;
-    case 'setLocationOther':
+    case 'setLocationOther': {
       let otherLocation = app.modal.getInput(),
           option = app.pages.form.elements.locationOtherOption,
           select = app.pages.form.elements.form.location,
@@ -144,20 +155,23 @@ app.doCommand = function(command,...options) {
       app.pages.form.handleChange(change);
       option.textContent = otherLocation; // must follow handleChange
       break;
+    }
     case 'signatureRecheck':
       window.clearTimeout(app.cache.signatureTimeoutId);
       app.run.doGet({ get: 'students',  init: false});
       break;
-    case 'signatureSubmit':
+    case 'signatureSubmit': {
       let dataURL = app.modal.signaturePad.toDataURL(),
           studentId = app.modal.tmp;
       app.run.doPost({ post: 'signature', dataURL: dataURL, id: studentId });
       break;
-    case 'sortOpenForms':
+    }
+    case 'sortOpenForms': {
       let sortType = options[0];
       displayOpenForms(app.cache.openForms, sortType);
       break;
-    case 'studentNote':
+    }
+    case 'studentNote': {
       let radio = app.modal.table.querySelectorAll('input[type="radio"]'),
           value;
       for (let i = 0; i < radio.length; i++) {
@@ -187,7 +201,7 @@ app.doCommand = function(command,...options) {
           name: 'notes',
           value: newNote.body.length > 10 ? newNote.body.slice(0, 10) + '...' : newNote.body
         }
-      }
+      };
       let para = document.createElement('p');
       para.textContent = 'Note: ' + '[' + newNote.author + '] ' + newNote.body;
 
@@ -200,6 +214,7 @@ app.doCommand = function(command,...options) {
         app.pages.form.elements.noteSection.classList.remove('hidden');
       }
       break;
+    }
     case 'updateForm':
       app.omnibox.parse();
       app.spinner.inside(app.pages.form.elements.updateFormButton);
