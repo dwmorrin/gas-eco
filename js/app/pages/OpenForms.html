@@ -1,4 +1,5 @@
 <script>
+/* global app displayOpenForms */
 app.pages.openForms = {
   elements: {
     container:          document.querySelector('div.openFormsContainer'),
@@ -9,8 +10,8 @@ app.pages.openForms = {
   handleClickTable: function(click) {
     let findForm = function(form) {
       return form.id == click.target.parentNode.getAttribute('data-id');
-    }
-    let index = app.cache.openForms.findIndex(findForm);
+    };
+    const index = app.cache.openForms.findIndex(findForm);
     if (index < 0) {
       return;
     }
