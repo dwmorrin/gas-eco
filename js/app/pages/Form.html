@@ -1,4 +1,5 @@
 <script>
+/* global app displayForm utility isFormOkToPost isFormReadyToClose */
 app.pages.form = {
   elements: {
     container:               document.querySelector('div.formContainer'),
@@ -101,19 +102,19 @@ app.pages.form = {
         newChange = { target: {} };
     // CHECK #0: Are t.start and t.end valid?
     if (window.isNaN(t.startTime.getTime())) {
-        app.pages.form.elements.form.startDate.classList.add('error');
-        app.pages.form.elements.form.startHour.classList.add('error');
-        app.pages.form.elements.form.startMinute.classList.add('error');
-        app.pages.form.elements.form.startAMPM.classList.add('error');
-        app.modal.handleError(new Error('please enter a valid start time.'));
-        return;
+      app.pages.form.elements.form.startDate.classList.add('error');
+      app.pages.form.elements.form.startHour.classList.add('error');
+      app.pages.form.elements.form.startMinute.classList.add('error');
+      app.pages.form.elements.form.startAMPM.classList.add('error');
+      app.modal.handleError(new Error('please enter a valid start time.'));
+      return;
     } else if (window.isNaN(t.endTime.getTime())) {
-        app.pages.form.elements.form.endDate.classList.add('error');
-        app.pages.form.elements.form.endHour.classList.add('error');
-        app.pages.form.elements.form.endMinute.classList.add('error');
-        app.pages.form.elements.form.endAMPM.classList.add('error');
-        app.modal.handleError(new Error('please enter a valid end time.'));
-        return;
+      app.pages.form.elements.form.endDate.classList.add('error');
+      app.pages.form.elements.form.endHour.classList.add('error');
+      app.pages.form.elements.form.endMinute.classList.add('error');
+      app.pages.form.elements.form.endAMPM.classList.add('error');
+      app.modal.handleError(new Error('please enter a valid end time.'));
+      return;
     }
 
     // CHECK #1: If start is after end, try flipping end AM -> PM first
@@ -154,8 +155,12 @@ app.pages.form = {
     app.changes.add(newChange);
   },
   handleClickItem: function(click) {
-    if (click.target.parentNode.classList.contains('itemnotes')) return;
-    if (click.metaKey) return;
+    if (click.target.parentNode.classList.contains('itemnotes')) {
+      return;
+    }
+    if (click.metaKey) {
+      return;
+    }
     // find item barcode
     let id, item, node;
     node = utility.DOM.getFirstChild(click.target.parentNode);
@@ -193,23 +198,24 @@ app.pages.form = {
       if (!app.omnibox.element.disabled) {
         let inputCell = utility.DOM.getNextSibling(click.target);
         let input = utility.DOM.getFirstChild(inputCell);
+        let value, hour, minute, ampm;
         switch (input.name) {
           case 'location':
             input.value = click.target.textContent;
             break;
-          case 'startDate':
+          case 'startDate': // fallthrough
           case 'endDate':
-            let value = utility.date.parseFormattedDate(click.target.textContent);
-            let hour = utility.DOM.getNextSibling(input);
-            let minute = utility.DOM.getNextSibling(hour);
-            let ampm = utility.DOM.getNextSibling(minute);
+            value = utility.date.parseFormattedDate(click.target.textContent);
+            hour = utility.DOM.getNextSibling(input);
+            minute = utility.DOM.getNextSibling(hour);
+            ampm = utility.DOM.getNextSibling(minute);
             input.value = value.getFullYear() +
               '-' + utility.date.zeropad(value.getMonth() + 1) +
               '-' + utility.date.zeropad(value.getDate());
             minute.value = utility.date.roundMinutes(value.getMinutes());
             hour.value = utility.date.parseHours(value.getHours());
             ampm.value = utility.date.parseAMPM(value.getHours());
-          break;
+            break;
         }
         click.target.classList.add('hidden');
         inputCell.classList.remove('hidden');
@@ -230,18 +236,24 @@ app.pages.form = {
     app.omnibox.parse();
   },
   handleClickStudent: function(click) {
-    if (click.metaKey) return;
-    let netId = utility.DOM.getNextSibling(utility.DOM.getFirstChild(click.target.parentNode)).textContent,
+    if (click.metaKey) {
+      return;
+    }
+    let netId = utility.DOM.getNextSibling(
+          utility.DOM.getFirstChild(click.target.parentNode)
+        ).textContent,
         student,
         students = JSON.parse(app.pages.form.elements.form.students.value);
     student = students.find(s => s.netId == netId);
     if (!student) {
-      app.modal.handleError(new Error('could not find student with NetID ' + netId));
+      app.modal.handleError(
+        new Error('could not find student with NetID ' + netId)
+      );
       return;
     }
     app.modal.handleStudentNote(student);
   },
-  handleItemNoteInput: function(event) { // could be keydown.key == 'Enter' or blur
+  handleItemNoteInput: function(event) { // keydown.key == 'Enter' or blur
     let value = event.target.value,
         parent = event.target.parentNode;
     parent.removeChild(event.target);
