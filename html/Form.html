@@ -22,11 +22,12 @@
       <button value="changeLog" tabindex="-1">Change Log</button>
       <button value="previousForm" tabindex="-1">Previous Form</button>
       <button value="nextForm" tabindex="-1">Next Form</button>
-      Currently viewing: <span class="currentFormstackDisplay"></span><!-- TODO: REMOVE ME, FOR DEBUGGING -->
+      Currently viewing: <span class="currentFormstackDisplay">
+        <!-- TODO: REMOVE ME, FOR DEBUGGING --></span>
       <br />
       <button class="create" value="updateForm" disabled="true">Submit</button>
       <button class="buttonSmall" value="undo" disabled="true" tabindex="-1">
-        <svg width="15px" height="15px" xmls="http://www.w3.org/2000/svg">
+        <svg class="buttonIcon" xmlns="http://www.w3.org/2000/svg">
           <path fill="none" stroke="black"
             d="M 20,20
                A 5,5,270,0,0,0,20" />
@@ -37,7 +38,7 @@
                L 0,20" />
         </svg>
       </button>
-      <span class="updateButtonHint"></span>
+      <span class="updateButtonHint"><!-- populated by js --></span>
     </section>
     <section class="globalnotes hidden">
       <!-- Notes added with 'New Note' button show up here -->
@@ -176,7 +177,7 @@
       </table>
     </section>
     <section>
-      <h4>Equipment Checked-Out</h4>
+      <h4>Equipment Checked Out</h4>
       <table>
         <thead class="form formItems">
           <tr>
