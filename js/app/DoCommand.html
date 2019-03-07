@@ -19,8 +19,14 @@ app.doCommand = function(command,...options) {
         return;
       }
       let today = new Date();
-      today.setHours(0); today.setMinutes(0); today.setSeconds(0); today.setMilliseconds(0);
-      if (new Date(app.pages.archive.range.end + 'T00:00:00').getTime() >= today.getTime()) {
+      today.setHours(0);
+      today.setMinutes(0);
+      today.setSeconds(0);
+      today.setMilliseconds(0);
+      const selectedEndTime = new Date(
+        app.pages.archive.range.end + 'T00:00:00'
+      ).getTime();
+      if (selectedEndTime >= today.getTime()) {
         app.pages.archive.update();
       } else {
         app.pages.archive.query();
@@ -30,12 +36,17 @@ app.doCommand = function(command,...options) {
       break;
     }
     case 'changeLog':
-      app.modal.displayChangeLog(JSON.parse(app.pages.form.elements.form.notes.value));
+      app.modal.displayChangeLog(
+        JSON.parse(app.pages.form.elements.form.notes.value)
+      );
       break;
     case 'codabar':
-      // NetID is sitting in app.modal.input, new codabar is sitting in omnibox AND app.modal.tmp
+      // NetID is sitting in app.modal.input
+      // new codabar is sitting in omnibox AND app.modal.tmp
       // need to update Students sheet and then parse omnibox
-      app.run.doPost({ post: 'codabar', netId: app.modal.getInput(), codabar: app.modal.tmp });
+      app.run.doPost({
+        post: 'codabar', netId: app.modal.getInput(), codabar: app.modal.tmp
+      });
       break;
     case 'demo':
       app.spinner.on();
@@ -55,7 +66,7 @@ app.doCommand = function(command,...options) {
       displayNewForm();
       break;
     case 'itemNote':
-    //@todo this and studentNote and saveNote are redundant and need refactoring!
+    //TODO this and studentNote and saveNote are redundant and need refactoring!
       app.modal.handleError(new Error('Not available yet!'));
       break;
     case 'itemQuantity': {
@@ -69,8 +80,13 @@ app.doCommand = function(command,...options) {
           value: itemId + ' qty ' + item.quantity,
         }
       };
-      if (quantity < 1 || isNaN(quantity) || Math.floor(quantity) != quantity) {
-        app.modal.handleError(new Error("Invalid quantity: " + quantity + ". Use a positive number.  Scan the item again to check-in."));
+      if (quantity < 1 || isNaN(quantity) ||
+          Math.floor(quantity) != quantity) {
+        app.modal.handleError(
+          new Error("Invalid quantity: " + quantity +
+            ". Use a positive number.  Scan the item again to check-in."
+          )
+        );
         return;
       }
       item.quantity = quantity;
@@ -114,33 +130,36 @@ app.doCommand = function(command,...options) {
       app.pages.form.elements.updateFormButton.setAttribute('disabled', true);
       displayForm(app.cache.savedForm);
       break;
-    case 'saveNote':
-      {
-        let notes = JSON.parse(app.pages.form.elements.form.notes.value);
-        let note = {
-          timestamp: Date.now(),
-          author: app.elements.usernameDisplay.textContent,
-          body: app.modal.getText(),
-        };
-        let noteChange = {
-          target: {
-            name: 'notes',
-            value: note.body.length > 10 ? note.body.slice(0, 10) + '...' : note.body
-          }
-        };
-        let p = document.createElement('p');
-        p.textContent = 'Note: ' + '[' + note.author + '] ' + note.body;
-
-        notes.push(note);
-        app.pages.form.elements.form.notes.value = JSON.stringify(notes);
-        app.pages.form.handleChange(noteChange);
-
-        app.pages.form.elements.noteSection.appendChild(p);
+    case 'saveNote': {
+      let notes = JSON.parse(app.pages.form.elements.form.notes.value);
+      let note = {
+        timestamp: Date.now(),
+        author: app.elements.usernameDisplay.textContent,
+        body: app.modal.getText(),
+      };
+      let shortNotes = note.body;
+      if (shortNotes.length > 10) {
+        shortNotes = shortNotes.slice(0, 10) + "...";
       }
+      let noteChange = {
+        target: {
+          name: 'notes',
+          value: shortNotes
+        }
+      };
+      let p = document.createElement('p');
+      p.textContent = 'Note: ' + '[' + note.author + '] ' + note.body;
+
+      notes.push(note);
+      app.pages.form.elements.form.notes.value = JSON.stringify(notes);
+      app.pages.form.handleChange(noteChange);
+
+      app.pages.form.elements.noteSection.appendChild(p);
       if (app.pages.form.elements.noteSection.classList.contains('hidden')) {
         app.pages.form.elements.noteSection.classList.remove('hidden');
       }
       break;
+    }
     case 'setLocationOther': {
       let otherLocation = app.modal.getInput(),
           option = app.pages.form.elements.locationOtherOption,
@@ -185,29 +204,36 @@ app.doCommand = function(command,...options) {
           }
         }
       }
-      if (!value) {
-        app.modal.handleError(new Error('an error has occured while getting student note'));
+      if (! value) {
+        app.modal.handleError(
+          new Error('an error has occured while getting student note')
+        );
       }
-      // @todo this is just a cut and paste and modified version of 'saveNote' - refactor
+      // TODO this is a cut, paste and modify version of 'saveNote'; refactor
       // let variables had to be renamed so as not to conflict
-      let savedNotes = JSON.parse(app.pages.form.elements.form.notes.value);
-      let newNote = {
+      // (probably OK to share name now that blocks have been added)
+      let notes = JSON.parse(app.pages.form.elements.form.notes.value);
+      let note = {
         timestamp: Date.now(),
         author: app.elements.usernameDisplay.textContent,
         body: app.modal.tmp + ': ' + value,
       };
-      let changeNote = {
+      let shortNotes = note.body;
+      if (shortNotes.length > 10) {
+        shortNotes = shortNotes.slice(0, 10) + "...";
+      }
+      let noteChange = {
         target: {
           name: 'notes',
-          value: newNote.body.length > 10 ? newNote.body.slice(0, 10) + '...' : newNote.body
+          value: shortNotes
         }
       };
       let para = document.createElement('p');
-      para.textContent = 'Note: ' + '[' + newNote.author + '] ' + newNote.body;
+      para.textContent = 'Note: ' + '[' + note.author + '] ' + note.body;
 
-      savedNotes.push(newNote);
-      app.pages.form.elements.form.notes.value = JSON.stringify(savedNotes);
-      app.pages.form.handleChange(changeNote);
+      notes.push(note);
+      app.pages.form.elements.form.notes.value = JSON.stringify(notes);
+      app.pages.form.handleChange(noteChange);
 
       app.pages.form.elements.noteSection.appendChild(para);
       if (app.pages.form.elements.noteSection.classList.contains('hidden')) {
