@@ -104,10 +104,14 @@ app.doCommand = function(command,...options) {
       app.modal.getNote();
       break;
     case 'nextForm':
+      if (! app.changes.saved) {
+        app.modal.handleUnsavedForm(command);
+        return;
+      }
       app.pages.form.getNext(); 
       break;
     case 'openForms':
-      if (!app.changes.saved) {
+      if (! app.changes.saved) {
         app.modal.handleUnsavedForm(command);
         return;
       }
@@ -118,6 +122,10 @@ app.doCommand = function(command,...options) {
       app.omnibox.parse();
       break;
     case 'previousForm':
+      if (! app.changes.saved) {
+        app.modal.handleUnsavedForm(command);
+        return;
+      }
       app.pages.form.getPrevious();
       break;
     case 'query':
