@@ -74,7 +74,7 @@ app.pages.form = {
         break;
     }
 
-    let okToPost = isFormOkToPost();
+    const okToPost = isFormOkToPost();
     if (okToPost) {
       // are we ready to close?
       if (isFormReadyToClose()) {
