@@ -21,24 +21,20 @@ app.pages.form = {
   getNext: function() {
     // get the next form from either the open stack or the archive stack
     let stack = app.cache[app.cache.currentFormstack];
-    let isArchive = (app.cache.currentFormstack == 'archive') ? true : false;
-    
     if (app.cache.currentIndex == stack.length - 1) { // we're already at the end
       return;
     } else {
-      let nextForm = stack[++app.cache.currentIndex];
-      displayForm(nextForm, isArchive);
+      const isArchive = (app.cache.currentFormstack == 'archive') ? true : false;
+      displayForm(stack[++app.cache.currentIndex], isArchive);
     }
   },
   getPrevious: function() {
     let stack = app.cache[app.cache.currentFormstack];
-    let isArchive = (app.cache.currentFormstack == 'archive') ? true : false;
-
     if (app.cache.currentIndex == 0) { // we're already at the beginning
       return;
     } else {
-      let previousForm = stack[--app.cache.currentIndex];
-      displayForm(previousForm, isArchive);
+      const isArchive = (app.cache.currentFormstack == 'archive') ? true : false;
+      displayForm(stack[--app.cache.currentIndex], isArchive);
     }
   },
   /** for form validation and attach beforeunload listener for unsaved changes */
