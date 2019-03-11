@@ -170,7 +170,7 @@ function updateBookingDatesDemo() {
 /* exported checkItemsDemo_ */
 function checkItemsDemo_(form) {  
   form.items.forEach(function(item) {
-    if (!item.checkIn && item.checkOut && !item.checkedOut) { // requesting checkout
+    if (! item.checkIn && item.checkOut && ! item.checkedOut) { // requesting checkout
       // @todo
       // Real version with multiple instances of Equipment Check-Outs requires real validation here
       item.checkedOut = true;
@@ -256,7 +256,7 @@ function createBookingFormDEMO_(booking, forArchive) {
     .setProject(booking.getProject())
     .setStudents(students);
   
-  if (!forArchive) {
+  if (! forArchive) {
     writeFormToSheetDEMO_(form);
   } else {
     writeFormToSheetDEMO_(form, false, true);
@@ -293,9 +293,11 @@ function getSheetDEMO_(reset) {
   var user = getUser_();
   var ss = SpreadsheetApp.openById(index.forms.DEMO_ID);
   var formsSheet = ss.getSheetByName(user);   // try to pull sheet, undefined if does not exist
-  if (!formsSheet || reset) {                  // doesn't exist or we want to reset
+  if (! formsSheet || reset) {                  // doesn't exist or we want to reset
     var masterSheet = ss.getSheetByName('Forms');  // @see createDailyBookingFormsDEMO_
-    if (!formsSheet) formsSheet = ss.insertSheet(user); // this creates a sheet with a name 'user@nyu.edu'
+    if (! formsSheet) {
+      formsSheet = ss.insertSheet(user); // this creates a sheet with a name 'user@nyu.edu'
+    }
     var range = formsSheet.getRange(1, 1, 6, 13);  // grab the range we're going to copy
     masterSheet.getRange(1,1,6,13).copyTo(range);  // copy onto the user's sheet
   }
@@ -306,9 +308,9 @@ function getArchiveDEMO_(reset) {
   var user = getUser_();
   var ss = SpreadsheetApp.openById(index.forms.DEMO_ID);
   var archiveSheet = ss.getSheetByName(user + '_Archive');   // try to pull sheet, undefined if does not exist
-  if (!archiveSheet || reset) {                  // doesn't exist or we want to reset
+  if (! archiveSheet || reset) {                  // doesn't exist or we want to reset
     var masterSheet = ss.getSheetByName('Archive');
-    if (!archiveSheet) {
+    if (! archiveSheet) {
       archiveSheet = ss.insertSheet(user + '_Archive'); // this creates a sheet with a name 'user@nyu.edu_Archive'
     } else {
       archiveSheet.clear();
@@ -361,7 +363,7 @@ function resetDEMO_() {
 
 function writeFormToSheetDEMO_(form, closeAndArchive, forArchive) {
   var formSheet;
-  if (!forArchive) {
+  if (! forArchive) {
     formSheet = getSheetDEMO_();
   } else {
     formSheet = SpreadsheetApp.openById(index.bookings.FALL_17).getSheetByName('ArchivedFix');
@@ -390,7 +392,7 @@ function writeFormToSheetDEMO_(form, closeAndArchive, forArchive) {
     // Note: do not shift data
     row = data.findRowContaining(form.id, 0, true);
   
-    if (!row) {
+    if (! row) {
       throw 'could not delete form ' + form;
     } else {
       row++;
@@ -399,7 +401,7 @@ function writeFormToSheetDEMO_(form, closeAndArchive, forArchive) {
     return;
   }
 
-  if (!form.id) { // create
+  if (! form.id) { // create
     values[0] = form.createId();
     formSheet.appendRow(values);
   } else if (forArchive) {
@@ -413,7 +415,7 @@ function writeFormToSheetDEMO_(form, closeAndArchive, forArchive) {
     // Note: do not shift data
     row = data.findRowContaining(form.id, 0, true);
 
-    if (!row) {
+    if (! row) {
       throw 'could not find form ' + form;
     } else {
       row++;
