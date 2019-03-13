@@ -66,9 +66,9 @@ function doGet(request) {
   if (! request.get) {
     webpage = HtmlService.createTemplateFromFile('html/index').evaluate();  
     webpage.setTitle('Equipment Check-Out');
-    if (runWith == 'demo') {
-      resetDEMO_();
-    }
+    //if (runWith == 'demo') {
+    //  resetDEMO_();
+    //}
     return webpage;
   }
   
@@ -213,7 +213,7 @@ function handleUnload_() {
   switch (runWith) {
     case 'demo':
       // Reset demo
-      resetDEMO_();
+      // resetDEMO_();
       // fallthrough
     case 'GAS':
       // clear signature validation
