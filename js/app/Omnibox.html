@@ -170,13 +170,13 @@ app.omnibox = {
           idRegex = /^[a-z]+[0-9]+/;
       if (idRegex.test(value)) {
         nameOrId = 'netId';
+        manualEntryAlert();
       }
       parsed = app.cache.students.find(
         student => student[nameOrId].toLowerCase() == value
       );
       if (parsed) {
         app.omnibox.handleStudent(parsed);
-        manualEntryAlert();
       }
     }
 
