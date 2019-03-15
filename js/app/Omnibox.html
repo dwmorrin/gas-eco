@@ -170,17 +170,13 @@ app.omnibox = {
           idRegex = /^[a-z]+[0-9]+/;
       if (idRegex.test(value)) {
         nameOrId = 'netId';
+        manualEntryAlert();
       }
       parsed = app.cache.students.find(
         student => student[nameOrId].toLowerCase() == value
       );
       if (parsed) {
         app.omnibox.handleStudent(parsed);
-        // MANUAL ENTRY ALERT!
-        app.modal.handleInfo(new Error(value + app.strings.omniboxManualEntry));
-        app.pages.form.handleChange(
-          { target: { name: 'manual', value: value }}
-        );
       }
     }
 
@@ -193,11 +189,7 @@ app.omnibox = {
         parsed = app.cache.items.find(
           item => item.id.toLowerCase().replace(dashzero, '-') == value
         );
-        // MANUAL ENTRY ALERT!
-        app.modal.handleInfo(new Error(value + app.strings.omniboxManualEntry));
-        app.pages.form.handleChange(
-          { target: { name: 'manual', value: value }}
-        );
+        manualEntryAlert();
       } else if (barcoderegex.test(value)) { // assume it's a barcode
         parsed = app.cache.items.find(
           item => item.barcode.toLowerCase() == value
@@ -213,6 +205,15 @@ app.omnibox = {
       app.omnibox.element.classList.add('error');
       window.setTimeout(
         () => app.omnibox.element.classList.remove('error'), 2000
+      );
+    }
+    
+    function manualEntryAlert() {
+      app.modal.handleInfo(
+        new Error(app.omnibox.element.value + app.strings.omniboxManualEntry)
+      );
+      app.pages.form.handleChange(
+        { target: { name: 'manual', value: app.omnibox.element.value }}
       );
     }
   },

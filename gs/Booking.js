@@ -1,6 +1,6 @@
 /* exported Booking_ */
 function Booking_(id) {
-  if (!id) {
+  if (! id) {
     throw 'Booking ID cannot be generated';
   }
   this.id = id;

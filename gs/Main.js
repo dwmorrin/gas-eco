@@ -63,12 +63,16 @@ function closeForm_(form) {
 function doGet(request) {
   var response = {};
   var  webpage;
-  if (!request.get) {
-    webpage = HtmlService.createTemplateFromFile('html/index').evaluate();  
-    webpage.setTitle('Equipment Check-Out');
-    if (runWith == 'demo') {
-      resetDEMO_();
+  if (! request.get) {
+    webpage = HtmlService.createTemplateFromFile('html/index');
+    if (runWith == "demo") {
+      webpage.demo = true;
     }
+    webpage = webpage.evaluate();  
+    webpage.setTitle('Equipment Check-Out');
+    //if (runWith == 'demo') {
+    //  resetDEMO_();
+    //}
     return webpage;
   }
   
@@ -213,7 +217,7 @@ function handleUnload_() {
   switch (runWith) {
     case 'demo':
       // Reset demo
-      resetDEMO_();
+      // resetDEMO_();
       // fallthrough
     case 'GAS':
       // clear signature validation
@@ -235,7 +239,10 @@ function include_(filename) {
 
 function isAllGearReturned_(form) {
   return form.items.every(function(item) {
-    if (item.checkOut) return item.checkIn; else return true;
+    if (item.checkOut) {
+      return item.checkIn;
+    }
+    return true;
   });
 }
 
@@ -253,7 +260,9 @@ function isCheckOutStudentOk_(form) {
  * @see doPost
  */
 function isFormReadyToClose_(form) {
-  if (!isCheckOutStudentOk_(form)) return false;
+  if (! isCheckOutStudentOk_(form)) {
+    return false;
+  }
   return form.students.some(
     function(student) { return student.checkIn; }
   ) && form.students.every(
@@ -271,7 +280,9 @@ function isFormReadyToClose_(form) {
  * check if the form has no students checked-in after the grace period
  */
 function isNoShow_(form) {
-  if (!form.id) return false;
+  if (! form.id) {
+    return false;
+  }
   var gracePeriod = 30, // minutes
       start = new Date(form.startTime),
       now   = Date.now();
@@ -280,7 +291,7 @@ function isNoShow_(form) {
   
   start.setMinutes(start.getMinutes() + gracePeriod);
   
-  if (now > start.getTime() && !form.students.some(checkedIn)) {
+  if (now > start.getTime() && ! form.students.some(checkedIn)) {
     return true;
   } else {
     return false;
@@ -293,11 +304,14 @@ function isNoShow_(form) {
 /* exported isMissingStudentCheckout_ */
 function isMissingStudentCheckout_(form) {
   var isCheckedOut = function(student) {
-    if (student.checkIn) return student.checkOut;
-    else return true; // never checked-in
+    if (student.checkIn) {
+      return student.checkOut;
+    } else {
+      return true; // never checked-in
+    }
   };
   var end = new Date(form.endTime);
-  if (Date.now() > end.getTime() && !form.students.every(isCheckedOut)) {
+  if (Date.now() > end.getTime() && ! form.students.every(isCheckedOut)) {
     return true;
   } else {
     return false;
@@ -309,8 +323,11 @@ function isMissingStudentCheckout_(form) {
  */
 function isThereAnActiveStudent_(form) {
   var activeStudents = form.students.reduce(function(count, student) {
-    if (student.checkIn && !student.checkOut) return count + 0;
-    else return count;
+    if (student.checkIn && ! student.checkOut) {
+      return count + 0;
+    } else {
+      return count;
+    }
   }, 0);
   return activeStudents > 1;
 }
@@ -369,7 +386,7 @@ function postSignature_(request) {
 function readForm_(formObj) {
   formObj = JSON.parse(formObj);
   var form;
-  if (!formObj.id) {
+  if (! formObj.id) {
     form = new Form_();
   } else {
     form = new Form_(formObj.id);
