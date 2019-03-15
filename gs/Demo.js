@@ -1,7 +1,7 @@
 // Copy a preloaded (advanced bookings) forms sheet for each user to play with
 // Don't make advanced bookings in real time because parsing gear takes a few seconds
 
-/** End everything with Demo */
+/** End everything with DEMO */
 
 /* global
 Form_
@@ -17,8 +17,8 @@ makeStudentFromDataGAS_
 utility
 */
 
-/* exported makeFakeArchive */
-function makeFakeArchive() {
+/* exported makeFakeArchiveDEMO */
+function makeFakeArchiveDEMO() {
   // step through dates from Jan 1 to now
   var today = new Date();
   var makeDays = function() {
@@ -32,21 +32,21 @@ function makeFakeArchive() {
   var day = makeDays(),
       time = day().getTime();
   while (time < today.getTime()) {
-    makeRandomForm(time);
+    makeRandomFormDEMO_(time);
     time = day().getTime();
   }
 }
 
-/** range is [0-max) */
-function rndNumber(max) {
+/** range is [0,max) */
+function rndNumberDEMO_(max) {
   return Math.floor(Math.floor(max) * Math.random());
 }
 
-function makeRandomForm() {
+function makeRandomFormDEMO_() {
   var students = [];
   var studentIds = ['jjv298', 'ajb814', 'sy1470', 'vq435', 'dls2135', 'abc651', 'jpk385'];
-  for (var i = 0; i < rndNumber(3)+1; i++) {
-    var studentData = getSheetDataByIdGAS_(studentIds[rndNumber(studentIds.length + 1)],
+  for (var i = 0; i < rndNumberDEMO_(3)+1; i++) {
+    var studentData = getSheetDataByIdGAS_(studentIds[rndNumberDEMO_(studentIds.length + 1)],
       index.students.SHEET_ID, index.students.SHEET_NAME,
       index.students.NETID);
     students.push(makeStudentFromDataGAS_(studentData));
@@ -54,8 +54,8 @@ function makeRandomForm() {
   }
 }
 
-/* exported lookAtAnArchive */
-function lookAtAnArchive() {
+/* exported lookAtAnArchiveDEMO_ */
+function lookAtAnArchiveDEMO_() {
   var sheet = SpreadsheetApp.openById(index.forms.DEMO_ID).getSheetByName('dm187@nyu.edu_Archive');
   var notes = sheet.getRange(3, 13).getValue();
   notes = JSON.parse(notes);
@@ -190,7 +190,8 @@ function checkItemsDemo_(form) {
  */
 /* exported createDailyFormsDEMO_ */
 function createDailyFormsDEMO_() {
-  var bookingSheet = SpreadsheetApp.openById(index.bookings.DEMO_ID).getSheetByName(index.bookings.SHEET_NAME);
+  var bookingSheet = SpreadsheetApp.openById(index.bookings.SHEET_ID)
+    .getSheetByName(index.bookings.SHEET_NAME);
   var data = bookingSheet.getDataRange().getValues();
   data.shift();
   data.forEach(function(bookingData) {
