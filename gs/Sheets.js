@@ -12,7 +12,7 @@ var index = {
     SHEET_ID   : '1zl4FBglYgCdR_FMdfbIQOOpnt9b8TwgnjxzRwcekPrY',
     DEMO_ID    : '1Z6W4Q7RIRKlhFi5PjCRLUM4lG8MHvqIGek1i7MXN8ns',
     FALL_17    : '1K9IU9gq-swtkzFcnyaoVpa16VuaitHR_DkoF4xnrmqU', // 665 bookings from Fall '17
-    SHEET_NAME : 'DAILY_BOOKING_DATA',
+    SHEET_NAME : 'Daily Booking Data',
     ID         : 0,
     START_TIME : 1,
     END_TIME   : 2,
@@ -81,10 +81,12 @@ function checkItemsGAS_(form) {
   var sheet = SpreadsheetApp.openById(index.items.SHEET_ID).getSheetByName(index.items.SHEET_NAME);
   var data = sheet.getDataRange().getValues();
   form.items.forEach(function checkItems(item) {
-    if (!item.checkIn && item.checkOut && !item.checkedOut) { // requesting checkout
+    if (! item.checkIn && item.checkOut && ! item.checkedOut) { // requesting checkout
       for (var i = 0, l = data.length; i < l; i++) {
-        if (data[i][index.items.ID] != item.id) continue;
-        if (!data[i][index.items.CHECKED_OUT]) {
+        if (data[i][index.items.ID] != item.id) {
+          continue;
+        }
+        if (! data[i][index.items.CHECKED_OUT]) {
           sheet.getRange(i + 1, index.items.CHECKED_OUT + 1).setValue(true);
           item.checkedOut = true;
           return;
@@ -94,7 +96,9 @@ function checkItemsGAS_(form) {
       }
     } else if (item.checkIn && item.checkedOut) { // requesting check-in
       for (i = 0, l = data.length; i < l; i++) {
-        if (data[i][index.items.ID] != item.id) continue;
+        if (data[i][index.items.ID] != item.id) {
+          continue;
+        }
         if (data[i][index.items.CHECKED_OUT]) {
           sheet.getRange(i + 1, index.items.CHECKED_OUT + 1).clear();
           item.checkedOut = false;
