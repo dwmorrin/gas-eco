@@ -131,6 +131,9 @@ app.doCommand = function(command,...options) {
     case 'query':
       app.pages.archive.query();
       break;
+    case 'resetDemo':
+      app.run.doPost({ post: "demo" });
+      break;
     case 'revert':
       app.changes.saved = true;
       app.pages.form.elements.undoButton.setAttribute('disabled', true);
