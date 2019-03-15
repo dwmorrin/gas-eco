@@ -12,7 +12,7 @@ var index = {
     SHEET_ID   : '1zl4FBglYgCdR_FMdfbIQOOpnt9b8TwgnjxzRwcekPrY',
     DEMO_ID    : '1Z6W4Q7RIRKlhFi5PjCRLUM4lG8MHvqIGek1i7MXN8ns',
     FALL_17    : '1K9IU9gq-swtkzFcnyaoVpa16VuaitHR_DkoF4xnrmqU', // 665 bookings from Fall '17
-    SHEET_NAME : 'DAILY_BOOKING_DATA',
+    SHEET_NAME : 'Daily Booking Data',
     ID         : 0,
     START_TIME : 1,
     END_TIME   : 2,
