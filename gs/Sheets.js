@@ -10,8 +10,6 @@ Student_
 var index = {
   bookings: {
     SHEET_ID   : '1zl4FBglYgCdR_FMdfbIQOOpnt9b8TwgnjxzRwcekPrY',
-    DEMO_ID    : '1Z6W4Q7RIRKlhFi5PjCRLUM4lG8MHvqIGek1i7MXN8ns',
-    FALL_17    : '1K9IU9gq-swtkzFcnyaoVpa16VuaitHR_DkoF4xnrmqU', // 665 bookings from Fall '17
     SHEET_NAME : 'Daily Booking Data',
     ID         : 0,
     START_TIME : 1,
@@ -27,8 +25,8 @@ var index = {
   },
   forms: {
     SHEET_ID        : '1yMDg9w-vjZxeOYgES-XsicoWp9VvjV3xqCmdZhAyNI4',
-    DEMO_ID         : '1ZRMXwcM_HN6-V0YHpcWPhtUinugmzzcKok1aCBCWQew',
     SHEET_NAME      : 'Forms',
+    ARCHIVE_NAME    : 'Archive',
     ID              : 0,
     START_TIME      : 1,
     END_TIME        : 2,
@@ -47,9 +45,7 @@ var index = {
   //  Description, Serial, Item ID, Barcode No., Reserveable, Reservations, Check-Out History, Repair History, Checked-Out, ID, Qnty, Notes]]
   items: {
     SHEET_ID    : '1XYu7fGgmuZ3DTa8y2JNbwwKuHw8_XNJ4VEwgZCf_UME',
-    DEMO_ID     : '1SaFdnW5ONX7BV9A0IB1GlAS-GlKvoyHi8AALeKCUHJs',
     SHEET_NAME  : 'Inventory',
-    DEMO_NAME   : 'Items',
     MAKE        : 3,
     MODEL       : 4,
     DESCRIPTION : 5,
@@ -69,12 +65,6 @@ var index = {
     SIGNATURE             : 4
   }
 };
-
-/* exported myLog */
-function myLog(string) {
-  var log = SpreadsheetApp.openById('1lRNWwJKutOvnnAtqYtvRLqziKAANN86wakWk3ek_nZQ').getSheetByName('Sheet1');
-  log.appendRow([new Date().toLocaleString(), string]);
-}
 
 /* exported checkItemsGAS_ */
 function checkItemsGAS_(form) {
@@ -152,13 +142,13 @@ function createBookingFormGAS_(booking) {
     itemStringArray.forEach(function getArrayOfItemsById(stringData) {
       var bookingData = stringData.split(';'); // [desc, id, qty]
       var itemData = getSheetDataByIdGAS_(bookingData[1], index.items.SHEET_ID, index.items.SHEET_NAME, index.items.ID);
-      try { // @todo THIS TRY BLOCK ONLY FOR DEMO PURPOSES!!! DEBUG FOR REAL FOR PRODUCTION!!!
+      try { // TODO this try block only for proof of concept purposes. debug for production
         var item = makeItemFromDataGAS_(itemData);
         item.setDescription(bookingData[0])
           .setQuantity(bookingData[2]);
         items.push(item);
       } catch(e) {
-        // ignore errors
+        // ignoring errors for proof of concept.  Don't ignore this in production.
       }
     });
   }
@@ -207,6 +197,24 @@ function getAllStudentsGAS_() {
     students.push(makeStudentFromDataGAS_(studentData));
   });
   return students;
+}
+
+/* exported getArchivedFormsGAS_ */
+function getArchivedFormsGAS_(dateRangeJSON) {
+  var dateRange = JSON.parse(dateRangeJSON); // dateRange.start, dateRange.end
+  dateRange.start = utility.date.parseFormattedDate(dateRange.start);
+  dateRange.end = utility.date.parseFormattedDate(dateRange.end);
+  var sheet = SpreadsheetApp.openById(index.forms.SHEET_ID).getSheetByName(index.forms.ARCHIVE_NAME);
+  var data = sheet.getDataRange().getValues(),
+      forms = [];
+  data.shift();
+  data.forEach(function(row) { forms.push(makeFormFromDataGAS_(row)); });
+  forms = forms.filter(function(form) {
+    var start = utility.date.parseFormattedDate(form.startTime);
+    var end = utility.date.parseFormattedDate(form.endTime);
+    return (start.getTime() >= dateRange.start.getTime() && end.getTime() <= dateRange.end.getTime());
+  });
+  return forms;
 }
 
 /** @return {[]} an array of Forms */
