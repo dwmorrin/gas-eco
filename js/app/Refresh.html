@@ -25,15 +25,19 @@ app.refresh = function(response) {
       app.modal.hide();
       app.omnibox.parse();
       break;
-    case 'updateForm':
-      app.changes.saved = true;
-      app.pages.form.elements.undoButton.setAttribute('disabled', true);
-      app.pages.form.elements.updateButtonHint.textContent = '';
-      app.pages.form.elements.updateFormButton.setAttribute('disabled', true);
-      displayForm(JSON.parse(response.form));
-      break;
     case 'items':
       app.cache.items = JSON.parse(response.items);
+      break;
+    case 'openForms':
+      if (response.unlock) {
+        app.elements.openFormsButton.removeAttribute('disabled');
+      }
+      app.changes.saved = true;
+      app.cache.openForms = JSON.parse(response.formList);
+      app.spinner.off();
+      app.showPage(app.pages.openForms);
+      displayOpenForms(app.cache.openForms);
+      app.cache.currentFormstack = 'openForms';
       break;
     case 'signature':
       app.cache.students = JSON.parse(response.students);
@@ -50,19 +54,15 @@ app.refresh = function(response) {
         app.omnibox.parse();
       }
       break;
+    case 'updateForm':
+      app.changes.saved = true;
+      app.pages.form.elements.undoButton.setAttribute('disabled', true);
+      app.pages.form.elements.updateButtonHint.textContent = '';
+      app.pages.form.elements.updateFormButton.setAttribute('disabled', true);
+      displayForm(JSON.parse(response.form));
+      break;
     case 'user':
       app.elements.usernameDisplay.textContent = response.user;
-      break;
-    case 'openForms':
-      if (response.unlock) {
-        app.elements.openFormsButton.removeAttribute('disabled');
-      }
-      app.changes.saved = true;
-      app.cache.openForms = JSON.parse(response.formList);
-      app.spinner.off();
-      app.showPage(app.pages.openForms);
-      displayOpenForms(app.cache.openForms);
-      app.cache.currentFormstack = 'openForms';
       break;
   }
   

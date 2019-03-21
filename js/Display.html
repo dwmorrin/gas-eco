@@ -108,7 +108,8 @@ function displayForm(form, archived) {
         }
         break;
       case 'id': // fallthrough
-      case 'bookingId':
+      case 'bookingId': // fallthrough
+      case 'hash':
         app.pages.form.elements.form[key].value = form[key];
         break;
     }
