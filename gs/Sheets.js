@@ -127,8 +127,8 @@ function createBookingFormGAS_(booking) {
       itemStringArray = booking.getItems(),
       items = [],
       studentStringArray,
-      students = [];
-  
+      students = []; 
+
   // handle booking students -> form students
   studentStringArray = bookedStudents.replace(/, /g, ',').split(',');
   studentStringArray.forEach(function getArrayOfStudentsByName(studentName) {
@@ -283,7 +283,8 @@ function makeFormFromDataGAS_(sheetData) {
     .setTape(sheetData[index.forms.TAPE])
     .setProject(sheetData[index.forms.PROJECT])
     .setStudents(studentInfo)
-    .setNotes(notes);
+    .setNotes(notes)
+    .setHash();
   
   return form;
 }
@@ -374,7 +375,7 @@ function writeFormToSheetGAS_(form, closeAndArchive) {
   }
   
   if (! form.id) { // create
-    form.createId();
+    values[0] = form.createId();
     formSheet.appendRow(values);
   } else { // update
     var column = 1,

@@ -85,6 +85,18 @@ function doGet(request) {
 /* exported doPost */
 function doPost(request) {
   var response = {};
+  var lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(10000);
+  } catch (lockError) {
+    // throwing will let whatever withErrorHandler is attached to handle this
+    // the user should get some kind of "please try again" and chance to merge
+    // changes in the (extremely rare) event of a true collision
+    throw lockError;
+  }
+  // we have the lock
+  // we must check that there is no collision first, i.e. that thing we are trying
+  // to update wasn't already updated by someone else.
   switch (request.post) {
     case 'codabar':
       postCodabar_(request.netId, request.codabar);
@@ -114,7 +126,7 @@ function doPost(request) {
       handleUnload_();
       break;
   }
-
+  lock.releaseLock();
   response.target = request.post;
   
   return response;
@@ -317,11 +329,12 @@ function readForm_(formObj) {
     .setOvernight(formObj.overnight)
     .setStudents(formObj.students)
     .setItems(formObj.items)
-    .setNotes(formObj.notes);
+    .setNotes(formObj.notes)
+    .setHash(formObj.hash);
   return form;
 }
 
-var utility = { date: {} };
+var utility = { date: {}, hash: {} };
 
 /**
  * Utility to get 'mm/dd/yyyy hh:mm am' format
@@ -382,4 +395,9 @@ utility.date.zeropad = function(x) {
   } else {
     return x;
   }
+};
+
+utility.hash.make = function(string) {
+  var digest = Utilities.computeDigest(Utilities.DigestAlgorithm.MD2, string);
+  return Utilities.newBlob(digest).getDataAsString();
 };

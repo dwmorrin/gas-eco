@@ -5,7 +5,7 @@
  * writing a new form or updating an old form by checking whether the id is null or not. 
  * The writer can then call createId on the form when an id is needed.
  */
-
+/* global utility */
 /* exported Form_ */
 function Form_(id) {
   // Static properties
@@ -19,6 +19,7 @@ function Form_(id) {
   this.overnight = null;       // boolean
   this.startTime = null;       // formatted date string
   this.tape = null;            // boolean
+  this.hash = null;            // string
   
   // Dynamic properties
   this.items =  null;          // []Item
@@ -68,6 +69,10 @@ function Form_(id) {
   this.setEndTime = function(endTime) {
     this.endTime = String(endTime);
     return this;
+  };
+
+  this.setHash = function(hash) {
+    this.hash = (hash || utility.hash.make(JSON.stringify(this)));
   };
   
   /** @param {[]Item} */
