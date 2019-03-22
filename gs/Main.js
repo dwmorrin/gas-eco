@@ -115,19 +115,17 @@ function doPost(request) {
       var form = readForm_(request.form);
       try {
         if (isFormReadyToClose_(form) || isNoShow_(form)) {
-          console.log("form is ready to close");
           closeForm_(form);
           request.post = 'openForms';
           response.formList = getOpenForms_();
         } else {
-          console.log("form is not ready to close");
           response.form = JSON.stringify(postForm_(form));
         }
       } catch (error) {
         if (/^form collision/i.test(error.message)) {
           lock.releaseLock();
           response.target = "collision";
-          response.form = error.storedForm; // already JSON stringed
+          response.form = error.ECO_storedForm; // already JSON stringed
           return response;
         } else {
           throw error;
