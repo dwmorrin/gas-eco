@@ -1,7 +1,8 @@
 /**
  * Utility for searching double arrays
- * param {integer} column - optional column to search by, otherwise search all
- * param {bool} findIndex - if true then returns index of row only
+ * @param {integer} column - optional column to search by, otherwise search all
+ * @param {bool} findIndex - if true then returns index of row only
+ * @returns {mixed} - int, sheet[], or undefined if not found
  */
 Array.prototype.findRowContaining = function(value, column, findIndex) {
   if (column) {

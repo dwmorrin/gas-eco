@@ -341,8 +341,9 @@ function writeFormToSheetGAS_(form, closeAndArchive) {
   var ss = SpreadsheetApp.openById(index.forms.SHEET_ID);
   var formSheet = ss.getSheetByName(index.forms.SHEET_NAME);
   var data = formSheet.getDataRange().getValues();
+  var id = form.getId();
   var values = [
-    form.getId(),
+    id,
     form.getStartTime(),
     form.getEndTime(),
     form.getLocation(),
@@ -356,41 +357,42 @@ function writeFormToSheetGAS_(form, closeAndArchive) {
     JSON.stringify(form.getItems()),
     JSON.stringify(form.getNotes())
   ];
-  var row;
-  
-  if (closeAndArchive) {
-    var archive = ss.getSheetByName('Archive');
-    archive.appendRow(values);
-    
-    // Note: do not shift data
-    row = data.findRowContaining(form.id, 0, true);
-    if (! row) {
-      throw 'could not delete form ' + form;
-    } else {
-      row++;
-    }
-    // 'Close' form by deleting from active sheets
-    formSheet.getRange(row, 1, 1, 13).deleteCells(SpreadsheetApp.Dimension.ROWS);
-    return;
-  }
-  
-  if (! form.id) { // create
+
+  if (! id) { // create
     values[0] = form.createId();
     formSheet.appendRow(values);
+    return form;
+  }
+
+  // Note: do not shift data
+  var index_ = data.findRowContaining(id, 0, true);
+  if (! index_) {
+    throw 'could not find form ' + form;
+  }
+  var row = index_ + 1;
+
+  // Do not allow write unless user was editing most
+  // recent form.  Use try/catch around call to this function
+  // to handle this error
+  var storedForm = makeFormFromDataGAS_(data[index_]);
+  if (form.getHash() != storedForm.getHash()) {
+    var error = new Error("form collision: " + form.id);
+    error.ECO_storedForm = JSON.stringify(storedForm);
+    error.ECO_submittedForm = JSON.stringify(form);
+    throw error;
+  }
+
+  if (closeAndArchive) {
+    var archive = ss.getSheetByName(index.forms.ARCHIVE_NAME);
+    archive.appendRow(values);
+    // 'Close' form by deleting from active sheet
+    formSheet.getRange(row, 1, 1, 13).deleteCells(SpreadsheetApp.Dimension.ROWS);
+    return;
   } else { // update
     var column = 1,
         numRows = 1,
         numColumns = 13,
         range;
-    
-    // Note: do not shift data
-    row = data.findRowContaining(form.id, 0, true);
-    
-    if (! row) {
-      throw 'could not find form ' + form;
-    } else {
-      row++;
-    }
     range = formSheet.getRange(row, column, numRows, numColumns);
     range.setValues([values]);
   }
