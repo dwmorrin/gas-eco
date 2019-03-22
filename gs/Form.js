@@ -31,8 +31,9 @@ function Form_(id) {
   this.getBookedStudents = function() { return this.bookedStudents; };
   this.getBookingId = function() { return this.bookingId; };
   this.getContact = function() { return this.contact; };
-  this.getId = function() { return this.id; };
   this.getEndTime = function() { return this.endTime; };
+  this.getHash = function() { return this.hash; };
+  this.getId = function() { return this.id; };
   this.getItems = function() { return this.items; };
   this.getLocation = function() { return this.location; };
   this.getNotes = function() { return this.notes; };

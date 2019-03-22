@@ -125,7 +125,7 @@ function displayForm(form, archived) {
   app.omnibox.clear();
   
   // init update button
-  if (!form.id) {
+  if (! form.id) {
     app.pages.form.elements.updateFormButton.textContent = app.strings.updateButton.enabled;
   } else {
     app.pages.form.elements.updateFormButton.textContent = app.strings.updateButton.disabled;

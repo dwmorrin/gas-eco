@@ -1,16 +1,16 @@
 /* global
-          Form_
-          checkItemsGAS_
-          clearSignatureValidationGAS_
-          createDailyBookingFormsGAS_
-          getAllItemsGAS_
-          getAllStudentsGAS_
-          getArchivedFormsGAS_
-          getOpenFormsGAS_
-          startSignature_
-          writeCodabarGAS_
-          writeFormToSheetGAS_
-          writeSignatureToSheetGAS_
+Form_
+checkItemsGAS_
+clearSignatureValidationGAS_
+createDailyBookingFormsGAS_
+getAllItemsGAS_
+getAllStudentsGAS_
+getArchivedFormsGAS_
+getOpenFormsGAS_
+startSignature_
+writeCodabarGAS_
+writeFormToSheetGAS_
+writeSignatureToSheetGAS_
 */
 
 /**
@@ -28,7 +28,7 @@ function createDailyForms_() {
  * @todo - I'd rather see this under postForm_ than parallel to it
  */
 function closeForm_(form) {
-  return writeFormToSheetGAS_(isValidForm_(form, true));
+  return writeFormToSheetGAS_(isValidForm_(form), true);
 }
 
 /**
@@ -90,8 +90,7 @@ function doPost(request) {
     lock.waitLock(10000);
   } catch (lockError) {
     // throwing will let whatever withErrorHandler is attached to handle this
-    // the user should get some kind of "please try again" and chance to merge
-    // changes in the (extremely rare) event of a true collision
+    // the user should get some kind of "please try again" message
     throw lockError;
   }
   // we have the lock
@@ -114,12 +113,25 @@ function doPost(request) {
       break;
     case 'updateForm':
       var form = readForm_(request.form);
-      if (isFormReadyToClose_(form) || isNoShow_(form)) {
-        closeForm_(form);
-        request.post = 'openForms';
-        response.formList = getOpenForms_();
-      } else {
-        response.form = JSON.stringify(postForm_(form));
+      try {
+        if (isFormReadyToClose_(form) || isNoShow_(form)) {
+          console.log("form is ready to close");
+          closeForm_(form);
+          request.post = 'openForms';
+          response.formList = getOpenForms_();
+        } else {
+          console.log("form is not ready to close");
+          response.form = JSON.stringify(postForm_(form));
+        }
+      } catch (error) {
+        if (/^form collision/i.test(error.message)) {
+          lock.releaseLock();
+          response.target = "collision";
+          response.form = error.storedForm; // already JSON stringed
+          return response;
+        } else {
+          throw error;
+        }
       }
       break;
     case 'unload':
