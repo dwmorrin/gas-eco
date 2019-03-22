@@ -388,15 +388,16 @@ function writeFormToSheetGAS_(form, closeAndArchive) {
     // 'Close' form by deleting from active sheet
     formSheet.getRange(row, 1, 1, 13).deleteCells(SpreadsheetApp.Dimension.ROWS);
     return;
-  } else { // update
-    var column = 1,
-        numRows = 1,
-        numColumns = 13,
-        range;
-    range = formSheet.getRange(row, column, numRows, numColumns);
-    range.setValues([values]);
   }
+
+  var column = 1,
+      numRows = 1,
+      numColumns = 13,
+      range;
+  range = formSheet.getRange(row, column, numRows, numColumns);
+  range.setValues([values]);
   
+  form.setHash();
   return form;
 }
 

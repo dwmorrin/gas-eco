@@ -72,8 +72,9 @@ function Form_(id) {
     return this;
   };
 
-  this.setHash = function(hash) {
-    this.hash = (hash || utility.hash.make(JSON.stringify(this)));
+  this.setHash = function() {
+    this.hash = null;
+    this.hash = utility.hash.make(JSON.stringify(this));
   };
   
   /** @param {[]Item} */
