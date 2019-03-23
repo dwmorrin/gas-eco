@@ -396,7 +396,7 @@ function writeFormToSheetGAS_(form, closeAndArchive) {
       range;
   range = formSheet.getRange(row, column, numRows, numColumns);
   range.setValues([values]);
-  
+
   form.setHash();
   return form;
 }
