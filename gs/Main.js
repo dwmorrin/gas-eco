@@ -409,5 +409,5 @@ utility.date.zeropad = function(x) {
 
 utility.hash.make = function(string) {
   var digest = Utilities.computeDigest(Utilities.DigestAlgorithm.MD2, string);
-  return Utilities.newBlob(digest).getDataAsString();
+  return Utilities.base64EncodeWebSafe(digest);
 };
