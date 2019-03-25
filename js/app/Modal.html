@@ -294,7 +294,7 @@ app.modal = {
     // get item
     let items = JSON.parse(app.pages.form.elements.form.items.value);
     let item = items.find(i => i.id == itemId);
-    if (item.serialized) {
+    if (! item || item.serialized) {
       return;
     }
     let m = app.modal;
