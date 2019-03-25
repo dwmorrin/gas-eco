@@ -396,8 +396,11 @@ function writeFormToSheetGAS_(form, closeAndArchive) {
       range;
   range = formSheet.getRange(row, column, numRows, numColumns);
   range.setValues([values]);
-
-  form.setHash();
+  // TODO this retrieves the correct hash.  Trying to skip a step and hash the
+  //   `values` variable directly comes up with a different hash due to
+  //   Sheet converting numbers and dates. Consider plain text format to eliminate
+  //   the extra retrieval step.
+  form.setHash(makeFormFromDataGAS_(range.getValues()[0]).setHash().getHash());
   return form;
 }
 

@@ -126,6 +126,7 @@ function doPost(request) {
           lock.releaseLock();
           response.target = "collision";
           response.form = error.ECO_storedForm; // already JSON stringed
+          response.submittedForm = error.ECO_submittedForm;
           return response;
         } else {
           throw error;
