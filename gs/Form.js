@@ -79,6 +79,7 @@ function Form_(id) {
       this.hash = null;
       this.hash = utility.hash.make(JSON.stringify(this));
     }
+    return this;
   };
   
   /** @param {[]Item} */

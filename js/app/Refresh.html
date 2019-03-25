@@ -25,6 +25,9 @@ app.refresh = function(response) {
       app.modal.hide();
       app.omnibox.parse();
       break;
+    case 'collision':
+      app.modal.handleError(response);
+      break;
     case 'items':
       app.cache.items = JSON.parse(response.items);
       break;
