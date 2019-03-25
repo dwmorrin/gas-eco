@@ -27,6 +27,7 @@ app.refresh = function(response) {
       break;
     case 'collision':
       app.modal.handleError(response);
+      app.pages.form.elements.updateFormButton.textContent = "Update";
       break;
     case 'items':
       app.cache.items = JSON.parse(response.items);
