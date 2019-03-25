@@ -361,7 +361,7 @@ function writeFormToSheetGAS_(form, closeAndArchive) {
   if (! id) { // create
     values[0] = form.createId();
     formSheet.appendRow(values);
-    return form;
+    return makeFormFromDataGAS_(formSheet.getRange(formSheet.getLastRow(), 1, 1, 13).getValues()[0]).setHash();
   }
 
   // Note: do not shift data
@@ -400,8 +400,7 @@ function writeFormToSheetGAS_(form, closeAndArchive) {
   //   `values` variable directly comes up with a different hash due to
   //   Sheet converting numbers and dates. Consider plain text format to eliminate
   //   the extra retrieval step.
-  form.setHash(makeFormFromDataGAS_(range.getValues()[0]).setHash().getHash());
-  return form;
+  return makeFormFromDataGAS_(range.getValues()[0]).setHash();
 }
 
 /* exported writeSignatureToSheetGAS_ */
