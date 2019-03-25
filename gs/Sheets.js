@@ -68,7 +68,8 @@ var index = {
 
 /* exported checkItemsGAS_ */
 function checkItemsGAS_(form) {
-  var sheet = SpreadsheetApp.openById(index.items.SHEET_ID).getSheetByName(index.items.SHEET_NAME);
+  var sheet = SpreadsheetApp.openById(index.items.SHEET_ID)
+    .getSheetByName(index.items.SHEET_NAME);
   var data = sheet.getDataRange().getValues();
   form.items.forEach(function checkItems(item) {
     if (! item.checkIn && item.checkOut && ! item.checkedOut) { // requesting checkout
@@ -109,7 +110,8 @@ function checkItemsGAS_(form) {
  */
 /* exported createDailyBookingFormsGAS_ */
 function createDailyBookingFormsGAS_() {
-  var bookingSheet = SpreadsheetApp.openById(index.bookings.SHEET_ID).getSheetByName(index.bookings.SHEET_NAME);
+  var bookingSheet = SpreadsheetApp.openById(index.bookings.SHEET_ID)
+    .getSheetByName(index.bookings.SHEET_NAME);
   var data = bookingSheet.getDataRange().getValues();
   data.shift();
   data.forEach(function getArrayOfBookingForms(bookingData) {
@@ -132,7 +134,10 @@ function createBookingFormGAS_(booking) {
   // handle booking students -> form students
   studentStringArray = bookedStudents.replace(/, /g, ',').split(',');
   studentStringArray.forEach(function getArrayOfStudentsByName(studentName) {
-    var data = getSheetDataByIdGAS_(studentName, index.students.SHEET_ID, index.students.SHEET_NAME, index.students.NAME);
+    var data = getSheetDataByIdGAS_(
+      studentName, index.students.SHEET_ID,
+      index.students.SHEET_NAME, index.students.NAME
+    );
     students.push(makeStudentFromDataGAS_(data));
   });
   
@@ -141,7 +146,10 @@ function createBookingFormGAS_(booking) {
     itemStringArray = itemStringArray.split(',');
     itemStringArray.forEach(function getArrayOfItemsById(stringData) {
       var bookingData = stringData.split(';'); // [desc, id, qty]
-      var itemData = getSheetDataByIdGAS_(bookingData[1], index.items.SHEET_ID, index.items.SHEET_NAME, index.items.ID);
+      var itemData = getSheetDataByIdGAS_(
+        bookingData[1], index.items.SHEET_ID,
+        index.items.SHEET_NAME, index.items.ID
+      );
       try { // TODO this try block only for proof of concept purposes. debug for production
         var item = makeItemFromDataGAS_(itemData);
         item.setDescription(bookingData[0])
@@ -173,7 +181,8 @@ function createBookingFormGAS_(booking) {
 
 /* exported getAllItemsGAS_ */
 function getAllItemsGAS_() {
-  var sheet = SpreadsheetApp.openById(index.items.SHEET_ID).getSheetByName(index.items.SHEET_NAME);
+  var sheet = SpreadsheetApp.openById(index.items.SHEET_ID)
+    .getSheetByName(index.items.SHEET_NAME);
   var data = sheet.getDataRange().getValues();
   data.shift();
   var items = [];
@@ -189,7 +198,8 @@ function getAllItemsGAS_() {
 
 /* exported getAllStudentsGAS_ */
 function getAllStudentsGAS_() {
-  var sheet = SpreadsheetApp.openById(index.students.SHEET_ID).getSheetByName(index.students.SHEET_NAME);
+  var sheet = SpreadsheetApp.openById(index.students.SHEET_ID)
+    .getSheetByName(index.students.SHEET_NAME);
   var data = sheet.getDataRange().getValues();
   data.shift();
   var students = [];
@@ -204,7 +214,8 @@ function getArchivedFormsGAS_(dateRangeJSON) {
   var dateRange = JSON.parse(dateRangeJSON); // dateRange.start, dateRange.end
   dateRange.start = utility.date.parseFormattedDate(dateRange.start);
   dateRange.end = utility.date.parseFormattedDate(dateRange.end);
-  var sheet = SpreadsheetApp.openById(index.forms.SHEET_ID).getSheetByName(index.forms.ARCHIVE_NAME);
+  var sheet = SpreadsheetApp.openById(index.forms.SHEET_ID)
+    .getSheetByName(index.forms.ARCHIVE_NAME);
   var data = sheet.getDataRange().getValues(),
       forms = [];
   data.shift();
@@ -212,7 +223,10 @@ function getArchivedFormsGAS_(dateRangeJSON) {
   forms = forms.filter(function(form) {
     var start = utility.date.parseFormattedDate(form.startTime);
     var end = utility.date.parseFormattedDate(form.endTime);
-    return (start.getTime() >= dateRange.start.getTime() && end.getTime() <= dateRange.end.getTime());
+    return (
+      start.getTime() >= dateRange.start.getTime() &&
+      end.getTime()   <= dateRange.end.getTime()
+    );
   });
   return forms;
 }
@@ -220,7 +234,8 @@ function getArchivedFormsGAS_(dateRangeJSON) {
 /** @return {[]} an array of Forms */
 /* exported getOpenFormsGAS_ */
 function getOpenFormsGAS_() {
-  var formsSheet = SpreadsheetApp.openById(index.forms.SHEET_ID).getSheetByName(index.forms.SHEET_NAME);
+  var formsSheet = SpreadsheetApp.openById(index.forms.SHEET_ID)
+    .getSheetByName(index.forms.SHEET_NAME);
   var data = formsSheet.getDataRange().getValues(),
       forms = [];
   data.shift();
@@ -327,7 +342,8 @@ function makeStudentFromDataGAS_(studentData) {
 
 /* exported writeCodabarGAS_ */
 function writeCodabarGAS_(netId, codabar) {
-  var sheet = SpreadsheetApp.openById(index.students.SHEET_ID).getSheetByName(index.students.SHEET_NAME);
+  var sheet = SpreadsheetApp.openById(index.students.SHEET_ID)
+    .getSheetByName(index.students.SHEET_NAME);
   var data = sheet.getDataRange().getValues();
   var i = data.findRowContaining(netId, index.students.NETID, true);
   if (! i) {
@@ -361,7 +377,10 @@ function writeFormToSheetGAS_(form, closeAndArchive) {
   if (! id) { // create
     values[0] = form.createId();
     formSheet.appendRow(values);
-    return makeFormFromDataGAS_(formSheet.getRange(formSheet.getLastRow(), 1, 1, 13).getValues()[0]).setHash();
+    // see TODO below for more info on why this is necessary
+    return makeFormFromDataGAS_(
+      formSheet.getRange(formSheet.getLastRow(), 1, 1, 13).getValues()[0]
+    ).setHash();
   }
 
   // Note: do not shift data
