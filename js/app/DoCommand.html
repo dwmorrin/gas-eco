@@ -18,7 +18,7 @@ app.doCommand = function(command,...options) {
         app.modal.handleUnsavedForm(command);
         return;
       }
-      let today = new Date();
+      const today = new Date();
       today.setHours(0);
       today.setMinutes(0);
       today.setSeconds(0);
@@ -53,13 +53,13 @@ app.doCommand = function(command,...options) {
       app.run.doPost({ post: 'demo' });
       break;
     case 'displayForm': {
-      let form = options[0],
+      const form = options[0],
           isArchive = Boolean(options[1]);
       displayForm(form, isArchive);
       break;
     }
     case 'displayNewForm':
-      if (!app.changes.saved) {
+      if (! app.changes.saved) {
         app.modal.handleUnsavedForm(command);
         return;
       }
@@ -70,11 +70,11 @@ app.doCommand = function(command,...options) {
       app.modal.handleError(new Error('Not available yet!'));
       break;
     case 'itemQuantity': {
-      let itemId = app.modal.tmp;
-      let quantity = +app.modal.getInput();
-      let items = JSON.parse(app.pages.form.elements.form.items.value);
-      let item = items.find(i => i.id == itemId);
-      let itemchange = {
+      const itemId = app.modal.tmp;
+      const quantity = +app.modal.getInput();
+      const items = JSON.parse(app.pages.form.elements.form.items.value);
+      const item = items.find(i => i.id == itemId);
+      const itemchange = {
         target: {
           name: 'items',
           value: itemId + ' qty ' + item.quantity,
@@ -142,8 +142,8 @@ app.doCommand = function(command,...options) {
       displayForm(app.cache.savedForm);
       break;
     case 'saveNote': {
-      let notes = JSON.parse(app.pages.form.elements.form.notes.value);
-      let note = {
+      const notes = JSON.parse(app.pages.form.elements.form.notes.value);
+      const note = {
         timestamp: Date.now(),
         author: app.elements.usernameDisplay.textContent,
         body: app.modal.getText(),
@@ -152,13 +152,13 @@ app.doCommand = function(command,...options) {
       if (shortNotes.length > 10) {
         shortNotes = shortNotes.slice(0, 10) + "...";
       }
-      let noteChange = {
+      const noteChange = {
         target: {
           name: 'notes',
           value: shortNotes
         }
       };
-      let p = document.createElement('p');
+      const p = document.createElement('p');
       p.textContent = 'Note: ' + '[' + note.author + '] ' + note.body;
 
       notes.push(note);
@@ -172,7 +172,7 @@ app.doCommand = function(command,...options) {
       break;
     }
     case 'setLocationOther': {
-      let otherLocation = app.modal.getInput(),
+      const otherLocation = app.modal.getInput(),
           option = app.pages.form.elements.locationOtherOption,
           select = app.pages.form.elements.form.location,
           change = {
@@ -191,19 +191,19 @@ app.doCommand = function(command,...options) {
       app.run.doGet({ get: 'students',  init: false});
       break;
     case 'signatureSubmit': {
-      let dataURL = app.modal.signaturePad.toDataURL(),
+      const dataURL = app.modal.signaturePad.toDataURL(),
           studentId = app.modal.tmp;
       app.run.doPost({ post: 'signature', dataURL: dataURL, id: studentId });
       break;
     }
     case 'sortOpenForms': {
-      let sortType = options[0];
+      const sortType = options[0];
       displayOpenForms(app.cache.openForms, sortType);
       break;
     }
     case 'studentNote': {
-      let radio = app.modal.table.querySelectorAll('input[type="radio"]'),
-          value;
+      const radio = app.modal.table.querySelectorAll('input[type="radio"]');
+      let value;
       for (let i = 0; i < radio.length; i++) {
         if (radio[i].checked) {
           if (radio[i].value == 'other') {
@@ -221,10 +221,8 @@ app.doCommand = function(command,...options) {
         );
       }
       // TODO this is a cut, paste and modify version of 'saveNote'; refactor
-      // let variables had to be renamed so as not to conflict
-      // (probably OK to share name now that blocks have been added)
-      let notes = JSON.parse(app.pages.form.elements.form.notes.value);
-      let note = {
+      const notes = JSON.parse(app.pages.form.elements.form.notes.value);
+      const note = {
         timestamp: Date.now(),
         author: app.elements.usernameDisplay.textContent,
         body: app.modal.tmp + ': ' + value,
@@ -233,13 +231,13 @@ app.doCommand = function(command,...options) {
       if (shortNotes.length > 10) {
         shortNotes = shortNotes.slice(0, 10) + "...";
       }
-      let noteChange = {
+      const noteChange = {
         target: {
           name: 'notes',
           value: shortNotes
         }
       };
-      let para = document.createElement('p');
+      const para = document.createElement('p');
       para.textContent = 'Note: ' + '[' + note.author + '] ' + note.body;
 
       notes.push(note);

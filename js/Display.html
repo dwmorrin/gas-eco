@@ -164,6 +164,8 @@ function displayNewForm() {
     location: null, overnight: null, project: null, contact: null,
     startTime: null, tape: null, students: [], items: [], notes: []
   };
+  const length = app.cache.openForms.push(app.cache.savedForm);
+  app.cache.currentIndex = length - 1;
   displayForm(app.cache.savedForm);
 }
 
