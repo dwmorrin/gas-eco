@@ -58,13 +58,23 @@ app.refresh = function(response) {
         app.omnibox.parse();
       }
       break;
-    case 'updateForm':
+    case 'updateForm': {
       app.changes.saved = true;
       app.pages.form.elements.undoButton.setAttribute('disabled', true);
       app.pages.form.elements.updateButtonHint.textContent = '';
       app.pages.form.elements.updateFormButton.setAttribute('disabled', true);
-      displayForm(JSON.parse(response.form));
+      const updatedForm = JSON.parse(response.form);
+      const index = app.cache.openForms.findIndex(
+        (form) => (! form.id || form.id == updatedForm.id)
+      );
+      if (index > -1) {
+        app.cache.openForms[index] = updatedForm;
+      } else {
+        throw new Error("cannot find " + updatedForm.id + " in local forms");
+      }
+      displayForm(updatedForm);
       break;
+    }
     case 'user':
       app.elements.usernameDisplay.textContent = response.user;
       break;
