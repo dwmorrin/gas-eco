@@ -1,6 +1,9 @@
 <script>
 /* global app displayForm utility isFormOkToPost isFormReadyToClose */
 app.pages.form = {
+  checkForms: function() {
+    app.run.doGet({ get: "checkForms" });
+  },
   elements: {
     container:               document.querySelector('div.formContainer'),
     currentFormstackDisplay: document.querySelector('span.currentFormstackDisplay'),
@@ -256,6 +259,8 @@ app.pages.form = {
     parent.textContent = value;
   },
   refreshId: NaN,
-  setInterval: function() {},
+  setInterval: function() {
+    app.pages.form.refreshId = window.setInterval(app.pages.form.checkForms, 60000);
+  },
 };
 </script>

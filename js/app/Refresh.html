@@ -20,6 +20,38 @@ app.refresh = function(response) {
       app.cache.archive = JSON.parse(response.formList);
       app.pages.archive.query();
       break;
+    case 'checkForms': {
+      const newForms = JSON.parse(response.formList);
+      if (! newForms[0]) {
+        break;
+      }
+      // determine current context
+      const viewingForm = (! app.pages.form.elements.container.classList.contains('hidden'));
+      // currently we are only interested in the single view
+      if (! viewingForm) {
+        break;
+      }
+      const currentForm = app.cache.openForms[app.cache.currentIndex];
+      const index = newForms.findIndex(form => form.id == currentForm.id);
+      if (index < 0) { // TODO uncaught error
+        break;
+      }
+      const newForm = newForms[index];
+      // are changes saved?
+      if (app.changes.saved) {
+        app.cache.openForms = newForms;
+        app.doCommand("displayForm", newForm);
+      } else {
+        if (newForm.hash != currentForm.hash) {
+          app.modal.handleError({
+            target: "collision",
+            form: newForm,
+            submittedForm: currentForm }
+          );
+        }
+      }
+      break;
+    }
     case 'codabar':
       app.cache.students = JSON.parse(response.students);
       app.modal.hide();

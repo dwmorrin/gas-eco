@@ -62,6 +62,7 @@ function doGet(request) {
     case 'user':
       response.user = getUser_();
       break;
+    case 'checkForms': // fallthrough
     case 'openForms':
       response.formList = getOpenForms_();
       break;
