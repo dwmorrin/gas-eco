@@ -21,8 +21,22 @@ app.pages.openForms = {
   handleClickTableHead: function(click) {
     app.doCommand('sortOpenForms', click.target.dataset.sort);
   },
+  show: function() {
+    app.pages.openForms.elements.container.classList.remove("hidden");
+    if (isNaN(app.pages.openForms.refreshId)) {
+      app.pages.openForms.setInterval();
+    }
+  },
+  hide: function() {
+    app.pages.openForms.elements.container.classList.add("hidden");
+    if (! isNaN(app.pages.openForms.refreshId)) {
+      window.clearInterval(app.pages.openForms.refreshId);
+    }
+    app.pages.openForms.refreshId = NaN;
+  },
   refreshId: NaN,
   setInterval: function() {
+    // this client-side only interval is just for getting the forms to change color
     app.pages.openForms.refreshId = window.setInterval(displayOpenForms, 60000, app.cache.openForms);
   },
   sortBy: 'startTime',

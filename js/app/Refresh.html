@@ -41,6 +41,7 @@ app.refresh = function(response) {
       if (app.changes.saved) {
         app.cache.openForms = newForms;
         app.doCommand("displayForm", newForm);
+        app.pages.form.setTimeout();
       } else {
         if (newForm.hash != currentForm.hash) {
           app.modal.handleError({
