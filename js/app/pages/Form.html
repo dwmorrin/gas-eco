@@ -258,9 +258,22 @@ app.pages.form = {
     parent.removeChild(event.target);
     parent.textContent = value;
   },
-  refreshId: NaN,
-  setInterval: function() {
-    app.pages.form.refreshId = window.setInterval(app.pages.form.checkForms, 60000);
+  show: function() {
+    app.pages.form.elements.container.classList.remove("hidden");
+    if (isNaN(app.pages.form.timeoutId)) {
+      app.pages.form.setTimeout();
+    }
+  },
+  hide: function() {
+    app.pages.form.elements.container.classList.add("hidden");
+    if (! isNaN(app.pages.form.timeoutId)) {
+      window.clearTimeout(app.pages.form.timeoutId);
+    }
+    app.pages.form.timeoutId = NaN;
+  },
+  timeoutId: NaN,
+  setTimeout: function() {
+    app.pages.form.timeoutId = window.setTimeout(app.pages.form.checkForms, 20000); // TODO raise this back up!
   },
 };
 </script>
