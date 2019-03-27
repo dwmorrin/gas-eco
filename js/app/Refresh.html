@@ -44,11 +44,14 @@ app.refresh = function(response) {
         app.pages.form.setTimeout();
       } else {
         if (newForm.hash != currentForm.hash) {
+          // another instance has already updated this form; do not set timeout
           app.modal.handleError({
             target: "collision",
             form: newForm,
             submittedForm: currentForm }
           );
+        } else { // editing the current form; keep checking
+          app.pages.form.setTimeout();
         }
       }
       break;
