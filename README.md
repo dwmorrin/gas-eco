@@ -17,7 +17,7 @@ Google Apps Script inventory management program.
 
 #### HTML
 * html/index: main HTML template
-* html/<PageName>: straight HTML files for templating
+* html/\<PageName\>: straight HTML files for templating
 
 #### CSS
 * css/Style: stylesheet
