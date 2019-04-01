@@ -67,6 +67,7 @@ app.refresh = function(response) {
       break;
     case 'items':
       app.cache.items = JSON.parse(response.items);
+      
       break;
     case 'openForms':
       if (response.unlock) {

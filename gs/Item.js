@@ -1,5 +1,6 @@
 /* exported  Item_ */
 function Item_(id) {
+  console.log('THIS THING RAN!');
   this.barcode;          // string
   this.id = id;          // string or undefined
   this.checkedOut;       // boolean

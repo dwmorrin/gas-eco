@@ -5,12 +5,6 @@
  * @return void
  */
 /* global app utility */
-/* exported
-     displayArchivedForms
-     displayForm
-     displayNewForm
-     displayOpenForms
-*/
 function displayForm(form, archived) {
   for (let key in form) {
     switch (key) {
@@ -163,6 +157,7 @@ function displayForm(form, archived) {
 /**
  * Displays a blank form to the user.
  */
+/* exported displayNewForm */
 function displayNewForm() {
   app.cache.savedForm = {
     id: null, bookingId: null, bookedStudents: null, endTime: null,
@@ -178,6 +173,7 @@ function displayNewForm() {
  * @param {[Form]} forms - an array of Forms
  * @param {string} sortBy - sort option
  */
+/* exported displayOpenForms */
 function displayOpenForms(forms, sortBy) {
   if (!sortBy) {
     sortBy = app.pages.openForms.sortBy;
@@ -367,6 +363,7 @@ function populateStudentList(student) {
   ));
 }
 
+/* exported displayArchivedForms */
 function displayArchivedForms(forms) {
   populateArchiveTable(forms);
 }

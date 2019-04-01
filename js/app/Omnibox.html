@@ -4,6 +4,7 @@ app
 isCheckOutStudentOk
 populateItemList
 populateStudentList
+Item_
 utility
 */
 app.omnibox = {
@@ -13,6 +14,7 @@ app.omnibox = {
   element: document.querySelector('input.omnibox'),
   /** TODO - handle qty input or multiple scans of things like cables */
   handleItem: function(item) {
+  console.log('item is ', item);
     let items = (JSON.parse(app.pages.form.elements.form.items.value) || []);
     let itemOnForm = items.find(i => i.id == item.id);
     let change = { // fake change event
@@ -145,7 +147,11 @@ app.omnibox = {
     let codabar = /^[a-d][0-9]{5,}[a-d]$/, // "a123...789b" pattern
         parsed,
         value = app.omnibox.element.value;
-
+     
+    if (value == 'Manual Mode') {
+    manualModeAlert();
+    return;
+  }
     if (! value) { // nothing was entered, abort
       return;
     } else {     // case insensitive
@@ -189,8 +195,8 @@ app.omnibox = {
         parsed = app.cache.items.find(
           item => item.id.toLowerCase().replace(dashzero, '-') == value
         );
-        manualEntryAlert();
-      } else if (barcoderegex.test(value)) { // assume it's a barcode
+      } 
+      else if (barcoderegex.test(value)) { // assume it's a barcode
         parsed = app.cache.items.find(
           item => item.barcode.toLowerCase() == value
         );
@@ -215,6 +221,13 @@ app.omnibox = {
       app.pages.form.handleChange(
         { target: { name: 'manual', value: app.omnibox.element.value }}
       );
+    }
+    function manualModeAlert() {
+      console.log(app.strings.omniboxManualModeToggle);
+      var item = new Object();
+      item.setDescription('Nameless')
+          .setQuantity(2);
+        items.push(item);
     }
   },
 };
