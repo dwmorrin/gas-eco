@@ -8,15 +8,18 @@ Item_
 utility
 */
 app.omnibox = {
+  //manualCount: 0,
   clear: function() {
     app.omnibox.element.value = '';
   },
   element: document.querySelector('input.omnibox'),
   /** TODO - handle qty input or multiple scans of things like cables */
   handleItem: function(item) {
-  console.log('item is ', item);
+  //console.log('item is ', JSON.stringify(item));
     let items = (JSON.parse(app.pages.form.elements.form.items.value) || []);
+    //console.log(items);
     let itemOnForm = items.find(i => i.id == item.id);
+    //console.log(itemOnForm);
     let change = { // fake change event
       target: {
         name: 'items',
@@ -223,11 +226,9 @@ app.omnibox = {
       );
     }
     function manualModeAlert() {
-      console.log(app.strings.omniboxManualModeToggle);
-      var item = new Object();
-      item.setDescription('Nameless')
-          .setQuantity(2);
-        items.push(item);
+      app.doCommand("newManual");
+      //app.omnibox.manualCount++;
+      
     }
   },
 };

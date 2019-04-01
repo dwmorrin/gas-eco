@@ -103,6 +103,9 @@ app.doCommand = function(command,...options) {
     case 'newNote':
       app.modal.getNote();
       break;
+    case 'newManual':
+      app.modal.getManual();
+      break;  
     case 'nextForm':
       if (! app.changes.saved) {
         app.modal.handleUnsavedForm(command);
@@ -171,6 +174,11 @@ app.doCommand = function(command,...options) {
       }
       break;
     }
+    case 'saveManual': {
+      //let manualCount = app.omnibox.manualCount;
+      //console.log(manualCount);
+        app.omnibox.handleItem({"id":"N/A","checkIn":null,"checkOut":null,"quantity":1,"serialized":false,"barcode":null,"description":app.modal.getText(),"checkedOut":true});
+      };
     case 'setLocationOther': {
       const otherLocation = app.modal.getInput(),
           option = app.pages.form.elements.locationOtherOption,
