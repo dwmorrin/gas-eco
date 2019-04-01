@@ -1,6 +1,9 @@
 <script>
 /* global app displayForm utility isFormOkToPost isFormReadyToClose */
 app.pages.form = {
+  checkForms: function() {
+    app.run.doGet({ get: "checkForms" });
+  },
   elements: {
     container:               document.querySelector('div.formContainer'),
     currentFormstackDisplay: document.querySelector('span.currentFormstackDisplay'),
@@ -20,7 +23,7 @@ app.pages.form = {
   },
   getNext: function() {
     // get the next form from either the open stack or the archive stack
-    let stack = app.cache[app.cache.currentFormstack];
+    const stack = app.cache[app.cache.currentFormstack];
     if (app.cache.currentIndex == stack.length - 1) { // we're already at the end
       return;
     } else {
@@ -29,7 +32,7 @@ app.pages.form = {
     }
   },
   getPrevious: function() {
-    let stack = app.cache[app.cache.currentFormstack];
+    const stack = app.cache[app.cache.currentFormstack];
     if (app.cache.currentIndex == 0) { // we're already at the beginning
       return;
     } else {
@@ -255,7 +258,22 @@ app.pages.form = {
     parent.removeChild(event.target);
     parent.textContent = value;
   },
-  refreshId: NaN,
-  setInterval: function() {},
+  show: function() {
+    app.pages.form.elements.container.classList.remove("hidden");
+    if (isNaN(app.pages.form.timeoutId)) {
+      app.pages.form.setTimeout();
+    }
+  },
+  hide: function() {
+    app.pages.form.elements.container.classList.add("hidden");
+    if (! isNaN(app.pages.form.timeoutId)) {
+      window.clearTimeout(app.pages.form.timeoutId);
+    }
+    app.pages.form.timeoutId = NaN;
+  },
+  timeoutId: NaN,
+  setTimeout: function() {
+    app.pages.form.timeoutId = window.setTimeout(app.pages.form.checkForms, 20000); // TODO raise this back up!
+  },
 };
 </script>

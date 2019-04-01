@@ -5,6 +5,12 @@
  * @return void
  */
 /* global app utility */
+/* exported
+     displayArchivedForms
+     displayForm
+     displayNewForm
+     displayOpenForms
+*/
 function displayForm(form, archived) {
   for (let key in form) {
     switch (key) {
@@ -108,7 +114,8 @@ function displayForm(form, archived) {
         }
         break;
       case 'id': // fallthrough
-      case 'bookingId':
+      case 'bookingId': // fallthrough
+      case 'hash':
         app.pages.form.elements.form[key].value = form[key];
         break;
     }
@@ -124,7 +131,7 @@ function displayForm(form, archived) {
   app.omnibox.clear();
   
   // init update button
-  if (!form.id) {
+  if (! form.id) {
     app.pages.form.elements.updateFormButton.textContent = app.strings.updateButton.enabled;
   } else {
     app.pages.form.elements.updateFormButton.textContent = app.strings.updateButton.disabled;
@@ -156,13 +163,14 @@ function displayForm(form, archived) {
 /**
  * Displays a blank form to the user.
  */
-/* exported displayNewForm */
 function displayNewForm() {
   app.cache.savedForm = {
     id: null, bookingId: null, bookedStudents: null, endTime: null,
     location: null, overnight: null, project: null, contact: null,
     startTime: null, tape: null, students: [], items: [], notes: []
   };
+  const length = app.cache.openForms.push(app.cache.savedForm);
+  app.cache.currentIndex = length - 1;
   displayForm(app.cache.savedForm);
 }
 
@@ -170,7 +178,6 @@ function displayNewForm() {
  * @param {[Form]} forms - an array of Forms
  * @param {string} sortBy - sort option
  */
-/* exported displayOpenForms */
 function displayOpenForms(forms, sortBy) {
   if (!sortBy) {
     sortBy = app.pages.openForms.sortBy;
@@ -360,7 +367,6 @@ function populateStudentList(student) {
   ));
 }
 
-/* exported displayArchivedForms */
 function displayArchivedForms(forms) {
   populateArchiveTable(forms);
 }

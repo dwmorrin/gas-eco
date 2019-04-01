@@ -1,24 +1,17 @@
 /* global
-          Form_
-          checkItemsDemo_
-          checkItemsGAS_
-          clearSignatureValidationGAS_
-          createDailyBookingFormsGAS_
-          getAllItemsDemo_
-          getAllItemsGAS_
-          getAllStudentsGAS_
-          getArchivedFormsDEMO_
-          getOpenFormsDEMO_
-          getOpenFormsGAS_
-          resetDEMO_
-          startSignature_
-          writeCodabarGAS_
-          writeFormToSheetDEMO_
-          writeFormToSheetGAS_
-          writeSignatureToSheetGAS_
+Form_
+checkItemsGAS_
+clearSignatureValidationGAS_
+createDailyBookingFormsGAS_
+getAllItemsGAS_
+getAllStudentsGAS_
+getArchivedFormsGAS_
+getOpenFormsGAS_
+startSignature_
+writeCodabarGAS_
+writeFormToSheetGAS_
+writeSignatureToSheetGAS_
 */
-var runWith = 'demo';
-//var runWith = 'GAS';
 
 /**
  * This runs on a time driver trigger.
@@ -27,13 +20,7 @@ var runWith = 'demo';
  */
 /* exported createDailyForms_ */
 function createDailyForms_() {
-  switch (runWith) {
-    case 'demo':
-      break;
-    case 'GAS':
-      createDailyBookingFormsGAS_();
-      break;
-  }
+  createDailyBookingFormsGAS_();
 }
 
 /**
@@ -41,15 +28,7 @@ function createDailyForms_() {
  * @todo - I'd rather see this under postForm_ than parallel to it
  */
 function closeForm_(form) {
-  form = isValidForm_(form);
-  switch (runWith) {
-    case 'demo':
-      return writeFormToSheetDEMO_(form, true);
-    case 'GAS':
-      return writeFormToSheetGAS_(form, true);
-    case 'SQL':
-      return;
-  }
+  return writeFormToSheetGAS_(isValidForm_(form), true);
 }
 
 /**
@@ -65,14 +44,8 @@ function doGet(request) {
   var  webpage;
   if (! request.get) {
     webpage = HtmlService.createTemplateFromFile('html/index');
-    if (runWith == "demo") {
-      webpage.demo = true;
-    }
     webpage = webpage.evaluate();  
     webpage.setTitle('Equipment Check-Out');
-    //if (runWith == 'demo') {
-    //  resetDEMO_();
-    //}
     return webpage;
   }
   
@@ -89,6 +62,7 @@ function doGet(request) {
     case 'user':
       response.user = getUser_();
       break;
+    case 'checkForms': // fallthrough
     case 'openForms':
       response.formList = getOpenForms_();
       break;
@@ -112,15 +86,21 @@ function doGet(request) {
 /* exported doPost */
 function doPost(request) {
   var response = {};
+  var lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(10000);
+  } catch (lockError) {
+    // throwing will let whatever withErrorHandler is attached to handle this
+    // the user should get some kind of "please try again" message
+    throw lockError;
+  }
+  // we have the lock
+  // we must check that there is no collision first, i.e. that thing we are trying
+  // to update wasn't already updated by someone else.
   switch (request.post) {
     case 'codabar':
       postCodabar_(request.netId, request.codabar);
       response.students = getAllStudents_();
-      break;
-    case 'demo':
-      resetDEMO_();
-      request.post = 'openForms';
-      response.formList = getOpenForms_();
       break;
     case 'signature':
       postSignature_(request);
@@ -134,19 +114,31 @@ function doPost(request) {
       break;
     case 'updateForm':
       var form = readForm_(request.form);
-      if (isFormReadyToClose_(form) || isNoShow_(form)) {
-        closeForm_(form);
-        request.post = 'openForms';
-        response.formList = getOpenForms_();
-      } else {
-        response.form = JSON.stringify(postForm_(form));
+      try {
+        if (isFormReadyToClose_(form) || isNoShow_(form)) {
+          closeForm_(form);
+          request.post = 'openForms';
+          response.formList = getOpenForms_();
+        } else {
+          response.form = JSON.stringify(postForm_(form));
+        }
+      } catch (error) {
+        if (/^form collision/i.test(error.message)) {
+          lock.releaseLock();
+          response.target = "collision";
+          response.form = error.ECO_storedForm; // already JSON stringed
+          response.submittedForm = error.ECO_submittedForm;
+          return response;
+        } else {
+          throw error;
+        }
       }
       break;
     case 'unload':
       handleUnload_();
       break;
   }
-
+  lock.releaseLock();
   response.target = request.post;
   
   return response;
@@ -160,47 +152,21 @@ function deleteForm_() {
 
 /** @see doGet */
 function getAllItems_() {
-  switch (runWith) {
-    case 'demo':
-      return JSON.stringify(getAllItemsDemo_());
-    case 'GAS':
-      return JSON.stringify(getAllItemsGAS_());
-    case 'SQL':
-      return;
-  }
+  return JSON.stringify(getAllItemsGAS_());
 }
 
 /** @see doGet */
 function getAllStudents_() {
-  switch (runWith) {
-    case 'demo':
-      // fallthrough
-    case 'GAS':
-      return JSON.stringify(getAllStudentsGAS_());
-    case 'SQL':
-      return;
-  }
+  return JSON.stringify(getAllStudentsGAS_());
 }
 
 function getArchive_(dateRangeJSON) {
-  switch (runWith) {
-    case 'demo':
-      return JSON.stringify(getArchivedFormsDEMO_(dateRangeJSON));
-    case 'GAS':
-      throw new Error('GAS function not set at getArchive_');
-  }
+  return JSON.stringify(getArchivedFormsGAS_(dateRangeJSON));
 }
 
 /** @see doGet */
 function getOpenForms_() {
-  switch (runWith) {
-    case 'demo':
-      return JSON.stringify(getOpenFormsDEMO_());
-    case 'GAS':
-      return JSON.stringify(getOpenFormsGAS_());
-    case 'SQL':
-      return;
-  }
+  return JSON.stringify(getOpenFormsGAS_());
 }
 
 /** @see doGet */
@@ -214,18 +180,9 @@ function getUser_() {
  * @see doPost
  */
 function handleUnload_() {
-  switch (runWith) {
-    case 'demo':
-      // Reset demo
-      // resetDEMO_();
-      // fallthrough
-    case 'GAS':
-      // clear signature validation
-      clearSignatureValidationGAS_();
-      return;
-    case 'SQL':
-      return;
-  }
+  // clear signature validation
+  clearSignatureValidationGAS_();
+  return;
 }
 
 /**
@@ -338,14 +295,7 @@ function isThereAnActiveStudent_(form) {
  */
 function isValidForm_(form) {
   if (form.items) {
-    switch (runWith) {
-      case 'demo':
-        form = checkItemsDemo_(form);
-        break;
-      case 'GAS':
-        form = checkItemsGAS_(form);
-        break;
-    }
+    form = checkItemsGAS_(form);
   }
   return form;
 }
@@ -357,23 +307,12 @@ function postCodabar_(netId, codabar) {
 /** @see doPost */
 function postForm_(form) {
   form = isValidForm_(form);
-  switch (runWith) {
-    case 'demo':
-      return writeFormToSheetDEMO_(form);
-    case 'GAS':
-      return writeFormToSheetGAS_(form);
-    case 'SQL':
-      return;
-  }
+  return writeFormToSheetGAS_(form);
 }
 
 // //run.doPost({ post: 'signature', dataURL: dataURL, id: studentId }); 
 function postSignature_(request) {
-  switch (runWith) {
-    case 'demo': // fallthrough
-    case 'GAS':
-      return writeSignatureToSheetGAS_(request);
-  }
+  return writeSignatureToSheetGAS_(request);
 }
 
 /**
@@ -402,11 +341,12 @@ function readForm_(formObj) {
     .setOvernight(formObj.overnight)
     .setStudents(formObj.students)
     .setItems(formObj.items)
-    .setNotes(formObj.notes);
+    .setNotes(formObj.notes)
+    .setHash(formObj.hash);
   return form;
 }
 
-var utility = { date: {} };
+var utility = { date: {}, hash: {} };
 
 /**
  * Utility to get 'mm/dd/yyyy hh:mm am' format
@@ -467,4 +407,9 @@ utility.date.zeropad = function(x) {
   } else {
     return x;
   }
+};
+
+utility.hash.make = function(string) {
+  var digest = Utilities.computeDigest(Utilities.DigestAlgorithm.MD2, string);
+  return Utilities.base64EncodeWebSafe(digest);
 };

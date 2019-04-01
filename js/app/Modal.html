@@ -33,6 +33,14 @@ app.modal = {
                "message in error, choose \"close\".",
       ok:      "Submit",
     },
+    collision: {
+      heading: "Uh-oh, your form conflicts with another form",
+      body:    "Unfortunately, no automatic fix is available. Please write down " +
+               "the details of your form, then refresh and open the form again. " +
+               "Modify the newly opened form to reflect the changes you want. " +
+               "Check to log to see what changes caused the conflict.",
+      ok:      "Ok"
+    },
     init: { // as defined in html/Modal.html
       heading: "Attention",
       body:    "choose an option to exit",
@@ -206,6 +214,12 @@ app.modal = {
     return value;
   },
 
+  handleCollision: function(/*collision*/) {
+    const m = app.modal;
+    m.setStrings("collision");
+    m.show(app.modal.container);
+  },
+
   handleError: function(error) {  
     app.errors.push(error);
     if (app.modal.heading.textContent != app.modal.strings.error.heading) {
@@ -242,15 +256,17 @@ app.modal = {
   
   showNextError: function() {
     let error = app.errors.shift();
-    if (!error) {
+    if (! error) {
       return;
     }
     app.modal.blurAllTextInputs();
     app.modal.setStrings('error');
-    if(error && error.message) {
+    if(error.message) {
       app.modal.body.textContent = error.message;
+      app.modal.show(app.modal.container);
+    } else if (error.target == 'collision') {
+      app.modal.handleCollision(error);
     }
-    app.modal.show(app.modal.container);
   },
 
   handleItemNote: function(item) {
@@ -294,7 +310,7 @@ app.modal = {
     // get item
     let items = JSON.parse(app.pages.form.elements.form.items.value);
     let item = items.find(i => i.id == itemId);
-    if (item.serialized) {
+    if (! item || item.serialized) {
       return;
     }
     let m = app.modal;

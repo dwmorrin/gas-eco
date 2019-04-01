@@ -259,6 +259,12 @@ app.pages.archive = {
     start: '', // 'yyyy-mm-dd'
     end: '',   // 'yyyy-mm-dd'
   },
+  show: function() {
+    app.pages.archive.elements.container.classList.remove("hidden");
+  },
+  hide: function() {
+    app.pages.archive.elements.container.classList.add("hidden");
+  },
   refreshId: NaN,
   setInterval: function() {},
   update: function() {
