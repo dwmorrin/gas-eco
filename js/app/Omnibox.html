@@ -191,8 +191,13 @@ app.omnibox = {
         );
         manualEntryAlert();
       } else if (barcoderegex.test(value)) { // assume it's a barcode
-        parsed = app.cache.items.find(
-          item => item.barcode.toLowerCase() == value
+        parsed = app.cache.items.find(item => {
+            if (! item.barcode) {
+              return false
+            }
+            const barcode = "" + item.barcode
+            return barcode.toLowerCase() == value
+          }
         );
       }
       if (parsed) {
