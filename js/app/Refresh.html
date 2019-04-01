@@ -20,20 +20,64 @@ app.refresh = function(response) {
       app.cache.archive = JSON.parse(response.formList);
       app.pages.archive.query();
       break;
+    case 'checkForms': {
+      const newForms = JSON.parse(response.formList);
+      if (! newForms[0]) {
+        break;
+      }
+      // determine current context
+      const viewingForm = (! app.pages.form.elements.container.classList.contains('hidden'));
+      // currently we are only interested in the single view
+      if (! viewingForm) {
+        break;
+      }
+      const currentForm = app.cache.openForms[app.cache.currentIndex];
+      const index = newForms.findIndex(form => form.id == currentForm.id);
+      if (index < 0) { // TODO uncaught error
+        break;
+      }
+      const newForm = newForms[index];
+      // are changes saved?
+      if (app.changes.saved) {
+        app.cache.openForms = newForms;
+        app.doCommand("displayForm", newForm);
+        app.pages.form.setTimeout();
+      } else {
+        if (newForm.hash != currentForm.hash) {
+          // another instance has already updated this form; do not set timeout
+          app.modal.handleError({
+            target: "collision",
+            form: newForm,
+            submittedForm: currentForm }
+          );
+        } else { // editing the current form; keep checking
+          app.pages.form.setTimeout();
+        }
+      }
+      break;
+    }
     case 'codabar':
       app.cache.students = JSON.parse(response.students);
       app.modal.hide();
       app.omnibox.parse();
       break;
-    case 'updateForm':
-      app.changes.saved = true;
-      app.pages.form.elements.undoButton.setAttribute('disabled', true);
-      app.pages.form.elements.updateButtonHint.textContent = '';
-      app.pages.form.elements.updateFormButton.setAttribute('disabled', true);
-      displayForm(JSON.parse(response.form));
+    case 'collision':
+      app.modal.handleError(response);
+      app.pages.form.elements.updateFormButton.textContent = "Update";
       break;
     case 'items':
       app.cache.items = JSON.parse(response.items);
+      break;
+    case 'openForms':
+      if (response.unlock) {
+        app.elements.openFormsButton.removeAttribute('disabled');
+      }
+      app.changes.saved = true;
+      app.cache.openForms = JSON.parse(response.formList);
+      app.spinner.off();
+      app.showPage(app.pages.openForms);
+      displayOpenForms(app.cache.openForms);
+      app.cache.currentFormstack = 'openForms';
       break;
     case 'signature':
       app.cache.students = JSON.parse(response.students);
@@ -50,19 +94,25 @@ app.refresh = function(response) {
         app.omnibox.parse();
       }
       break;
+    case 'updateForm': {
+      app.changes.saved = true;
+      app.pages.form.elements.undoButton.setAttribute('disabled', true);
+      app.pages.form.elements.updateButtonHint.textContent = '';
+      app.pages.form.elements.updateFormButton.setAttribute('disabled', true);
+      const updatedForm = JSON.parse(response.form);
+      const index = app.cache.openForms.findIndex(
+        (form) => (! form.id || form.id == updatedForm.id)
+      );
+      if (index > -1) {
+        app.cache.openForms[index] = updatedForm;
+      } else {
+        throw new Error("cannot find " + updatedForm.id + " in local forms");
+      }
+      displayForm(updatedForm);
+      break;
+    }
     case 'user':
       app.elements.usernameDisplay.textContent = response.user;
-      break;
-    case 'openForms':
-      if (response.unlock) {
-        app.elements.openFormsButton.removeAttribute('disabled');
-      }
-      app.changes.saved = true;
-      app.cache.openForms = JSON.parse(response.formList);
-      app.spinner.off();
-      app.showPage(app.pages.openForms);
-      displayOpenForms(app.cache.openForms);
-      app.cache.currentFormstack = 'openForms';
       break;
   }
   

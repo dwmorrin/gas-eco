@@ -2,7 +2,7 @@
 /**
  * signature of the app object
  */
-var app = {
+const app = {
   cache:     {},                         // data container
   changes:   {},                         // log user changes
   doCommand: function(/*command, ...options */){},// command switch block
@@ -33,24 +33,18 @@ app.cache = {
   students:            [],
 };
 
-app.pages = {      // must have refreshId property and setInterval method
+app.pages = {      // must have show and hide functions
   archive:     {},
   form:        {},
   openForms:   {},
 };
 
 app.showPage = function(page) {
-  for(let key in app.pages) {
-    if(page == app.pages[key]) {
-      page.elements.container.classList.remove('hidden');
-      page.setInterval();
+  for (let key in app.pages) {
+    if (page == app.pages[key]) {
+      page.show();
     } else {
-      let otherPage = app.pages[key];
-      otherPage.elements.container.classList.add('hidden');
-      if(!isNaN(otherPage.refreshId)) {
-        window.clearInterval(otherPage.refreshId);
-        otherPage.refreshId = NaN;
-      }
+      app.pages[key].hide();
     }
   }
 };

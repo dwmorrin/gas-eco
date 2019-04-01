@@ -50,7 +50,8 @@ app.handlers = {
     }
 
     // Allow cmd + enter to submit/update form
-    if (!app.pages.form.elements.updateFormButton.disabled && app.modal.container.classList.contains('hidden')) {
+    if (! app.pages.form.elements.updateFormButton.disabled &&
+          app.modal.container.classList.contains('hidden')) {
       if ((keydown.metaKey || keydown.ctrlKey) && keydown.key == 'Enter') {
         app.doCommand('updateForm');
         return;
