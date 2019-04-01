@@ -177,7 +177,7 @@ app.doCommand = function(command,...options) {
     case 'saveManual': {
       //let manualCount = app.omnibox.manualCount;
       //console.log(manualCount);
-        app.omnibox.handleItem({"id":"N/A","checkIn":null,"checkOut":null,"quantity":1,"serialized":false,"barcode":null,"description":app.modal.getText(),"checkedOut":true});
+        app.omnibox.handleItem({"id":"MANUAL-" + app.omnibox.manualCount,"checkIn":null,"checkOut":null,"quantity":1,"serialized":false,"barcode":null,"description":app.modal.getText(),"checkedOut":true});
       };
     case 'setLocationOther': {
       const otherLocation = app.modal.getInput(),

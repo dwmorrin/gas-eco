@@ -8,7 +8,7 @@ Item_
 utility
 */
 app.omnibox = {
-  //manualCount: 0,
+  manualCount: 0,
   clear: function() {
     app.omnibox.element.value = '';
   },
@@ -227,7 +227,7 @@ app.omnibox = {
     }
     function manualModeAlert() {
       app.doCommand("newManual");
-      //app.omnibox.manualCount++;
+      app.omnibox.manualCount++;
       
     }
   },
