@@ -72,6 +72,11 @@ app.modal = {
       body:    "Enter a note",
       ok:      "Save note",
     },
+	  manual: {
+      heading: "New manual item",
+      body:    "Enter a name",
+      ok:      "Save item",
+    },	 
     signature: {
       heading: "Signature Confirmation:",
       body:    "My signature here confirms that I have read and understand " +
@@ -190,6 +195,12 @@ app.modal = {
     app.modal.textarea.focus();
   },
 
+	getManual: function() {
+    app.modal.setStrings('manual');
+    app.modal.show(app.modal.container, app.modal.ok, app.modal.textarea);
+    app.modal.ok.setAttribute('value', 'saveManual');
+    app.modal.textarea.focus();
+  },					 
   getSignature: function(student) {
     app.modal.blurAllTextInputs();
     app.modal.setStrings('signature');
