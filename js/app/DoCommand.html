@@ -103,15 +103,16 @@ app.doCommand = function(command,...options) {
     case 'newNote':
       app.modal.getNote();
       break;
-	  case 'newManual':
+    case 'newManual':
+      // TODO check if manual already exists
       app.modal.getManual();
-      break; 	  
+      break;
     case 'nextForm':
       if (! app.changes.saved) {
         app.modal.handleUnsavedForm(command);
         return;
       }
-      app.pages.form.getNext(); 
+      app.pages.form.getNext();
       break;
     case 'openForms':
       if (! app.changes.saved) {
@@ -174,12 +175,20 @@ app.doCommand = function(command,...options) {
       }
       break;
     }
-	  case 'saveManual': {
-      let name = app.modal.getText();
-      let hashedID = utility.getHash(name);
-        app.omnibox.handleItem({"id":"MANUAL-"+ hashedID,"checkIn":null,"checkOut":null,"quantity":1,"serialized":false,"barcode":null,"description":name,"checkedOut":true});
+    case 'saveManual': {
+      const description = app.modal.getText();
+      app.omnibox.handleItem({
+        id: "MANUAL-"+ utility.getHash(description),
+        checkIn: null,
+        checkOut: null,
+        quantity: 1,
+        serialized: false,
+        barcode: null,
+        description: description,
+        checkedOut: true
+      });
       break;
-    };				
+    }
     case 'setLocationOther': {
       const otherLocation = app.modal.getInput(),
           option = app.pages.form.elements.locationOtherOption,
@@ -187,7 +196,7 @@ app.doCommand = function(command,...options) {
           change = {
             target: {
               name  :'location',
-              value :otherLocation 
+              value :otherLocation
             }
           };
       select.value = option.value = otherLocation;
