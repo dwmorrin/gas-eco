@@ -44,7 +44,7 @@ app.modal = {
     init: { // as defined in html/Modal.html
       heading: "Attention",
       body:    "choose an option to exit",
-      ok:      "Ok",    
+      ok:      "Ok",
     },
     itemQuantity: {
       heading: "Change Quantity",
@@ -72,11 +72,11 @@ app.modal = {
       body:    "Enter a note",
       ok:      "Save note",
     },
-	  manual: {
+    manual: {
       heading: "New manual item",
       body:    "Enter a name",
       ok:      "Save item",
-    },	 
+    },
     signature: {
       heading: "Signature Confirmation:",
       body:    "My signature here confirms that I have read and understand " +
@@ -119,7 +119,7 @@ app.modal = {
 
   // modal methods
   /**
-   @param {[]} notes - saved notes, query changes for pending changes 
+   @param {[]} notes - saved notes, query changes for pending changes
    */
   displayChangeLog: function(notes) {
     utility.DOM.empty(app.modal.table);
@@ -178,7 +178,7 @@ app.modal = {
     app.modal.ok.setAttribute('value', 'setLocationOther');
     app.modal.show(app.modal.container, app.modal.ok, app.modal.input);
   },
-  
+
   getNewCodabar: function(codabar /* string */) {
     app.modal.tmp = codabar;
     app.modal.input.setAttribute('placeholder', "enter student's NetID");
@@ -194,13 +194,12 @@ app.modal = {
     app.modal.ok.setAttribute('value', 'saveNote');
     app.modal.textarea.focus();
   },
-
-	getManual: function() {
+    getManual: function() {
     app.modal.setStrings('manual');
     app.modal.show(app.modal.container, app.modal.ok, app.modal.textarea);
     app.modal.ok.setAttribute('value', 'saveManual');
     app.modal.textarea.focus();
-  },					 
+  },
   getSignature: function(student) {
     app.modal.blurAllTextInputs();
     app.modal.setStrings('signature');
@@ -231,14 +230,14 @@ app.modal = {
     m.show(app.modal.container);
   },
 
-  handleError: function(error) {  
+  handleError: function(error) {
     app.errors.push(error);
     if (app.modal.heading.textContent != app.modal.strings.error.heading) {
       app.modal.showNextError();
     } // else the user is already seeing an error message
     // modal.hide will call showNextError when user is ready
   },
-  
+
   /**
    * @param {Obj} info - an object with a 'message' string member
    */
@@ -248,7 +247,7 @@ app.modal = {
       app.modal.showNextError();
     }
   },
-  
+
   signatureReady: function() {
     let m = app.modal;
     m.setStrings('signatureReady');
@@ -258,13 +257,13 @@ app.modal = {
     m.show(app.modal.container, app.modal.ok, app.modal.link);
     m.ok.setAttribute('value', 'signatureRecheck');
   },
-  
+
   signatureWait: function() {
     let m = app.modal;
     m.setStrings('signatureWait');
     m.show(app.modal.container);
   },
-  
+
   showNextError: function() {
     let error = app.errors.shift();
     if (! error) {

@@ -8,7 +8,10 @@ utility.uncamelCase = function(string) {
 };
 
 utility.getHash = function(string) {
-  string = string.split("").reduce(function(a,b){a=((a<<5)-a)+b.charCodeAt(0);return a&a},0);
+  string = string.split("").reduce((a,b) =>{
+    a=((a << 5) - a) + b.charCodeAt(0);
+    return a & a
+  }, 0);
   string = Math.abs(string);
   string = string.toString().substring(0, 5);
   return string;
@@ -55,7 +58,7 @@ utility.date.getFormattedDate = function(date) {
       hour = date.getHours(),
       minutes = date.getMinutes(),
       ampm = 'am';
-      
+
   if (hour > 11) {
     ampm = 'pm';
     hour = hour % 12;
@@ -65,7 +68,7 @@ utility.date.getFormattedDate = function(date) {
   }
   return utility.date.zeropad(month) + '/' + utility.date.zeropad(day) + '/' +
     year + ' ' + utility.date.zeropad(hour) + ':' +
-    utility.date.zeropad(minutes) + ' ' + ampm; 
+    utility.date.zeropad(minutes) + ' ' + ampm;
 };
 
 /**
@@ -79,7 +82,7 @@ utility.date.parseDateAndTimeInputs = function() {
       endHour = +app.pages.form.elements.form.endHour.value,
       startMinute = +app.pages.form.elements.form.startMinute.value,
       endMinute = +app.pages.form.elements.form.endMinute.value;
-  function ampmConverter(ampm, hour) { 
+  function ampmConverter(ampm, hour) {
     if (ampm == 'PM' && hour != 12) {
       hour += 12;
     } else if (ampm == 'AM' && hour == 12) { // i.e. 12 AM
@@ -93,8 +96,8 @@ utility.date.parseDateAndTimeInputs = function() {
   startTime.setMinutes(startMinute);
   endTime.setHours(endHour);
   endTime.setMinutes(endMinute);
-  
-  return { startTime: startTime, endTime: endTime };  
+
+  return { startTime: startTime, endTime: endTime };
 };
 
 /**
@@ -116,7 +119,7 @@ utility.date.parseFormattedDate = function(dateString) {
     ampm = 0;
   }
   hour = hour % 12 + ampm;
-  
+
   return new Date(year + '-' + utility.date.zeropad(month) + '-' +
            utility.date.zeropad(day) + 'T' + utility.date.zeropad(hour) + ':' +
            utility.date.zeropad(minutes) + ':00'
