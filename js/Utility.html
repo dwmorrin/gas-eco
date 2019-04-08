@@ -7,6 +7,12 @@ utility.uncamelCase = function(string) {
   return string.replace(/([A-Z])/g, ' $1').replace(/^./,str => str.toUpperCase());
 };
 
+utility.getHash = function(string) {
+  string = string.split("").reduce(function(a,b){a=((a<<5)-a)+b.charCodeAt(0);return a&a},0);
+  string = Math.abs(string);
+  string = string.toString().substring(0, 5);
+  return string;
+}
 utility.DOM.empty = function(element) {
   while(element.firstChild) {
     element.removeChild(element.firstChild);
