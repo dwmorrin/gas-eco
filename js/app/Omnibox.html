@@ -189,21 +189,19 @@ app.omnibox = {
         parsed = app.cache.items.find(
           item => item.id.toLowerCase().replace(dashzero, '-') == value
         );
-      if (!parsed && manualItemIdregex.test(value)){
-        value = value.replace(dashzero, '-'); // strip leading zeroes
-        parsed = (JSON.parse(app.pages.form.elements.form.items.value)).find(
-          item => item.id.toLowerCase().replace(dashzero, '-') == value
-      );
-        }
-        else{
+        if (!parsed && manualItemIdregex.test(value)) {
+          parsed = (JSON.parse(app.pages.form.elements.form.items.value)).find(
+            item => item.id.toLowerCase().replace(dashzero, '-') == value
+        );
+        } else {
           manualEntryAlert();
         }
       } else if (barcoderegex.test(value)) { // assume it's a barcode
-          // if it is the code for manual entry
-          if (value == 10000) {
-            app.doCommand("newManual");
-            return
-          }
+        // TODO replace 10000 with configuration variable for manual barcode number
+        if (value == 10000) {
+          app.doCommand("newManual");
+          return;
+        }
         parsed = app.cache.items.find(item => {
             if (! item.barcode) {
               return false
