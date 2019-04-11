@@ -48,7 +48,7 @@ app.refresh = function(response, context) {
       const newForm = newForms[index];
       // are changes saved?
       if (app.changes.saved) {
-        app.cache.openForms = newForms.slice();
+        app.cache.openForms = newForms;
         app.doCommand("displayForm", newForm);
         app.pages.form.setTimeout();
       } else {
