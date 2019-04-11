@@ -2,7 +2,9 @@
 /* global app displayForm utility isFormOkToPost isFormReadyToClose */
 app.pages.form = {
   checkForms: function() {
-    app.run.doGet({ get: "checkForms" });
+    app.run
+      .withUserObject({ timeoutId: app.pages.form.timeoutId })
+      .doGet({ get: "checkForms" });
   },
   elements: {
     container:               document.querySelector('div.formContainer'),
@@ -278,7 +280,10 @@ app.pages.form = {
   },
   timeoutId: NaN,
   setTimeout: function() {
-    app.pages.form.timeoutId = window.setTimeout(app.pages.form.checkForms, 20000); // TODO raise this back up!
+    // do not set this when viewing the archive stack
+    if (app.cache.currentFormstack == app.strings.formstack.openForms) {
+      app.pages.form.timeoutId = window.setTimeout(app.pages.form.checkForms, 60000);
+    }
   },
 };
 </script>
