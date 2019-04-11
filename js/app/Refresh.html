@@ -9,7 +9,13 @@ app
 displayForm
 displayOpenForms
 */
-app.refresh = function(response) {
+
+/**
+ * app.refresh is the main callback attached to google.script.run.withSuccessHandler
+ * @param {Object} response - from server, see gs/Main
+ * @param {Object} [context] - from client, see google.script.run.withUserObject
+ */
+app.refresh = function(response, context) {
   switch (response.target) {
     case 'archive':
       if (response.unlock) {
@@ -25,15 +31,18 @@ app.refresh = function(response) {
       if (! newForms[0]) {
         break;
       }
-      // determine current context
-      const viewingForm = (! app.pages.form.elements.container.classList.contains('hidden'));
-      // currently we are only interested in the single view
-      if (! viewingForm) {
+      // determine current context, see app.pages.form.{show,hide}
+      // for why timeoutId shows context
+      if (context.timeoutId != app.pages.form.timeoutId ||
+          app.cache.currentFormstack == app.strings.formstack.archive) { // TODO check if we should check sortBy
         break;
       }
-      const currentForm = app.cache.openForms[app.cache.currentIndex];
+      // sort forms to match current sorting TODO factor out the sorting function from displayOpenForms
+      displayOpenForms(newForms); // this doesn't actually show the forms or change user's context
+      const currentForm = app.cache[app.cache.currentFormstack][app.cache.currentIndex];
       const index = newForms.findIndex(form => form.id == currentForm.id);
-      if (index < 0) { // TODO uncaught error
+      if (index < 0) {
+        // new forms catch here
         break;
       }
       const newForm = newForms[index];
@@ -77,7 +86,7 @@ app.refresh = function(response) {
       app.spinner.off();
       app.showPage(app.pages.openForms);
       displayOpenForms(app.cache.openForms);
-      app.cache.currentFormstack = 'openForms';
+      app.cache.currentFormstack = app.strings.formstack.openForms;
       break;
     case 'signature':
       app.cache.students = JSON.parse(response.students);
