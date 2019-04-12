@@ -32,7 +32,7 @@ app.doCommand = function(command,...options) {
         app.pages.archive.query();
       }
       app.showPage(app.pages.archive);
-      app.cache.currentFormstack = 'archive';
+      app.cache.currentFormstack = app.strings.formstack.archive;
       break;
     }
     case 'changeLog':
