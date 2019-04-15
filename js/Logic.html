@@ -41,6 +41,10 @@ function isCheckInItemOk(item) {
     return false;
   });
   if (! savedItem || ! savedItem.checkOut) {
+    if (! item.serialized) {
+      app.modal.handleQuantityChange(item.id);
+      return false;
+    }
     app.modal.handleError(
       new Error(
         item.description + " was just checked-out.  Update or revert the form to continue."
