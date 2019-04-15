@@ -88,9 +88,9 @@ app.omnibox = {
       target: {
         name: 'students',
         value: student.name
-      } 
+      }
     };
-    
+
     if (! studentOnForm) {
       if (! student.signatureOnFile) {
         //app.modal.getSignature(student);
@@ -159,7 +159,6 @@ app.omnibox = {
     } else {     // case insensitive
       value = value.toLowerCase();
     }
-
     // DETERMINE TYPE
     if (codabar.test(value)) { // Check student id
       parsed = app.cache.students.find(
@@ -189,16 +188,28 @@ app.omnibox = {
     }
 
     if (! parsed) { // Check item Ids and barcodes
-      let itemIdregex = /[A-Za-z]+-[A-Za-z0-9]+/, // letter(s), hyphen, digit(s) or letter(s)
-          barcoderegex = /^[0-9]+$/,              // only digits
-          dashzero = /-0+/;                       // dash then one of more zeroes
+      const itemIdregex = /[A-Za-z]+-[A-Za-z0-9]+/, // letter(s), hyphen, digit(s) or letter(s)
+            barcoderegex = /^[0-9]+$/,              // only digits
+            dashzero = /-0+/,                       // dash then one of more zeroes
+            manualItemIdregex = /^manual/;
       if (itemIdregex.test(value)) {
         value = value.replace(dashzero, '-'); // strip leading zeroes
         parsed = app.cache.items.find(
           item => item.id.toLowerCase().replace(dashzero, '-') == value
         );
-        manualEntryAlert();
+        if (!parsed && manualItemIdregex.test(value)) {
+          parsed = (JSON.parse(app.pages.form.elements.form.items.value)).find(
+            item => item.id.toLowerCase().replace(dashzero, '-') == value
+        );
+        } else {
+          manualEntryAlert();
+        }
       } else if (barcoderegex.test(value)) { // assume it's a barcode
+        // TODO replace 10000 with configuration variable for manual barcode number
+        if (value == 10000) {
+          app.doCommand("newManual");
+          return;
+        }
         parsed = app.cache.items.find(item => {
           if (! item.barcode) {
             return false;
@@ -219,7 +230,7 @@ app.omnibox = {
         () => app.omnibox.element.classList.remove('error'), 2000
       );
     }
-    
+
     function manualEntryAlert() {
       app.modal.handleInfo(
         new Error(app.omnibox.element.value + app.strings.omniboxManualEntry)
