@@ -2,6 +2,7 @@
 /* global
 app
 isCheckOutStudentOk
+isCheckInItemOk
 populateItemList
 populateStudentList
 utility
@@ -45,6 +46,9 @@ app.omnibox = {
         );
         return;
       } else if (itemOnForm.checkOut) { // Its a check-in
+        if (! isCheckInItemOk(itemOnForm)) {
+          return;
+        }
         itemOnForm.checkIn = utility.date.getFormattedDate(new Date());
         change.target.value += ' check-in';
       } else { // Its a check-out for reserved gear

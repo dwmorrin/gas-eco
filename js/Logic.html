@@ -26,6 +26,36 @@ function isThereAnActiveStudent() {
   return activeStudents > 1;
 }
 
+/**
+ * @return {bool}
+ */
+/* exported isCheckInItemOk */
+function isCheckInItemOk(item) {
+  const savedItem = app.cache.savedForm.items.find(i => {
+    if (i.id && i.id == item.id) {
+      return true;
+    }
+    if (i.barcode && i.barcode == item.barcode) {
+      return true;
+    }
+    return false;
+  });
+  if (! savedItem || ! savedItem.checkOut) {
+    if (! item.serialized) {
+      app.omnibox.clear();
+      app.modal.handleQuantityChange(item.id);
+      return false;
+    }
+    app.modal.handleError(
+      new Error(
+        item.description + " was just checked-out.  Update or revert the form to continue."
+      )
+    );
+    return false;
+  }
+  return true;
+}
+
 /** @return {bool} */
 /* exported isCheckOutStudentOk */
 function isCheckOutStudentOk(student) {
