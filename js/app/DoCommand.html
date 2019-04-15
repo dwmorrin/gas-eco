@@ -179,7 +179,7 @@ app.doCommand = function(command,...options) {
       const description = app.modal.getText();
       utility.digestMessage(description).then(hash =>{
         app.omnibox.handleItem({
-          id: "MANUAL-"+ utility.hexString(hash), //add .substring(0, 5) to truncate
+          id: "MANUAL-"+ utility.hexString(hash).substring(0, 5),
           checkIn: null,
           checkOut: null,
           quantity: 1,
