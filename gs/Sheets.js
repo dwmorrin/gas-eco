@@ -187,9 +187,10 @@ function getAllItemsGAS_() {
   data.shift();
   var items = [];
   var itemIdregex = /[A-Za-z]+-[A-Za-z0-9]+/; // one or more letters, hyphen, one or more digits/letters
+  var itemBarcode = /^\d+$/;
   data.forEach(function getArrayOfItemsByData(itemData) {
-    // @todo just stuff with an item ID to start - reevaluate later
-    if (itemIdregex.test(itemData[index.items.ID])) {
+    if (itemBarcode.test(itemData[index.items.BARCODE]) ||
+        itemIdregex.test(itemData[index.items.ID])    ) {
       items.push(makeItemFromDataGAS_(itemData));
     }
   });
