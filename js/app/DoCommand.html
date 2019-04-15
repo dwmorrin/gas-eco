@@ -177,19 +177,19 @@ app.doCommand = function(command,...options) {
     }
     case 'saveManual': {
       const description = app.modal.getText();
-        utility.digestMessage(description).then(hash =>{
-          app.omnibox.handleItem({
-            id: "MANUAL-"+ utility.hexString(hash), //add .substring(0, 5) to truncate
-            checkIn: null,
-            checkOut: null,
-            quantity: 1,
-            serialized: false,
-            barcode: null,
-            description,
-            checkedOut: true
-          });
-        })
-     break;
+      utility.digestMessage(description).then(hash =>{
+        app.omnibox.handleItem({
+          id: "MANUAL-"+ utility.hexString(hash), //add .substring(0, 5) to truncate
+          checkIn: null,
+          checkOut: null,
+          quantity: 1,
+          serialized: false,
+          barcode: null,
+          description,
+          checkedOut: true
+        });
+      });
+      break;
     }
     case 'setLocationOther': {
       const otherLocation = app.modal.getInput(),
