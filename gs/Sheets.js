@@ -153,6 +153,7 @@ function createBookingFormGAS_(booking) {
       try { // TODO this try block only for proof of concept purposes. debug for production
         var item = makeItemFromDataGAS_(itemData);
         item.setDescription(bookingData[0])
+          .setSerialized()
           .setQuantity(bookingData[2]);
         items.push(item);
       } catch(e) {
@@ -318,6 +319,7 @@ function makeItemFromDataGAS_(itemData) {
   }
   
   item.setBarcode(itemData[index.items.BARCODE])
+    .setSerialized()
     .setDescription(description)
     .setCheckedOut(itemData[index.items.CHECKED_OUT]);
   
