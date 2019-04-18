@@ -350,7 +350,8 @@ function populateItemList(item) {
   const noteRow = document.createElement('tr'),
       notes = document.createElement('td');
   if (! item.checkIn && ! item.serialized) {
-    item.checkIn = '<button class="action">Check In</button>';  
+    const id = item.id ? item.id : item.barcode;
+    item.checkIn = `<button class="action" value="parseOmnibox" data-itemid="${id}">Check In</button>`;
   }
   app.pages.form.elements.itemList.appendChild(utility.DOM.makeTableRow(
     'td', item.quantity, item.description,
