@@ -347,9 +347,11 @@ function populateEquipmentOutList(item) {
 }
 
 function populateItemList(item) {
-  let noteRow = document.createElement('tr'),
+  const noteRow = document.createElement('tr'),
       notes = document.createElement('td');
-      
+  if (! item.checkIn && ! item.serialized) {
+    item.checkIn = '<button class="action">Check In</button>';  
+  }
   app.pages.form.elements.itemList.appendChild(utility.DOM.makeTableRow(
     'td', item.quantity, item.description,
     item.id, item.checkOut, item.checkIn
