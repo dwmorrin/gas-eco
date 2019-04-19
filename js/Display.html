@@ -21,7 +21,7 @@ function displayForm(form, archived) {
           app.pages.form.elements.form.items.value = JSON.stringify([]);
         } else {
           app.pages.form.elements.form.items.value = JSON.stringify(items);
-          items.forEach(populateItemList);
+          items.reverse().forEach(populateItemList);
         }
         break;
       }
