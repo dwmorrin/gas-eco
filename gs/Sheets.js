@@ -73,6 +73,10 @@ function checkItemsGAS_(form) {
   var data = sheet.getDataRange().getValues();
   form.items.forEach(function checkItems(item) {
     if (! item.checkIn && item.checkOut && ! item.checkedOut) { // requesting checkout
+      if (! item.serialized) {
+        item.checkedOut = true;
+        return;
+      }
       for (var i = 0, l = data.length; i < l; i++) {
         if (data[i][index.items.ID] != item.id) {
           continue;
@@ -86,6 +90,10 @@ function checkItemsGAS_(form) {
         }
       }
     } else if (item.checkIn && item.checkedOut) { // requesting check-in
+      if (! item.serialized) {
+        item.checkedOut = false;
+        return;
+      }
       for (i = 0, l = data.length; i < l; i++) {
         if (data[i][index.items.ID] != item.id) {
           continue;
