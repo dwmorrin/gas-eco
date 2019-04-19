@@ -195,10 +195,9 @@ app.pages.form = {
       input.selectionStart = input.selectionEnd = input.value.length;
     } else if (click.target.parentNode.firstChild == click.target) { // should be quantity
       // handle quantity changes
-      const indexOfItemId = 2;
-      let cells = click.target.parentNode.getElementsByTagName('td');
-      let itemId = cells[indexOfItemId].textContent;
-      app.modal.handleQuantityChange(itemId);
+      const indexOfItemDescription = 1;
+      const cells = click.target.parentNode.getElementsByTagName('td');
+      app.modal.handleQuantityChange(cells[indexOfItemDescription].textContent);
     }
     if (click.target.classList.contains('editable')) {
       if (!app.omnibox.element.disabled) {
