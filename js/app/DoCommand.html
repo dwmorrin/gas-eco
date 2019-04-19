@@ -95,7 +95,7 @@ app.doCommand = function(command,...options) {
       app.pages.form.elements.form.items.value = JSON.stringify(items);
       // Update display
       utility.DOM.empty(app.pages.form.elements.itemList);
-      items.forEach(populateItemList);
+      items.reverse().forEach(populateItemList);
       // Fake change event
       itemchange.target.value += ' to ' + quantity;
       app.pages.form.handleChange(itemchange);
