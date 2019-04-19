@@ -26,6 +26,10 @@ app.handlers = {
       return;
     }
 
+    if (click.target.dataset.itemid) {
+      app.omnibox.element.value = click.target.dataset.itemid
+    }
+
     if (click.target.value.slice(0,9) == 'loseData_') {
       app.changes.saved = true;
       app.pages.form.elements.updateButtonHint.textContent = '';

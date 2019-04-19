@@ -8,11 +8,6 @@ function Item_(id) {
   this.description;      // string, let implementation handle merging make, model, etc into this
   this.quantity = 1;     // 1 if there is an id, else integer
 
-  if (/NS$/.test(this.id)) { // NS means Not Serialized 
-    this.serialized = false;
-  } else {
-    this.serialized = true;
-  }
   
   this.getId = function() { return this.id; };
   this.getQuantity = function() { return this.quantity; };
@@ -54,4 +49,15 @@ function Item_(id) {
   this.setBarcode = function(str) { this.barcode = str; return this; };
   this.setDescription = function(str) { this.description = str; return this; };
   this.setCheckedOut = function(bool) { this.checkedOut = Boolean(bool); return this; };
+  this.setSerialized = function() { // TODO bug: do not run this before setting barcode!!
+    if (! this.barcode ) {
+      this.serialized = false;
+    }
+    if (+this.barcode > 9999 && +this.barcode < 10101) { // reserved barcode range TODO put in config settings
+      this.serialized = false;
+    } else {
+      this.serialized = true;
+    }
+    return this;
+  }
 }
