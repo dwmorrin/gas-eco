@@ -316,17 +316,17 @@ app.modal = {
     m.textarea.focus();
   },
 
-  handleQuantityChange: function(itemId) {
+  handleQuantityChange: function(itemDescription) {
     // get item
-    let items = JSON.parse(app.pages.form.elements.form.items.value);
-    let item = items.find(i => i.id == itemId);
+    const items = JSON.parse(app.pages.form.elements.form.items.value);
+    const item = items.find(i => i.description == itemDescription);
     if (! item || item.serialized) {
       return;
     }
-    let m = app.modal;
+    const m = app.modal;
     m.blurAllTextInputs();
     m.ok.setAttribute('value', 'itemQuantity');
-    m.tmp = itemId;
+    m.tmp = itemDescription;
     m.setStrings('itemQuantity');
     m.show(m.container, m.input, m.ok);
     m.input.focus();

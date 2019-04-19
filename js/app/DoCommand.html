@@ -70,14 +70,15 @@ app.doCommand = function(command,...options) {
       app.modal.handleError(new Error('Not available yet!'));
       break;
     case 'itemQuantity': {
-      const itemId = app.modal.tmp;
+      const description = app.modal.tmp;
       const quantity = +app.modal.getInput();
       const items = JSON.parse(app.pages.form.elements.form.items.value);
-      const item = items.find(i => i.id == itemId);
+      // note: we shouldn't be here unless item is not serialized, thus description is unique
+      const item = items.find(i => i.description == description);
       const itemchange = {
         target: {
           name: 'items',
-          value: itemId + ' qty ' + item.quantity,
+          value: description + ' qty ' + item.quantity,
         }
       };
       if (quantity < 1 || isNaN(quantity) ||
