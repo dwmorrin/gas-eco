@@ -94,14 +94,14 @@ function displayForm(form, archived) {
                   ampmInput = minuteInput.nextElementSibling;
               var hour = today.getHours(),
                   minutes = today.getMinutes();
-                  
+
               minuteInput.value = utility.date.roundMinutes(minutes);
               hourInput.value = utility.date.parseHours(hour);
               ampmInput.value = utility.date.parseAMPM(hour);
               dateInput.value = '' + today.getFullYear() + '-' +
                 utility.date.zeropad((today.getMonth() + 1)) + '-' +
                 utility.date.zeropad(today.getDate());
-                
+
               break;
             case 'location':
               td.classList.add('hidden');
@@ -121,16 +121,16 @@ function displayForm(form, archived) {
         break;
     }
   }
-        
+
   // copy form
   app.cache.savedForm = Object.assign({}, form);
-  
+
   // clear changes
   app.changes.clear();
-  
+
   // clear omnibox
   app.omnibox.clear();
-  
+
   // init update button
   if (! form.id) {
     app.pages.form.elements.updateFormButton.textContent = app.strings.updateButton.enabled;
@@ -138,11 +138,11 @@ function displayForm(form, archived) {
     app.pages.form.elements.updateFormButton.textContent = app.strings.updateButton.disabled;
     app.pages.form.elements.updateFormButton.classList.remove('create');
   }
-  
+
   // indicate where this form is in the current `stack' (e.g. open or closed/archive)
   app.pages.form.elements.currentFormstackDisplay.textContent = (app.cache.currentIndex + 1) +
     "/" + app.cache[app.cache.currentFormstack].length;
-  
+
   // this was added to handle displaying closed forms
   // @todo - should this be combined with the other update init section above?
   if (archived) {
@@ -155,10 +155,10 @@ function displayForm(form, archived) {
     app.pages.form.elements.newNoteButton.removeAttribute('disabled');
     app.pages.form.elements.updateButtonHint.textContent = '';
   }
-  
+
   app.spinner.element.classList.add('hidden');
   app.showPage(app.pages.form);
-  
+
 }
 
 /**
@@ -274,7 +274,7 @@ function displayOpenForms(forms, sortBy) {
 function populateFormsTable(forms) {
   utility.DOM.empty(app.pages.openForms.elements.formsTableBody);
   utility.DOM.empty(app.pages.openForms.elements.equipmentTableBody);
-  
+
   // if there's no forms...
   if (forms.length == 0) {
     let cell = document.createElement('td'),
@@ -283,13 +283,13 @@ function populateFormsTable(forms) {
     row.appendChild(cell);
     row.classList.add('hoveroff');
     app.pages.openForms.elements.formsTableBody.appendChild(row);
-    
+
     return;
   }
-  
+
   // else populate
   forms.forEach(makeOpenFormTableRows);
-  
+
   // if makeOpenFormTableRows found no equipment out...
   if (!app.pages.openForms.elements.equipmentTableBody.firstChild) {
     let row = document.createElement('tr'),
@@ -311,7 +311,7 @@ function makeOpenFormTableRows(form) {
       populateEquipmentOutList(itemInfo);
     }
   });
-  
+
   let row = utility.DOM.makeTableRow(
     'td',
     app.strings.documentIcon,
@@ -360,10 +360,10 @@ function populateItemList(item) {
     'td', item.quantity, item.description,
     item.id, item.checkOut, checkIn
   ));
-  
+
   notes.setAttribute('colspan', 4);
   notes.classList.add('itemnotes');
-  notes.textContent = 'Notes: ';
+  notes.textContent = item.notes;
   noteRow.appendChild(notes);
   app.pages.form.elements.itemList.appendChild(noteRow);
 }
@@ -380,7 +380,7 @@ function displayArchivedForms(forms) {
 
 function populateArchiveTable(forms) {
   utility.DOM.empty(app.pages.archive.elements.tableBody);
-  
+
   // if there's no forms...
   if (forms.length == 0) {
     let cell = document.createElement('td'),
@@ -389,10 +389,10 @@ function populateArchiveTable(forms) {
     row.appendChild(cell);
     row.classList.add('hoveroff');
     app.pages.archive.elements.tableBody.appendChild(row);
-    
+
     return;
   }
-  
+
   // else populate
   forms.forEach(makeArchiveTableRows);
 }
