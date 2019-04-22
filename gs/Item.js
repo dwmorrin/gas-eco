@@ -7,13 +7,14 @@ function Item_(id) {
   this.checkOut = null;  // string formatted date
   this.description;      // string, let implementation handle merging make, model, etc into this
   this.quantity = 1;     // 1 if there is an id, else integer
+  this.notes = 'Notes: ';
 
-  
+
   this.getId = function() { return this.id; };
   this.getQuantity = function() { return this.quantity; };
   this.getDescription = function() { return this.description; };
   this.isCheckedOut = function() { return this.checkedOut; };
-  
+
   this.incrementQuantity = function() {
     if (this.serialized) {
       // cannot change quantity

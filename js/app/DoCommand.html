@@ -65,10 +65,23 @@ app.doCommand = function(command,...options) {
       }
       displayNewForm();
       break;
-    case 'itemNote':
-    //TODO this and studentNote and saveNote are redundant and need refactoring!
-      app.modal.handleError(new Error('Not available yet!'));
+    case 'itemNote': {
+      const barcode = String(options[0]),
+            itemId = String(options[1]),
+            note = String(options[2]);
+      const items = JSON.parse(app.pages.form.elements.form.items.value);
+      if (itemId == '') {
+        const item = items.find(i => i.barcode == barcode);
+        item.notes = note;
+      } else {
+        const item = items.find(i => i.id == itemId);
+        item.notes = note;
+      }
+      app.pages.form.elements.form.items.value = JSON.stringify(items);
+      utility.DOM.empty(app.pages.form.elements.itemList);
+      items.reverse().forEach(populateItemList);
       break;
+    }
     case 'itemQuantity': {
       const description = app.modal.tmp;
       const quantity = +app.modal.getInput();
@@ -187,7 +200,8 @@ app.doCommand = function(command,...options) {
           serialized: false,
           barcode: null,
           description,
-          checkedOut: true
+          checkedOut: true,
+          notes: 'Notes: '
         });
       });
       break;
