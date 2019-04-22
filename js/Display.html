@@ -356,7 +356,7 @@ function populateItemList(item) {
     checkInButton = `<button class="action" value="parseOmnibox" data-itemid="${id}">Check In</button>`;
   }
   const checkIn = checkInButton || item.checkIn;
-  app.pages.form.elements.itemList.appendChild(utility.DOM.makeTableRow(
+  const itemRow = utility.DOM.makeTableRow(
     'td', item.quantity, item.description,
     item.id, item.checkOut, checkIn
   );
@@ -366,6 +366,7 @@ function populateItemList(item) {
     itemRow.classList.add('nonserialized');
   }
   app.pages.form.elements.itemList.appendChild(itemRow);
+  
   notes.setAttribute('colspan', 4);
   notes.classList.add('itemnotes');
   notes.textContent = item.notes;
