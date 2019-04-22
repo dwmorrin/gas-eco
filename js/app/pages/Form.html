@@ -265,8 +265,7 @@ app.pages.form = {
     if (! itemRow) {
       return;
     }
-    const itemEntry = itemRow.getElementsByTagName('td')
-    app.doCommand('itemNote', itemEntry[1].textContent, itemEntry[2].textContent, value);
+    app.doCommand('itemNote', itemRow.dataset.barcode,itemRow.dataset.id, value);
   },
   show: function() {
     app.pages.form.elements.container.classList.remove("hidden");

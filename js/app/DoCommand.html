@@ -66,12 +66,12 @@ app.doCommand = function(command,...options) {
       displayNewForm();
       break;
     case 'itemNote': {
-      const description = String(options[0]),
+      const barcode = String(options[0]),
             itemId = String(options[1]),
             note = String(options[2]);
       const items = JSON.parse(app.pages.form.elements.form.items.value);
       if (itemId == ''){
-        const item = items.find(i => i.description == description);
+        const item = items.find(i => i.barcode == barcode);
         item.notes = note;
       }
       else{
