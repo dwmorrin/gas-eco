@@ -359,8 +359,13 @@ function populateItemList(item) {
   app.pages.form.elements.itemList.appendChild(utility.DOM.makeTableRow(
     'td', item.quantity, item.description,
     item.id, item.checkOut, checkIn
-  ));
-
+  );
+  itemRow.setAttribute('data-id', item.id);
+  itemRow.setAttribute('data-barcode', item.barcode);
+  if (! item.serialized) {
+    itemRow.classList.add('nonserialized');
+  }
+  app.pages.form.elements.itemList.appendChild(itemRow);
   notes.setAttribute('colspan', 4);
   notes.classList.add('itemnotes');
   notes.textContent = item.notes;
