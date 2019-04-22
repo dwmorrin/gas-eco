@@ -72,12 +72,12 @@ function checkItemsGAS_(form) {
     .getSheetByName(index.items.SHEET_NAME);
   var data = sheet.getDataRange().getValues();
   form.items.forEach(function checkItems(item) {
+    var id = item.id ? "id" : "barcode";
     if (! item.checkIn && item.checkOut && ! item.checkedOut) { // requesting checkout
       if (! item.serialized) {
         item.checkedOut = true;
         return;
       }
-      var id = item.id ? "id" : "barcode";
       for (var i = 0, l = data.length; i < l; i++) {
         if (data[i][index.items[id.toUpperCase()]] != item[id]) {
           continue;
@@ -96,7 +96,7 @@ function checkItemsGAS_(form) {
         return;
       }
       for (i = 0, l = data.length; i < l; i++) {
-        if (data[i][index.items.ID] != item.id) {
+        if (data[i][index.items[id.toUpperCase()]] != id) {
           continue;
         }
         if (data[i][index.items.CHECKED_OUT]) {
