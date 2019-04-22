@@ -70,11 +70,10 @@ app.doCommand = function(command,...options) {
             itemId = String(options[1]),
             note = String(options[2]);
       const items = JSON.parse(app.pages.form.elements.form.items.value);
-      if (itemId == ''){
+      if (itemId == '') {
         const item = items.find(i => i.barcode == barcode);
         item.notes = note;
-      }
-      else{
+      } else {
         const item = items.find(i => i.id == itemId);
         item.notes = note;
       }
