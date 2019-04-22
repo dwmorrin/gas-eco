@@ -41,8 +41,8 @@ function isCheckInItemOk(item) {
     return false;
   });
   if (! savedItem || ! savedItem.checkOut) {
+    app.omnibox.clear();
     if (! item.serialized) {
-      app.omnibox.clear();
       app.modal.handleQuantityChange(item.id);
       return false;
     }
