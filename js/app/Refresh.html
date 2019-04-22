@@ -117,6 +117,10 @@ app.refresh = function(response, context) {
       } else {
         throw new Error("cannot find " + updatedForm.id + " in local forms");
       }
+      displayOpenForms(app.cache.openForms); // this doesn't actually show the forms or change user's context
+      app.cache.currentIndex = app.cache.openForms.findIndex( // get updated index
+        (form) => (! form.id || form.id == updatedForm.id)
+      );
       displayForm(updatedForm);
       break;
     }
