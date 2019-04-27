@@ -236,6 +236,11 @@ app.doCommand = function(command,...options) {
       displayOpenForms(app.cache.openForms, sortType);
       break;
     }
+    case 'sortArchivedForms': {
+      const sortType = options[0];
+      displayArchivedForms(app.cache.archive, sortType);
+      break;
+    }
     case 'studentNote': {
       const radio = app.modal.table.querySelectorAll('input[type="radio"]');
       let value;
