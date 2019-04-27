@@ -7,6 +7,7 @@ app.pages.archive = {
     queryCount:  document.querySelector('span.querycount'),
     queryInputs: document.querySelector('form.query'),
     tableBody:   document.querySelector('tbody.archive'),
+    tableHead:   document.querySelector('thead.archive'),
   },
   handleChange: function(change) {
     if (change.target.getAttribute('type') == 'date') {
@@ -49,6 +50,9 @@ app.pages.archive = {
     }
     app.cache.currentIndex = index;
     app.doCommand('displayForm', app.cache.archive[index], true);
+  },
+  handleClickTableHead: function(click) {
+    app.doCommand('sortArchivedForms', click.target.dataset.sort);
   },
   getDateRangeAsJSON: function() {
     let inputs = app.pages.archive.elements.queryInputs;
