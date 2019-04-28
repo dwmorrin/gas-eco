@@ -87,6 +87,7 @@ app.pages.archive = {
     let startRange   = new Date(inputs.start.value + 'T00:00:00'),
         endRange     = new Date(inputs.end.value  + 'T23:59:59'),
         itemQuery    = inputs.items.value,
+        itemDescQuery = inputs.items.value.toLowerCase().split(','),
         studentQuery = inputs.students.value,
         cleanStudent = function(value, index, array) {
           array[index] = array[index].replace(/\s/g, '');
@@ -160,8 +161,16 @@ app.pages.archive = {
             });
           });
           if (!found) {
+            let found = itemDescQuery.find(queryArg => {
+              return form.items.find(item => {
+                let itemDesc = item.description.toLowerCase();
+                  return (itemDesc.search(queryArg) > -1);
+                
+              });
+            });
+          if (!found) {
             return false;
-          }
+          }}
         }
 
         // filter by errors
