@@ -152,25 +152,37 @@ app.pages.archive = {
           }
         }
 
-        // filter by item id
-        if (inputs.items.value) {
+        // filter by match all item id
+        if (inputs.items.value && inputs.matchAllItems.checked) {
+          let count = 0; //counts how many matches we have had
+          itemQuery.forEach(function(queryArg) {
+            let ran=false; //resets the ran flag
+            form.items.forEach(function(item){
+              let itemId = item.id.toLowerCase().replace(/-0+/, '-'); //cleans up the item id to compare
+              let itemDesc = item.description.toLowerCase();
+                if ((itemId.search(queryArg) > -1 || itemDesc.search(queryArg) > -1) && !ran){ //if the id matches, increment count
+                    count++;
+                    ran=true;
+              }
+            })
+          })
+        return count >= itemQuery.length;
+        }
+
+        // filter by match any item id
+        if (inputs.items.value && !inputs.matchAllItems.checked) {
           let found = itemQuery.find(queryArg => {
             return form.items.find(item => {
+              let itemDesc = item.description.toLowerCase();
               let itemId = item.id.toLowerCase().replace(/-0+/, '-');
-              return (itemId.search(queryArg) > -1);
+              if (itemId.search(queryArg) > -1 || itemDesc.search(queryArg) > -1){
+                return true
+              }
             });
           });
           if (!found) {
-            let found = itemDescQuery.find(queryArg => {
-              return form.items.find(item => {
-                let itemDesc = item.description.toLowerCase();
-                  return (itemDesc.search(queryArg) > -1);
-                
-              });
-            });
-          if (!found) {
             return false;
-          }}
+          }
         }
 
         // filter by errors
