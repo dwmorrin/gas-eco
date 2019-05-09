@@ -232,14 +232,14 @@ app.doCommand = function(command,...options) {
       app.run.doPost({ post: 'signature', dataURL: dataURL, id: studentId });
       break;
     }
-    case 'sortOpenForms': {
+    case 'sortForms': {
       const sortType = options[0];
-      displayOpenForms(app.cache.openForms, sortType);
-      break;
-    }
-    case 'sortArchivedForms': {
-      const sortType = options[0];
-      displayArchivedForms(app.cache.archive, sortType);
+      forms = utility.sortForms(app.cache[app.cache.currentFormstack], sortType);
+      if (app.cache.currentFormstack == app.strings.formstack.openForms) {
+        displayOpenForms(forms);
+      } else {
+        displayArchivedForms(forms);
+      }
       break;
     }
     case 'studentNote': {

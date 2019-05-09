@@ -19,7 +19,7 @@ app.pages.openForms = {
     app.doCommand('displayForm', app.cache.openForms[index], false);
   },
   handleClickTableHead: function(click) {
-    app.doCommand('sortOpenForms', click.target.dataset.sort);
+    app.doCommand('sortForms', click.target.dataset.sort);
   },
   show: function() {
     app.pages.openForms.elements.container.classList.remove("hidden");

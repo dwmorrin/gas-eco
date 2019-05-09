@@ -52,7 +52,7 @@ app.pages.archive = {
     app.doCommand('displayForm', app.cache.archive[index], true);
   },
   handleClickTableHead: function(click) {
-    app.doCommand('sortArchivedForms', click.target.dataset.sort);
+    app.doCommand('sortForms', click.target.dataset.sort);
   },
   getDateRangeAsJSON: function() {
     let inputs = app.pages.archive.elements.queryInputs;

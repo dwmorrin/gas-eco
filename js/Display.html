@@ -181,7 +181,6 @@ function displayNewForm() {
  * TODO separate sorting function from display/populate function
  */
 function displayOpenForms(forms, sortBy) {
-  forms = utility.sortForms(forms,sortBy);
   populateFormsTable(forms);
 }
 
@@ -294,7 +293,6 @@ function populateStudentList(student) {
 }
 
 function displayArchivedForms(forms, sortBy) {
-  forms = utility.sortForms(forms,sortBy);
   populateArchiveTable(forms);
 }
 
