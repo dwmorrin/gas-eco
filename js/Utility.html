@@ -191,4 +191,108 @@ utility.makeForm = function() {
   };
   return form;
 };
+utility.sortForms = function(forms, sortBy) {
+  if (!sortBy) {
+    sortBy = app.pages.archive.sortBy;
+  } else {
+    app.pages.openForms.sortBy = sortBy;
+  }
+  let compare;
+  switch (sortBy) {
+    case 'startTime':
+    case 'endTime':
+      compare = function(a,b) {
+        let dateA = utility.date.parseFormattedDate(a[sortBy]).getTime(),
+            dateB = utility.date.parseFormattedDate(b[sortBy]).getTime();
+        if (dateA < dateB) {
+          return -1;
+        }
+        if (dateA > dateB) {
+          return 1;
+        }
+        if (dateA == dateB) {
+          return 0;
+        }
+      };
+      break;
+    case 'location':
+      compare = function(a,b) {
+        if (a[sortBy] < b[sortBy]) {
+          return -1;
+        }
+        if (a[sortBy] > b[sortBy]) {
+          return 1;
+        }
+        if (a[sortBy] == b[sortBy]) {
+          return 0;
+        }
+      };
+      break;
+    case 'contact':
+    case 'tape':
+    case 'overnight':
+    case 'items':
+    case 'project':
+    case 'bookingId':
+    compare = function(a,b) {
+        if (a[sortBy] < b[sortBy]) {
+          return -1;
+        }
+        if (a[sortBy] > b[sortBy]) {
+          return 1;
+        }
+        if (a[sortBy] == b[sortBy]) {
+          return 0;
+        }
+      };
+      break;
+    case 'bookedStudents':
+    case 'students':
+      compare = function(a,b) {
+        let nameSort = function(c,d) {
+          if (c.name < d.name) {
+            return -1;
+          }
+          if (c.name > d.name) {
+            return 1;
+          }
+          if (c.name == d.name) {
+            return 0;
+          }
+        };
+        a.students.sort(nameSort);
+        b.students.sort(nameSort);
+        if (a.students[0].name < b.students[0].name) {
+          return -1;
+        }
+        if (a.students[0].name > b.students[0].name) {
+          return 1;
+        }
+        if (a.students[0].name == b.students[0].name) {
+          return 0;
+        }
+      };
+      break;
+    case 'type':
+      compare = function(a,b) {
+        let active = function(student) {
+          return student.checkIn;
+        };
+        a = +(a.students.some(active));
+        b = +(b.students.some(active));
+        if (a > b) {
+          return -1;
+        }
+        if (a < b) {
+          return 1;
+        }
+        if (a == b) {
+          return 0;
+        }
+      };
+      break;
+  }
+  forms.sort(compare);
+   return forms;
+};
 </script>
