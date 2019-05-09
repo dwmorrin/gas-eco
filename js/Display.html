@@ -8,7 +8,6 @@
 /* exported
      displayArchivedForms
      displayForm
-     displayNewForm
      displayOpenForms
 */
 function displayForm(form, archived) {
@@ -159,20 +158,6 @@ function displayForm(form, archived) {
   app.spinner.element.classList.add('hidden');
   app.showPage(app.pages.form);
 
-}
-
-/**
- * Displays a blank form to the user.
- */
-function displayNewForm() {
-  app.cache.savedForm = {
-    id: null, bookingId: null, bookedStudents: null, endTime: null,
-    location: null, overnight: null, project: null, contact: null,
-    startTime: null, tape: null, students: [], items: [], notes: []
-  };
-  const length = app.cache.openForms.push(app.cache.savedForm);
-  app.cache.currentIndex = length - 1;
-  displayForm(app.cache.savedForm);
 }
 
 /**
@@ -350,7 +335,7 @@ function populateEquipmentOutList(item) {
 function populateItemList(item) {
   let checkInButton;
   const noteRow = document.createElement('tr'),
-      notes = document.createElement('td');
+        notes = document.createElement('td');
   if (! item.checkIn && ! item.serialized) {
     const id = item.id ? item.id : item.barcode;
     checkInButton = `<button class="action" value="parseOmnibox" data-itemid="${id}">Check In</button>`;

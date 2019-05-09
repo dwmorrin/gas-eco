@@ -36,6 +36,11 @@ app.handlers = {
       app.pages.form.elements.updateFormButton.disabled = true;
       app.pages.form.elements.undoButton.disabled = true;
       click.target.value = click.target.value.slice(9, click.target.value.length);
+      // check if blank form, undo actions from Display::displayNewForm
+      if (isBlankForm(app.cache.savedForm)) {
+        app.cache.openForms.pop();
+        --app.cache.currentIndex;
+      }
     } 
     app.doCommand(click.target.value);
   },

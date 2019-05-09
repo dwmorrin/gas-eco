@@ -1,5 +1,6 @@
 <script>
 /* global app */
+
 /** @return {bool} */
 function isAllGearReturned() {
   let items = JSON.parse(app.pages.form.elements.form.items.value);
@@ -10,6 +11,15 @@ function isAllGearReturned() {
       return true;
     }
   });
+}
+
+/**
+ * @param {object} form
+ * @returns {bool}
+ */
+/* exported isBlankForm */
+function isBlankForm(form) {
+  return form.id == null;
 }
 
 /** @return {bool} */
