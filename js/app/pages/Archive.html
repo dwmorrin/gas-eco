@@ -88,10 +88,10 @@ app.pages.archive = {
         endRange     = new Date(inputs.end.value  + 'T23:59:59'),
         itemQuery    = inputs.items.value,
         studentQuery = inputs.students.value,
-        cleanStudent = function(value, index, array) {
+        cleanStudent = (value, index, array) => {
           array[index] = array[index].replace(/\s/g, '');
         },
-        cleanItem    = function(array) {
+        cleanItem = array => {
           array = array.replace(/\s/g, '').replace(/-0+/, '-');
           return array;
         };
@@ -155,15 +155,17 @@ app.pages.archive = {
         // filter by match all item id
         if (inputs.items.value && inputs.matchAllItems.checked) {
           let count = 0; //counts how many matches we have had
-          itemQuery.forEach(function(queryArg) {
-            let ran=false; //resets the ran flag
+          itemQuery.forEach(queryArg => {
+            let ran = false; // resets the ran flag
             let queryId = cleanItem(queryArg);
-            form.items.forEach(function(item){
-              let itemId = item.id.toLowerCase().replace(/-0+/, '-'); //cleans up the item id to compare
-              let itemDesc = item.description.toLowerCase();
-              if ((itemId.search(queryId.trim()) > -1 || itemDesc.search(queryArg.trim()) > -1) && !ran){ //if the id matches, increment count
-                count++;
-                ran=true;
+            form.items.forEach(item => {
+              const itemId = item.id.toLowerCase().replace(/-0+/, '-'); //cleans up the item id to compare
+              const itemDesc = item.description.toLowerCase();
+              if ((  itemId.search(queryId.trim()) > -1   ||
+                   itemDesc.search(queryArg.trim()) > -1) &&
+                   ! ran) { //if the id matches, increment count
+                ++count;
+                ran = true;
               }
             });
           });
@@ -175,14 +177,15 @@ app.pages.archive = {
           let found = itemQuery.find(queryArg => {
             let queryId = cleanItem(queryArg);
             return form.items.find(item => {
-              let itemDesc = item.description.toLowerCase();
-              let itemId = item.id.toLowerCase().replace(/-0+/, '-');
-              if (itemId.search(queryId.trim()) > -1 || itemDesc.search(queryArg.trim()) > -1){
+              const itemDesc = item.description.toLowerCase();
+              const itemId = item.id.toLowerCase().replace(/-0+/, '-');
+              if (itemId.search(queryId.trim()) > -1 ||
+                  itemDesc.search(queryArg.trim()) > -1) {
                 return true;
               }
             });
           });
-          if (!found) {
+          if (! found) {
             return false;
           }
         }
@@ -205,7 +208,7 @@ app.pages.archive = {
               // not changes, ignore
             }
           }
-          if (!found) {
+          if (! found) {
             return false;
           }
         }
