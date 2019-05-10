@@ -260,7 +260,7 @@ app.pages.form = {
   },
   handleItemNoteInput: function(event) { // keydown.key == 'Enter' or blur
     const value = event.target.value,
-        parent = event.target.parentNode;
+          parent = event.target.parentNode;
     const itemRow = parent.parentNode.previousSibling;
     if (! itemRow) {
       return;
