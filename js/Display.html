@@ -9,7 +9,7 @@
      displayArchivedForms
      displayForm
      displayNewForm
-     displayOpenForms
+     populateFormsTable
 */
 function displayForm(form, archived) {
   for (let key in form) {
@@ -180,9 +180,9 @@ function displayNewForm() {
  * @param {string} sortBy - sort option
  * TODO separate sorting function from display/populate function
  */
-function displayOpenForms(forms, sortBy) {
+/*function displayOpenForms(forms, sortBy) {
   populateFormsTable(forms);
-}
+}*/
 
 /**
  * This is a procedure to display to the user a compact list of the open forms

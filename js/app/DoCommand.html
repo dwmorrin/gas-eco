@@ -7,7 +7,7 @@
       app
       displayForm
       displayNewForm
-      displayOpenForms
+      populateFormsTable
       populateItemList
       utility
 */
@@ -236,7 +236,7 @@ app.doCommand = function(command,...options) {
       const sortType = options[0];
       forms = utility.sortForms(app.cache[app.cache.currentFormstack], sortType);
       if (app.cache.currentFormstack == app.strings.formstack.openForms) {
-        displayOpenForms(forms);
+        populateFormsTable(forms);
       } else {
         displayArchivedForms(forms);
       }
