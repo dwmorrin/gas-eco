@@ -238,7 +238,7 @@ app.doCommand = function(command,...options) {
       if (app.cache.currentFormstack == app.strings.formstack.openForms) {
         populateFormsTable(forms);
       } else {
-        displayArchivedForms(forms);
+        populateArchiveTable(forms);
       }
       break;
     }

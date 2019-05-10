@@ -1,5 +1,5 @@
 <script>
-/* global app utility displayArchivedForms */
+/* global app utility populateArchiveTable */
 app.pages.archive = {
   elements: {
     container:   document.querySelector('div.archiveContainer'),
@@ -278,7 +278,7 @@ app.pages.archive = {
         .elements.queryCount.textContent = app.cache.archiveFiltered
           .length + ' forms';
     }
-    displayArchivedForms(app.cache.archiveFiltered);
+    populateArchiveTable(app.cache.archiveFiltered);
   },
   range: {
     start: '', // 'yyyy-mm-dd'
