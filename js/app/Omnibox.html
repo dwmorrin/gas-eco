@@ -204,7 +204,7 @@ app.omnibox = {
         if (!parsed && manualItemIdregex.test(value)) {
           parsed = (JSON.parse(app.pages.form.elements.form.items.value)).find(
             item => item.id.toLowerCase().replace(dashzero, '-') == value
-        );
+          );
         } else {
           manualEntryAlert();
         }

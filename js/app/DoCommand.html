@@ -6,7 +6,8 @@
 /* global
       app
       displayForm
-      displayOpenForms
+      populateFormsTable
+      populateArchiveTable
       populateItemList
       utility
 */
@@ -240,9 +241,14 @@ app.doCommand = function(command,...options) {
       app.run.doPost({ post: 'signature', dataURL: dataURL, id: studentId });
       break;
     }
-    case 'sortOpenForms': {
-      const sortType = options[0];
-      displayOpenForms(app.cache.openForms, sortType);
+    case 'sortForms': {
+      const sortType = options[0],
+            forms = utility.sortForms(app.cache[app.cache.currentFormstack], sortType);
+      if (app.cache.currentFormstack == app.strings.formstack.openForms) {
+        populateFormsTable(forms);
+      } else {
+        populateArchiveTable(forms);
+      }
       break;
     }
     case 'studentNote': {

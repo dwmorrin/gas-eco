@@ -6,9 +6,11 @@
  */
 /* global app utility */
 /* exported
-     displayArchivedForms
+     populateArchiveTable
      displayForm
      displayOpenForms
+     displayNewForm
+     populateFormsTable
 */
 function displayForm(form, archived) {
   for (let key in form) {
@@ -158,6 +160,20 @@ function displayForm(form, archived) {
   app.spinner.element.classList.add('hidden');
   app.showPage(app.pages.form);
 
+}
+
+/**
+ * Displays a blank form to the user.
+ */
+function displayNewForm() {
+  app.cache.savedForm = {
+    id: null, bookingId: null, bookedStudents: null, endTime: null,
+    location: null, overnight: null, project: null, contact: null,
+    startTime: null, tape: null, students: [], items: [], notes: []
+  };
+  const length = app.cache.openForms.push(app.cache.savedForm);
+  app.cache.currentIndex = length - 1;
+  displayForm(app.cache.savedForm);
 }
 
 /**
@@ -363,10 +379,6 @@ function populateStudentList(student) {
   app.pages.form.elements.studentList.appendChild(utility.DOM.makeTableRow(
     'td', student.name, student.netId, student.checkIn, student.checkOut
   ));
-}
-
-function displayArchivedForms(forms) {
-  populateArchiveTable(forms);
 }
 
 function populateArchiveTable(forms) {

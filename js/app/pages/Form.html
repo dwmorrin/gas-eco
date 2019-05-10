@@ -245,8 +245,8 @@ app.pages.form = {
       return;
     }
     let netId = utility.DOM.getNextSibling(
-          utility.DOM.getFirstChild(click.target.parentNode)
-        ).textContent,
+      utility.DOM.getFirstChild(click.target.parentNode)
+    ).textContent,
         student,
         students = JSON.parse(app.pages.form.elements.form.students.value);
     student = students.find(s => s.netId == netId);
@@ -260,7 +260,7 @@ app.pages.form = {
   },
   handleItemNoteInput: function(event) { // keydown.key == 'Enter' or blur
     const value = event.target.value,
-        parent = event.target.parentNode;
+          parent = event.target.parentNode;
     const itemRow = parent.parentNode.previousSibling;
     if (! itemRow) {
       return;

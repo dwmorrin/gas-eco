@@ -28,6 +28,9 @@ app.pages.archive.elements.tableBody.addEventListener(
 app.pages.archive.elements.queryInputs.addEventListener(
   'change', app.pages.archive.handleChange
 );
+app.pages.archive.elements.tableHead.addEventListener(
+  'click', app.pages.archive.handleClickTableHead
+);
 
 // FORM (single view)
 app.pages.form.elements.container.addEventListener(
@@ -39,7 +42,7 @@ app.pages.form.elements.container.addEventListener(
 app.pages.form.elements.container.addEventListener(
   'click', app.pages.form.handleClickTable
 );
-// focus guards create a tab/shift-tab closed loop through the form inputs 
+// focus guards create a tab/shift-tab closed loop through the form inputs
 app.pages.form.elements.focusGuardTop.addEventListener(
   'focus', () => app.pages.form.elements.locationSelect.focus()
 );

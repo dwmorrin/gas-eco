@@ -1,5 +1,5 @@
 <script>
-/* global app utility displayArchivedForms */
+/* global app utility populateArchiveTable */
 app.pages.archive = {
   elements: {
     container:   document.querySelector('div.archiveContainer'),
@@ -7,6 +7,7 @@ app.pages.archive = {
     queryCount:  document.querySelector('span.querycount'),
     queryInputs: document.querySelector('form.query'),
     tableBody:   document.querySelector('tbody.archive'),
+    tableHead:   document.querySelector('thead.archive'),
   },
   handleChange: function(change) {
     if (change.target.getAttribute('type') == 'date') {
@@ -50,6 +51,9 @@ app.pages.archive = {
     app.cache.currentIndex = index;
     app.doCommand('displayForm', app.cache.archive[index], true);
   },
+  handleClickTableHead: function(click) {
+    app.doCommand('sortForms', click.target.dataset.sort);
+  },
   getDateRangeAsJSON: function() {
     let inputs = app.pages.archive.elements.queryInputs;
     let range = {};
@@ -82,13 +86,14 @@ app.pages.archive = {
     }
     let startRange   = new Date(inputs.start.value + 'T00:00:00'),
         endRange     = new Date(inputs.end.value  + 'T23:59:59'),
-        itemQuery    = inputs.items.value, 
+        itemQuery    = inputs.items.value,
         studentQuery = inputs.students.value,
-        cleanStudent = function(value, index, array) {
+        cleanStudent = (value, index, array) => {
           array[index] = array[index].replace(/\s/g, '');
         },
-        cleanItem    = function(value, index, array) {
-          array[index] = array[index].replace(/\s/g, '').replace(/-0+/, '-');
+        cleanItem = array => {
+          array = array.replace(/\s/g, '').replace(/-0+/, '-');
+          return array;
         };
 
     if (studentQuery) {
@@ -98,7 +103,7 @@ app.pages.archive = {
 
     if (itemQuery) {
       itemQuery = itemQuery.toLowerCase().split(',');
-      itemQuery.forEach(cleanItem);
+      //itemQuery.forEach(cleanItem);
     }
 
     app.cache.archiveFiltered = app.cache.archive
@@ -109,7 +114,7 @@ app.pages.archive = {
             (start.getTime() >= endRange.getTime())) {
           return false;
         }
-        
+
         // filter by location
         if (inputs.location.value != 'All') {
           if (inputs.location.value != 'Other') {
@@ -122,7 +127,7 @@ app.pages.archive = {
             }
           }
         }
-  
+
         // filter by booked/not booked, tape
         if (!inputs.booked.checked && form.bookingId) {
           return false;
@@ -133,7 +138,7 @@ app.pages.archive = {
         if (inputs.tape.checked && !form.tape) {
           return false;
         }
-  
+
         // filter by student names
         if (inputs.students.value) {
           let found = studentQuery.find(queryArg => {
@@ -146,20 +151,45 @@ app.pages.archive = {
             return false;
           }
         }
-  
-        // filter by item id
-        if (inputs.items.value) {
-          let found = itemQuery.find(queryArg => {
-            return form.items.find(item => {
-              let itemId = item.id.toLowerCase().replace(/-0+/, '-');
-              return (itemId.search(queryArg) > -1);
+
+        // filter by match all item id
+        if (inputs.items.value && inputs.matchAllItems.checked) {
+          let count = 0; //counts how many matches we have had
+          itemQuery.forEach(queryArg => {
+            let ran = false; // resets the ran flag
+            let queryId = cleanItem(queryArg);
+            form.items.forEach(item => {
+              const itemId = item.id.toLowerCase().replace(/-0+/, '-'); //cleans up the item id to compare
+              const itemDesc = item.description.toLowerCase();
+              if ((  itemId.search(queryId.trim()) > -1   ||
+                   itemDesc.search(queryArg.trim()) > -1) &&
+                   ! ran) { //if the id matches, increment count
+                ++count;
+                ran = true;
+              }
             });
           });
-          if (!found) {
+          return count >= itemQuery.length;
+        }
+
+        // filter by match any item id
+        if (inputs.items.value && !inputs.matchAllItems.checked) {
+          let found = itemQuery.find(queryArg => {
+            let queryId = cleanItem(queryArg);
+            return form.items.find(item => {
+              const itemDesc = item.description.toLowerCase();
+              const itemId = item.id.toLowerCase().replace(/-0+/, '-');
+              if (itemId.search(queryId.trim()) > -1 ||
+                  itemDesc.search(queryArg.trim()) > -1) {
+                return true;
+              }
+            });
+          });
+          if (! found) {
             return false;
           }
         }
-  
+
         // filter by errors
         // filter by manual entry
         if (inputs.manual.checked) {
@@ -178,18 +208,18 @@ app.pages.archive = {
               // not changes, ignore
             }
           }
-          if (!found) {
+          if (! found) {
             return false;
           }
         }
-  
+
         // filter by global notes
         if (inputs.notes.checked) {
           if (form.notes.length == 0) {
             return false;
           }
         }
-        
+
         // filter by late students
         if (inputs.late.checked) {
           const gracePeriod = 15; // minutes
@@ -197,7 +227,7 @@ app.pages.archive = {
               start = utility.date.parseFormattedDate(form.startTime),
               end   = utility.date.parseFormattedDate(form.endTime);
           start.setMinutes(start.getMinutes() + gracePeriod);
-          
+
           let checkedInOnTime = function(student) {
             if (!student.checkIn) {
               return true; // i.e. no show != late
@@ -206,7 +236,7 @@ app.pages.archive = {
               .getTime();
             return (checkIn <= start.getTime());
           };
-          
+
           let checkedOutLate = function(student) {
             if (student.checkIn && !student.checkOut) {
               return true; // checked-in student never checked-out
@@ -219,7 +249,7 @@ app.pages.archive = {
               return false;
             }
           };
-          
+
           // late check-ins
           if (!form.students.every(checkedInOnTime)) {
             found = true;
@@ -231,9 +261,9 @@ app.pages.archive = {
           if (!found) {
             return false;
           }
-          
+
         }
-        
+
         // filter by no show
         if (inputs.noshow.checked) {
           // check for some check-ins
@@ -241,7 +271,7 @@ app.pages.archive = {
             return false;
           }
         }
-  
+
         return true;
       });
     if (app.cache.archiveFiltered.length == 1) {
@@ -252,8 +282,8 @@ app.pages.archive = {
       app.pages.archive
         .elements.queryCount.textContent = app.cache.archiveFiltered
           .length + ' forms';
-    } 
-    displayArchivedForms(app.cache.archiveFiltered);
+    }
+    populateArchiveTable(app.cache.archiveFiltered);
   },
   range: {
     start: '', // 'yyyy-mm-dd'
