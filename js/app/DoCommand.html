@@ -54,7 +54,7 @@ app.doCommand = function(command,...options) {
       break;
     case 'displayForm': {
       const form = options[0],
-          isArchive = Boolean(options[1]);
+            isArchive = Boolean(options[1]);
       displayForm(form, isArchive);
       break;
     }
@@ -99,6 +99,17 @@ app.doCommand = function(command,...options) {
         app.modal.handleError(
           new Error("Invalid quantity: " + quantity +
             ". Use a positive number.  Scan the item again to check-in."
+          )
+        );
+        return;
+      }
+      // is the item on the saved form? Quantity cannot be decreased.
+      const savedItem = app.cache.savedForm.items.find(i => i.description == description);
+      if (savedItem && quantity < savedItem.quantity) {
+        app.modal.handleError(
+          new Error(quantity + " is less than the previous quantity " +
+            savedItem.quantity + ". You can only enter a larger amount " +
+            "or check in this item."
           )
         );
         return;
@@ -208,14 +219,14 @@ app.doCommand = function(command,...options) {
     }
     case 'setLocationOther': {
       const otherLocation = app.modal.getInput(),
-          option = app.pages.form.elements.locationOtherOption,
-          select = app.pages.form.elements.form.location,
-          change = {
-            target: {
-              name  :'location',
-              value :otherLocation
-            }
-          };
+            option = app.pages.form.elements.locationOtherOption,
+            select = app.pages.form.elements.form.location,
+            change = {
+              target: {
+                name  :'location',
+                value :otherLocation
+              }
+            };
       select.value = option.value = otherLocation;
       app.pages.form.handleChange(change);
       option.textContent = otherLocation; // must follow handleChange
@@ -227,7 +238,7 @@ app.doCommand = function(command,...options) {
       break;
     case 'signatureSubmit': {
       const dataURL = app.modal.signaturePad.toDataURL(),
-          studentId = app.modal.tmp;
+            studentId = app.modal.tmp;
       app.run.doPost({ post: 'signature', dataURL: dataURL, id: studentId });
       break;
     }
