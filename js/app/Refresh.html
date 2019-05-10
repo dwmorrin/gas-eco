@@ -7,7 +7,8 @@
 /* global
 app
 displayForm
-displayOpenForms
+populateFormsTable
+populateArchiveTable
 */
 
 /**
@@ -25,6 +26,7 @@ app.refresh = function(response, context) {
       }
       app.cache.archive = JSON.parse(response.formList);
       app.pages.archive.query();
+      populateArchiveTable(app.cache.archive);
       break;
     case 'checkForms': {
       const newForms = JSON.parse(response.formList);
@@ -38,7 +40,7 @@ app.refresh = function(response, context) {
         break;
       }
       // sort forms to match current sorting TODO factor out the sorting function from displayOpenForms
-      displayOpenForms(newForms); // this doesn't actually show the forms or change user's context
+      populateFormsTable(newForms); // this doesn't actually show the forms or change user's context
       const currentForm = app.cache[app.cache.currentFormstack][app.cache.currentIndex];
       const index = newForms.findIndex(form => form.id == currentForm.id);
       if (index < 0) {
@@ -85,7 +87,7 @@ app.refresh = function(response, context) {
       app.cache.openForms = JSON.parse(response.formList);
       app.spinner.off();
       app.showPage(app.pages.openForms);
-      displayOpenForms(app.cache.openForms);
+      populateFormsTable(app.cache.openForms);
       app.cache.currentFormstack = app.strings.formstack.openForms;
       break;
     case 'signature':
@@ -117,7 +119,7 @@ app.refresh = function(response, context) {
       } else {
         throw new Error("cannot find " + updatedForm.id + " in local forms");
       }
-      displayOpenForms(app.cache.openForms); // this doesn't actually show the forms or change user's context
+      populateFormsTable(app.cache.openForms); // this doesn't actually show the forms or change user's context
       app.cache.currentIndex = app.cache.openForms.findIndex( // get updated index
         (form) => (! form.id || form.id == updatedForm.id)
       );
@@ -128,6 +130,6 @@ app.refresh = function(response, context) {
       app.elements.usernameDisplay.textContent = response.user;
       break;
   }
-  
+
 };
 </script>

@@ -1,5 +1,5 @@
 <script>
-/* global app displayOpenForms */
+/* global app populateFormsTable */
 app.pages.openForms = {
   elements: {
     container:          document.querySelector('div.openFormsContainer'),
@@ -19,7 +19,7 @@ app.pages.openForms = {
     app.doCommand('displayForm', app.cache.openForms[index], false);
   },
   handleClickTableHead: function(click) {
-    app.doCommand('sortOpenForms', click.target.dataset.sort);
+    app.doCommand('sortForms', click.target.dataset.sort);
   },
   show: function() {
     app.pages.openForms.elements.container.classList.remove("hidden");
@@ -37,7 +37,7 @@ app.pages.openForms = {
   refreshId: NaN,
   setInterval: function() {
     // this client-side only interval is just for getting the forms to change color
-    app.pages.openForms.refreshId = window.setInterval(displayOpenForms, 60000, app.cache.openForms);
+    app.pages.openForms.refreshId = window.setInterval(populateFormsTable, 60000, app.cache.openForms);
   },
   sortBy: 'startTime',
 };
