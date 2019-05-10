@@ -1,7 +1,7 @@
 <script>
 // Window level event handlers.
 // Page and page element handlers are found under their respective pages
-/* global app */
+/* global app isBlankForm */
 app.handlers = {
   /**
    * Attach this function to the beforeunload event whevener there is a form with
@@ -27,7 +27,7 @@ app.handlers = {
     }
 
     if (click.target.dataset.itemid) {
-      app.omnibox.element.value = click.target.dataset.itemid
+      app.omnibox.element.value = click.target.dataset.itemid;
     }
 
     if (click.target.value.slice(0,9) == 'loseData_') {
