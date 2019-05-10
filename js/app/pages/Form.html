@@ -245,8 +245,8 @@ app.pages.form = {
       return;
     }
     let netId = utility.DOM.getNextSibling(
-          utility.DOM.getFirstChild(click.target.parentNode)
-        ).textContent,
+      utility.DOM.getFirstChild(click.target.parentNode)
+    ).textContent,
         student,
         students = JSON.parse(app.pages.form.elements.form.students.value);
     student = students.find(s => s.netId == netId);
@@ -260,13 +260,13 @@ app.pages.form = {
   },
   handleItemNoteInput: function(event) { // keydown.key == 'Enter' or blur
     const value = event.target.value,
-        parent = event.target.parentNode;
+          parent = event.target.parentNode;
     if (parent.parentNode.previousSibling == null){
       app.modal.handleError(
-          new Error("Please finish editing before updating the form"));
+        new Error("Please finish editing before updating the form"));
       return;
     }
-    const itemEntry = parent.parentNode.previousSibling.getElementsByTagName('td')
+    const itemEntry = parent.parentNode.previousSibling.getElementsByTagName('td');
     app.doCommand('itemNote', itemEntry[1].textContent, itemEntry[2].textContent, value);
   },
   show: function() {

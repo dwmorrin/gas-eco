@@ -234,7 +234,7 @@ utility.sortForms = function(forms, sortBy) {
     case 'items':
     case 'project':
     case 'bookingId':
-    compare = function(a,b) {
+      compare = function(a,b) {
         if (a[sortBy] < b[sortBy]) {
           return -1;
         }
@@ -293,6 +293,6 @@ utility.sortForms = function(forms, sortBy) {
       break;
   }
   forms.sort(compare);
-   return forms;
+  return forms;
 };
 </script>

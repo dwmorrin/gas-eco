@@ -259,7 +259,7 @@ function populateEquipmentOutList(item) {
 function populateItemList(item) {
   let checkInButton;
   const noteRow = document.createElement('tr'),
-      notes = document.createElement('td');
+        notes = document.createElement('td');
   if (! item.checkIn && ! item.serialized) {
     const id = item.id ? item.id : item.barcode;
     checkInButton = `<button class="action" value="parseOmnibox" data-itemid="${id}">Check In</button>`;

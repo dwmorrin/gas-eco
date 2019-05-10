@@ -8,6 +8,7 @@
       displayForm
       displayNewForm
       populateFormsTable
+      populateArchiveTable
       populateItemList
       utility
 */
@@ -54,7 +55,7 @@ app.doCommand = function(command,...options) {
       break;
     case 'displayForm': {
       const form = options[0],
-          isArchive = Boolean(options[1]);
+            isArchive = Boolean(options[1]);
       displayForm(form, isArchive);
       break;
     }
@@ -209,14 +210,14 @@ app.doCommand = function(command,...options) {
     }
     case 'setLocationOther': {
       const otherLocation = app.modal.getInput(),
-          option = app.pages.form.elements.locationOtherOption,
-          select = app.pages.form.elements.form.location,
-          change = {
-            target: {
-              name  :'location',
-              value :otherLocation
-            }
-          };
+            option = app.pages.form.elements.locationOtherOption,
+            select = app.pages.form.elements.form.location,
+            change = {
+              target: {
+                name  :'location',
+                value :otherLocation
+              }
+            };
       select.value = option.value = otherLocation;
       app.pages.form.handleChange(change);
       option.textContent = otherLocation; // must follow handleChange
@@ -228,13 +229,13 @@ app.doCommand = function(command,...options) {
       break;
     case 'signatureSubmit': {
       const dataURL = app.modal.signaturePad.toDataURL(),
-          studentId = app.modal.tmp;
+            studentId = app.modal.tmp;
       app.run.doPost({ post: 'signature', dataURL: dataURL, id: studentId });
       break;
     }
     case 'sortForms': {
-      const sortType = options[0];
-      forms = utility.sortForms(app.cache[app.cache.currentFormstack], sortType);
+      const sortType = options[0],
+            forms = utility.sortForms(app.cache[app.cache.currentFormstack], sortType);
       if (app.cache.currentFormstack == app.strings.formstack.openForms) {
         populateFormsTable(forms);
       } else {
