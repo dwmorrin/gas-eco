@@ -53,7 +53,7 @@ function isCheckInItemOk(item) {
   if (! savedItem || ! savedItem.checkOut) {
     app.omnibox.clear();
     if (! item.serialized) {
-      app.modal.handleQuantityChange(item.id);
+      app.modal.handleQuantityChange(item.description);
       return false;
     }
     app.modal.handleError(
