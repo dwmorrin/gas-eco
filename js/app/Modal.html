@@ -321,7 +321,8 @@ app.modal = {
     const items = JSON.parse(app.pages.form.elements.form.items.value);
     const item = items.find(i => i.description == itemDescription);
     if (! item || item.serialized) {
-      app.modal.handleError(new Error("You can't change the quantity of this item"));
+      // TODO: Fix bug that causes this error to be shown when clicking on a student.
+      // app.modal.handleError(new Error("You can't change the quantity of this item"));
       return;
     }
     const m = app.modal;
@@ -373,7 +374,7 @@ app.modal = {
       )
     );
     m.ok.setAttribute('value', 'studentNote');
-    m.tmp = student.name;
+    m.tmp = student;
     m.show(m.container, m.table, m.textarea, m.ok);
     m.textarea.focus();
   },
