@@ -41,14 +41,14 @@ app.handlers = {
         app.cache.openForms.pop();
         --app.cache.currentIndex;
       }
-    } 
+    }
     app.doCommand(click.target.value);
   },
   keydown: function(keydown) {
-    if (keydown.key == 'Enter' && keydown.target.classList.contains('itemnotesinput')) {
+    /* if (keydown.key == 'Enter' && keydown.target.classList.contains('itemnotesinput')) {
       app.pages.form.handleItemNoteInput(keydown);
       return;
-    }
+    } */
     // Allow esc to safely exit error messages
     if (keydown.key == 'Escape') {
       if (!app.modal.container.classList.contains('hidden')) {

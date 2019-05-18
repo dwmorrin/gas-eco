@@ -224,7 +224,7 @@ app.modal = {
     return value;
   },
 
-  handleCollision: function(/*collision*/) {
+  handleCollision: function(/* collision */) {
     const m = app.modal;
     m.setStrings("collision");
     m.show(app.modal.container);
@@ -251,9 +251,9 @@ app.modal = {
   signatureReady: function() {
     let m = app.modal;
     m.setStrings('signatureReady');
-    //m.link.setAttribute('href', 'https://script.google.com/macros/s/' +
-    //'AKfycbzoGVb3LFX-Sfxy3_EyMtRYv1TPylDitmuUc-3F7g9mppa_ihEc/exec');
-    //m.link.textContent = "";
+    /* m.link.setAttribute('href', 'https://script.google.com/macros/s/' +
+    'AKfycbzoGVb3LFX-Sfxy3_EyMtRYv1TPylDitmuUc-3F7g9mppa_ihEc/exec');
+    m.link.textContent = ""; */
     m.show(app.modal.container, app.modal.ok, app.modal.link);
     m.ok.setAttribute('value', 'signatureRecheck');
   },
@@ -311,7 +311,7 @@ app.modal = {
       )
     );
     app.modal.ok.setAttribute('value', 'itemNote');
-    //app.modal.tmp = student.id; // is this valid?  This function is not implemented yet
+    app.modal.tmp = item;
     m.show(m.container, m.table, m.textarea, m.ok);
     m.textarea.focus();
   },
@@ -321,6 +321,7 @@ app.modal = {
     const items = JSON.parse(app.pages.form.elements.form.items.value);
     const item = items.find(i => i.description == itemDescription);
     if (! item || item.serialized) {
+      app.modal.handleError(new Error("You can't change the quantity of this item"));
       return;
     }
     const m = app.modal;

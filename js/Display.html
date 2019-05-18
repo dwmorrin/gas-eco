@@ -39,7 +39,7 @@ function displayForm(form, archived) {
               JSON.parse(note.body); // if successful, this is a change log, so we ignore it
             } catch(e) {             // on error, we have a global note to display
               let p = document.createElement('p');
-              p.textContent = 'Note: ' + '['+ note.author +'] ' + note.body;
+              p.textContent = 'Note: ' + '[' + note.author + '] ' + note.body;
               app.pages.form.elements.noteSection.appendChild(p);
             }
           }
@@ -370,7 +370,7 @@ function populateItemList(item) {
   
   notes.setAttribute('colspan', 4);
   notes.classList.add('itemnotes');
-  notes.textContent = item.notes;
+  notes.textContent = 'Notes: ' + item.notes;
   noteRow.appendChild(notes);
   app.pages.form.elements.itemList.appendChild(noteRow);
 }

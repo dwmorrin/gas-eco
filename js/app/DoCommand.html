@@ -76,20 +76,49 @@ app.doCommand = function(command,...options) {
       break;
     }
     case 'itemNote': {
-      const barcode = String(options[0]),
-            itemId = String(options[1]),
-            note = String(options[2]);
-      const items = JSON.parse(app.pages.form.elements.form.items.value);
+      const barcode = app.modal.tmp.barcode,
+            itemId = app.modal.tmp.id,
+            items = JSON.parse(app.pages.form.elements.form.items.value),
+            radio = app.modal.table.querySelectorAll('input[type="radio"]');
+      let item;
       if (itemId == '') {
-        const item = items.find(i => i.barcode == barcode);
-        item.notes = note;
+        item = items.find(i => i.barcode == barcode);
       } else {
-        const item = items.find(i => i.id == itemId);
-        item.notes = note;
+        item = items.find(i => i.id == itemId);
+      }
+      const itemchange = {
+        target: {
+          name: 'items',
+          value: item.description + ' note changed from ' + item.notes,
+        }
+      };
+      for (let i = 0; i < radio.length; i++) {
+        if (radio[i].checked) {
+          if (radio[i].value == 'other' && item.notes == '') {
+            item.notes = item.notes + app.modal.getText();
+            break;
+          }
+          if (radio[i].value == 'other' && item.notes != '') {
+            item.notes = item.notes + ', ' + app.modal.getText();
+            break;
+          } 
+          else {
+            item.notes = 'ITEM MISSING!, ' + item.notes;
+            break;
+          }
+        }
+      }
+      if (! item.notes) {
+        app.modal.handleError(
+          new Error('an error has occured while getting an item note')
+        );
       }
       app.pages.form.elements.form.items.value = JSON.stringify(items);
       utility.DOM.empty(app.pages.form.elements.itemList);
       items.reverse().forEach(populateItemList);
+      // Fake change event
+      itemchange.target.value += ' to ' + item.notes;
+      app.pages.form.handleChange(itemchange);
       break;
     }
     case 'itemQuantity': {
@@ -214,7 +243,7 @@ app.doCommand = function(command,...options) {
       const description = app.modal.getText();
       utility.digestMessage(description).then(hash =>{
         app.omnibox.handleItem({
-          id: "MANUAL-"+ utility.hexString(hash).substring(0, 5),
+          id: "MANUAL-" + utility.hexString(hash).substring(0, 5),
           checkIn: null,
           checkOut: null,
           quantity: 1,

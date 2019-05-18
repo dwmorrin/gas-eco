@@ -7,7 +7,7 @@ function Item_(id) {
   this.checkOut = null;  // string formatted date
   this.description;      // string, let implementation handle merging make, model, etc into this
   this.quantity = 1;     // 1 if there is an id, else integer
-  this.notes = 'Notes: ';
+  this.notes = '';
 
 
   this.getId = function() { return this.id; };
