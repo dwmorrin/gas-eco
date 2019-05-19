@@ -149,11 +149,15 @@ function displayForm(form, archived) {
   if (archived) {
     app.omnibox.element.setAttribute('disabled', true);
     app.pages.form.elements.newNoteButton.setAttribute('disabled', true);
+    app.pages.form.elements.manualButton.setAttribute('disabled', true);
+    app.pages.form.elements.omniboxButton.setAttribute('disabled', true);
     app.pages.form.elements.updateButtonHint.textContent = 'This is a closed form.  You cannot edit it.';
   } else {
     app.omnibox.element.removeAttribute('disabled');
     app.omnibox.element.focus();
     app.pages.form.elements.newNoteButton.removeAttribute('disabled');
+    app.pages.form.elements.manualButton.removeAttribute('disabled');
+    app.pages.form.elements.omniboxButton.removeAttribute('disabled');
     app.pages.form.elements.updateButtonHint.textContent = '';
   }
 
@@ -367,7 +371,7 @@ function populateItemList(item) {
     itemRow.classList.add('nonserialized');
   }
   app.pages.form.elements.itemList.appendChild(itemRow);
-  
+
   notes.setAttribute('colspan', 4);
   notes.classList.add('itemnotes');
   notes.textContent = item.notes;

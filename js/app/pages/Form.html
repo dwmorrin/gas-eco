@@ -16,6 +16,8 @@ app.pages.form = {
     locationSelect:          document.querySelector('form.model select[name="location"]'),
     locationOtherOption:     document.querySelector('form.model option[value="Other"]'),
     newNoteButton:           document.querySelector('button[value="newNote"]'),
+    manualButton:            document.querySelector('button[value="manualItem"]'),
+    omniboxButton:           document.querySelector('button[value="parseOmnibox"]'),
     noteSection:             document.querySelector('section.globalnotes'),
     studentList:             document.querySelector('tbody.studentList'),
     tableStaticFields:       document.querySelector('table.staticFields'),
@@ -156,7 +158,12 @@ app.pages.form = {
     app.changes.add(newChange);
   },
   handleClickItem: function(click) {
-    if (click.target.parentNode.classList.contains('itemnotes')) {
+    const isArchive = (app.cache.currentFormstack == 'archive') ? true : false;
+    if (isArchive){
+      return;
+    }
+    if (click.target.classList.contains('itemnotes')) {
+
       return;
     }
     if (click.metaKey) {
@@ -174,6 +181,10 @@ app.pages.form = {
     app.modal.handleItemNote(item);
   },
   handleClickTable: function(click) {
+    const isArchive = (app.cache.currentFormstack == 'archive') ? true : false;
+    if (isArchive){
+      return;
+    }
     if (click.target.tagName != 'TD') {
       return;
     }
@@ -241,6 +252,10 @@ app.pages.form = {
     app.omnibox.parse();
   },
   handleClickStudent: function(click) {
+    const isArchive = (app.cache.currentFormstack == 'archive') ? true : false;
+    if (isArchive){
+      return;
+    }
     if (click.metaKey) {
       return;
     }
