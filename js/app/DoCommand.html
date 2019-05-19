@@ -87,30 +87,44 @@ app.doCommand = function(command,...options) {
       } else {
         item = items.find(i => i.id == itemId);
       }
-      const itemchange = {
-        target: {
-          name: 'items',
-          value: item.description + ' note changed from ' + item.notes,
-        }
-      };
+      let itemchange;
       for (let i = 0; i < radio.length; i++) {
         if (radio[i].checked) {
-          if (radio[i].value == 'other' && item.notes == '') {
-            item.notes = item.notes + app.modal.getText();
+          if (radio[i].value == 'other') {
+            let currentNote;
+            if (item.notes != ''){
+              currentNote = 'from "' + item.notes + '"';
+            }
+            else{
+              currentNote = '';
+            }
+            if (item.notes != ''){
+              item.notes += ', ';
+            }
+            itemchange = {
+              target: {
+                name: 'items',
+                value: item.description + ' note changed ' + currentNote,
+              }
+            };
+            item.notes += app.modal.getText();
+            itemchange.target.value += ' to "' + item.notes + '"';
             break;
           }
-          if (radio[i].value == 'other' && item.notes != '') {
-            item.notes = item.notes + ', ' + app.modal.getText();
-            break;
-          } 
           else {
             // item.notes = 'ITEM MISSING!, ' + item.notes;
             item.checkIn = '<incomplete>ITEM MISSING</incomplete>';
+            itemchange = {
+              target: {
+                name: 'items',
+                value: item.description + ' marked as missing',
+              }
+            };
             break;
           }
         }
       }
-      if (! item.notes) {
+      if (!item.notes && app.modal.getText()) {
         app.modal.handleError(
           new Error('an error has occured while getting an item note')
         );
@@ -119,7 +133,7 @@ app.doCommand = function(command,...options) {
       utility.DOM.empty(app.pages.form.elements.itemList);
       items.reverse().forEach(populateItemList);
       // Fake change event
-      itemchange.target.value += ' to ' + item.notes;
+      // itemchange.target.value += ' to ' + item.notes;
       app.pages.form.handleChange(itemchange);
       break;
     }
@@ -312,45 +326,54 @@ app.doCommand = function(command,...options) {
           new Error('an error has occured while getting student note')
         );
       }
-      // TODO this is a cut, paste and modify version of 'saveNote'; refactor
-      const notes = JSON.parse(app.pages.form.elements.form.notes.value);
-      const note = {
-        timestamp: Date.now(),
-        author: app.elements.usernameDisplay.textContent,
-        body: app.modal.tmp.name + ': ' + value,
-      };
-      let shortNotes = note.body;
-      if (shortNotes.length > 10) {
-        shortNotes = shortNotes.slice(0, 10) + "...";
-      }
-      if (value == 'left'){        
+      if (value == 'left'){
         let students = (
           JSON.parse(app.pages.form.elements.form.students.value) || []
         );
         let studentOnForm = students.find(s => s.id == app.modal.tmp.id);
         studentOnForm.checkOut = '<incomplete>DID NOT SIGN OUT</incomplete>';
+        const studentChange = {
+          target: {
+            name: 'students',
+            value: studentOnForm.name + ' left without checking out',
+          }
+        };
+        app.pages.form.handleChange(studentChange);
         // Update form.students
         app.pages.form.elements.form.students.value = JSON.stringify(students);
         // Update display
         utility.DOM.empty(app.pages.form.elements.studentList);
         students.forEach(populateStudentList);
       }
-      const noteChange = {
-        target: {
-          name: 'notes',
-          value: shortNotes
+      // TODO this is a cut, paste and modify version of 'saveNote'; refactor
+      else{
+        const notes = JSON.parse(app.pages.form.elements.form.notes.value);
+        const note = {
+          timestamp: Date.now(),
+          author: app.elements.usernameDisplay.textContent,
+          body: app.modal.tmp.name + ': ' + value,
+        };
+        let shortNotes = note.body;
+        if (shortNotes.length > 10) {
+          shortNotes = shortNotes.slice(0, 10) + "...";
         }
-      };
-      const para = document.createElement('p');
-      para.textContent = 'Note: ' + '[' + note.author + '] ' + note.body;
+        const noteChange = {
+          target: {
+            name: 'notes',
+            value: shortNotes
+          }
+        };
+        const para = document.createElement('p');
+        para.textContent = 'Note: ' + '[' + note.author + '] ' + note.body;
 
-      notes.push(note);
-      app.pages.form.elements.form.notes.value = JSON.stringify(notes);
-      app.pages.form.handleChange(noteChange);
+        notes.push(note);
+        app.pages.form.elements.form.notes.value = JSON.stringify(notes);
+        app.pages.form.handleChange(noteChange);
 
-      app.pages.form.elements.noteSection.appendChild(para);
-      if (app.pages.form.elements.noteSection.classList.contains('hidden')) {
-        app.pages.form.elements.noteSection.classList.remove('hidden');
+        app.pages.form.elements.noteSection.appendChild(para);
+        if (app.pages.form.elements.noteSection.classList.contains('hidden')) {
+          app.pages.form.elements.noteSection.classList.remove('hidden');
+        }
       }
       break;
     }
