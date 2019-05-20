@@ -371,6 +371,9 @@ function populateItemList(item) {
   if (! item.serialized) {
     itemRow.classList.add('nonserialized');
   }
+  else{
+    itemRow.classList.add('serialized');
+  }
   app.pages.form.elements.itemList.appendChild(itemRow);
   
   notes.setAttribute('colspan', 4);

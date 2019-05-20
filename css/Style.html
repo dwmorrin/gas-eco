@@ -182,11 +182,6 @@ th > img {
   pointer-events: none;
 }
 
-tr.nonserialized td:first-child:hover {
-  cursor: pointer;
-  color: blue;
-}
-
 span.alert {
   color: rgb(255, 0, 0);
   font-weight: bold;
@@ -276,14 +271,20 @@ tbody.open td {
 }
 
 thead.open th:hover,
-tbody.studentList tr:hover
-/*, tbody.itemList tr:hover*/ {
+tbody.studentList tr:hover,
+tbody.itemList td:hover {
   color: blue;
   cursor: pointer;
 }
+tbody.itemList
 
 thead.open th:nth-child(1) {
   width:20px;
+}
+
+tr.serialized td:first-child:hover {
+  cursor: default;
+  color: black;
 }
 
 table.staticFields td {
