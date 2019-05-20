@@ -290,6 +290,19 @@ app.pages.archive = {
     end: '',   // 'yyyy-mm-dd'
   },
   show: function() {
+    const today = new Date();
+    today.setHours(0);
+    today.setMinutes(0);
+    today.setSeconds(0);
+    today.setMilliseconds(0);
+    const selectedEndTime = new Date(
+      app.pages.archive.range.end + 'T00:00:00'
+    ).getTime();
+    if (selectedEndTime >= today.getTime()) {
+      app.pages.archive.update();
+    } else {
+      app.pages.archive.query();
+    }
     app.pages.archive.elements.container.classList.remove("hidden");
   },
   hide: function() {
