@@ -6,7 +6,7 @@ function isAllGearReturned() {
   let items = JSON.parse(app.pages.form.elements.form.items.value);
   return items.every(item => {
     if(item.checkOut) {
-      return item.checkIn;
+      return item.checkIn || item.missing;
     } else {
       return true;
     }
@@ -26,7 +26,7 @@ function isBlankForm(form) {
 function isThereAnActiveStudent() {
   let students = JSON.parse(app.pages.form.elements.form.students.value),
       studentCounter = function(count, student) {
-        if(student.checkIn && !student.checkOut) {
+        if(student.checkIn && !(student.checkOut || student.left)) {
           return count + 1;
         } else {
           return count;
@@ -96,8 +96,8 @@ function isFormOkToPost() {
   }
   let students = JSON.parse(app.pages.form.elements.form.students.value),
       items = JSON.parse(app.pages.form.elements.form.items.value);
-  let someStudentsAreActive = students.some(s => (s.checkIn && !s.checkOut));
-  let someItemsAreOut = items.some(i => (i.checkOut && !i.checkIn));
+  let someStudentsAreActive = students.some(s => (s.checkIn && !(s.checkOut || s.left)));
+  let someItemsAreOut = items.some(i => (i.checkOut && !(i.checkIn || i.missing)));
   if(someItemsAreOut && !someStudentsAreActive) {
     return false;
   }
@@ -116,7 +116,7 @@ function isFormReadyToClose() {
   return students.some(student => student.checkIn) && students.every(
     student => {
       if(student.checkIn) {
-        return student.checkOut;
+        return student.checkOut || student.left;
       } else {
         return true;
       }

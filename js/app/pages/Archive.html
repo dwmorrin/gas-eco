@@ -194,15 +194,14 @@ app.pages.archive = {
         // filter by incomplete forms
         if (inputs.incomplete.checked) {
           let found = false;
-          console.log('ran')
           checkIncompleteStudents: for (let student of form.students) {
-            if (student.checkOut == '<incomplete>DID NOT SIGN OUT</incomplete>'){
+            if (student.left){
               found = true;
               break checkIncompleteStudents;
             }
           }
           checkIncompleteItems: for (let item of form.items) {
-            if (item.checkIn == '<incomplete>ITEM MISSING</incomplete>'){
+            if (item.missing){
               found = true;
               break checkIncompleteItems;
             }

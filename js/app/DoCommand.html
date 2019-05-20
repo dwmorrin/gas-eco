@@ -113,7 +113,7 @@ app.doCommand = function(command,...options) {
           }
           else {
             // item.notes = 'ITEM MISSING!, ' + item.notes;
-            item.checkIn = '<incomplete>ITEM MISSING</incomplete>';
+            item.missing = true;
             itemchange = {
               target: {
                 name: 'items',
@@ -267,7 +267,8 @@ app.doCommand = function(command,...options) {
           barcode: null,
           description,
           checkedOut: true,
-          notes: ''
+          notes: '',
+          missing: false
         });
       });
       break;
@@ -322,16 +323,14 @@ app.doCommand = function(command,...options) {
         }
       }
       if (! value) {
-        app.modal.handleError(
-          new Error('an error has occured while getting student note')
-        );
+        value = '';
       }
       if (value == 'left'){
         let students = (
           JSON.parse(app.pages.form.elements.form.students.value) || []
         );
         let studentOnForm = students.find(s => s.id == app.modal.tmp.id);
-        studentOnForm.checkOut = '<incomplete>DID NOT SIGN OUT</incomplete>';
+        studentOnForm.left = true;
         const studentChange = {
           target: {
             name: 'students',

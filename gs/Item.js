@@ -8,6 +8,7 @@ function Item_(id) {
   this.description;      // string, let implementation handle merging make, model, etc into this
   this.quantity = 1;     // 1 if there is an id, else integer
   this.notes = '';
+  this.missing = null;
 
 
   this.getId = function() { return this.id; };

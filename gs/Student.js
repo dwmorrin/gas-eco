@@ -7,7 +7,8 @@ function Student_(id) {
   this.name;            // string
   this.netId;           // string
   this.signatureOnFile; // boolean
-  
+  this.left;
+
   this.getCheckIn = function() { return this.checkIn; };
   this.getCheckOut = function() { return this.checkOut; };
   this.getContact = function() { return this.contact; };
@@ -15,7 +16,7 @@ function Student_(id) {
   this.getName = function() { return this.name; };
   this.getNetId = function() { return this.netId; };
   this.isSignatureOnFile = function() { return this.signatureOnFile; };
-  
+
   this.setCheckIn = function(date) { this.checkIn = date; return this; };
   this.setCheckOut = function(date) { this.checkOut = date; return this; };
   this.setContact = function(string) { this.contact = string; return this; };
