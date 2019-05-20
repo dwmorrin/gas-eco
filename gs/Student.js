@@ -7,7 +7,7 @@ function Student_(id) {
   this.name;            // string
   this.netId;           // string
   this.signatureOnFile; // boolean
-  this.left;
+  this.left = false;            // boolean, states whether or not the student left without checking out
 
   this.getCheckIn = function() { return this.checkIn; };
   this.getCheckOut = function() { return this.checkOut; };

@@ -209,7 +209,7 @@ function isAllGearReturned_(form) {
  */
 function isCheckOutStudentOk_(form) {
   // is there another student still on the form? If not, is all gear returned?
-  return /* isThereAnActiveStudent_(form) || */ isAllGearReturned_(form);
+  return isThereAnActiveStudent_(form) || isAllGearReturned_(form);
 }
 
 /**

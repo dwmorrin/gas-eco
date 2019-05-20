@@ -7,8 +7,8 @@ function Item_(id) {
   this.checkOut = null;  // string formatted date
   this.description;      // string, let implementation handle merging make, model, etc into this
   this.quantity = 1;     // 1 if there is an id, else integer
-  this.notes = '';
-  this.missing = null;
+  this.notes = '';       // string, saves the notes for the item
+  this.missing = false;   // boolean, states whether or not the item is considered missing, so that the checkOut field can show an alert
 
 
   this.getId = function() { return this.id; };
