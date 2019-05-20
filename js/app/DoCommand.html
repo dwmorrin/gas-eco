@@ -48,10 +48,6 @@ app.doCommand = function(command,...options) {
         post: 'codabar', netId: app.modal.getInput(), codabar: app.modal.tmp
       });
       break;
-    case 'demo':
-      app.spinner.on();
-      app.run.doPost({ post: 'demo' });
-      break;
     case 'displayForm': {
       const form = options[0],
             isArchive = Boolean(options[1]);
@@ -169,9 +165,6 @@ app.doCommand = function(command,...options) {
       break;
     case 'query':
       app.pages.archive.query();
-      break;
-    case 'resetDemo':
-      app.run.doPost({ post: "demo" });
       break;
     case 'revert':
       app.changes.saved = true;
