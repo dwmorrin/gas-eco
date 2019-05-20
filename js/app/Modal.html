@@ -42,11 +42,9 @@ app.modal = {
     },
     collision: {
       heading: "Uh-oh, your form conflicts with another form",
-      body:    "Unfortunately, no automatic fix is available. Please write down " +
-               "the details of your form, then refresh and open the form again. " +
-               "Modify the newly opened form to reflect the changes you want. " +
-               "Check to log to see what changes caused the conflict.",
-      ok:      "Ok"
+      body:    "Unfortunately, no automatic fix is available, but your form " +
+               "has been saved.  To keep viewing your form, choose \"Close\".",
+      ok:      "Switch to the saved form"
     },
     init: { // as defined in html/Modal.html
       heading: "Attention",
@@ -242,10 +240,15 @@ app.modal = {
     return value;
   },
 
-  handleCollision: function(/* collision */) {
+  /**
+   * @param {obj} collision - has properties {obj} form, {obj} submittedForm
+   */
+  handleCollision: function(collision) {
     const m = app.modal;
+    m.tmp = collision;
     m.setStrings("collision");
-    m.show(app.modal.container);
+    m.ok.setAttribute('value', 'collisionResolve');
+    m.show(m.container, m.ok);
   },
 
   handleError: function(error) {

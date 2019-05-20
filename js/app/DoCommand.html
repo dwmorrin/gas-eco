@@ -56,8 +56,18 @@ app.doCommand = function(command,...options) {
       });
       break;
     }
+    case 'collisionResolve': {
+      const form = JSON.parse(app.modal.tmp.form);
+      app.cache[app.cache.currentFormstack][app.cache.currentIndex] = form;
+      app.changes.saved = true;
+      displayForm(form);
+      break;
+    }
     case 'codabarUpdateOK':
       app.doCommand('codabar', true);
+      break;
+    case 'collisionresolve':
+      displayForm(app.modal.tmp.form);
       break;
     case 'displayForm': {
       const form = options[0],

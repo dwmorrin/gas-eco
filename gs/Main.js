@@ -10,6 +10,7 @@ getOpenFormsGAS_
 startSignature_
 writeCodabarGAS_
 writeFormToSheetGAS_
+writeRejectedFormToSheetGAS_
 writeSignatureToSheetGAS_
 */
 
@@ -124,6 +125,7 @@ function doPost(request) {
         }
       } catch (error) {
         if (/^form collision/i.test(error.message)) {
+          writeRejectedFormToSheetGAS_(form);
           lock.releaseLock();
           response.target = "collision";
           response.form = error.ECO_storedForm; // already JSON stringed
