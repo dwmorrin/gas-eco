@@ -157,18 +157,19 @@ app.pages.form = {
   },
 
   handleClickItem: function(click) {
-    if (click.target.classList.contains('itemnotes')) {
-
-      return;
-    }
     if (click.metaKey) {
       return;
     }
-    if (click.target != click.target.parentNode.firstChild){
+    if (click.target != click.target.parentNode.firstChild || click.target.classList.contains('itemnotes')){
       // find item barcode
-      let id, item;
-      const itemRow = click.target.parentNode;
-      const items = JSON.parse(app.pages.form.elements.form.items.value);
+      let id, item, itemRow;
+      if (click.target.classList.contains('itemnotes')) {
+        itemRow = click.target.parentNode.previousSibling;
+      }
+      else{
+        itemRow = click.target.parentNode;
+      }
+      let items = JSON.parse(app.pages.form.elements.form.items.value);
       if (itemRow.dataset.id == '') {
         item = items.find(i => i.barcode == itemRow.dataset.barcode);
       } else {
@@ -181,27 +182,13 @@ app.pages.form = {
     }
   },
   handleClickTable: function(click) {
+    if (click.target.classList.contains('itemnotes')){
+      return;
+    }
     if (click.target.tagName != 'TD') {
       return;
     }
-    if (click.target.classList.contains('itemnotes')) {
-      /* let input = document.createElement('input');
-      input.setAttribute('type', 'text');
-      input.setAttribute('value', click.target.textContent);
-      input.classList.add('itemnotesinput');
-      // TODO Blur on enter is not working
-      // input.addEventListener('keydown', (keydown) => {
-      //  if (keydown.key == "Enter") {
-      //    this.blur()
-      //  }
-      // }, {once: true});
-      input.addEventListener('blur', app.pages.form.handleItemNoteInput, {once: true});
-      click.target.innerHTML = '';
-      click.target.appendChild(input);
-      input.focus();
-      input.selectionStart = input.selectionEnd = input.value.length;  */
-      return;
-    } /* else */if (click.target.parentNode.firstChild == click.target) { // should be quantity
+    if (click.target.parentNode.firstChild == click.target) { // should be quantity
       // handle quantity changes
       const indexOfItemDescription = 1;
       const cells = click.target.parentNode.getElementsByTagName('td');

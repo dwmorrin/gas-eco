@@ -61,5 +61,5 @@ function Item_(id) {
       this.serialized = true;
     }
     return this;
-  }
+  };
 }
