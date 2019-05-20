@@ -321,8 +321,6 @@ app.modal = {
     const items = JSON.parse(app.pages.form.elements.form.items.value);
     const item = items.find(i => i.description == itemDescription);
     if (! item || item.serialized) {
-      // TODO: Fix bug that causes this error to be shown when clicking on a student.
-      // app.modal.handleError(new Error("You can't change the quantity of this item"));
       return;
     }
     const m = app.modal;
