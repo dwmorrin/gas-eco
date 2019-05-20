@@ -1,5 +1,5 @@
 <script>
-/* global app displayForm utility isFormOkToPost isFormReadyToClose */
+/* global app displayForm utility isFormOkToPost isFormReadyToClose toast */
 app.pages.form = {
   checkForms: function() {
     app.run
@@ -67,10 +67,13 @@ app.pages.form = {
       case 'endAMPM':
         app.pages.form.handleChangeTime(change);
         break;
-      case 'items':
       case 'manual':
       case 'notes':
+        app.changes.add(change);
+        break;
+      case 'items':
       case 'students':
+        toast(change.target.value + " OK");
         app.changes.add(change);
         break;
     }
