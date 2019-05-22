@@ -50,6 +50,8 @@ app.omnibox = {
           return;
         }
         itemOnForm.checkIn = utility.date.getFormattedDate(new Date());
+        // clears the missing property if it was set.
+        itemOnForm.missing = false;
         change.target.value += ' check-in';
       } else { // Its a check-out for reserved gear
         itemOnForm.checkOut = utility.date.getFormattedDate(new Date());
@@ -97,7 +99,7 @@ app.omnibox = {
 
     if (! studentOnForm) {
       if (! student.signatureOnFile) {
-        //app.modal.getSignature(student);
+        // app.modal.getSignature(student);
         app.modal.signatureWait();
         app.run.doPost({ post: 'startSignature', netid: student.netId});
         app.cache.signatureTimeoutId = window.setTimeout(
@@ -121,7 +123,7 @@ app.omnibox = {
           }
         } else {
           if (! student.signatureOnFile) {
-            //app.modal.getSignature(student);
+            // app.modal.getSignature(student);
             app.modal.signatureWait();
             app.run.doPost({ post: 'startSignature', netid: student.netId});
             app.cache.signatureTimeoutId = window.setTimeout(

@@ -155,49 +155,45 @@ app.pages.form = {
     }
     app.changes.add(newChange);
   },
+
   handleClickItem: function(click) {
-    if (click.target.parentNode.classList.contains('itemnotes')) {
-      return;
-    }
     if (click.metaKey) {
       return;
     }
-    // find item barcode
-    let id, item, node;
-    node = utility.DOM.getFirstChild(click.target.parentNode);
-    node = utility.DOM.getNextSibling(node); // description
-    id = utility.DOM.getNextSibling(node).textContent; // id
-    item = JSON.parse(app.pages.form.elements.form.notes.value).find(i => i.id == id);
-    if (!item) {
-      app.modal.handleError(new Error('cannot take note for ' + id));
+    if (click.target != click.target.parentNode.firstChild || click.target.classList.contains('itemnotes')){
+      // find item barcode
+      let id, item, itemRow;
+      if (click.target.classList.contains('itemnotes')) {
+        itemRow = click.target.parentNode.previousSibling;
+      }
+      else{
+        itemRow = click.target.parentNode;
+      }
+      let items = JSON.parse(app.pages.form.elements.form.items.value);
+      if (itemRow.dataset.id == '') {
+        item = items.find(i => i.barcode == itemRow.dataset.barcode);
+      } else {
+        item = items.find(i => i.id == itemRow.dataset.id);
+      }
+      if (!item) {
+        app.modal.handleError(new Error('cannot take note for ' + id));
+      }
+      app.modal.handleItemNote(item);
     }
-    app.modal.handleItemNote(item);
   },
   handleClickTable: function(click) {
+    if (click.target.classList.contains('itemnotes')){
+      return;
+    }
     if (click.target.tagName != 'TD') {
       return;
     }
-    if (click.target.classList.contains('itemnotes')) {
-      let input = document.createElement('input');
-      input.setAttribute('type', 'text');
-      input.setAttribute('value', click.target.textContent);
-      input.classList.add('itemnotesinput');
-      // TODO Blur on enter is not working
-      //input.addEventListener('keydown', (keydown) => {
-      //  if (keydown.key == "Enter") {
-      //    this.blur()
-      //  }
-      //}, {once: true});
-      input.addEventListener('blur', app.pages.form.handleItemNoteInput, {once: true});
-      click.target.innerHTML = '';
-      click.target.appendChild(input);
-      input.focus();
-      input.selectionStart = input.selectionEnd = input.value.length;
-    } else if (click.target.parentNode.firstChild == click.target) { // should be quantity
+    if (click.target.parentNode.firstChild == click.target) { // should be quantity
       // handle quantity changes
       const indexOfItemDescription = 1;
       const cells = click.target.parentNode.getElementsByTagName('td');
       app.modal.handleQuantityChange(cells[indexOfItemDescription].textContent);
+      return;
     }
     if (click.target.classList.contains('editable')) {
       if (!app.omnibox.element.disabled) {
@@ -258,7 +254,7 @@ app.pages.form = {
     }
     app.modal.handleStudentNote(student);
   },
-  handleItemNoteInput: function(event) { // keydown.key == 'Enter' or blur
+  /* handleItemNoteInput: function(event) { // keydown.key == 'Enter' or blur
     const value = event.target.value,
           parent = event.target.parentNode;
     const itemRow = parent.parentNode.previousSibling;
@@ -266,7 +262,7 @@ app.pages.form = {
       return;
     }
     app.doCommand('itemNote', itemRow.dataset.barcode,itemRow.dataset.id, value);
-  },
+  }, */
   show: function() {
     app.pages.form.elements.container.classList.remove("hidden");
     if (isNaN(app.pages.form.timeoutId)) {

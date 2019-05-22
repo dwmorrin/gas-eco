@@ -182,9 +182,9 @@ th > img {
   pointer-events: none;
 }
 
-tr.nonserialized td:first-child:hover {
-  cursor: pointer;
-  color: blue;
+span.alert {
+  color: red;
+  font-weight: bold;
 }
 
 tr.inactive img {
@@ -223,7 +223,7 @@ thead.archive tr > th:nth-Child(1) {
 
 thead.archive th:nth-Child(1) {
   width: 20px;
-} 
+}
 
 thead.form th {
   /*font: normal 14px Arial;*/
@@ -271,14 +271,19 @@ tbody.open td {
 }
 
 thead.open th:hover,
-tbody.studentList tr:hover
-/*, tbody.itemList tr:hover*/ {
+tbody.studentList tr:hover,
+tbody.itemList td:hover {
   color: blue;
   cursor: pointer;
 }
 
 thead.open th:nth-child(1) {
   width:20px;
+}
+
+tr.serialized td:first-child:hover {
+  cursor: default;
+  color: black;
 }
 
 table.staticFields td {
@@ -297,7 +302,7 @@ table.staticFields th {
 
 td.itemnotes {
   padding: 0;
-  cursor: pointer;
+  /* cursor: pointer; */
 }
 
 td.itemnotes > input {

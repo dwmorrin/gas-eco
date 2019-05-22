@@ -44,11 +44,11 @@ function doGet(request) {
   var  webpage;
   if (! request.get) {
     webpage = HtmlService.createTemplateFromFile('html/index');
-    webpage = webpage.evaluate();  
+    webpage = webpage.evaluate();
     webpage.setTitle('Equipment Check-Out');
     return webpage;
   }
-  
+
   switch (request.get) {
     case 'archive':
       response.formList = getArchive_(request.dateRangeJSON);
@@ -67,13 +67,13 @@ function doGet(request) {
       response.formList = getOpenForms_();
       break;
   }
-  
+
   if (request.init) {
     response.unlock = true;
   }
-  
+
   response.target = request.get;
-  
+
   return response;
 }
 
@@ -140,7 +140,7 @@ function doPost(request) {
   }
   lock.releaseLock();
   response.target = request.post;
-  
+
   return response;
 }
 
@@ -197,13 +197,13 @@ function include_(filename) {
 function isAllGearReturned_(form) {
   return form.items.every(function(item) {
     if (item.checkOut) {
-      return item.checkIn;
+      return item.checkIn || item.missing;
     }
     return true;
   });
 }
 
-/** 
+/**
  * Form validation
  * @see doPost
  */
@@ -212,7 +212,7 @@ function isCheckOutStudentOk_(form) {
   return isThereAnActiveStudent_(form) || isAllGearReturned_(form);
 }
 
-/** 
+/**
  * Form validation
  * @see doPost
  */
@@ -224,8 +224,8 @@ function isFormReadyToClose_(form) {
     function(student) { return student.checkIn; }
   ) && form.students.every(
     function(student) {
-      if (student.checkIn) { 
-        return student.checkOut;
+      if (student.checkIn) {
+        return student.checkOut || student.left;
       }
       return true;
     }
@@ -243,11 +243,11 @@ function isNoShow_(form) {
   var gracePeriod = 30, // minutes
       start = new Date(form.startTime),
       now   = Date.now();
-  
+
   var checkedIn = function(student) { return student.checkIn; };
-  
+
   start.setMinutes(start.getMinutes() + gracePeriod);
-  
+
   if (now > start.getTime() && ! form.students.some(checkedIn)) {
     return true;
   } else {
@@ -280,7 +280,7 @@ function isMissingStudentCheckout_(form) {
  */
 function isThereAnActiveStudent_(form) {
   var activeStudents = form.students.reduce(function(count, student) {
-    if (student.checkIn && ! student.checkOut) {
+    if (student.checkIn && !(student.checkOut || student.left)) {
       return count + 0;
     } else {
       return count;
@@ -289,7 +289,7 @@ function isThereAnActiveStudent_(form) {
   return activeStudents > 1;
 }
 
-/** 
+/**
  * Form validation
  * @see doPost
  */
@@ -310,7 +310,7 @@ function postForm_(form) {
   return writeFormToSheetGAS_(form);
 }
 
-// //run.doPost({ post: 'signature', dataURL: dataURL, id: studentId }); 
+// //run.doPost({ post: 'signature', dataURL: dataURL, id: studentId });
 function postSignature_(request) {
   return writeSignatureToSheetGAS_(request);
 }
@@ -360,7 +360,7 @@ utility.date.getFormattedDate = function(date) {
       hour = date.getHours(),
       minutes = date.getMinutes(),
       ampm = 'am';
-    
+
   if (hour > 11) {
     ampm = 'pm';
     hour = hour % 12;
@@ -392,7 +392,7 @@ utility.date.parseFormattedDate = function(dateString) {
     ampm = 0;
   }
   hour = hour % 12 + ampm;
-  
+
   return new Date(year + '-' + utility.date.zeropad(month) + '-' +
            utility.date.zeropad(day) + 'T' + utility.date.zeropad(hour) + ':' +
            utility.date.zeropad(minutes) + ':00'

@@ -1,13 +1,14 @@
 /* exported  Item_ */
 function Item_(id) {
-  this.barcode;          // string
-  this.id = id;          // string or undefined
-  this.checkedOut;       // boolean
-  this.checkIn = null;   // string formatted date
-  this.checkOut = null;  // string formatted date
-  this.description;      // string, let implementation handle merging make, model, etc into this
-  this.quantity = 1;     // 1 if there is an id, else integer
-  this.notes = 'Notes: ';
+  this.barcode;          // {string}
+  this.id = id;          // {string}
+  this.checkedOut;       // {bool}
+  this.checkIn = null;   // {string} formatted date
+  this.checkOut = null;  // {string} formatted date
+  this.description;      // {string} make, model, etc
+  this.quantity = 1;     // {int}
+  this.notes = '';       // {string} saves the notes for the item
+  this.missing = false;  // {bool} true if item cannot be found when form is closed
 
 
   this.getId = function() { return this.id; };
@@ -60,5 +61,5 @@ function Item_(id) {
       this.serialized = true;
     }
     return this;
-  }
+  };
 }

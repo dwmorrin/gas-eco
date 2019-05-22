@@ -8,6 +8,7 @@
       displayForm
       populateFormsTable
       populateArchiveTable
+      populateStudentList
       populateItemList
       utility
 */
@@ -76,20 +77,30 @@ app.doCommand = function(command,...options) {
       break;
     }
     case 'itemNote': {
-      const barcode = String(options[0]),
-            itemId = String(options[1]),
-            note = String(options[2]);
-      const items = JSON.parse(app.pages.form.elements.form.items.value);
-      if (itemId == '') {
-        const item = items.find(i => i.barcode == barcode);
-        item.notes = note;
-      } else {
-        const item = items.find(i => i.id == itemId);
-        item.notes = note;
+      const description = app.modal.tmp.description,
+            items = JSON.parse(app.pages.form.elements.form.items.value);
+      const item = items.find(i => i.description == description);
+      let change = { target: { name: 'items' } };
+      let value = utility.DOM.getRadioValue();
+      if (value == 'other') {
+        const note = app.modal.getText();
+        if (! note) {
+          return;
+        }
+        change.target.value = description + " added note: " + note;
+        if (! item.notes) {
+          item.notes = note;
+        } else {
+          item.notes += ", " + note;
+        }
+      } else if (value == "missing") {
+        item.missing = true;
+        change.target.value = description + ' marked as missing';
       }
       app.pages.form.elements.form.items.value = JSON.stringify(items);
       utility.DOM.empty(app.pages.form.elements.itemList);
       items.reverse().forEach(populateItemList);
+      app.pages.form.handleChange(change);
       break;
     }
     case 'itemQuantity': {
@@ -181,40 +192,14 @@ app.doCommand = function(command,...options) {
       displayForm(app.cache.savedForm);
       break;
     case 'saveNote': {
-      const notes = JSON.parse(app.pages.form.elements.form.notes.value);
-      const note = {
-        timestamp: Date.now(),
-        author: app.elements.usernameDisplay.textContent,
-        body: app.modal.getText(),
-      };
-      let shortNotes = note.body;
-      if (shortNotes.length > 10) {
-        shortNotes = shortNotes.slice(0, 10) + "...";
-      }
-      const noteChange = {
-        target: {
-          name: 'notes',
-          value: shortNotes
-        }
-      };
-      const p = document.createElement('p');
-      p.textContent = 'Note: ' + '[' + note.author + '] ' + note.body;
-
-      notes.push(note);
-      app.pages.form.elements.form.notes.value = JSON.stringify(notes);
-      app.pages.form.handleChange(noteChange);
-
-      app.pages.form.elements.noteSection.appendChild(p);
-      if (app.pages.form.elements.noteSection.classList.contains('hidden')) {
-        app.pages.form.elements.noteSection.classList.remove('hidden');
-      }
+      utility.saveNote();
       break;
     }
     case 'saveManual': {
       const description = app.modal.getText();
       utility.digestMessage(description).then(hash =>{
         app.omnibox.handleItem({
-          id: "MANUAL-"+ utility.hexString(hash).substring(0, 5),
+          id: "MANUAL-" + utility.hexString(hash).substring(0, 5),
           checkIn: null,
           checkOut: null,
           quantity: 1,
@@ -222,7 +207,8 @@ app.doCommand = function(command,...options) {
           barcode: null,
           description,
           checkedOut: true,
-          notes: 'Notes: '
+          notes: '',
+          missing: false
         });
       });
       break;
@@ -263,51 +249,24 @@ app.doCommand = function(command,...options) {
       break;
     }
     case 'studentNote': {
-      const radio = app.modal.table.querySelectorAll('input[type="radio"]');
-      let value;
-      for (let i = 0; i < radio.length; i++) {
-        if (radio[i].checked) {
-          if (radio[i].value == 'other') {
-            value = app.modal.getText();
-            break;
-          } else {
-            value = radio[i].value;
-            break;
+      const value = utility.DOM.getRadioValue();
+      const students = (
+        JSON.parse(app.pages.form.elements.form.students.value) || []
+      );
+      const student = students.find(s => s.id == app.modal.tmp.id);
+      if (value == 'left') {
+        student.left = true;
+        app.pages.form.handleChange({
+          target: {
+            name: "students",
+            value: student.name + ' left without checking out'
           }
-        }
-      }
-      if (! value) {
-        app.modal.handleError(
-          new Error('an error has occured while getting student note')
-        );
-      }
-      // TODO this is a cut, paste and modify version of 'saveNote'; refactor
-      const notes = JSON.parse(app.pages.form.elements.form.notes.value);
-      const note = {
-        timestamp: Date.now(),
-        author: app.elements.usernameDisplay.textContent,
-        body: app.modal.tmp + ': ' + value,
-      };
-      let shortNotes = note.body;
-      if (shortNotes.length > 10) {
-        shortNotes = shortNotes.slice(0, 10) + "...";
-      }
-      const noteChange = {
-        target: {
-          name: 'notes',
-          value: shortNotes
-        }
-      };
-      const para = document.createElement('p');
-      para.textContent = 'Note: ' + '[' + note.author + '] ' + note.body;
-
-      notes.push(note);
-      app.pages.form.elements.form.notes.value = JSON.stringify(notes);
-      app.pages.form.handleChange(noteChange);
-
-      app.pages.form.elements.noteSection.appendChild(para);
-      if (app.pages.form.elements.noteSection.classList.contains('hidden')) {
-        app.pages.form.elements.noteSection.classList.remove('hidden');
+        });
+        app.pages.form.elements.form.students.value = JSON.stringify(students);
+        utility.DOM.empty(app.pages.form.elements.studentList);
+        students.forEach(populateStudentList);
+      } else if (value == "other") {
+        utility.saveNote(student.name + ": ");
       }
       break;
     }

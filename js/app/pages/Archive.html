@@ -103,7 +103,7 @@ app.pages.archive = {
 
     if (itemQuery) {
       itemQuery = itemQuery.toLowerCase().split(',');
-      //itemQuery.forEach(cleanItem);
+      // itemQuery.forEach(cleanItem);
     }
 
     app.cache.archiveFiltered = app.cache.archive
@@ -144,7 +144,7 @@ app.pages.archive = {
           let found = studentQuery.find(queryArg => {
             return form.students.find(student => {
               let name = student.name.toLowerCase().replace(/\s/g, '');
-              return (name.search(queryArg)> -1);
+              return (name.search(queryArg) > -1);
             });
           });
           if (!found) {
@@ -154,16 +154,16 @@ app.pages.archive = {
 
         // filter by match all item id
         if (inputs.items.value && inputs.matchAllItems.checked) {
-          let count = 0; //counts how many matches we have had
+          let count = 0; // counts how many matches we have had
           itemQuery.forEach(queryArg => {
             let ran = false; // resets the ran flag
             let queryId = cleanItem(queryArg);
             form.items.forEach(item => {
-              const itemId = item.id.toLowerCase().replace(/-0+/, '-'); //cleans up the item id to compare
+              const itemId = item.id.toLowerCase().replace(/-0+/, '-'); // cleans up the item id to compare
               const itemDesc = item.description.toLowerCase();
               if ((  itemId.search(queryId.trim()) > -1   ||
                    itemDesc.search(queryArg.trim()) > -1) &&
-                   ! ran) { //if the id matches, increment count
+                   ! ran) { // if the id matches, increment count
                 ++count;
                 ran = true;
               }
@@ -191,6 +191,25 @@ app.pages.archive = {
         }
 
         // filter by errors
+        // filter by incomplete forms
+        if (inputs.incomplete.checked) {
+          let found = false;
+          checkIncompleteStudents: for (let student of form.students) {
+            if (student.left){
+              found = true;
+              break checkIncompleteStudents;
+            }
+          }
+          checkIncompleteItems: for (let item of form.items) {
+            if (item.missing){
+              found = true;
+              break checkIncompleteItems;
+            }
+          }
+          if (! found) {
+            return false;
+          }
+        }
         // filter by manual entry
         if (inputs.manual.checked) {
           let found = false;
@@ -238,10 +257,10 @@ app.pages.archive = {
           };
 
           let checkedOutLate = function(student) {
-            if (student.checkIn && !student.checkOut) {
+            if (student.checkIn && (!student.checkOut || student.checkOut == '<incomplete>DID NOT SIGN OUT</incomplete>')) {
               return true; // checked-in student never checked-out
             }
-            if (student.checkOut) {
+            if (student.checkOut && student.checkOut != '<incomplete>DID NOT SIGN OUT</incomplete>') {
               let checkOut = utility.date.parseFormattedDate(student.checkOut)
                 .getTime();
               return (checkOut > end.getTime());
