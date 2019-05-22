@@ -192,33 +192,7 @@ app.doCommand = function(command,...options) {
       displayForm(app.cache.savedForm);
       break;
     case 'saveNote': {
-      const notes = JSON.parse(app.pages.form.elements.form.notes.value);
-      const note = {
-        timestamp: Date.now(),
-        author: app.elements.usernameDisplay.textContent,
-        body: app.modal.getText(),
-      };
-      let shortNotes = note.body;
-      if (shortNotes.length > 10) {
-        shortNotes = shortNotes.slice(0, 10) + "...";
-      }
-      const noteChange = {
-        target: {
-          name: 'notes',
-          value: shortNotes
-        }
-      };
-      const p = document.createElement('p');
-      p.textContent = 'Note: ' + '[' + note.author + '] ' + note.body;
-
-      notes.push(note);
-      app.pages.form.elements.form.notes.value = JSON.stringify(notes);
-      app.pages.form.handleChange(noteChange);
-
-      app.pages.form.elements.noteSection.appendChild(p);
-      if (app.pages.form.elements.noteSection.classList.contains('hidden')) {
-        app.pages.form.elements.noteSection.classList.remove('hidden');
-      }
+      utility.saveNote();
       break;
     }
     case 'saveManual': {
@@ -275,57 +249,24 @@ app.doCommand = function(command,...options) {
       break;
     }
     case 'studentNote': {
-      let value = utility.DOM.getRadioValue();
-      if (! value) {
-        value = '';
-      }
-      if (value == 'left'){
-        let students = (
+      const value = utility.DOM.getRadioValue();
+      if (value == 'left') {
+        const students = (
           JSON.parse(app.pages.form.elements.form.students.value) || []
         );
-        let studentOnForm = students.find(s => s.id == app.modal.tmp.id);
+        const studentOnForm = students.find(s => s.id == app.modal.tmp.id);
         studentOnForm.left = true;
-        const studentChange = {
+        app.pages.form.handleChange({
           target: {
-            name: 'students',
-            value: studentOnForm.name + ' left without checking out',
+            name: "students",
+            value: studentOnForm.name + ' left without checking out'
           }
-        };
-        app.pages.form.handleChange(studentChange);
-        // Update form.students
+        });
         app.pages.form.elements.form.students.value = JSON.stringify(students);
-        // Update display
         utility.DOM.empty(app.pages.form.elements.studentList);
         students.forEach(populateStudentList);
-      } else {
-        // TODO this is a cut, paste and modify version of 'saveNote'; refactor
-        const notes = JSON.parse(app.pages.form.elements.form.notes.value);
-        const note = {
-          timestamp: Date.now(),
-          author: app.elements.usernameDisplay.textContent,
-          body: app.modal.tmp.name + ': ' + value,
-        };
-        let shortNotes = note.body;
-        if (shortNotes.length > 10) {
-          shortNotes = shortNotes.slice(0, 10) + "...";
-        }
-        const noteChange = {
-          target: {
-            name: 'notes',
-            value: shortNotes
-          }
-        };
-        const para = document.createElement('p');
-        para.textContent = 'Note: ' + '[' + note.author + '] ' + note.body;
-
-        notes.push(note);
-        app.pages.form.elements.form.notes.value = JSON.stringify(notes);
-        app.pages.form.handleChange(noteChange);
-
-        app.pages.form.elements.noteSection.appendChild(para);
-        if (app.pages.form.elements.noteSection.classList.contains('hidden')) {
-          app.pages.form.elements.noteSection.classList.remove('hidden');
-        }
+      } else if (value == "other") {
+        utility.saveNote();
       }
       break;
     }
