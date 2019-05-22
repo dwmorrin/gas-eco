@@ -191,25 +191,34 @@ app.pages.archive = {
         }
 
         // filter by errors
-        // filter by incomplete forms
-        if (inputs.incomplete.checked) {
+        // filter by forms with missing items
+        if (inputs.missingItem.checked) {
           let found = false;
-          checkIncompleteStudents: for (let student of form.students) {
-            if (student.left){
-              found = true;
-              break checkIncompleteStudents;
-            }
-          }
-          checkIncompleteItems: for (let item of form.items) {
+          checkMissingItem: for (let item of form.items) {
             if (item.missing){
               found = true;
-              break checkIncompleteItems;
+              break checkMissingItem;
             }
           }
           if (! found) {
             return false;
           }
         }
+
+        // filter by forms where students left without checking out
+        if (inputs.studentLeft.checked) {
+          let found = false;
+          checkStudentLeft: for (let student of form.students) {
+            if (student.left){
+              found = true;
+              break checkStudentLeft;
+            }
+          }
+          if (! found) {
+            return false;
+          }
+        }
+
         // filter by manual entry
         if (inputs.manual.checked) {
           let found = false;
@@ -234,9 +243,15 @@ app.pages.archive = {
 
         // filter by global notes
         if (inputs.notes.checked) {
-          if (form.notes.length == 0) {
-            return false;
+          let globalNotesExist = false;
+          for (let note of form.notes) {
+            try {                    // Unintuitive use of try/catch: read carefully:
+              JSON.parse(note.body); // (success == change log ) => ignore it
+            } catch(e) {             // (  error == global note) => increment the global note counter
+              globalNotesExist = true;
+            }
           }
+          return (globalNotesExist);
         }
 
         // filter by late students
