@@ -45,6 +45,18 @@ utility.DOM.getNextSibling = function(element) {
   return nextSibling;
 };
 
+utility.DOM.makeRadio = function(name, ...values) {
+  let radio = {};
+  for (let value of values) {
+    radio[value] = `<input type="radio" name="${name}" value="${value}" `;
+    if (value == 'other') {
+      radio[value] += 'checked';
+    }
+    radio[value] += '/>';
+  }
+  return radio;
+};
+
 utility.DOM.makeTableRow = function(tagName, ...strings) {
   let row = document.createElement('tr'),
       cells = [];
@@ -56,6 +68,16 @@ utility.DOM.makeTableRow = function(tagName, ...strings) {
     row.appendChild(cells.shift());
   }
   return row;
+};
+
+utility.DOM.getRadioValue = function() {
+  const radio = app.modal.table.querySelectorAll('input[type="radio"]');
+  for (let i = 0; i < radio.length; i++) {
+    if (radio[i].checked) {
+      return radio[i].value;
+    }
+  }
+  return null;
 };
 
 utility.date.getFormattedDate = function(date) {

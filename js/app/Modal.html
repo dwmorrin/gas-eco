@@ -280,23 +280,11 @@ app.modal = {
   },
 
   handleItemNote: function(item) {
-    let m = app.modal;
-    let makeRadio = function(name, ...values) {
-      let radio = {};
-      for(let value of values) {
-        radio[value] = '<input type="radio" name="' + name + '" value="' + value + '" ';
-        if(value == 'other') {
-          radio[value] += 'checked';
-        }
-        radio[value] += '/>';
-      }
-      return radio;
-    };
-    let radio = makeRadio('itemOptions', 'missing', 'other');
+    const m = app.modal,
+          radio = utility.DOM.makeRadio('itemOptions', 'missing', 'other');
     m.blurAllTextInputs();
     m.setStrings('itemNote');
     m.body.textContent = 'Item: ' + item.description;
-    // build table/form
     utility.DOM.empty(m.table);
     if(!item.checkIn) {
       m.table.appendChild(
@@ -334,32 +322,19 @@ app.modal = {
 
   /** using the table as a form container, along with the textarea for open ended input */
   handleStudentNote: function(student) {
-    let m = app.modal;
-    // TODO using strings instead of document.createElement is not preferred
-    let makeRadio = function(name, ...values) {
-      let radio = {};
-      for (let value of values) {
-        radio[value] = `<input type="radio" name="${name}" value="${value}" `;
-        if (value == 'other') {
-          radio[value] += 'checked';
-        }
-        radio[value] += '/>';
-      }
-      return radio;
-    };
-    let radio = makeRadio('studentOptions', 'no show', 'left', 'other');
+    const m = app.modal,
+          radio = utility.DOM.makeRadio('studentOptions', 'no show', 'left', 'other');
     m.blurAllTextInputs();
     m.setStrings('studentNote');
     m.body.textContent = 'Name: ' + student.name;
-    // build table/form
     utility.DOM.empty(m.table);
-    if(!student.checkIn) {
+    if (! student.checkIn) {
       m.table.appendChild(
         utility.DOM.makeTableRow(
           'td', 'Student never showed up', radio['no show']
         )
       );
-    } else if(!student.checkOut) {
+    } else if (!student.checkOut) {
       m.table.appendChild(
         utility.DOM.makeTableRow(
           'td', 'Student left without checking out', radio['left']
