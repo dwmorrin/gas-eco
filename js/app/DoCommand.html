@@ -250,23 +250,23 @@ app.doCommand = function(command,...options) {
     }
     case 'studentNote': {
       const value = utility.DOM.getRadioValue();
+      const students = (
+        JSON.parse(app.pages.form.elements.form.students.value) || []
+      );
+      const student = students.find(s => s.id == app.modal.tmp.id);
       if (value == 'left') {
-        const students = (
-          JSON.parse(app.pages.form.elements.form.students.value) || []
-        );
-        const studentOnForm = students.find(s => s.id == app.modal.tmp.id);
-        studentOnForm.left = true;
+        student.left = true;
         app.pages.form.handleChange({
           target: {
             name: "students",
-            value: studentOnForm.name + ' left without checking out'
+            value: student.name + ' left without checking out'
           }
         });
         app.pages.form.elements.form.students.value = JSON.stringify(students);
         utility.DOM.empty(app.pages.form.elements.studentList);
         students.forEach(populateStudentList);
       } else if (value == "other") {
-        utility.saveNote();
+        utility.saveNote(student.name + ": ");
       }
       break;
     }

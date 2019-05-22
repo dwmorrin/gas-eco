@@ -318,12 +318,19 @@ utility.sortForms = function(forms, sortBy) {
   return forms;
 };
 
-utility.saveNote = function() {
+/**
+ * @param {string} [prefix] - optional prefix to note
+ *   usage: undefined for global notes, "John Doe: " for student
+ */
+utility.saveNote = function(prefix) {
+  if (! prefix) {
+    prefix = "";
+  }
   const notes = JSON.parse(app.pages.form.elements.form.notes.value);
   const note = {
     timestamp: Date.now(),
     author: app.elements.usernameDisplay.textContent,
-    body: app.modal.getText(),
+    body: prefix + app.modal.getText(),
   };
   let shortNotes = note.body;
   if (shortNotes.length > 10) {
