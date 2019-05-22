@@ -113,6 +113,21 @@ div.overlay {
   z-index: 1; /* Must be second highest to modal */
 }
 
+div.toast {
+  animation-duration: 2s, 5s;
+  animation-name: slide-up, fade-out;
+  animation-timing-function: ease-out;
+  background-color: limegreen;
+  border: 1px solid black;
+  border-radius: 2px;
+  bottom: 25%;
+  left: 50%;
+  padding: 1em;
+  position: fixed;
+  opacity: 0;
+  z-index: 1;
+}
+
 header h1 {
   display: inline-block;
 }
@@ -311,6 +326,17 @@ td.itemnotes > input {
 
 tr.inactive td:not(:first-child) {
   font-style: italic;
+}
+
+@keyframes fade-out {
+    0% { opacity: 1; }
+   50% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes slide-up {
+    0% { bottom: 0;   }
+  100% { bottom: 25%; }
 }
 
 @keyframes spin {

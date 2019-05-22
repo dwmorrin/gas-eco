@@ -11,6 +11,7 @@
      displayOpenForms
      displayNewForm
      populateFormsTable
+     toast
 */
 function displayForm(form, archived) {
   for (let key in form) {
@@ -434,5 +435,16 @@ function makeArchiveTableRows(form) {
   );
   row.setAttribute('data-id', form.id);
   app.pages.archive.elements.tableBody.appendChild(row);
+}
+
+function toast(message) {
+  if (typeof message !== 'string') {
+    throw new Error("toast requires string argument, got " + message);
+  }
+  const container = document.createElement("div");
+  container.classList.add("toast");
+  container.textContent = message;
+  document.body.appendChild(container);
+  window.setTimeout(() => container.remove(), 5000);
 }
 </script>
