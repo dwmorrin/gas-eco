@@ -36,8 +36,8 @@ function displayForm(form, archived) {
         } else {
           for (let note of notes) {
             try {                    // Unintuitive use of try/catch: read carefully:
-              JSON.parse(note.body); // if successful, this is a change log, so we ignore it
-            } catch(e) {             // on error, we have a global note to display
+              JSON.parse(note.body); // (success == change log ) => ignore it
+            } catch(e) {             // (  error == global note) => display it
               let p = document.createElement('p');
               p.textContent = 'Note: ' + '[' + note.author + '] ' + note.body;
               app.pages.form.elements.noteSection.appendChild(p);
@@ -134,14 +134,17 @@ function displayForm(form, archived) {
 
   // init update button
   if (! form.id) {
-    app.pages.form.elements.updateFormButton.textContent = app.strings.updateButton.enabled;
+    app.pages.form.elements
+      .updateFormButton.textContent = app.strings.updateButton.enabled;
   } else {
-    app.pages.form.elements.updateFormButton.textContent = app.strings.updateButton.disabled;
+    app.pages.form.elements
+      .updateFormButton.textContent = app.strings.updateButton.disabled;
     app.pages.form.elements.updateFormButton.classList.remove('create');
   }
 
   // indicate where this form is in the current `stack' (e.g. open or closed/archive)
-  app.pages.form.elements.currentFormstackDisplay.textContent = (app.cache.currentIndex + 1) +
+  app.pages.form.elements
+    .currentFormstackDisplay.textContent = (app.cache.currentIndex + 1) +
     "/" + app.cache[app.cache.currentFormstack].length;
 
   // this was added to handle displaying closed forms
@@ -149,7 +152,8 @@ function displayForm(form, archived) {
   if (archived) {
     app.omnibox.element.setAttribute('disabled', true);
     app.pages.form.elements.newNoteButton.setAttribute('disabled', true);
-    app.pages.form.elements.updateButtonHint.textContent = 'This is a closed form.  You cannot edit it.';
+    app.pages.form.elements
+      .updateButtonHint.textContent = 'This is a closed form.  You cannot edit it.';
   } else {
     app.omnibox.element.removeAttribute('disabled');
     app.omnibox.element.focus();
@@ -342,7 +346,8 @@ function makeOpenFormTableRows(form) {
 
 function populateEquipmentOutList(item) {
   let row = utility.DOM.makeTableRow(
-    'td', item[0], item[1], item[2], item[3].map(student => student.name).join(', '), item[4]
+    'td', item[0], item[1], item[2],
+    item[3].map(student => student.name).join(', '), item[4]
   );
   row.setAttribute('data-id', item[5]);
   app.pages.openForms.elements.equipmentTableBody.appendChild(row);
@@ -354,12 +359,13 @@ function populateItemList(item) {
         notes = document.createElement('td');
   if (! item.checkIn && ! item.serialized) {
     const id = item.id ? item.id : item.barcode;
-    checkInButton = `<button class="action" value="parseOmnibox" data-itemid="${id}">Check In</button>`;
+    checkInButton = `<button class="action"
+                             value="parseOmnibox"
+                             data-itemid="${id}">Check In</button>`;
   }
   if (item.missing == true) {
-    checkIn = `<span class = "alert">ITEM IS MISSING</span>`;
-  }
-  else{
+    checkIn = `<span class="alert">ITEM IS MISSING</span>`;
+  } else {
     checkIn = checkInButton || item.checkIn;
   }
   const itemRow = utility.DOM.makeTableRow(
@@ -370,8 +376,7 @@ function populateItemList(item) {
   itemRow.setAttribute('data-barcode', item.barcode);
   if (! item.serialized) {
     itemRow.classList.add('nonserialized');
-  }
-  else{
+  } else {
     itemRow.classList.add('serialized');
   }
   app.pages.form.elements.itemList.appendChild(itemRow);
@@ -386,9 +391,8 @@ function populateItemList(item) {
 function populateStudentList(student) {
   let checkOut;
   if (student.left){
-    checkOut = `<span class = "alert">DID NOT CHECK OUT</span>`;
-  }
-  else{
+    checkOut = `<span class="alert">DID NOT CHECK OUT</span>`;
+  } else {
     checkOut = student.checkOut;
   }
   app.pages.form.elements.studentList.appendChild(utility.DOM.makeTableRow(
