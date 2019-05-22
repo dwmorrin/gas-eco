@@ -16,6 +16,8 @@ app.pages.form = {
     locationSelect:          document.querySelector('form.model select[name="location"]'),
     locationOtherOption:     document.querySelector('form.model option[value="Other"]'),
     newNoteButton:           document.querySelector('button[value="newNote"]'),
+    manualButton:            document.querySelector('button[value="manualItem"]'),
+    omniboxButton:           document.querySelector('button[value="parseOmnibox"]'),
     noteSection:             document.querySelector('section.globalnotes'),
     studentList:             document.querySelector('tbody.studentList'),
     tableStaticFields:       document.querySelector('table.staticFields'),
@@ -157,6 +159,10 @@ app.pages.form = {
   },
 
   handleClickItem: function(click) {
+    const isArchive = (app.cache.currentFormstack == 'archive') ? true : false;
+    if (isArchive){
+      return;
+    }
     if (click.metaKey) {
       return;
     }
@@ -182,6 +188,10 @@ app.pages.form = {
     }
   },
   handleClickTable: function(click) {
+    const isArchive = (app.cache.currentFormstack == 'archive') ? true : false;
+    if (isArchive){
+      return;
+    }
     if (click.target.classList.contains('itemnotes')){
       return;
     }
@@ -237,6 +247,10 @@ app.pages.form = {
     app.omnibox.parse();
   },
   handleClickStudent: function(click) {
+    const isArchive = (app.cache.currentFormstack == 'archive') ? true : false;
+    if (isArchive){
+      return;
+    }
     if (click.metaKey) {
       return;
     }

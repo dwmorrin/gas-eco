@@ -151,6 +151,7 @@ app.doCommand = function(command,...options) {
       app.spinner.on();
       app.run.doGet({ get: 'openForms' });
       break;
+    case 'manualItem':
     case 'parseOmnibox':
       app.omnibox.parse();
       break;

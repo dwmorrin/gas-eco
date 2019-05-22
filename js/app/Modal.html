@@ -286,7 +286,7 @@ app.modal = {
     m.setStrings('itemNote');
     m.body.textContent = 'Item: ' + item.description;
     utility.DOM.empty(m.table);
-    if(!item.checkIn) {
+    if(!item.checkIn && !item.missing) {
       m.table.appendChild(
         utility.DOM.makeTableRow(
           'td', 'Item cannot be found', radio['missing']
@@ -334,7 +334,7 @@ app.modal = {
           'td', 'Student never showed up', radio['no show']
         )
       );
-    } else if (!student.checkOut) {
+    } else if (!student.checkOut && !student.left) {
       m.table.appendChild(
         utility.DOM.makeTableRow(
           'td', 'Student left without checking out', radio['left']
