@@ -6,7 +6,7 @@ utility
 Item_
 Student_
 */
-/********** GLOBAL VARIABLES ************/
+/* ********* GLOBAL VARIABLES *********** */
 var index = {
   bookings: {
     SHEET_ID   : '1zl4FBglYgCdR_FMdfbIQOOpnt9b8TwgnjxzRwcekPrY',
@@ -112,7 +112,7 @@ function checkItemsGAS_(form) {
   return form;
 }
 
-/********** CREATORS ************/
+/* ********* CREATORS *********** */
 
 /**
  * Loops createBookingFormGAS_ for each daily booking
@@ -138,7 +138,7 @@ function createBookingFormGAS_(booking) {
       itemStringArray = booking.getItems(),
       items = [],
       studentStringArray,
-      students = []; 
+      students = [];
 
   // handle booking students -> form students
   studentStringArray = bookedStudents.replace(/, /g, ',').split(',');
@@ -149,7 +149,7 @@ function createBookingFormGAS_(booking) {
     );
     students.push(makeStudentFromDataGAS_(data));
   });
-  
+
   // handle booking items -> form items
   if (itemStringArray) {
     itemStringArray = itemStringArray.split(',');
@@ -170,7 +170,7 @@ function createBookingFormGAS_(booking) {
       }
     });
   }
-  
+
   form.setBookedStudents(bookedStudents)
     .setBookingId(booking.getId())
     .setItems(items)
@@ -181,13 +181,13 @@ function createBookingFormGAS_(booking) {
     .setTape(booking.getTape())
     .setProject(booking.getProject())
     .setStudents(students);
-  
+
   writeFormToSheetGAS_(form);
-  
+
   return form;
 }
 
-/********** GETTERS ************/
+/* ********* GETTERS *********** */
 
 /* exported getAllItemsGAS_ */
 function getAllItemsGAS_() {
@@ -271,7 +271,7 @@ function getSheetDataByIdGAS_(value, sheetId, sheetName, idIndex) {
   return data.findRowContaining(value, idIndex);
 }
 
-/********** MAKERS ************/
+/* ********* MAKERS *********** */
 
 /**
  * @param {[]} bookingData
@@ -279,7 +279,7 @@ function getSheetDataByIdGAS_(value, sheetId, sheetName, idIndex) {
  */
 function makeBookingFromDataGAS_(bookingData) {
   var booking = new Booking_(bookingData[index.bookings.ID]);
-  
+
   booking.setBookedStudents(bookingData[index.bookings.STUDENTS])
     .setItems(bookingData[index.bookings.ITEMS])
     .setStartTime(utility.date.getFormattedDate(bookingData[index.bookings.START_TIME]))
@@ -288,17 +288,17 @@ function makeBookingFromDataGAS_(bookingData) {
     .setContact(bookingData[index.bookings.CONTACT])
     .setTape(bookingData[index.bookings.TAPE])
     .setProject(bookingData[index.bookings.PROJECT]);
-  
+
   return booking;
 }
 
-/** @param {object []} sheetData - a row pulled from Forms Sheet */ 
+/** @param {object []} sheetData - a row pulled from Forms Sheet */
 function makeFormFromDataGAS_(sheetData) {
   var form = new Form_(sheetData[index.forms.ID]),
       studentInfo = JSON.parse(sheetData[index.forms.STUDENTS]),
       itemsInfo = JSON.parse(sheetData[index.forms.ITEMS]),
       notes = JSON.parse(sheetData[index.forms.NOTES]);
-  
+
   form.setBookingId(sheetData[index.forms.BOOKING_ID])
     .setBookedStudents(sheetData[index.forms.BOOKED_STUDENTS])
     .setItems(itemsInfo)
@@ -311,14 +311,14 @@ function makeFormFromDataGAS_(sheetData) {
     .setStudents(studentInfo)
     .setNotes(notes)
     .setHash();
-  
+
   return form;
 }
 
 function makeItemFromDataGAS_(itemData) {
   var item = new Item_(itemData[index.items.ID]),
       description;
-  
+
   // Item has only a simple 'description' field
   // Sheet implementation (this) must distill available fields into description
   if (itemData[index.items.MAKE] && itemData[index.items.MODEL]) {
@@ -326,23 +326,23 @@ function makeItemFromDataGAS_(itemData) {
   } else {
     description = itemData[index.items.DESCRIPTION];
   }
-  
+
   item.setBarcode(itemData[index.items.BARCODE])
     .setSerialized()
     .setDescription(description)
     .setCheckedOut(itemData[index.items.CHECKED_OUT]);
-  
+
   return item;
 }
 
 function makeStudentFromDataGAS_(studentData) {
   var student = new Student_(studentData[index.students.ID]),
       signature = false;
-  
+
   if (studentData[index.students.SIGNATURE]) {
     signature = true;
   }
-  
+
   student.setName(studentData[index.students.NAME])
     .setNetId(studentData[index.students.NETID])
     .setSignatureOnFile(signature)
@@ -350,7 +350,7 @@ function makeStudentFromDataGAS_(studentData) {
   return student;
 }
 
-/********** WRITERS ************/
+/* ********* WRITERS *********** */
 
 /* exported writeCodabarGAS_ */
 function writeCodabarGAS_(netId, codabar) {
@@ -361,7 +361,12 @@ function writeCodabarGAS_(netId, codabar) {
   if (! i) {
     throw 'Could not match ' + netId;
   } else {
-    sheet.getRange(i + 1, index.students.ID + 1).setValue(codabar);
+    // check if a codabar already exists
+    if (data[i][0]){
+      throw 'The codabar for ' + data[i][1] + ' has already been set';
+    } else{
+      sheet.getRange(i + 1, index.students.ID + 1).setValue(codabar);
+    }
   }
 }
 
