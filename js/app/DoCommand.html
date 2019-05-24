@@ -176,7 +176,21 @@ app.doCommand = function(command,...options) {
       app.spinner.on();
       app.run.doGet({ get: 'openForms' });
       break;
+    case 'checkInButton':
+      // if the item cannot be found on the saved form, and was therefore "just checked out", it will throw an error and break
+      if (!app.cache.savedForm.items.find(i => (i.barcode || i.id) == options[0])){
+        app.modal.handleError(new Error('This item was just checked-out.  Update or revert the form to continue.'));
+        break;
+      }
+      // drops the itemID or barcode into omnibox and then parses omnibox
+      app.omnibox.element.value = options[0];
+      app.omnibox.parse();
+      break;
     case 'manualItem':
+      // drops the special value for triggering manual entry into omnibox, then parses it.
+      app.omnibox.element.value = '10000';
+      app.omnibox.parse();
+      break;
     case 'parseOmnibox':
       app.omnibox.parse();
       break;

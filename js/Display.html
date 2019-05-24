@@ -365,7 +365,7 @@ function populateItemList(item) {
   if (! item.checkIn && ! item.serialized) {
     const id = item.id ? item.id : item.barcode;
     checkInButton = `<button class="action"
-                             value="parseOmnibox"
+                             value="checkInButton"
                              data-itemid="${id}">Check In</button>`;
   }
   if (item.missing == true) {
