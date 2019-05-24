@@ -25,9 +25,11 @@ app.handlers = {
     if (click.target.tagName != 'BUTTON') {
       return;
     }
-
+    // this runs the checkInButton doCommand which drops the itemid into omnibox
+    // if the item has been saved and then parses the omnibox
     if (click.target.dataset.itemid) {
-      app.omnibox.element.value = click.target.dataset.itemid;
+      app.doCommand('checkInButton', click.target.dataset.itemid);
+      return;
     }
 
     if (click.target.value.slice(0,9) == 'loseData_') {
