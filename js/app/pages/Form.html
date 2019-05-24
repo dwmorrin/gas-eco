@@ -15,6 +15,7 @@ app.pages.form = {
     itemList:                document.querySelector('tbody.itemList'),
     locationSelect:          document.querySelector('form.model select[name="location"]'),
     locationOtherOption:     document.querySelector('form.model option[value="Other"]'),
+    locationOtherSelector:   document.querySelector('form.model option[value="OtherSelector"]'),
     newNoteButton:           document.querySelector('button[value="newNote"]'),
     manualButton:            document.querySelector('button[value="manualItem"]'),
     omniboxButton:           document.querySelector('button[value="parseOmnibox"]'),
@@ -94,7 +95,8 @@ app.pages.form = {
     }
   },
   handleChangeLocation: function(change) {
-    if (change.target.value == 'Other') {
+    if (change.target.value == 'OtherSelector') {
+      app.pages.form.elements.locationOtherOption.setAttribute('hidden', true);
       change.target.value = 'none'; // in case the modal is cancelled
       app.modal.getLocation();
     } else { // it's not other, make sure 'Other' label is reset, log the change
