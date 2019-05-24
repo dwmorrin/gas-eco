@@ -35,6 +35,9 @@ app.handlers = {
     if (click.target.value == "checkInButton") {
       app.doCommand('checkInButton', click.target.dataset.itemid);
       return;
+
+    if (click.target.dataset.itemid) {
+      app.omnibox.element.value = click.target.dataset.itemid;
     }
 
     if (click.target.value.slice(0,9) == 'loseData_') {
