@@ -9,6 +9,7 @@ getArchivedFormsGAS_
 getOpenFormsGAS_
 startSignature_
 writeCodabarGAS_
+readCodabarGAS_
 writeFormToSheetGAS_
 writeSignatureToSheetGAS_
 */
@@ -99,7 +100,7 @@ function doPost(request) {
   // to update wasn't already updated by someone else.
   switch (request.post) {
     case 'codabar':
-      postCodabar_(request.netId, request.codabar);
+      postCodabar_(request.netId, request.codabar, request.overwrite);
       response.students = getAllStudents_();
       break;
     case 'signature':
@@ -300,8 +301,16 @@ function isValidForm_(form) {
   return form;
 }
 
-function postCodabar_(netId, codabar) {
-  writeCodabarGAS_(netId, codabar);
+function postCodabar_(netId, codabar, overwrite) {
+  var oldCodabar = readCodabarGAS_(netId);
+  // if there isn't an old codabar, a codabar has been created since the creation of app.cache
+  // and shares the same value as the incoming change, or an overwrite has been approved
+  if (oldCodabar == '' || oldCodabar == codabar || overwrite){
+    writeCodabarGAS_(netId, codabar);
+  } else {
+    // there must be an old codabar registered that wasn't registed when app.cache was created
+    throw new Error ('Codabar could not be written. Please save your form, refresh your browser, and try again');
+  }
 }
 
 /** @see doPost */

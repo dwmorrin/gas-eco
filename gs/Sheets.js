@@ -359,14 +359,24 @@ function writeCodabarGAS_(netId, codabar) {
   var data = sheet.getDataRange().getValues();
   var i = data.findRowContaining(netId, index.students.NETID, true);
   if (! i) {
-    throw 'Could not match ' + netId;
+    // the the server called readCodabarGAS_, and the netId must have been removed since then
+    throw new Error ('Could not write codabar for ' + netId);
   } else {
-    // check if a codabar already exists
-    if (data[i][0]){
-      throw 'The codabar for ' + data[i][1] + ' has already been set';
-    } else{
-      sheet.getRange(i + 1, index.students.ID + 1).setValue(codabar);
-    }
+    sheet.getRange(i + 1, index.students.ID + 1).setValue(codabar);
+  }
+}
+
+/* exported readCodabarGAS_ */
+function readCodabarGAS_(netId) {
+  var sheet = SpreadsheetApp.openById(index.students.SHEET_ID)
+    .getSheetByName(index.students.SHEET_NAME);
+  var data = sheet.getDataRange().getValues();
+  var i = data.findRowContaining(netId, index.students.NETID, true);
+  if (! i) {
+    // the netId existed when the local machine checked app.cache, and must have been removed since then
+    throw new Error ('Could not find ' + netId);
+  } else {
+    return data[i][0];
   }
 }
 

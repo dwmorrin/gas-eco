@@ -28,13 +28,38 @@ app.doCommand = function(command,...options) {
         JSON.parse(app.pages.form.elements.form.notes.value)
       );
       break;
+    case 'overwriteCodabar':
+      // calls the codabar funciton again, but now with overwrite set to true, so it will run the last if statement
+      app.doCommand('codabar', app.modal.tmp[0], app.modal.tmp[1], true);
+      break;
     case 'codabar':
-      // NetID is sitting in app.modal.input
-      // new codabar is sitting in omnibox AND app.modal.tmp
-      // need to update Students sheet and then parse omnibox
-      app.run.doPost({
-        post: 'codabar', netId: app.modal.getInput(), codabar: app.modal.tmp
-      });
+      // saves the netId submitted in the modal into app.modal.tmp so that it can be used later without being reset
+      app.modal.tmp[0] = app.modal.getInput();
+      // if the input netId does not match any netID in cache, throw an error and break
+      if (!app.cache.students.find(student => student.netId.toLowerCase() == app.modal.tmp[0])){
+        app.modal.handleError(new Error("NetID not Found"));
+        break;
+      }
+      // if there is already a codabar registered for that netId and we
+      // haven't confirmed overwrite, pull up the overwrite confirmation modal
+      if ((app.cache.students.find(student => student.netId.toLowerCase() == app.modal.tmp[0])).id && !options[2]){
+        app.modal.confirmOverwriteCodabar(app.modal.tmp[0], app.modal.tmp[1]);
+        break;
+      }
+      // if we are here, the netId must exist and there must not be a codabar registered to it OR overwrite must be enabled
+      // if overwrite is not enabled, try to write the codabar
+      if (!options[2]){
+        app.run.doPost({
+          post: 'codabar', netId: app.modal.tmp[0], codabar: app.modal.tmp[1], overwrite: false
+        });
+      }
+      // if overwrite is enabled, take the values passed from app.doCommand('overwriteCodabar')
+      // and try to write the codabar with the overwrite flag enabled
+      if (options[2]){
+        app.run.doPost({
+          post: 'codabar', netId: options[0], codabar: options[1], overwrite: true
+        });
+      }
       break;
     case 'displayForm': {
       const form = options[0],
