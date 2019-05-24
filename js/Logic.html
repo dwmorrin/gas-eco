@@ -82,7 +82,7 @@ function isCheckOutStudentOk(student) {
 /* exported isFormOkToPost */
 function isFormOkToPost() {
   let elements = app.pages.form.elements;
-  if (elements.locationSelect.value == 'none') {
+  if (elements.locationSelect.value == 'none' || elements.locationSelect.value == '') {
     return false;
   }
   if (elements.form.startTime.value == elements.form.endTime.value) {

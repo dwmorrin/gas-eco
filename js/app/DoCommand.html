@@ -243,6 +243,10 @@ app.doCommand = function(command,...options) {
                 value :otherLocation
               }
             };
+      if (otherLocation == ''){
+        app.modal.getLocation();
+      }
+      app.pages.form.elements.locationOtherOption.setAttribute('hidden', false);
       select.value = option.value = otherLocation;
       app.pages.form.handleChange(change);
       option.textContent = otherLocation; // must follow handleChange
