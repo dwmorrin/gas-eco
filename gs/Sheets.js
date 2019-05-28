@@ -360,7 +360,7 @@ function makeStudentFromDataGAS_(studentData) {
 /* ********* WRITERS *********** */
 
 /* exported writeCodabarGAS_ */
-function writeCodabarGAS_(netId, codabar) {
+function writeCodabarGAS_(netId, codabar, update) {
   var sheet = SpreadsheetApp.openById(index.students.SHEET_ID)
     .getSheetByName(index.students.SHEET_NAME);
   var data = sheet.getDataRange().getValues();
@@ -368,21 +368,10 @@ function writeCodabarGAS_(netId, codabar) {
   if (typeof i == "undefined") {
     throw new Error ('Could not write codabar for ' + netId);
   }
-  sheet.getRange(i + 1, index.students.ID + 1).setValue(codabar);
-}
-
-/* exported readCodabarGAS_ */
-function readCodabarGAS_(netId) {
-  var sheet = SpreadsheetApp.openById(index.students.SHEET_ID)
-    .getSheetByName(index.students.SHEET_NAME);
-  var data = sheet.getDataRange().getValues();
-  var i = data.findRowContaining(netId, index.students.NETID, true);
-  if (typeof i == "undefined") {
-    // the netId existed when the local machine checked app.cache, and must have been removed since then
-    throw new Error ('Could not find ' + netId);
-  } else {
-    return data[i][0];
+  if (data[i][index.students.id] && ! update) {
+    throw new Error("ID EXISTS");
   }
+  sheet.getRange(i + 1, index.students.ID + 1).setValue(codabar);
 }
 
 function writeFormToSheetGAS_(form, closeAndArchive) {

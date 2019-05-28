@@ -9,7 +9,6 @@ getArchivedFormsGAS_
 getOpenFormsGAS_
 startSignature_
 writeCodabarGAS_
-readCodabarGAS_
 writeFormToSheetGAS_
 writeSignatureToSheetGAS_
 */
@@ -100,7 +99,7 @@ function doPost(request) {
   // to update wasn't already updated by someone else.
   switch (request.post) {
     case 'codabar':
-      postCodabar_(request.netId, request.codabar, request.update);
+      postCodabar_(request);
       response.students = getAllStudents_();
       break;
     case 'signature':
@@ -301,15 +300,19 @@ function isValidForm_(form) {
   return form;
 }
 
-function postCodabar_(netId, codabar, update) {
-  var oldCodabar = readCodabarGAS_(netId);
-  // if there isn't an old codabar, a codabar has been created since the creation of app.cache
-  // and shares the same value as the incoming change, or an update has been approved
-  if (oldCodabar == '' || oldCodabar == codabar || update){
-    writeCodabarGAS_(netId, codabar);
-  } else {
-    // there must be an old codabar registered that wasn't registed when app.cache was created
-    throw new Error ('Codabar could not be written. Please save your form, refresh your browser, and try again');
+/**
+ * @param {obj} request - .netId{string}, .codabar{string}, .update{bool}
+ */
+function postCodabar_(request) {
+  try {
+    writeCodabarGAS_(request.netId, request.codabar, request.update);
+  } catch (error) {
+    if (/ID EXISTS/.test(error)) {
+      throw new Error("Oops, we have another ID saved for " + request.netId +
+        ". Trying refreshing your browser."
+      );
+    }
+    throw error;
   }
 }
 
