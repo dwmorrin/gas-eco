@@ -268,7 +268,14 @@ function getSheetDataByIdGAS_(value, sheetId, sheetName, idIndex) {
   var sheet = SpreadsheetApp.openById(sheetId).getSheetByName(sheetName);
   var data = sheet.getDataRange().getValues();
   data.shift();
-  return data.findRowContaining(value, idIndex);
+  var sheetData = data.findRowContaining(value, idIndex);
+  if (typeof sheetData == "undefined") {
+    throw new Error("could not find data for" +
+      " Value: " + value + ", Sheet ID: " + sheetId +
+     ", Sheet Name: " + sheetName + ", IDINDEX: " + idIndex
+    );
+  }
+  return sheetData;
 }
 
 /* ********* MAKERS *********** */
@@ -358,12 +365,10 @@ function writeCodabarGAS_(netId, codabar) {
     .getSheetByName(index.students.SHEET_NAME);
   var data = sheet.getDataRange().getValues();
   var i = data.findRowContaining(netId, index.students.NETID, true);
-  if (! i) {
-    // the the server called readCodabarGAS_, and the netId must have been removed since then
+  if (typeof i == "undefined") {
     throw new Error ('Could not write codabar for ' + netId);
-  } else {
-    sheet.getRange(i + 1, index.students.ID + 1).setValue(codabar);
   }
+  sheet.getRange(i + 1, index.students.ID + 1).setValue(codabar);
 }
 
 /* exported readCodabarGAS_ */
@@ -372,7 +377,7 @@ function readCodabarGAS_(netId) {
     .getSheetByName(index.students.SHEET_NAME);
   var data = sheet.getDataRange().getValues();
   var i = data.findRowContaining(netId, index.students.NETID, true);
-  if (! i) {
+  if (typeof i == "undefined") {
     // the netId existed when the local machine checked app.cache, and must have been removed since then
     throw new Error ('Could not find ' + netId);
   } else {
@@ -412,7 +417,7 @@ function writeFormToSheetGAS_(form, closeAndArchive) {
 
   // Note: do not shift data
   var index_ = data.findRowContaining(id, 0, true);
-  if (! index_) {
+  if (typeof index_ == "undefined") {
     throw 'could not find form ' + form;
   }
   var row = index_ + 1;
@@ -455,11 +460,10 @@ function writeSignatureToSheetGAS_(request) {
     .getSheetByName(index.students.SHEET_NAME);
   var data = sheet.getDataRange().getValues();
   var i = data.findRowContaining(request.id, index.students.NETID, true);
-  if (! i) {
+  if (typeof i == "undefined") {
     throw 'Could not match ' + request.id;
-  } else {
-    sheet.getRange(i + 1, index.students.SIGNATURE + 1).setValue(request.dataURL);
   }
+  sheet.getRange(i + 1, index.students.SIGNATURE + 1).setValue(request.dataURL);
 }
 
 /* exported startSignature_ */
