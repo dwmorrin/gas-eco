@@ -100,7 +100,7 @@ function doPost(request) {
   // to update wasn't already updated by someone else.
   switch (request.post) {
     case 'codabar':
-      postCodabar_(request.netId, request.codabar, request.overwrite);
+      postCodabar_(request.netId, request.codabar, request.update);
       response.students = getAllStudents_();
       break;
     case 'signature':
@@ -301,11 +301,11 @@ function isValidForm_(form) {
   return form;
 }
 
-function postCodabar_(netId, codabar, overwrite) {
+function postCodabar_(netId, codabar, update) {
   var oldCodabar = readCodabarGAS_(netId);
   // if there isn't an old codabar, a codabar has been created since the creation of app.cache
-  // and shares the same value as the incoming change, or an overwrite has been approved
-  if (oldCodabar == '' || oldCodabar == codabar || overwrite){
+  // and shares the same value as the incoming change, or an update has been approved
+  if (oldCodabar == '' || oldCodabar == codabar || update){
     writeCodabarGAS_(netId, codabar);
   } else {
     // there must be an old codabar registered that wasn't registed when app.cache was created
