@@ -212,7 +212,9 @@ app.doCommand = function(command,...options) {
       displayForm(app.cache.savedForm);
       break;
     case 'saveNote': {
-      utility.saveNote();
+      if (app.modal.textarea.value){
+        utility.saveNote();
+      }
       break;
     }
     case 'saveManual': {
@@ -290,7 +292,9 @@ app.doCommand = function(command,...options) {
         utility.DOM.empty(app.pages.form.elements.studentList);
         students.forEach(populateStudentList);
       } else if (value == "other") {
-        utility.saveNote(student.name + ": ");
+        if (app.modal.textarea.value){
+          utility.saveNote(student.name + ": ");
+        }
       }
       break;
     }
