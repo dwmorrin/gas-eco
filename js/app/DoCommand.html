@@ -46,6 +46,7 @@ app.doCommand = function(command,...options) {
         app.modal.confirmUpdateCodabar(netId, codabar);
         break;
       }
+      app.spinner.inside(app.pages.form.elements.updateFormButton);
       app.run.doPost({
         post: 'codabar',
         netId,

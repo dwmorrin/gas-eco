@@ -70,6 +70,7 @@ app.refresh = function(response, context) {
     case 'codabar':
       app.cache.students = JSON.parse(response.students);
       app.modal.hide();
+      app.pages.form.elements.updateFormButton.textContent = "Update";
       app.omnibox.parse();
       break;
     case 'collision':
