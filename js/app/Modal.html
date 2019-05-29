@@ -332,6 +332,7 @@ app.modal = {
     const m = app.modal;
     m.blurAllTextInputs();
     m.ok.setAttribute('value', 'itemQuantity');
+    app.modal.input.setAttribute('placeholder', '');
     m.tmp = itemDescription;
     m.setStrings('itemQuantity');
     m.show(m.container, m.input, m.ok);

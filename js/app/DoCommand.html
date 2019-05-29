@@ -174,7 +174,26 @@ app.doCommand = function(command,...options) {
       app.spinner.on();
       app.run.doGet({ get: 'openForms' });
       break;
+    case 'checkInButton': {
+      const itemID = options[0];
+      const savedItem = app.cache.savedForm.items.find(
+        item => (item.barcode || item.id) == itemID
+      );
+      if (! savedItem) {
+        app.modal.handleError(new Error("This item was just checked-out. " +
+          "Update or revert the form to continue."
+        ));
+        break;
+      }
+      app.omnibox.element.value = itemID;
+      app.omnibox.parse();
+      break;
+    }
     case 'manualItem':
+      // drops the special value for triggering manual entry into omnibox, then parses it.
+      app.omnibox.element.value = '10000';
+      app.omnibox.parse();
+      break;
     case 'parseOmnibox':
       app.omnibox.parse();
       break;

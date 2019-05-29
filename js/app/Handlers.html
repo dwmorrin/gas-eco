@@ -21,10 +21,20 @@ app.handlers = {
       app.handlers.unload();
     }
   },
+
+  /**
+   * @see js/app/DoCommand
+   * clickButton usually routes user actions to js.app.doCommand, sometimes
+   *   with some additional filitering/modifying here
+   */
   clickButton: function(click) {
     if (click.target.tagName != 'BUTTON') {
       return;
     }
+
+    if (click.target.value == "checkInButton") {
+      app.doCommand('checkInButton', click.target.dataset.itemid);
+      return;
 
     if (click.target.dataset.itemid) {
       app.omnibox.element.value = click.target.dataset.itemid;
