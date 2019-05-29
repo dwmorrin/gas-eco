@@ -37,8 +37,9 @@ app.doCommand = function(command,...options) {
       );
       if (! student){
         app.modal.handleError(new Error(
-          "Oops, NetID " + netId + " did not match a current student. " +
-          "Refreshing the browser may help, or submit a trouble report."
+          "Hmmm, NetID " + netId + " does not match a current student. " +
+          "Check that it was entered correctly, try refreshing the browser, " +
+          "or submit a trouble report."
         ));
         break;
       }
