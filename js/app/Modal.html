@@ -219,7 +219,7 @@ app.modal = {
 
   // Interface for inputs, this is a private function, public calls getInput, getText
   getValueAndClear: function(inputElement) {
-    let value = inputElement.value;
+    let value = inputElement.value.trim();
     inputElement.value = '';
     return value;
   },

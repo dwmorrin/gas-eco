@@ -66,8 +66,8 @@ app.doCommand = function(command,...options) {
       let change = { target: { name: 'items' } };
       let value = utility.DOM.getRadioValue();
       if (value == 'other') {
-        const note = app.modal.getText().trim();
-        if (! note) {
+        const note = app.modal.getText();
+        if (note.length < 1) {
           return;
         }
         change.target.value = description + " added note: " + note;
@@ -173,9 +173,7 @@ app.doCommand = function(command,...options) {
       displayForm(app.cache.savedForm);
       break;
     case 'saveNote': {
-      if (app.modal.textarea.value.trim()){
-        utility.saveNote();
-      }
+      utility.saveNote();
       break;
     }
     case 'saveManual': {
@@ -249,9 +247,7 @@ app.doCommand = function(command,...options) {
         utility.DOM.empty(app.pages.form.elements.studentList);
         students.forEach(populateStudentList);
       } else if (value == "other") {
-        if (app.modal.textarea.value.trim()){
-          utility.saveNote(student.name + ": ");
-        }
+        utility.saveNote(student.name + ": ");
       }
       break;
     }
