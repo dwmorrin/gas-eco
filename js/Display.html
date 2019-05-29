@@ -14,6 +14,7 @@
      toast
 */
 function displayForm(form, archived) {
+  app.pages.form.resetLocation();
   for (let key in form) {
     switch (key) {
       case 'items': {

@@ -216,6 +216,9 @@ app.pages.form = {
         switch (input.name) {
           case 'location':
             input.value = click.target.textContent;
+            if (input.value == "") { // form is using custom "Other"
+              input.value = "none"; // this will discard custom value
+            }
             break;
           case 'startDate': // fallthrough
           case 'endDate':
@@ -292,6 +295,11 @@ app.pages.form = {
       window.clearTimeout(app.pages.form.timeoutId);
     }
     app.pages.form.timeoutId = NaN;
+  },
+  resetLocation: function() {
+    const els = app.pages.form.elements;
+    els.locationSelect.value = "none";
+    els.locationOtherOption.value = els.locationOtherOption.textContent = "Other";
   },
   timeoutId: NaN,
   setTimeout: function() {
