@@ -99,7 +99,7 @@ function doPost(request) {
   // to update wasn't already updated by someone else.
   switch (request.post) {
     case 'codabar':
-      postCodabar_(request.netId, request.codabar);
+      postCodabar_(request);
       response.students = getAllStudents_();
       break;
     case 'signature':
@@ -300,8 +300,20 @@ function isValidForm_(form) {
   return form;
 }
 
-function postCodabar_(netId, codabar) {
-  writeCodabarGAS_(netId, codabar);
+/**
+ * @param {obj} request - .netId{string}, .codabar{string}, .update{bool}
+ */
+function postCodabar_(request) {
+  try {
+    writeCodabarGAS_(request.netId, request.codabar, request.update);
+  } catch (error) {
+    if (/ID EXISTS/.test(error)) {
+      throw new Error("Oops, we have another ID saved for " + request.netId +
+        ". Trying refreshing your browser."
+      );
+    }
+    throw error;
+  }
 }
 
 /** @see doPost */

@@ -28,13 +28,36 @@ app.doCommand = function(command,...options) {
         JSON.parse(app.pages.form.elements.form.notes.value)
       );
       break;
-    case 'codabar':
-      // NetID is sitting in app.modal.input
-      // new codabar is sitting in omnibox AND app.modal.tmp
-      // need to update Students sheet and then parse omnibox
+    case 'codabar': {
+      const codabar = app.modal.tmp,
+            netId = app.modal.getInput(),
+            update = options[0] || false;
+      const student = app.cache.students.find(
+        student => student.netId.toLowerCase() == netId
+      );
+      if (! student){
+        app.modal.handleError(new Error(
+          "Hmmm, NetID " + netId + " does not match a current student. " +
+          "Check that it was entered correctly, try refreshing the browser, " +
+          "or submit a trouble report."
+        ));
+        break;
+      }
+      if (student.id && ! update) {
+        app.modal.confirmUpdateCodabar(netId, codabar);
+        break;
+      }
+      app.spinner.inside(app.pages.form.elements.updateFormButton);
       app.run.doPost({
-        post: 'codabar', netId: app.modal.getInput(), codabar: app.modal.tmp
+        post: 'codabar',
+        netId,
+        codabar,
+        update: update
       });
+      break;
+    }
+    case 'codabarUpdateOK':
+      app.doCommand('codabar', true);
       break;
     case 'displayForm': {
       const form = options[0],

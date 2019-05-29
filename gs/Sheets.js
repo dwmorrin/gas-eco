@@ -6,7 +6,7 @@ utility
 Item_
 Student_
 */
-/********** GLOBAL VARIABLES ************/
+/* ********* GLOBAL VARIABLES *********** */
 var index = {
   bookings: {
     SHEET_ID   : '1zl4FBglYgCdR_FMdfbIQOOpnt9b8TwgnjxzRwcekPrY',
@@ -112,7 +112,7 @@ function checkItemsGAS_(form) {
   return form;
 }
 
-/********** CREATORS ************/
+/* ********* CREATORS *********** */
 
 /**
  * Loops createBookingFormGAS_ for each daily booking
@@ -138,7 +138,7 @@ function createBookingFormGAS_(booking) {
       itemStringArray = booking.getItems(),
       items = [],
       studentStringArray,
-      students = []; 
+      students = [];
 
   // handle booking students -> form students
   studentStringArray = bookedStudents.replace(/, /g, ',').split(',');
@@ -149,7 +149,7 @@ function createBookingFormGAS_(booking) {
     );
     students.push(makeStudentFromDataGAS_(data));
   });
-  
+
   // handle booking items -> form items
   if (itemStringArray) {
     itemStringArray = itemStringArray.split(',');
@@ -170,7 +170,7 @@ function createBookingFormGAS_(booking) {
       }
     });
   }
-  
+
   form.setBookedStudents(bookedStudents)
     .setBookingId(booking.getId())
     .setItems(items)
@@ -181,13 +181,13 @@ function createBookingFormGAS_(booking) {
     .setTape(booking.getTape())
     .setProject(booking.getProject())
     .setStudents(students);
-  
+
   writeFormToSheetGAS_(form);
-  
+
   return form;
 }
 
-/********** GETTERS ************/
+/* ********* GETTERS *********** */
 
 /* exported getAllItemsGAS_ */
 function getAllItemsGAS_() {
@@ -268,10 +268,17 @@ function getSheetDataByIdGAS_(value, sheetId, sheetName, idIndex) {
   var sheet = SpreadsheetApp.openById(sheetId).getSheetByName(sheetName);
   var data = sheet.getDataRange().getValues();
   data.shift();
-  return data.findRowContaining(value, idIndex);
+  var sheetData = data.findRowContaining(value, idIndex);
+  if (typeof sheetData == "undefined") {
+    throw new Error("could not find data for" +
+      " Value: " + value + ", Sheet ID: " + sheetId +
+     ", Sheet Name: " + sheetName + ", IDINDEX: " + idIndex
+    );
+  }
+  return sheetData;
 }
 
-/********** MAKERS ************/
+/* ********* MAKERS *********** */
 
 /**
  * @param {[]} bookingData
@@ -279,7 +286,7 @@ function getSheetDataByIdGAS_(value, sheetId, sheetName, idIndex) {
  */
 function makeBookingFromDataGAS_(bookingData) {
   var booking = new Booking_(bookingData[index.bookings.ID]);
-  
+
   booking.setBookedStudents(bookingData[index.bookings.STUDENTS])
     .setItems(bookingData[index.bookings.ITEMS])
     .setStartTime(utility.date.getFormattedDate(bookingData[index.bookings.START_TIME]))
@@ -288,17 +295,17 @@ function makeBookingFromDataGAS_(bookingData) {
     .setContact(bookingData[index.bookings.CONTACT])
     .setTape(bookingData[index.bookings.TAPE])
     .setProject(bookingData[index.bookings.PROJECT]);
-  
+
   return booking;
 }
 
-/** @param {object []} sheetData - a row pulled from Forms Sheet */ 
+/** @param {object []} sheetData - a row pulled from Forms Sheet */
 function makeFormFromDataGAS_(sheetData) {
   var form = new Form_(sheetData[index.forms.ID]),
       studentInfo = JSON.parse(sheetData[index.forms.STUDENTS]),
       itemsInfo = JSON.parse(sheetData[index.forms.ITEMS]),
       notes = JSON.parse(sheetData[index.forms.NOTES]);
-  
+
   form.setBookingId(sheetData[index.forms.BOOKING_ID])
     .setBookedStudents(sheetData[index.forms.BOOKED_STUDENTS])
     .setItems(itemsInfo)
@@ -311,14 +318,14 @@ function makeFormFromDataGAS_(sheetData) {
     .setStudents(studentInfo)
     .setNotes(notes)
     .setHash();
-  
+
   return form;
 }
 
 function makeItemFromDataGAS_(itemData) {
   var item = new Item_(itemData[index.items.ID]),
       description;
-  
+
   // Item has only a simple 'description' field
   // Sheet implementation (this) must distill available fields into description
   if (itemData[index.items.MAKE] && itemData[index.items.MODEL]) {
@@ -326,23 +333,23 @@ function makeItemFromDataGAS_(itemData) {
   } else {
     description = itemData[index.items.DESCRIPTION];
   }
-  
+
   item.setBarcode(itemData[index.items.BARCODE])
     .setSerialized()
     .setDescription(description)
     .setCheckedOut(itemData[index.items.CHECKED_OUT]);
-  
+
   return item;
 }
 
 function makeStudentFromDataGAS_(studentData) {
   var student = new Student_(studentData[index.students.ID]),
       signature = false;
-  
+
   if (studentData[index.students.SIGNATURE]) {
     signature = true;
   }
-  
+
   student.setName(studentData[index.students.NAME])
     .setNetId(studentData[index.students.NETID])
     .setSignatureOnFile(signature)
@@ -350,19 +357,21 @@ function makeStudentFromDataGAS_(studentData) {
   return student;
 }
 
-/********** WRITERS ************/
+/* ********* WRITERS *********** */
 
 /* exported writeCodabarGAS_ */
-function writeCodabarGAS_(netId, codabar) {
+function writeCodabarGAS_(netId, codabar, update) {
   var sheet = SpreadsheetApp.openById(index.students.SHEET_ID)
     .getSheetByName(index.students.SHEET_NAME);
   var data = sheet.getDataRange().getValues();
   var i = data.findRowContaining(netId, index.students.NETID, true);
-  if (! i) {
-    throw 'Could not match ' + netId;
-  } else {
-    sheet.getRange(i + 1, index.students.ID + 1).setValue(codabar);
+  if (typeof i == "undefined") {
+    throw new Error ('Could not write codabar for ' + netId);
   }
+  if (data[i][index.students.id] && ! update) {
+    throw new Error("ID EXISTS");
+  }
+  sheet.getRange(i + 1, index.students.ID + 1).setValue(codabar);
 }
 
 function writeFormToSheetGAS_(form, closeAndArchive) {
@@ -397,7 +406,7 @@ function writeFormToSheetGAS_(form, closeAndArchive) {
 
   // Note: do not shift data
   var index_ = data.findRowContaining(id, 0, true);
-  if (! index_) {
+  if (typeof index_ == "undefined") {
     throw 'could not find form ' + form;
   }
   var row = index_ + 1;
@@ -440,11 +449,10 @@ function writeSignatureToSheetGAS_(request) {
     .getSheetByName(index.students.SHEET_NAME);
   var data = sheet.getDataRange().getValues();
   var i = data.findRowContaining(request.id, index.students.NETID, true);
-  if (! i) {
+  if (typeof i == "undefined") {
     throw 'Could not match ' + request.id;
-  } else {
-    sheet.getRange(i + 1, index.students.SIGNATURE + 1).setValue(request.dataURL);
   }
+  sheet.getRange(i + 1, index.students.SIGNATURE + 1).setValue(request.dataURL);
 }
 
 /* exported startSignature_ */

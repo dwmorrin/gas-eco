@@ -29,9 +29,16 @@ app.modal = {
     codabar: {
       heading: "ID not recognized",
       body:    "If you scanned an ID, add it to the student's info by " +
-               "submitting their NetID.  If you think are seeing this " +
+               "submitting their NetID.  If you think you are seeing this " +
                "message in error, choose \"close\".",
       ok:      "Submit",
+    },
+    updateCodabar: {
+      heading: "Add new ID",
+      body:    "Whoa - there is another ID already registered to that NetID. " +
+               "If you are sure you are updating their ID, " +
+               "click \"Update\", otherwise click \"Close\".",
+      ok:      "Update",
     },
     collision: {
       heading: "Uh-oh, your form conflicts with another form",
@@ -180,14 +187,25 @@ app.modal = {
   },
 
   getNewCodabar: function(codabar /* string */) {
-    app.modal.tmp = codabar;
     app.modal.input.setAttribute('placeholder', "enter student's NetID");
     app.modal.blurAllTextInputs();
     app.modal.setStrings('codabar');
     app.modal.ok.setAttribute('value', 'codabar');
     app.modal.show(app.modal.container, app.modal.ok, app.modal.input);
+    app.modal.tmp = codabar;
   },
 
+  confirmUpdateCodabar: function(netId, codabar /* strings */) {
+    const m = app.modal;
+    m.blurAllTextInputs();
+    m.setStrings('updateCodabar');
+    m.ok.textContent += " " + netId;
+    m.heading.textContent += " for " + netId + "?";
+    m.ok.setAttribute('value', 'codabarUpdateOK');
+    m.input.value = netId;
+    m.tmp = codabar;
+    m.show(app.modal.container, app.modal.ok);
+  },
   getNote: function() {
     app.modal.setStrings('note');
     app.modal.show(app.modal.container, app.modal.ok, app.modal.textarea);
