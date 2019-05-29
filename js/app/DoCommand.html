@@ -90,7 +90,7 @@ app.doCommand = function(command,...options) {
       let value = utility.DOM.getRadioValue();
       if (value == 'other') {
         const note = app.modal.getText();
-        if (! note) {
+        if (note.length < 1) {
           return;
         }
         change.target.value = description + " added note: " + note;

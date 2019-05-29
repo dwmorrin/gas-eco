@@ -326,11 +326,15 @@ utility.saveNote = function(prefix) {
   if (! prefix) {
     prefix = "";
   }
+  const input = app.modal.getText();
+  if (input.length < 1) {
+    return;
+  }
   const notes = JSON.parse(app.pages.form.elements.form.notes.value);
   const note = {
     timestamp: Date.now(),
     author: app.elements.usernameDisplay.textContent,
-    body: prefix + app.modal.getText(),
+    body: prefix + input,
   };
   let shortNotes = note.body;
   if (shortNotes.length > 10) {
