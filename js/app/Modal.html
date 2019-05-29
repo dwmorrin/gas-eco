@@ -1,21 +1,17 @@
 <script>
 /* global
       app
-      SignaturePad
       utility
 */
 app.modal = {
   body:         document.querySelector('div.modal p'),
   cancel:       document.querySelector('button.modalcancel'),
-  canvas:       document.querySelector('div.modal canvas'),
-  clear:        document.querySelector('button.signatureclear'),
   container:    document.querySelector('div.modal'),
   heading:      document.querySelector('div.modal h1'),
   input:        document.querySelector('div.modal input'),
   link:         document.querySelector('div.modal a'),
   ok:           document.querySelector('button.modalok'),
   overlay:      document.querySelector('div.overlay'),
-  signaturePad: new SignaturePad(document.querySelector('div.modal canvas')),
   table:        document.querySelector('div.modal table'),
   textarea:     document.querySelector('div.modal textarea'),
   tmp: undefined, // stores strings (although not restricted to strings only, usually some key needed if user selects 'ok'
@@ -83,17 +79,6 @@ app.modal = {
       heading: "Check out item without barcode",
       body:    "Describe the item: (provide as much detail as possible)",
       ok:      "Check Out",
-    },
-    signature: {
-      heading: "Signature Confirmation:",
-      body:    "My signature here confirms that I have read and understand " +
-               "Recorded Music's policies governing the use of its music " +
-               "production facilities.  I am aware that I am responsible " +
-               "for the conduct of my guests (including my teammates and " +
-               "other Recorded Music Students), and I understand that " +
-               "failure to follow those policies could result in fines " +
-               "and/or the loss of privileges.",
-      ok:      "Submit Signature",
     },
     signatureReady: {
       heading: "Add signature",
@@ -218,19 +203,6 @@ app.modal = {
     app.modal.ok.setAttribute('value', 'saveManual');
     app.modal.textarea.focus();
   },
-  getSignature: function(student) {
-    app.modal.blurAllTextInputs();
-    app.modal.setStrings('signature');
-    // important: call show() before setting canvas width
-    // otherwise signature pad will have size of 0
-    app.modal.show(
-      app.modal.container, app.modal.ok, app.modal.clear, app.modal.canvas
-    );
-    app.modal.canvas.width = app.modal.container.getBoundingClientRect().width;
-    app.modal.ok.setAttribute('value', 'signatureSubmit');
-    app.modal.tmp = student.netId;
-  },
-
   getText: function() {
     return app.modal.getValueAndClear(app.modal.textarea);
   },
@@ -269,9 +241,6 @@ app.modal = {
   signatureReady: function() {
     let m = app.modal;
     m.setStrings('signatureReady');
-    /* m.link.setAttribute('href', 'https://script.google.com/macros/s/' +
-    'AKfycbzoGVb3LFX-Sfxy3_EyMtRYv1TPylDitmuUc-3F7g9mppa_ihEc/exec');
-    m.link.textContent = ""; */
     m.show(app.modal.container, app.modal.ok, app.modal.link);
     m.ok.setAttribute('value', 'signatureRecheck');
   },
@@ -393,9 +362,8 @@ app.modal = {
     }
     // hide whatever is hidden by default
     let elements = [
-      app.modal.container, app.modal.ok, app.modal.canvas, app.modal.clear,
-      app.modal.input, app.modal.overlay, app.modal.table, app.modal.textarea,
-      app.modal.link
+      app.modal.container, app.modal.ok, app.modal.input, app.modal.overlay,
+      app.modal.table, app.modal.textarea, app.modal.link
     ];
     for(let el of elements) {
       el.classList.add('hidden');

@@ -8,7 +8,6 @@
 /** Event Listeners */
 // MODAL
 app.modal.cancel.addEventListener('click', app.modal.hide);
-app.modal.clear.addEventListener('click', () => app.modal.signaturePad.clear());
 app.modal.ok.addEventListener('click', app.modal.hide);
 app.modal.textarea.addEventListener('keydown', function(keydown) {
   if (keydown.key == 'Enter' && (keydown.metaKey || keydown.ctrlKey)) {
