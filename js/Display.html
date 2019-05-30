@@ -9,7 +9,6 @@
      populateArchiveTable
      displayForm
      displayOpenForms
-     displayNewForm
      populateFormsTable
      toast
 */
@@ -169,20 +168,6 @@ function displayForm(form, archived) {
   app.spinner.element.classList.add('hidden');
   app.showPage(app.pages.form);
 
-}
-
-/**
- * Displays a blank form to the user.
- */
-function displayNewForm() {
-  app.cache.savedForm = {
-    id: null, bookingId: null, bookedStudents: null, endTime: null,
-    location: null, overnight: null, project: null, contact: null,
-    startTime: null, tape: null, students: [], items: [], notes: []
-  };
-  const length = app.cache.openForms.push(app.cache.savedForm);
-  app.cache.currentIndex = length - 1;
-  displayForm(app.cache.savedForm);
 }
 
 /**
