@@ -412,7 +412,8 @@ function populateArchiveTable(forms) {
   if (forms.length == 0) {
     let cell = document.createElement('td'),
         row = document.createElement('tr');
-    cell.textContent = 'No archived forms';
+    cell.textContent = 'No forms matched your search.';
+    cell.setAttribute("colspan", 12); // fill entire row
     row.appendChild(cell);
     row.classList.add('hoveroff');
     app.pages.archive.elements.tableBody.appendChild(row);
