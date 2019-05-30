@@ -190,8 +190,7 @@ app.doCommand = function(command,...options) {
       break;
     }
     case 'manualItem':
-      // drops the special value for triggering manual entry into omnibox, then parses it.
-      app.omnibox.element.value = '10000';
+      app.omnibox.element.value = app.strings.manualItemBarcode;
       app.omnibox.parse();
       break;
     case 'parseOmnibox':

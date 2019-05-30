@@ -40,7 +40,8 @@ app.omnibox = {
         app.modal.handleError(
           new Error(itemOnForm.description + ' was already checked back in.')
         );
-        if (app.omnibox.element.value == "10000") { // special case for manual item
+        // special case: delete manual item barcode; confusing to user otherwise
+        if (app.omnibox.element.value == app.strings.manualItemBarcode) {
           app.omnibox.clear();
           return;
         }
@@ -215,8 +216,7 @@ app.omnibox = {
           manualEntryAlert();
         }
       } else if (barcoderegex.test(value)) { // assume it's a barcode
-        // TODO replace 10000 with configuration variable for manual barcode number
-        if (value == 10000) {
+        if (value == app.strings.manualItemBarcode) {
           app.doCommand("newManual");
           return;
         }
