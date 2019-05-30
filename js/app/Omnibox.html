@@ -40,6 +40,10 @@ app.omnibox = {
         app.modal.handleError(
           new Error(itemOnForm.description + ' was already checked back in.')
         );
+        if (app.omnibox.element.value == "10000") { // special case for manual item
+          app.omnibox.clear();
+          return;
+        }
         app.omnibox.element.classList.add('error');
         window.setTimeout(
           () => app.omnibox.element.classList.remove('error'), 2000
