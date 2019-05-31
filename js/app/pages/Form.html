@@ -215,6 +215,7 @@ app.pages.form = {
         let value, hour, minute, ampm;
         switch (input.name) {
           case 'location':
+            app.pages.form.resetLocation(); // select loses custom "Other"
             input.value = click.target.textContent;
             if (input.value == "") { // form is using custom "Other"
               input.value = "none"; // this will discard custom value
