@@ -59,6 +59,13 @@ app.doCommand = function(command,...options) {
     case 'codabarUpdateOK':
       app.doCommand('codabar', true);
       break;
+    case 'collisionResolve': {
+      const form = JSON.parse(app.modal.tmp.storedForm);
+      app.cache[app.cache.currentFormstack][app.cache.currentIndex] = form;
+      app.changes.saved = true;
+      displayForm(form);
+      break;
+    }
     case 'displayForm': {
       const form = options[0],
             isArchive = Boolean(options[1]);

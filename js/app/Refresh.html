@@ -58,9 +58,9 @@ app.refresh = function(response, context) {
           // another instance has already updated this form; do not set timeout
           app.modal.handleError({
             target: "collision",
-            form: newForm,
-            submittedForm: currentForm }
-          );
+            storedForm: newForm,
+            submittedForm: currentForm
+          });
         } else { // editing the current form; keep checking
           app.pages.form.setTimeout();
         }

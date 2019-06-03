@@ -1,5 +1,6 @@
 /** End all functions in this file with GAS_ */
 /* global
+getUser_
 Form_
 Booking_
 utility
@@ -26,6 +27,7 @@ var index = {
   forms: {
     SHEET_ID        : '1yMDg9w-vjZxeOYgES-XsicoWp9VvjV3xqCmdZhAyNI4',
     SHEET_NAME      : 'Forms',
+    REJECTED_NAME   : 'Rejected',
     ARCHIVE_NAME    : 'Archive',
     ID              : 0,
     START_TIME      : 1,
@@ -372,6 +374,35 @@ function writeCodabarGAS_(netId, codabar, update) {
     throw new Error("ID EXISTS");
   }
   sheet.getRange(i + 1, index.students.ID + 1).setValue(codabar);
+}
+
+/**
+ * collisions result in rejected forms which are written to their own
+ *   sheet for safekeeping.  Rejected forms are stored with an additional
+ *   column containing the email address of the user whose form was rejected.
+ *   Users can access their own rejected forms to view and delete them.
+ */
+/* exported writeRejectedFormToSheetGAS_ */
+function writeRejectedFormToSheetGAS_(form) {
+  var ss = SpreadsheetApp.openById(index.forms.SHEET_ID);
+  var formSheet = ss.getSheetByName(index.forms.REJECTED_NAME);
+  var values = [
+    form.getId(),
+    form.getStartTime(),
+    form.getEndTime(),
+    form.getLocation(),
+    form.getBookingId(),
+    form.getBookedStudents(),
+    form.getContact(),
+    form.getProject(),
+    form.getTape(),
+    form.getOvernight(),
+    JSON.stringify(form.getStudents()),
+    JSON.stringify(form.getItems()),
+    JSON.stringify(form.getNotes()),
+    getUser_()
+  ];
+  formSheet.appendRow(values);
 }
 
 function writeFormToSheetGAS_(form, closeAndArchive) {
