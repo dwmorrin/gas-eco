@@ -245,6 +245,10 @@ app.doCommand = function(command,...options) {
                 value :otherLocation
               }
             };
+      if (otherLocation.length < 1){
+        app.modal.getLocation();
+        break;
+      }
       select.value = option.value = otherLocation;
       app.pages.form.handleChange(change);
       option.textContent = otherLocation; // must follow handleChange

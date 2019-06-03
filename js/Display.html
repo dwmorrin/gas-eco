@@ -14,26 +14,29 @@
      toast
 */
 function displayForm(form, archived) {
+  const formPage = app.pages.form;
+  const els = formPage.elements;
+  formPage.resetLocation();
   for (let key in form) {
     switch (key) {
       case 'items': {
         let items = form[key];
-        utility.DOM.empty(app.pages.form.elements.itemList);
+        utility.DOM.empty(els.itemList);
         if (items.length == 0) {
-          app.pages.form.elements.form.items.value = JSON.stringify([]);
+          els.form.items.value = JSON.stringify([]);
         } else {
-          app.pages.form.elements.form.items.value = JSON.stringify(items);
+          els.form.items.value = JSON.stringify(items);
           const slice = items.slice();
           slice.reverse().forEach(populateItemList);
         }
         break;
       }
       case 'notes': {
-        utility.DOM.empty(app.pages.form.elements.noteSection);
+        utility.DOM.empty(els.noteSection);
         let notes = form[key];
         if (notes.length == 0) {
-          app.pages.form.elements.form.notes.value = JSON.stringify([]);
-          app.pages.form.elements.noteSection.classList.add('hidden');
+          els.form.notes.value = JSON.stringify([]);
+          els.noteSection.classList.add('hidden');
         } else {
           for (let note of notes) {
             try {                    // Unintuitive use of try/catch: read carefully:
@@ -41,25 +44,25 @@ function displayForm(form, archived) {
             } catch(e) {             // (  error == global note) => display it
               let p = document.createElement('p');
               p.textContent = 'Note: ' + '[' + note.author + '] ' + note.body;
-              app.pages.form.elements.noteSection.appendChild(p);
+              els.noteSection.appendChild(p);
             }
           }
-          if (app.pages.form.elements.noteSection.firstChild) { // if it's not empty
-            app.pages.form.elements.noteSection.classList.remove('hidden');
+          if (els.noteSection.firstChild) { // if it's not empty
+            els.noteSection.classList.remove('hidden');
           } else {
-            app.pages.form.elements.noteSection.classList.add('hidden');
+            els.noteSection.classList.add('hidden');
           }
-          app.pages.form.elements.form.notes.value = JSON.stringify(notes);
+          els.form.notes.value = JSON.stringify(notes);
         }
         break;
       }
       case 'students': {
         let students = form[key];
-        utility.DOM.empty(app.pages.form.elements.studentList);
+        utility.DOM.empty(els.studentList);
         if (students.length == 0) {
-          app.pages.form.elements.form.students.value = JSON.stringify([]);
+          els.form.students.value = JSON.stringify([]);
         } else {
-          app.pages.form.elements.form.students.value = JSON.stringify(students);
+          els.form.students.value = JSON.stringify(students);
           students.forEach(populateStudentList);
         }
         break;
@@ -80,13 +83,18 @@ function displayForm(form, archived) {
           if (td.nextElementSibling) {
             td.nextElementSibling.classList.add('hidden');
           }
-          app.pages.form.elements.form[key].value = form[key];
+          els.form[key].value = form[key];
+          // if "Other" value, we need to put that value back into the select
+          if (key == 'location' && els.form.location.value == "") {
+            els.locationOtherOption.value = els.locationOtherOption.textContent = form[key];
+            els.form[key].value = form[key];
+          }
         } else { // There's not data, so maybe show an input for the user, and clear old data
           switch (key) {
             case 'startTime':
             case 'endTime':
               td.textContent = '';
-              app.pages.form.elements.form[key].value = '';
+              els.form[key].value = '';
               td.classList.add('hidden');
               td.nextElementSibling.classList.remove('hidden');
               var today = new Date(),
@@ -108,18 +116,18 @@ function displayForm(form, archived) {
             case 'location':
               td.classList.add('hidden');
               td.nextElementSibling.classList.remove('hidden');
-              app.pages.form.elements.locationSelect.value = 'none';
+              els.locationSelect.value = 'none';
               break;
             default:
               td.parentNode.classList.add('hidden');
-              app.pages.form.elements.form[key].value = '';
+              els.form[key].value = '';
           }
         }
         break;
       case 'id': // fallthrough
       case 'bookingId': // fallthrough
       case 'hash':
-        app.pages.form.elements.form[key].value = form[key];
+        els.form[key].value = form[key];
         break;
     }
   }
@@ -135,39 +143,36 @@ function displayForm(form, archived) {
 
   // init update button
   if (! form.id) {
-    app.pages.form.elements
-      .updateFormButton.textContent = app.strings.updateButton.enabled;
+    els.updateFormButton.textContent = app.strings.updateButton.enabled;
   } else {
-    app.pages.form.elements
-      .updateFormButton.textContent = app.strings.updateButton.disabled;
-    app.pages.form.elements.updateFormButton.classList.remove('create');
+    els.updateFormButton.textContent = app.strings.updateButton.disabled;
+    els.updateFormButton.classList.remove('create');
   }
 
   // indicate where this form is in the current `stack' (e.g. open or closed/archive)
-  app.pages.form.elements
-    .currentFormstackDisplay.textContent = (app.cache.currentIndex + 1) +
+  els .currentFormstackDisplay.textContent = (app.cache.currentIndex + 1) +
     "/" + app.cache[app.cache.currentFormstack].length;
 
   // this was added to handle displaying closed forms
   // @todo - should this be combined with the other update init section above?
   if (archived) {
     app.omnibox.element.setAttribute('disabled', true);
-    app.pages.form.elements.newNoteButton.setAttribute('disabled', true);
-    app.pages.form.elements.manualButton.setAttribute('disabled', true);
-    app.pages.form.elements.omniboxButton.setAttribute('disabled', true);
-    app.pages.form.elements
-      .updateButtonHint.textContent = 'This is a closed form.  You cannot edit it.';
+    els.newNoteButton.setAttribute('disabled', true);
+    els.manualButton.setAttribute('disabled', true);
+    els.omniboxButton.setAttribute('disabled', true);
+    els.updateButtonHint.textContent = 'This is a closed form.  ' +
+      'You cannot edit it.';
   } else {
     app.omnibox.element.removeAttribute('disabled');
     app.omnibox.element.focus();
-    app.pages.form.elements.newNoteButton.removeAttribute('disabled');
-    app.pages.form.elements.manualButton.removeAttribute('disabled');
-    app.pages.form.elements.omniboxButton.removeAttribute('disabled');
-    app.pages.form.elements.updateButtonHint.textContent = '';
+    els.newNoteButton.removeAttribute('disabled');
+    els.manualButton.removeAttribute('disabled');
+    els.omniboxButton.removeAttribute('disabled');
+    els.updateButtonHint.textContent = '';
   }
 
   app.spinner.element.classList.add('hidden');
-  app.showPage(app.pages.form);
+  app.showPage(formPage);
 
 }
 
