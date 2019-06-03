@@ -60,9 +60,10 @@ app.doCommand = function(command,...options) {
       app.doCommand('codabar', true);
       break;
     case 'collisionResolve': {
-      const form = JSON.parse(app.modal.tmp.storedForm);
+      const form = app.modal.tmp.storedForm;
       app.cache[app.cache.currentFormstack][app.cache.currentIndex] = form;
       app.changes.saved = true;
+      app.pages.form.lockButtons();
       displayForm(form);
       break;
     }
