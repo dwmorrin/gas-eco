@@ -74,6 +74,8 @@ app.refresh = function(response, context) {
       app.omnibox.parse();
       break;
     case 'collision':
+      response.storedForm = JSON.parse(response.storedForm);
+      response.submittedForm = JSON.parse(response.submittedForm);
       app.modal.handleError(response);
       app.pages.form.elements.updateFormButton.textContent = "Update";
       break;
@@ -108,9 +110,7 @@ app.refresh = function(response, context) {
       break;
     case 'updateForm': {
       app.changes.saved = true;
-      app.pages.form.elements.undoButton.setAttribute('disabled', true);
-      app.pages.form.elements.updateButtonHint.textContent = '';
-      app.pages.form.elements.updateFormButton.setAttribute('disabled', true);
+      app.pages.form.lockButtons();
       const updatedForm = JSON.parse(response.form);
       const index = app.cache.openForms.findIndex(
         (form) => (! form.id || form.id == updatedForm.id)
