@@ -300,6 +300,7 @@ app.doCommand = function(command,...options) {
     }
     case 'updateForm':
       app.omnibox.parse();
+      app.pages.form.lock();
       app.spinner.inside(app.pages.form.elements.updateFormButton);
       app.run.doPost({ post: 'updateForm', form: JSON.stringify(utility.makeForm()) });
       break;

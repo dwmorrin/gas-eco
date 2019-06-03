@@ -119,7 +119,8 @@ app.refresh = function(response, context) {
       break;
     case 'updateForm': {
       app.changes.saved = true;
-      app.pages.form.lockButtons();
+      app.pages.form.lockButtons(); // disables "update" until next change
+      app.pages.form.unlock(); // allows editing of form
       const updatedForm = JSON.parse(response.form);
       const index = app.cache.openForms.findIndex(
         (form) => (! form.id || form.id == updatedForm.id)

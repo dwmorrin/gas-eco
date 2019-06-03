@@ -69,7 +69,9 @@ app.pages.openForms.elements.formsTableHead.addEventListener(
 // GLOBAL
 window.addEventListener('beforeunload', app.handlers.beforeunload);
 window.addEventListener('click', app.handlers.clickButton);
+window.addEventListener('click', app.handlers.checkLock, {capture: true});
 window.addEventListener('keydown', app.handlers.keydown);
+window.addEventListener('keydown', app.handlers.checkLock, {capture: true});
 
 /** Display init - anything to do with what the user sees immediately */
 app.modal.hide(); // make sure everything is hidden that is supposed to be

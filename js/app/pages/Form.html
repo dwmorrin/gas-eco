@@ -275,6 +275,13 @@ app.pages.form = {
     }
     app.modal.handleStudentNote(student);
   },
+  isLocked: function() {
+    return app.pages.form.locked;
+  },
+  lock: function() {
+    app.pages.form.locked = true;
+  },
+  locked: false,
   lockButtons: function() {
     app.pages.form.elements.undoButton.setAttribute('disabled', true);
     app.pages.form.elements.updateButtonHint.textContent = '';
@@ -304,6 +311,9 @@ app.pages.form = {
     if (app.cache.currentFormstack == app.strings.formstack.openForms) {
       app.pages.form.timeoutId = window.setTimeout(app.pages.form.checkForms, 60000);
     }
+  },
+  unlock: function() {
+    app.pages.form.locked = false;
   },
 };
 </script>
