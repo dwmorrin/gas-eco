@@ -265,12 +265,6 @@ app.doCommand = function(command,...options) {
       window.clearTimeout(app.cache.signatureTimeoutId);
       app.run.doGet({ get: 'students',  init: false});
       break;
-    case 'signatureSubmit': {
-      const dataURL = app.modal.signaturePad.toDataURL(),
-            studentId = app.modal.tmp;
-      app.run.doPost({ post: 'signature', dataURL: dataURL, id: studentId });
-      break;
-    }
     case 'sortForms': {
       const sortType = options[0],
             forms = utility.sortForms(app.cache[app.cache.currentFormstack], sortType);

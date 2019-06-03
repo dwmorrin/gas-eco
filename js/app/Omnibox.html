@@ -104,9 +104,8 @@ app.omnibox = {
 
     if (! studentOnForm) {
       if (! student.signatureOnFile) {
-        // app.modal.getSignature(student);
         app.modal.signatureWait();
-        app.run.doPost({ post: 'startSignature', netid: student.netId});
+        app.run.doPost({ post: 'startSignature', netid: student.netId });
         app.cache.signatureTimeoutId = window.setTimeout(
           () => app.run.doPost({ post: 'signatureTimeout' }),
           (10 * 60 * 1000) /* 10 minutes */);
@@ -128,7 +127,6 @@ app.omnibox = {
           }
         } else {
           if (! student.signatureOnFile) {
-            // app.modal.getSignature(student);
             app.modal.signatureWait();
             app.run.doPost({ post: 'startSignature', netid: student.netId});
             app.cache.signatureTimeoutId = window.setTimeout(
