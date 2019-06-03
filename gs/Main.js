@@ -128,7 +128,7 @@ function doPost(request) {
           writeRejectedFormToSheetGAS_(form);
           lock.releaseLock();
           response.target = "collision";
-          response.form = error.ECO_storedForm; // already JSON stringed
+          response.storedForm = error.ECO_storedForm; // already JSON stringed
           response.submittedForm = error.ECO_submittedForm;
           return response;
         } else {
