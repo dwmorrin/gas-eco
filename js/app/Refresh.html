@@ -9,6 +9,8 @@ app
 displayForm
 populateFormsTable
 populateArchiveTable
+toast
+utility
 */
 
 /**
@@ -41,8 +43,8 @@ app.refresh = function(response, context) {
       }
       // sort forms to match current sorting TODO factor out the sorting function from displayOpenForms
       populateFormsTable(newForms); // this doesn't actually show the forms or change user's context
-      const currentForm = app.cache[app.cache.currentFormstack][app.cache.currentIndex];
-      const index = newForms.findIndex(form => form.id == currentForm.id);
+      const staleForm = app.cache[app.cache.currentFormstack][app.cache.currentIndex];
+      const index = newForms.findIndex(form => form.id == staleForm.id);
       if (index < 0) {
         // new forms catch here
         break;
@@ -54,12 +56,16 @@ app.refresh = function(response, context) {
         app.doCommand("displayForm", newForm);
         app.pages.form.setTimeout();
       } else {
-        if (newForm.hash != currentForm.hash) {
+        if (newForm.hash != staleForm.hash) {
           // another instance has already updated this form; do not set timeout
+          app.run.doPost({
+            post: "rejected",
+            form: JSON.stringify(utility.makeForm())
+          });
           app.modal.handleError({
             target: "collision",
             storedForm: newForm,
-            submittedForm: currentForm
+            submittedForm: staleForm
           });
         } else { // editing the current form; keep checking
           app.pages.form.setTimeout();
@@ -92,6 +98,9 @@ app.refresh = function(response, context) {
       app.showPage(app.pages.openForms);
       populateFormsTable(app.cache.openForms);
       app.cache.currentFormstack = app.strings.formstack.openForms;
+      break;
+    case 'rejected':
+      toast("The form you were editing was saved on the server.");
       break;
     case 'signature':
       app.cache.students = JSON.parse(response.students);

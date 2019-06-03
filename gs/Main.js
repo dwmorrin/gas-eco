@@ -103,6 +103,9 @@ function doPost(request) {
       postCodabar_(request);
       response.students = getAllStudents_();
       break;
+    case 'rejected':
+      writeRejectedFormToSheetGAS_(readForm_(request.form));
+      break;
     case 'signature':
       postSignature_(request);
       response.students = getAllStudents_();
