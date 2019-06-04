@@ -92,12 +92,13 @@ app.refresh = function(response, context) {
       if (response.unlock) {
         app.elements.openFormsButton.removeAttribute('disabled');
       }
+      app.cache.currentFormstack = app.strings.formstack.openForms;
       app.changes.saved = true;
       app.cache.openForms = JSON.parse(response.formList);
+      utility.sortForms(app.cache.openForms);
+      populateFormsTable(app.cache.openForms);
       app.spinner.off();
       app.showPage(app.pages.openForms);
-      populateFormsTable(app.cache.openForms);
-      app.cache.currentFormstack = app.strings.formstack.openForms;
       break;
     case 'rejected':
       toast("The form you were editing was saved on the server.");
