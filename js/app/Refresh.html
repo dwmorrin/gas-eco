@@ -8,7 +8,6 @@
 app
 displayForm
 populateFormsTable
-populateArchiveTable
 toast
 utility
 */
@@ -28,7 +27,6 @@ app.refresh = function(response, context) {
       }
       app.cache.archive = JSON.parse(response.formList);
       app.pages.archive.query();
-      populateArchiveTable(app.cache.archive);
       break;
     case 'checkForms': {
       const newForms = JSON.parse(response.formList);

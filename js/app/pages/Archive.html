@@ -317,6 +317,7 @@ app.pages.archive = {
         .elements.queryCount.textContent = app.cache.archiveFiltered
           .length + ' forms';
     }
+    utility.sortForms(app.cache.archiveFiltered);
     populateArchiveTable(app.cache.archiveFiltered);
   },
   range: {
