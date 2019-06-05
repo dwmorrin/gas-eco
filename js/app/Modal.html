@@ -359,9 +359,13 @@ app.modal = {
 
   hide: function() {
     // check if more errors need to be displayed
-    if(app.errors.length > 0) {
+    if (app.errors.length > 0) {
       app.modal.showNextError();
       return;
+    }
+    // unlock form if cancelling from collision
+    if (app.modal.heading.textContent == app.modal.strings.collision.heading) {
+      app.pages.form.unlock();
     }
     // hide whatever is hidden by default
     let elements = [
