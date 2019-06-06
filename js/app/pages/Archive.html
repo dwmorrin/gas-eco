@@ -338,13 +338,14 @@ app.pages.archive = {
         .elements.queryCount.textContent = app.cache.archiveFiltered
           .length + ' forms';
     }
+    utility.sortForms(app.cache.archiveFiltered);
     populateArchiveTable(app.cache.archiveFiltered);
   },
   range: {
     start: '', // 'yyyy-mm-dd'
     end: '',   // 'yyyy-mm-dd'
   },
-  show: function() {
+  isTodaySelected: function() {
     const today = new Date();
     today.setHours(0);
     today.setMinutes(0);
@@ -353,7 +354,11 @@ app.pages.archive = {
     const selectedEndTime = new Date(
       app.pages.archive.range.end + 'T00:00:00'
     ).getTime();
-    if (selectedEndTime >= today.getTime()) {
+    return selectedEndTime >= today.getTime();
+  },
+  show: function() {
+    app.cache.currentFormstack = app.strings.formstack.archive;
+    if (app.pages.archive.isTodaySelected()) {
       app.pages.archive.update();
     } else {
       app.pages.archive.query();
