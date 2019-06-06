@@ -79,11 +79,7 @@ app.pages.archive = {
   query: function() {
     // use app.cache.archive, app.pages.archive.elements.queryInputs[input]
     const archiveElements = app.pages.archive.elements.container;
-    let dateInputs = archiveElements.querySelectorAll('input[type="date"]'),
-        inputs = app.pages.archive.elements.queryInputs;
-    if (! dateInputs[0].value) { // initialize date range inputs
-    const archiveElements = app.pages.archive.elements.container,
-          dateInputs = archiveElements.querySelectorAll('input[type="date"]'),
+    const dateInputs = archiveElements.querySelectorAll('input[type="date"]'),
           filters = [],
           inputs = app.pages.archive.elements.queryInputs;
 
