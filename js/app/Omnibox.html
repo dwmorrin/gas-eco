@@ -182,17 +182,12 @@ app.omnibox = {
     }
 
     if (! parsed) { // Check student name and id
-      let nameOrId = 'name',
-          idRegex = /^[a-z]+[0-9]+/;
-      if (idRegex.test(value)) {
-        nameOrId = 'netId';
-        app.modal.manualEntryAlert(app.omnibox.element.value);
-      }
+      const idType = /^[a-z]+[0-9]+/.test(value) ? 'netId' : 'name';
       parsed = app.cache.students.find(
-        student => student[nameOrId].toLowerCase() == value
+        student => student[idType].toLowerCase() == value
       );
       if (parsed) {
-        manualEntryAlert();
+        app.modal.manualEntryAlert(app.omnibox.element.value);
         app.omnibox.handleStudent(parsed);
       }
     }
