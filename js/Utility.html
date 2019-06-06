@@ -3,10 +3,6 @@
 /* global app */
 var utility = { DOM: {}, date: {}, };
 
-utility.uncamelCase = function(string) {
-  return string.replace(/([A-Z])/g, ' $1').replace(/^./,str => str.toUpperCase());
-};
-
 utility.digestMessage = function(message) {
   const encoder = new TextEncoder();
   const data = encoder.encode(message);
@@ -21,6 +17,10 @@ utility.hexString = function(buffer) {
     return paddedHexCode;
   });
   return hexCodes.join('');
+};
+
+utility.uncamelCase = function(string) {
+  return string.replace(/([A-Z])/g, ' $1').replace(/^./,str => str.toUpperCase());
 };
 
 utility.DOM.empty = function(element) {
@@ -213,11 +213,12 @@ utility.makeForm = function() {
   };
   return form;
 };
+
 utility.sortForms = function(forms, sortBy) {
-  if (!sortBy) {
-    sortBy = app.pages.archive.sortBy;
+  if (! sortBy) {
+    sortBy = app.pages[app.cache.currentFormstack].sortBy;
   } else {
-    app.pages.openForms.sortBy = sortBy;
+    app.pages[app.cache.currentFormstack].sortBy = sortBy;
   }
   let compare;
   switch (sortBy) {
