@@ -3,7 +3,7 @@
 
 /** @return {bool} */
 function isAllGearReturned() {
-  let items = JSON.parse(app.pages.form.elements.form.items.value);
+  const items = JSON.parse(app.pages.form.elements.form.items.value);
   return items.every(item => {
     if(item.checkOut) {
       return item.checkIn || item.missing;
@@ -24,15 +24,15 @@ function isBlankForm(form) {
 
 /** @return {bool} */
 function isThereAnActiveStudent() {
-  let students = JSON.parse(app.pages.form.elements.form.students.value),
-      studentCounter = function(count, student) {
-        if(student.checkIn && !(student.checkOut || student.left)) {
-          return count + 1;
-        } else {
-          return count;
-        }
-      };
-  let activeStudents = students.reduce(studentCounter, 0);
+  const students = JSON.parse(app.pages.form.elements.form.students.value),
+        studentCounter = function(count, student) {
+          if(student.checkIn && !(student.checkOut || student.left)) {
+            return count + 1;
+          } else {
+            return count;
+          }
+        };
+  const activeStudents = students.reduce(studentCounter, 0);
   return activeStudents > 1;
 }
 
@@ -58,7 +58,8 @@ function isCheckInItemOk(item) {
     }
     app.modal.handleError(
       new Error(
-        item.description + " was just checked-out.  Update or revert the form to continue."
+        item.description + " was just checked-out.  " +
+        "Update or revert the form to continue."
       )
     );
     return false;
@@ -69,10 +70,13 @@ function isCheckInItemOk(item) {
 /** @return {bool} */
 /* exported isCheckOutStudentOk */
 function isCheckOutStudentOk(student) {
-  // check if the student just checked in by looking at the saved form
-  let savedStudent = app.cache.savedForm.students.find(s => s.id == student.id);
-  if(!savedStudent.checkIn) { // => this student just checked in
-    app.modal.handleError(new Error(student.name + ' was just checked-in.  Update the form before checking out.'));
+  const savedStudent = app.cache.savedForm.students.find(
+    s => s.id == student.id
+  );
+  if (! savedStudent || ! savedStudent.checkIn) { // => student just checked in
+    app.modal.handleError(new Error(student.name + ' was just checked-in.  ' +
+      'Update the form before checking out.')
+    );
     return false;
   }
   return isThereAnActiveStudent() || isAllGearReturned();
@@ -81,7 +85,7 @@ function isCheckOutStudentOk(student) {
 /** @return {bool} */
 /* exported isFormOkToPost */
 function isFormOkToPost() {
-  let elements = app.pages.form.elements;
+  const elements = app.pages.form.elements;
   if (elements.locationSelect.value == 'none') {
     return false;
   }
@@ -94,15 +98,18 @@ function isFormOkToPost() {
   if (elements.form.startDate.classList.contains('error')) {
     return false;
   }
-  let students = JSON.parse(app.pages.form.elements.form.students.value),
-      items = JSON.parse(app.pages.form.elements.form.items.value);
-  let someStudentsAreActive = students.some(s => (s.checkIn && !(s.checkOut || s.left)));
-  let someItemsAreOut = items.some(i => (i.checkOut && !(i.checkIn || i.missing)));
-  if(someItemsAreOut && !someStudentsAreActive) {
+  const students = JSON.parse(app.pages.form.elements.form.students.value),
+        items = JSON.parse(app.pages.form.elements.form.items.value);
+  const someStudentsAreActive = students.some(
+    s => (s.checkIn && ! (s.checkOut || s.left))
+  );
+  const someItemsAreOut = items.some(
+    i => (i.checkOut && ! (i.checkIn || i.missing))
+  );
+  if (someItemsAreOut && ! someStudentsAreActive) {
     return false;
   }
-  // finally, is anybody on the form??
-  if (students.length == 0) {
+  if (students.length == 0) { // finally, is anybody on the form?
     return false;
   }
   return true;
@@ -111,11 +118,11 @@ function isFormOkToPost() {
 /** @return {bool} */
 /* exported isFormReadyToClose */
 function isFormReadyToClose() {
-  let students = JSON.parse(app.pages.form.elements.form.students.value);
+  const students = JSON.parse(app.pages.form.elements.form.students.value);
   // Need at least 1 check-in, and everyone checked-in must be checked-out
   return students.some(student => student.checkIn) && students.every(
     student => {
-      if(student.checkIn) {
+      if (student.checkIn) {
         return student.checkOut || student.left;
       } else {
         return true;
@@ -127,14 +134,14 @@ function isFormReadyToClose() {
 /** @return {bool} */
 /* exported isNoShow */
 function isNoShow(form) {
-  if (!form.id) {
+  if (! form.id) {
     return false; // we are only looking at booked forms
   }
   const gracePeriod = 15; // minutes
-  let start = new Date(form.startTime),
-      now = Date.now();
+  const start = new Date(form.startTime),
+        now = Date.now();
   start.setMinutes(start.getMinutes() + gracePeriod);
-  if(now > start.getTime() && !form.students.some(s => s.checkIn)) {
+  if (now > start.getTime() && !form.students.some(s => s.checkIn)) {
     return true;
   } else {
     return false;
