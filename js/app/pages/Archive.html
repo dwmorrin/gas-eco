@@ -202,16 +202,12 @@ app.pages.archive = {
     }
 
     const byMissingItems = form => {
-      let found = false;
-      checkMissingItem: for (let item of form.items) {
-        if (item.missing){
-          found = true;
-          break checkMissingItem;
+      for (let item of form.items) {
+        if (item.missing) {
+          return true;
         }
       }
-      if (! found) {
-        return false;
-      }
+      return false;
     };
     if (inputs.missingItem.checked) {
       filters.push(byMissingItems);
@@ -263,17 +259,16 @@ app.pages.archive = {
     }
 
     const byLateStudents = form => {
-      const gracePeriod = 15; // minutes
-      let found = false,
-          start = utility.date.parseFormattedDate(form.startTime),
-          end   = utility.date.parseFormattedDate(form.endTime);
+      const gracePeriod = 15, // minutes
+            start = utility.date.parseFormattedDate(form.startTime),
+            end   = utility.date.parseFormattedDate(form.endTime);
       start.setMinutes(start.getMinutes() + gracePeriod);
 
       const checkedInOnTime = function(student) {
-        if (!student.checkIn) {
-          return true; // i.e. no show != late
+        if (! student.checkIn) {
+          return true; // ignore students that did not check in
         }
-        let checkIn = utility.date.parseFormattedDate(student.checkIn)
+        const checkIn = utility.date.parseFormattedDate(student.checkIn)
           .getTime();
         return (checkIn <= start.getTime());
       };
@@ -288,22 +283,15 @@ app.pages.archive = {
           const checkOut = utility.date.parseFormattedDate(student.checkOut)
             .getTime();
           return (checkOut > end.getTime());
-        } else { // must be a no show student
-          return false;
         }
+        return false;
       };
 
-      // late check-ins
-      if (!form.students.every(checkedInOnTime)) {
-        found = true;
+      if (! form.students.every(checkedInOnTime) ||
+            form.students.some(checkedOutLate)) {
+        return true;
       }
-      // late check-outs
-      if (form.students.some(checkedOutLate)) {
-        found = true;
-      }
-      if (!found) {
-        return false;
-      }
+      return false;
     };
     if (inputs.late.checked) {
       filters.push(byLateStudents);
