@@ -182,16 +182,12 @@ app.omnibox = {
     }
 
     if (! parsed) { // Check student name and id
-      let nameOrId = 'name',
-          idRegex = /^[a-z]+[0-9]+/;
-      if (idRegex.test(value)) {
-        nameOrId = 'netId';
-        manualEntryAlert();
-      }
+      const idType = /^[a-z]+[0-9]+/.test(value) ? 'netId' : 'name';
       parsed = app.cache.students.find(
-        student => student[nameOrId].toLowerCase() == value
+        student => student[idType].toLowerCase() == value
       );
       if (parsed) {
+        app.modal.manualEntryAlert(app.omnibox.element.value);
         app.omnibox.handleStudent(parsed);
       }
     }
@@ -211,7 +207,7 @@ app.omnibox = {
             item => item.id.toLowerCase().replace(dashzero, '-') == value
           );
         } else {
-          manualEntryAlert();
+          app.modal.manualEntryAlert(app.omnibox.element.value);
         }
       } else if (barcoderegex.test(value)) { // assume it's a barcode
         if (value == app.strings.manualItemBarcode) {
@@ -240,14 +236,6 @@ app.omnibox = {
       );
     }
 
-    function manualEntryAlert() {
-      app.modal.handleInfo(
-        new Error(app.omnibox.element.value + app.strings.omniboxManualEntry)
-      );
-      app.pages.form.handleChange(
-        { target: { name: 'manual', value: app.omnibox.element.value }}
-      );
-    }
   },
 };
 </script>
