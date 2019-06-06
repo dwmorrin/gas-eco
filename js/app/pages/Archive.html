@@ -349,6 +349,8 @@ app.pages.archive = {
   },
   refreshId: NaN,
   setInterval: function() {},
+  sortBy: 'startTime',
+  sortDescending: false,
   update: function() {
     app.spinner.inside(app.pages.archive.elements.queryButton);
     app.run.doGet({

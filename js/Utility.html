@@ -215,10 +215,14 @@ utility.makeForm = function() {
 };
 
 utility.sortForms = function(forms, sortBy) {
+  const currentPage = app.pages[app.cache.currentFormstack];
   if (! sortBy) {
-    sortBy = app.pages[app.cache.currentFormstack].sortBy;
+    sortBy = currentPage.sortBy;
   } else {
-    app.pages[app.cache.currentFormstack].sortBy = sortBy;
+    if (sortBy == currentPage.sortBy) { // toggle descending/ascending
+      currentPage.sortDescending = ! currentPage.sortDescending;
+    }
+    currentPage.sortBy = sortBy;
   }
   let compare;
   switch (sortBy) {
@@ -316,6 +320,9 @@ utility.sortForms = function(forms, sortBy) {
       break;
   }
   forms.sort(compare);
+  if (currentPage.sortDescending) {
+    forms.reverse();
+  }
   return forms;
 };
 
