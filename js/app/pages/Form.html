@@ -285,6 +285,7 @@ app.pages.form = {
     if (isNaN(app.pages.form.timeoutId)) {
       app.pages.form.setTimeout();
     }
+    app.omnibox.element.focus();
   },
   hide: function() {
     app.pages.form.elements.container.classList.add("hidden");
