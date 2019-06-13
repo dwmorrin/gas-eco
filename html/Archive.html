@@ -33,38 +33,34 @@
     <label for="matchAllItems">Match with All Items</label>
     <input type="checkbox" name="matchAllItems" checked />
     <br>
-    Show Only Session Type:
+    Filter by:
     <br>
-    <label for="booked">Booked Sessions</label>
-    <input type="checkbox" name="booked" checked />
+    <label for="booked">Booked session</label>
+    <input type="checkbox" name="booked" />
     <br>
-    <label for="nonbooked">Not Booked Sessions</label>
-    <input type="checkbox" name="nonbooked" checked />
+    <label for="nonbooked">Not booked session</label>
+    <input type="checkbox" name="nonbooked" />
     <br>
-    <label for="tape">Tape Sessions</label>
+    <label for="tape">Tape session</label>
     <input type="checkbox" name="tape" />
     <br>
-    Show Only Error Type:
-    <br>
-    <label for="missingItem">Missing Item(s)</label>
+    <label for="missingItem">Missing an item</label>
     <input type="checkbox" name="missingItem" />
     <br>
-    <label for="studentLeft">Student(s) didn't check out</label>
-    <input type="checkbox" name="studentLeft" />
-    <br>
-    <label for="manual">Manual Entries</label>
-    <input type="checkbox" name="manual" />
-    <br>
-    <label for="late">Late Students</label>
+    <label for="late">Late check in or out</label>
     <input type="checkbox" name="late" />
     <br>
-    <label for="noshow">No Show Students</label>
+    <label for="noshow">No student checked in</label>
     <input type="checkbox" name="noshow" />
     <br>
-    Show Only (Other):
+    <label for="studentLeft">Student did not check out</label>
+    <input type="checkbox" name="studentLeft" />
     <br>
-    <label for="notes">Has Notes (Global Notes)</label>
+    <label for="notes">Has notes</label>
     <input type="checkbox" name="notes" />
+    <br>
+    <label for="manual">Has manual entries</label>
+    <input type="checkbox" name="manual" />
     <br>
   </form>
   <button class="action" value="query">Update View</button>Matched <span class="querycount"><!--populated by js--></span>
