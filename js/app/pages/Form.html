@@ -29,6 +29,7 @@ app.pages.form = {
     // get the next form from either the open stack or the archive stack
     const stack = app.cache[app.cache.currentFormstack];
     if (app.cache.currentIndex == stack.length - 1) { // we're already at the end
+      app.omnibox.element.focus();
       return;
     } else {
       const isArchive = (app.cache.currentFormstack == 'archive') ? true : false;
@@ -38,6 +39,7 @@ app.pages.form = {
   getPrevious: function() {
     const stack = app.cache[app.cache.currentFormstack];
     if (app.cache.currentIndex == 0) { // we're already at the beginning
+      app.omnibox.element.focus();
       return;
     } else {
       const isArchive = (app.cache.currentFormstack == 'archive') ? true : false;
