@@ -3,6 +3,15 @@
 /* global app */
 var utility = { DOM: {}, date: {}, };
 
+utility.cleanItem = item => {
+  item = item.replace(/\s/g, '').replace(/-0+/, '-');
+  return item;
+};
+
+utility.cleanStudent = (value, index, array) => {
+  array[index] = array[index].replace(/\s/g, '');
+},
+
 utility.digestMessage = function(message) {
   const encoder = new TextEncoder();
   const data = encoder.encode(message);

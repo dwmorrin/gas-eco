@@ -1,0 +1,227 @@
+<script>
+/* global app utility populateArchiveTable */
+app.pages.archive.filters = {
+  isBooked: form => (form.bookingId),
+  isNotBooked: form => (! form.bookingId),
+  isTape: form => (form.tape),
+  byStudentName: form => {
+    const inputs = app.pages.archive.elements.queryInputs;
+    const studentQuery = inputs.students.value.toLowerCase().split(',');
+    studentQuery.forEach(utility.cleanStudent);
+    let found = studentQuery.find(queryArg => {
+      return form.students.find(student => {
+        let name = student.name.toLowerCase().replace(/\s/g, '');
+        return (name.search(queryArg) > -1);
+      });
+    });
+    if (! found) {
+      return false;
+    }
+    return true;
+  },
+  byMatchAllItemID: form => {
+    const inputs = app.pages.archive.elements.queryInputs;
+    const itemQuery = inputs.items.value.toLowerCase().split(',');
+    const itemsOnForm = form.items.slice();
+    for (let i = 0; i < itemQuery.length; ++i) {
+      const queryId = utility.cleanItem(itemQuery[i]);
+      const index = itemsOnForm.findIndex(item => {
+        const itemId = item.id.toLowerCase().replace(/-0+/, '-');
+        const itemDesc = item.description.toLowerCase();
+        if (itemId.search(queryId) > -1   ||
+            itemDesc.search(itemQuery[i].trim()) > -1) {
+          return true;
+        }
+        return false;
+      });
+      if (index < 0) {
+        return false;
+      }
+      itemsOnForm.splice(index, 1);
+    }
+    return true;
+  },
+  byMatchAnyItemID: form => {
+    const inputs = app.pages.archive.elements.queryInputs;
+    const itemQuery = inputs.items.value.toLowerCase().split(',');
+    const itemsOnForm = form.items.slice();
+    for (let i = 0; i < itemQuery.length; ++i) {
+      const queryId = utility.cleanItem(itemQuery[i]);
+      const index = itemsOnForm.findIndex(item => {
+        const itemId = item.id.toLowerCase().replace(/-0+/, '-');
+        const itemDesc = item.description.toLowerCase();
+        if (itemId.search(queryId) > -1   ||
+            itemDesc.search(itemQuery[i].trim()) > -1) {
+          return true;
+        }
+        return false;
+      });
+      if (index > -1) {
+        return true;
+      }
+      itemsOnForm.splice(index, 1);
+    }
+    return false;
+  },
+  byMissingItem: form => {
+    for (let item of form.items) {
+      if (item.missing) {
+        return true;
+      }
+    }
+    return false;
+  },
+  byStudentLeft: form => {
+    for (let student of form.students) {
+      if (student.left) {
+        return true;
+      }
+    }
+    return false;
+  },
+  byHasManual: form => {
+    for (let note of form.notes) {
+      try {
+        let changes = JSON.parse(note.body);
+        for (let change of changes) {
+          if (change.name == 'manual') {
+            return true;
+          }
+        }
+      } catch(e) {
+        // not changes, ignore
+      }
+    }
+    return false;
+  },
+  byHasNotes: form => {
+    for (let note of form.notes) {
+      try {                    // Unintuitive use of try/catch:
+        JSON.parse(note.body); // (success == change log )
+      } catch(e) {             // (  error == global note)
+        return true;
+      }
+    }
+    return false;
+  },
+  byLateStudents: form => {
+    const gracePeriod = 15, // minutes
+          start = utility.date.parseFormattedDate(form.startTime),
+          end   = utility.date.parseFormattedDate(form.endTime);
+    start.setMinutes(start.getMinutes() + gracePeriod);
+
+    const checkedInOnTime = function(student) {
+      if (! student.checkIn) {
+        return true; // ignore students that did not check in
+      }
+      const checkIn = utility.date.parseFormattedDate(student.checkIn)
+        .getTime();
+      return (checkIn <= start.getTime());
+    };
+
+    const checkedOutLate = function(student) {
+      if (student.checkIn && (! student.checkOut ||
+          student.checkOut == app.strings.studentIncompleteHTML)) {
+        return true; // checked-in student never checked-out
+      }
+      if (student.checkOut &&
+          student.checkOut != app.strings.studentIncompleteHTML) {
+        const checkOut = utility.date.parseFormattedDate(student.checkOut)
+          .getTime();
+        return (checkOut > end.getTime());
+      }
+      return false;
+    };
+
+    if (! form.students.every(checkedInOnTime) ||
+          form.students.some(checkedOutLate)) {
+      return true;
+    }
+    return false;
+  },
+  byNoShow: form => {
+    // check for some check-ins
+    if (form.students.some(s => s.checkIn)) { // not a no show
+      return false;
+    }
+  },
+  byTimeRange: form => {
+    const inputs = app.pages.archive.elements.queryInputs;
+    const startRange = new Date(inputs.start.value + 'T00:00:00'),
+          endRange = new Date(inputs.end.value  + 'T23:59:59'),
+          start = utility.date.parseFormattedDate(form.startTime);
+    if ((start.getTime() <= startRange.getTime()) ||
+        (start.getTime() >= endRange.getTime())) {
+      return false;
+    }
+    return true;
+  },
+  byLocation: form => {
+    const inputs = app.pages.archive.elements.queryInputs;
+    if (inputs.location.value != 'Other') {
+      if (form.location != inputs.location.value) {
+        return false;
+      }
+    } else {
+      if (app.strings.locations.has(form.location)) {
+        return false;
+      }
+    }
+    return true;
+  },
+};
+
+app.pages.archive.query = function() {
+  // forms:  use app.cache.archive
+  // inputs: use app.pages.archive.elements.queryInputs[input]
+  const archiveElements = app.pages.archive.elements.container,
+        inputs = app.pages.archive.elements.queryInputs,
+        appliedFilters = [];
+
+  const dateInputs = archiveElements.querySelectorAll('input[type="date"]');
+  if (! dateInputs[0].value) { // initialize date range inputs
+    app.pages.archive.init();
+  }
+  
+  appliedFilters.push(app.pages.archive.filters.byTimeRange); // always run
+
+  if (inputs.location.value != "All") {
+    appliedFilters.push(app.pages.archive.filters.byLocation);
+  }
+
+  if (inputs.students.value) {
+    appliedFilters.push(app.pages.archive.filters.byStudentName);
+  }
+
+  if (inputs.items.value && inputs.matchItems.value == "all") {
+    appliedFilters.push(app.pages.archive.filters.byMatchAllItemID);
+  }
+
+  if (inputs.items.value && inputs.matchItems.value == "any") {
+    appliedFilters.push(app.pages.archive.filters.byMatchAnyItemID);
+  }
+
+  const checkboxes = archiveElements.querySelectorAll('input[type="checkbox"]');
+  for (let i = 0; i < checkboxes.length; ++i) {
+    if (checkboxes[i].checked) {
+      appliedFilters.push(app.pages.archive.filters[checkboxes[i].name]);
+    }
+  }
+
+  app.cache.archiveFiltered = appliedFilters.reduce(
+    (forms, func) => forms.filter(func), app.cache.archive
+  );
+
+  if (app.cache.archiveFiltered.length == 1) {
+    app.pages.archive.elements
+      .queryCount.textContent = app.cache.archiveFiltered
+        .length + ' form';
+  } else {
+    app.pages.archive
+      .elements.queryCount.textContent = app.cache.archiveFiltered
+        .length + ' forms';
+  }
+  utility.sortForms(app.cache.archiveFiltered);
+  populateArchiveTable(app.cache.archiveFiltered);
+};
+</script>
