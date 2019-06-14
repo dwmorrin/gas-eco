@@ -92,7 +92,14 @@ app.doCommand = function(command,...options) {
     case 'itemNote': {
       const description = app.modal.tmp.description,
             items = JSON.parse(app.pages.form.elements.form.items.value);
-      const item = items.find(i => i.description == description);
+      let item;
+      if (app.modal.tmp.id) {
+        item = items.find(i => i.id == app.modal.tmp.id);
+      } else if (+app.modal.tmp.barcode < +app.strings.manualItemBarcode) {
+        item = items.find(i => i.barcode == app.modal.tmp.barcode);
+      } else {
+        item = items.find(i => i.description == description);
+      }
       let change = { target: { name: 'items' } };
       let value = utility.DOM.getRadioValue();
       if (value == 'other') {

@@ -168,26 +168,18 @@ app.pages.form = {
     if (isArchive){
       return;
     }
-    if (click.metaKey) {
-      return;
-    }
-    if (click.target != click.target.parentNode.firstChild || click.target.classList.contains('itemnotes')){
-      // find item barcode
-      let id, item, itemRow;
-      if (click.target.classList.contains('itemnotes')) {
-        itemRow = click.target.parentNode.previousSibling;
-      }
-      else{
-        itemRow = click.target.parentNode;
-      }
-      let items = JSON.parse(app.pages.form.elements.form.items.value);
-      if (itemRow.dataset.id == '') {
-        item = items.find(i => i.barcode == itemRow.dataset.barcode);
-      } else {
-        item = items.find(i => i.id == itemRow.dataset.id);
-      }
-      if (!item) {
-        app.modal.handleError(new Error('cannot take note for ' + id));
+    if (click.target != click.target.parentNode.firstChild ||
+        click.target.classList.contains('itemnotes')) {
+      const itemRow = (click.target.classList.contains('itemnotes'))
+        ? click.target.parentNode.previousSibling
+        : click.target.parentNode;
+      const items = JSON.parse(app.pages.form.elements.form.items.value);
+      const key = itemRow.dataset.id === '' ? "barcode" : "id";
+      const item = items.find(i => i[key] == itemRow.dataset[key]);
+      if (! item) {
+        app.modal.handleError(
+          new Error('cannot take note for ' + itemRow.dataset[key])
+        );
       }
       app.modal.handleItemNote(item);
     }
