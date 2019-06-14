@@ -27,6 +27,25 @@ app.doCommand = function(command,...options) {
         JSON.parse(app.pages.form.elements.form.notes.value)
       );
       break;
+    case 'checkInButton': {
+      const itemID = options[0];
+      const savedItem = app.cache.savedForm.items.find(
+        item => (item.barcode || item.id) == itemID
+      );
+      if (! savedItem) {
+        app.modal.handleError(new Error("This item was just checked-out. " +
+          "Update or revert the form to continue."
+        ));
+        break;
+      }
+      let quantityToReturn;
+      if (savedItem.quantity > 1) {
+        const quantityInput = document.querySelector(`select[data-itemid="${itemID}"]`);
+        quantityToReturn = quantityInput.value;
+      }
+      app.omnibox.handleItem(savedItem, quantityToReturn);
+      break;
+    }
     case 'codabar': {
       const codabar = app.modal.tmp,
             netId = app.modal.getInput(),
@@ -180,21 +199,6 @@ app.doCommand = function(command,...options) {
       app.spinner.on();
       app.run.doGet({ get: 'openForms' });
       break;
-    case 'checkInButton': {
-      const itemID = options[0];
-      const savedItem = app.cache.savedForm.items.find(
-        item => (item.barcode || item.id) == itemID
-      );
-      if (! savedItem) {
-        app.modal.handleError(new Error("This item was just checked-out. " +
-          "Update or revert the form to continue."
-        ));
-        break;
-      }
-      app.omnibox.element.value = itemID;
-      app.omnibox.parse();
-      break;
-    }
     case 'parseOmnibox':
       app.omnibox.parse();
       break;

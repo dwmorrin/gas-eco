@@ -265,6 +265,14 @@ function populateItemList(item) {
     checkInButton = `<button class="action"
                              value="checkInButton"
                              data-itemid="${id}">Check In</button>`;
+    if (item.quantity > 1) {
+      checkInButton += `<select data-itemid="${id}" class="selectQuantity">
+        <option value="all">All</option>`;
+      for (let i = 1; i < item.quantity; ++i) {
+        checkInButton += `<option>${i}</option>`;
+      }
+      checkInButton += `</select>`;
+    }
   }
   if (item.missing == true) {
     checkIn = `<span class="alert">ITEM IS MISSING</span>`;

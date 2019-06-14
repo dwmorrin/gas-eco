@@ -13,7 +13,7 @@ app.omnibox = {
   },
   element: document.querySelector('input.omnibox'),
   /** TODO - handle qty input or multiple scans of things like cables */
-  handleItem: function(item) {
+  handleItem: function(item, quantityToReturn) {
     const items = (JSON.parse(app.pages.form.elements.form.items.value) || []);
     const itemOnForm = items.find(i => {
       if (item.id && i.id == item.id) {
@@ -27,7 +27,9 @@ app.omnibox = {
     const change = { // fake change event
       target: {
         name: 'items',
-        value: item.id ? item.id : item.description
+        value: (item.id && ! /^manual/i.test(item.id))
+          ? item.id
+          : item.description
       }
     };
 
@@ -35,6 +37,9 @@ app.omnibox = {
       item.checkOut = utility.date.getFormattedDate(new Date());
       items.push(item);
       change.target.value += ' check-out';
+    } else if (quantityToReturn && quantityToReturn != "all") {
+      itemOnForm.quantity -= quantityToReturn;
+      change.target.value = `returned ${quantityToReturn} ${change.target.value}`;
     } else {
       if (itemOnForm.checkOut && itemOnForm.checkIn) { // checkout again?
         app.modal.handleError(

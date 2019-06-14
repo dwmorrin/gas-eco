@@ -46,6 +46,10 @@ app.pages.form = {
   },
   /** for form validation and attach beforeunload listener for unsaved changes */
   handleChange: function(change) {
+    if (change.target.classList &&
+        change.target.classList.contains("selectQuantity")) {
+      return;
+    }
     app.changes.saved = false;
     app.pages.form.elements.undoButton.removeAttribute('disabled');
     if (!app.pages.form.elements.form.id) {
