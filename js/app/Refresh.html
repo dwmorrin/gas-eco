@@ -36,11 +36,10 @@ app.refresh = function(response, context) {
       // determine current context, see app.pages.form.{show,hide}
       // for why timeoutId shows context
       if (context.timeoutId != app.pages.form.timeoutId ||
-          app.cache.currentFormstack == app.strings.formstack.archive) { // TODO check if we should check sortBy
+          app.cache.currentFormstack == app.strings.formstack.archive) {
         break;
       }
-      // sort forms to match current sorting TODO factor out the sorting function from displayOpenForms
-      populateFormsTable(newForms); // this doesn't actually show the forms or change user's context
+      utility.sortForms(newForms);
       const staleForm = app.cache[app.cache.currentFormstack][app.cache.currentIndex];
       const index = newForms.findIndex(form => form.id == staleForm.id);
       if (index < 0) {
@@ -51,6 +50,7 @@ app.refresh = function(response, context) {
       // are changes saved?
       if (app.changes.saved) {
         app.cache.openForms = newForms;
+        app.cache.currentIndex = index;
         app.doCommand("displayForm", newForm);
         app.pages.form.setTimeout();
       } else {
