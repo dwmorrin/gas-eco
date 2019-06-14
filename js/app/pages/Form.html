@@ -283,6 +283,7 @@ app.pages.form = {
       window.clearTimeout(app.pages.form.timeoutId);
     }
     app.pages.form.timeoutId = NaN;
+    app.pages.form.unlock();
   },
   isLocked: function() {
     return app.pages.form.locked;

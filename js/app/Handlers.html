@@ -28,7 +28,8 @@ app.handlers = {
    * prevents users from updating the form while the form is being saved
    */
   checkLock: function(event) {
-    if (app.pages.form.isLocked() &&
+    if (app.pages.form.isShowing() &&
+        app.pages.form.isLocked() &&
         app.modal.container.classList.contains("hidden")) {
       event.stopPropagation();
     }
