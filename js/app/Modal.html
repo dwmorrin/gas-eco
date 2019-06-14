@@ -78,6 +78,12 @@ app.modal = {
       body:    "Describe the item: (provide as much detail as possible)",
       ok:      "Check Out",
     },
+    manualEntryAlert: {
+      heading: "Use scanner if you can",
+      body:    /* value */ " appears to have been something you typed at the " +
+               "keyboard. Use the barcode scanner for student IDs and items.",
+      ok:      "",
+    },
     signatureReady: {
       heading: "Add signature",
       body:    "A signature was not found for this person.  " +
@@ -377,8 +383,26 @@ app.modal = {
     }
     // use default heading so we can check heading for state
     app.modal.heading.textContent = app.modal.strings.init.heading;
+    // focus omnibox if viewing single form
+    if (app.pages.form.isShowing()) {
+      app.omnibox.element.focus();
+    }
   },
 
+  manualEntryAlert: function(entry) {
+    app.pages.form.handleChange({
+      target: {
+        name: "manual",
+        value: entry
+      }
+    });
+    app.modal.blurAllTextInputs();
+    app.modal.setStrings("manualEntryAlert");
+    app.modal.body.textContent = "\"" + entry + "\"" +
+      app.modal.body.textContent;
+    app.modal.show(app.modal.container);
+  },
+  
   setStrings: function(key) {
     for(let element in app.modal.strings[key]) {
       app.modal[element].textContent = app.modal.strings[key][element];

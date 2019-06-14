@@ -20,7 +20,6 @@ app.doCommand = function(command,...options) {
         return;
       }
       app.showPage(app.pages.archive);
-      app.cache.currentFormstack = app.strings.formstack.archive;
       break;
     }
     case 'changeLog':
@@ -164,7 +163,6 @@ app.doCommand = function(command,...options) {
       app.modal.getNote();
       break;
     case 'newManual':
-      // TODO check if manual already exists
       app.modal.getManual();
       break;
     case 'nextForm':
@@ -197,10 +195,6 @@ app.doCommand = function(command,...options) {
       app.omnibox.parse();
       break;
     }
-    case 'manualItem':
-      app.omnibox.element.value = app.strings.manualItemBarcode;
-      app.omnibox.parse();
-      break;
     case 'parseOmnibox':
       app.omnibox.parse();
       break;

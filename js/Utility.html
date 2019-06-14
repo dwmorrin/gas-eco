@@ -3,10 +3,6 @@
 /* global app */
 var utility = { DOM: {}, date: {}, };
 
-utility.uncamelCase = function(string) {
-  return string.replace(/([A-Z])/g, ' $1').replace(/^./,str => str.toUpperCase());
-};
-
 utility.digestMessage = function(message) {
   const encoder = new TextEncoder();
   const data = encoder.encode(message);
@@ -21,6 +17,10 @@ utility.hexString = function(buffer) {
     return paddedHexCode;
   });
   return hexCodes.join('');
+};
+
+utility.uncamelCase = function(string) {
+  return string.replace(/([A-Z])/g, ' $1').replace(/^./,str => str.toUpperCase());
 };
 
 utility.DOM.empty = function(element) {
@@ -213,11 +213,16 @@ utility.makeForm = function() {
   };
   return form;
 };
+
 utility.sortForms = function(forms, sortBy) {
-  if (!sortBy) {
-    sortBy = app.pages.archive.sortBy;
+  const currentPage = app.pages[app.cache.currentFormstack];
+  if (! sortBy) {
+    sortBy = currentPage.sortBy;
   } else {
-    app.pages.openForms.sortBy = sortBy;
+    if (sortBy == currentPage.sortBy) { // toggle descending/ascending
+      currentPage.sortDescending = ! currentPage.sortDescending;
+    }
+    currentPage.sortBy = sortBy;
   }
   let compare;
   switch (sortBy) {
@@ -315,6 +320,9 @@ utility.sortForms = function(forms, sortBy) {
       break;
   }
   forms.sort(compare);
+  if (currentPage.sortDescending) {
+    forms.reverse();
+  }
   return forms;
 };
 

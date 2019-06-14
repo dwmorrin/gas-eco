@@ -81,7 +81,7 @@ app.pages.archive = {
     const archiveElements = app.pages.archive.elements.container;
     let dateInputs = archiveElements.querySelectorAll('input[type="date"]'),
         inputs = app.pages.archive.elements.queryInputs;
-    if (!dateInputs[0].value) { // initialize date range inputs
+    if (! dateInputs[0].value) { // initialize date range inputs
       app.pages.archive.init();
     }
     let startRange   = new Date(inputs.start.value + 'T00:00:00'),
@@ -317,13 +317,14 @@ app.pages.archive = {
         .elements.queryCount.textContent = app.cache.archiveFiltered
           .length + ' forms';
     }
+    utility.sortForms(app.cache.archiveFiltered);
     populateArchiveTable(app.cache.archiveFiltered);
   },
   range: {
     start: '', // 'yyyy-mm-dd'
     end: '',   // 'yyyy-mm-dd'
   },
-  show: function() {
+  isTodaySelected: function() {
     const today = new Date();
     today.setHours(0);
     today.setMinutes(0);
@@ -332,7 +333,11 @@ app.pages.archive = {
     const selectedEndTime = new Date(
       app.pages.archive.range.end + 'T00:00:00'
     ).getTime();
-    if (selectedEndTime >= today.getTime()) {
+    return selectedEndTime >= today.getTime();
+  },
+  show: function() {
+    app.cache.currentFormstack = app.strings.formstack.archive;
+    if (app.pages.archive.isTodaySelected()) {
       app.pages.archive.update();
     } else {
       app.pages.archive.query();
@@ -344,6 +349,8 @@ app.pages.archive = {
   },
   refreshId: NaN,
   setInterval: function() {},
+  sortBy: 'startTime',
+  sortDescending: false,
   update: function() {
     app.spinner.inside(app.pages.archive.elements.queryButton);
     app.run.doGet({
