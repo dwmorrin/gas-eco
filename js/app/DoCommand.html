@@ -93,7 +93,7 @@ app.doCommand = function(command,...options) {
       const description = app.modal.tmp.description,
             items = JSON.parse(app.pages.form.elements.form.items.value);
       let item;
-      if (app.modal.tmp.serialized || /^manual/i.test(app.modal.tmp.id)) {
+      if (app.modal.tmp.id) {
         item = items.find(i => i.id == app.modal.tmp.id);
       } else if (+app.modal.tmp.barcode < +app.strings.manualItemBarcode) {
         item = items.find(i => i.barcode == app.modal.tmp.barcode);
