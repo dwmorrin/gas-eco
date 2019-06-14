@@ -379,6 +379,10 @@ app.modal = {
     }
     // use default heading so we can check heading for state
     app.modal.heading.textContent = app.modal.strings.init.heading;
+    // focus omnibox if viewing single form
+    if (app.pages.form.isShowing()) {
+      app.omnibox.element.focus();
+    }
   },
 
   manualEntryAlert: function(entry) {

@@ -29,6 +29,7 @@ app.pages.form = {
     // get the next form from either the open stack or the archive stack
     const stack = app.cache[app.cache.currentFormstack];
     if (app.cache.currentIndex == stack.length - 1) { // we're already at the end
+      app.omnibox.element.focus();
       return;
     } else {
       const isArchive = (app.cache.currentFormstack == 'archive') ? true : false;
@@ -38,6 +39,7 @@ app.pages.form = {
   getPrevious: function() {
     const stack = app.cache[app.cache.currentFormstack];
     if (app.cache.currentIndex == 0) { // we're already at the beginning
+      app.omnibox.element.focus();
       return;
     } else {
       const isArchive = (app.cache.currentFormstack == 'archive') ? true : false;
@@ -275,17 +277,6 @@ app.pages.form = {
     }
     app.modal.handleStudentNote(student);
   },
-  lockButtons: function() {
-    app.pages.form.elements.undoButton.setAttribute('disabled', true);
-    app.pages.form.elements.updateButtonHint.textContent = '';
-    app.pages.form.elements.updateFormButton.setAttribute('disabled', true);
-  },
-  show: function() {
-    app.pages.form.elements.container.classList.remove("hidden");
-    if (isNaN(app.pages.form.timeoutId)) {
-      app.pages.form.setTimeout();
-    }
-  },
   hide: function() {
     app.pages.form.elements.container.classList.add("hidden");
     if (! isNaN(app.pages.form.timeoutId)) {
@@ -293,10 +284,29 @@ app.pages.form = {
     }
     app.pages.form.timeoutId = NaN;
   },
+  /**
+   * isShowing should verify if the user is currently on the single form view
+   * @returns {bool}
+   */
+  isShowing: function () {
+    return ! app.pages.form.elements.container.classList.contains("hidden");
+  },
+  lockButtons: function() {
+    app.pages.form.elements.undoButton.setAttribute('disabled', true);
+    app.pages.form.elements.updateButtonHint.textContent = '';
+    app.pages.form.elements.updateFormButton.setAttribute('disabled', true);
+  },
   resetLocation: function() {
     const els = app.pages.form.elements;
     els.locationSelect.value = "none";
     els.locationOtherOption.value = els.locationOtherOption.textContent = "Other";
+  },
+  show: function() {
+    app.pages.form.elements.container.classList.remove("hidden");
+    if (isNaN(app.pages.form.timeoutId)) {
+      app.pages.form.setTimeout();
+    }
+    app.omnibox.element.focus();
   },
   timeoutId: NaN,
   setTimeout: function() {
