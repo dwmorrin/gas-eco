@@ -23,6 +23,19 @@ app.handlers = {
   },
 
   /**
+   * @see js/app/pages/Form
+   * @see js/Init
+   * prevents users from updating the form while the form is being saved
+   */
+  checkLock: function(event) {
+    if (app.pages.form.isShowing() &&
+        app.pages.form.isLocked() &&
+        app.modal.container.classList.contains("hidden")) {
+      event.stopPropagation();
+    }
+  },
+
+  /**
    * @see js/app/DoCommand
    * clickButton usually routes user actions to js.app.doCommand, sometimes
    *   with some additional filitering/modifying here
