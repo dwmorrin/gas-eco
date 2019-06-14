@@ -9,7 +9,7 @@
     <label for="end">Range End</label>
     <input name="end" type="date" placeholder="yyyy-mm-dd"/>
     <br>
-    Search By:
+    Filter By:
     <br>
     <label for="location">Location</label>
     <select name="location">
@@ -30,37 +30,40 @@
     <label for="items">Items</label>
     <input type="text" name="items" />
     <br>
-    <label for="matchAllItems">Match with All Items</label>
-    <input type="checkbox" name="matchAllItems" checked />
+    <label for="matchItemsAll">Form has all of the items</label>
+    <input type="radio" name="matchItems" id="matchItemsAll" value="all" checked />
     <br>
-    Filter by:
+    <label for="matchItemsAny">Form has any of the items</label>
+    <input type="radio" name="matchItems" id="matchItemsAny" value="any" />
     <br>
-    <label for="booked">Booked session</label>
-    <input type="checkbox" name="booked" />
     <br>
-    <label for="nonbooked">Not booked session</label>
-    <input type="checkbox" name="nonbooked" />
     <br>
-    <label for="tape">Tape session</label>
-    <input type="checkbox" name="tape" />
+    <label for="isBooked">Booked session</label>
+    <input type="checkbox" name="isBooked" />
     <br>
-    <label for="missingItem">Missing an item</label>
-    <input type="checkbox" name="missingItem" />
+    <label for="isNotBooked">Not booked session</label>
+    <input type="checkbox" name="isNotBooked" />
     <br>
-    <label for="late">Late check in or out</label>
-    <input type="checkbox" name="late" />
+    <label for="isTape">Tape session</label>
+    <input type="checkbox" name="isTape" />
     <br>
-    <label for="noshow">No student checked in</label>
-    <input type="checkbox" name="noshow" />
+    <label for="byMissingItem">Missing an item</label>
+    <input type="checkbox" name="byMissingItem" />
     <br>
-    <label for="studentLeft">Student did not check out</label>
-    <input type="checkbox" name="studentLeft" />
+    <label for="byLateStudents">Late check in or out</label>
+    <input type="checkbox" name="byLateStudents" />
     <br>
-    <label for="notes">Has notes</label>
-    <input type="checkbox" name="notes" />
+    <label for="byNoShow">No student checked in</label>
+    <input type="checkbox" name="byNoShow" />
     <br>
-    <label for="manual">Has manual entries</label>
-    <input type="checkbox" name="manual" />
+    <label for="byStudentLeft">Student did not check out</label>
+    <input type="checkbox" name="byStudentLeft" />
+    <br>
+    <label for="byHasNotes">Has notes</label>
+    <input type="checkbox" name="byHasNotes" />
+    <br>
+    <label for="byHasManual">Has manual entries</label>
+    <input type="checkbox" name="byHasManual" />
     <br>
   </form>
   <button class="action" value="query">Update View</button>Matched <span class="querycount"><!--populated by js--></span>
