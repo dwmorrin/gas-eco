@@ -3,7 +3,7 @@
 <head>
     <base target="_top">
     <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
-    <?!= include_('css/Style'); ?>
+    <?!= include_('css/style'); ?>
 </head>
 
 <body>
@@ -19,42 +19,42 @@
           disabled="true">New Form</button>
   <button value="openForms"
           disabled="true">View Open Forms</button>
-  <button value="archivedForms"
+  <button value="closedForms"
           disabled="true">View Closed Forms</button>
 </nav>
 
 <!-- page sections (only one can be visible at a time) -->
-<?!= include_('html/OpenForms'); ?>
-<?!= include_('html/Form'); ?>
-<?!= include_('html/Archive'); ?>
+<?!= include_('html/openForms'); ?>
+<?!= include_('html/form'); ?>
+<?!= include_('html/closed'); ?>
 
 <!-- page fragments (can be visible at any time)-->
 <div class="spinner hidden"></div>
-<?!= include_('html/Modal'); ?>
+<?!= include_('html/modal'); ?>
 
 <!-- javascript -->
 
 <!-- function definitions -->
-<?!= include_('js/Logic'); ?>
-<?!= include_('js/Utility'); ?>
-<?!= include_('js/Display'); ?>
+<?!= include_('js/logic'); ?>
+<?!= include_('js/utility'); ?>
+<?!= include_('js/display'); ?>
 
 <!-- app object containing global variables -->
 <?!= include_('js/app/main'); ?>
-<?!= include_('js/app/Changes'); ?>
-<?!= include_('js/app/DoCommand'); ?>
-<?!= include_('js/app/Elements'); ?>
-<?!= include_('js/app/Handlers'); ?>
-<?!= include_('js/app/Modal'); ?>
-<?!= include_('js/app/Omnibox'); ?>
-<?!= include_('js/app/pages/Archive'); ?>
-<?!= include_('js/app/pages/ArchiveQuery'); ?>
-<?!= include_('js/app/pages/Form'); ?>
-<?!= include_('js/app/pages/OpenForms'); ?>
-<?!= include_('js/app/Refresh'); ?>
-<?!= include_('js/app/Spinner'); ?>
+<?!= include_('js/app/changes'); ?>
+<?!= include_('js/app/doCommand'); ?>
+<?!= include_('js/app/elements'); ?>
+<?!= include_('js/app/handlers'); ?>
+<?!= include_('js/app/modal'); ?>
+<?!= include_('js/app/omnibox'); ?>
+<?!= include_('js/app/pages/closed'); ?>
+<?!= include_('js/app/pages/closedQuery'); ?>
+<?!= include_('js/app/pages/form'); ?>
+<?!= include_('js/app/pages/openForms'); ?>
+<?!= include_('js/app/refresh'); ?>
+<?!= include_('js/app/spinner'); ?>
 
 <!-- run commands -->
-<?!= include_('js/Init'); ?>
+<?!= include_('js/init'); ?>
 </body>
 </html>

@@ -33,6 +33,3 @@ Google Apps Script inventory management program.
 #### Controllers
 * gs/Main: implementation agnostic router of requests, responses
 * gs/Sheets: the Sheets implementation specific code
-
-#### Deprecated
-* gs/Demo: the demo implementation specific code

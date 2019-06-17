@@ -22,8 +22,8 @@ const app = {
 
 /** app state */
 app.cache = {
-  archive:             [],
-  archiveFiltered:     [],
+  closed:             [],
+  closedFiltered:     [],
   currentFormstack:    "",
   currentIndex:         0,
   items:               [],
@@ -34,7 +34,7 @@ app.cache = {
 };
 
 app.pages = {      // must have show and hide functions
-  archive:     {},
+  closed:     {},
   form:        {},
   openForms:   {},
 };
@@ -61,7 +61,7 @@ app.strings = {
     'iDJBfjS6ODPAaoCUqygNU8BLogSfYMFDuKTCp30HXN7AAAKarYBD/VuTqAAAAAElFTkSuQm' +
     'CC" width="16" height="16">',
   formstack: {
-    archive: 'archive',
+    closed: 'closed',
     openForms: 'openForms'
   },
   locations: new Set([

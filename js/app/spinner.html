@@ -1,0 +1,25 @@
+<script>
+/* global app */
+app.spinner = {
+  element: document.querySelector('div.spinner'),
+  /**
+   * For placing spinner inside buttons or other elements
+   * Turn 'off' by replacing element.innerHTML with the appropriate button text
+   */
+  inside: function(element) {
+    element.innerHTML = '<div class="spinner"></div>';
+    if (element == app.pages.form.elements.updateFormButton) {
+      app.pages.form.elements.updateButtonHint.textContent = '';
+    }
+  },
+  /** Hides only spinner; call showPage separately */
+  off: function() {
+    app.spinner.element.classList.add('hidden');
+  },
+  /** Display only spinner and this function hides all other pages */
+  on: function() {
+    app.showPage(); // no argument == hides all pages
+    app.spinner.element.classList.remove('hidden');
+  },
+};
+</script>

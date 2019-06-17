@@ -1,0 +1,378 @@
+<script>
+/** Utility */
+/* global app */
+var utility = { DOM: {}, date: {}, };
+
+utility.cleanItem = item => {
+  item = item.replace(/\s/g, '').replace(/-0+/, '-');
+  return item;
+};
+
+utility.cleanStudent = (value, index, array) => {
+  array[index] = array[index].replace(/\s/g, '');
+},
+
+utility.digestMessage = function(message) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(message);
+  return window.crypto.subtle.digest('SHA-1', data);
+};
+
+utility.hexString = function(buffer) {
+  const byteArray = new Uint8Array(buffer);
+  const hexCodes = [...byteArray].map(value => {
+    const hexCode = value.toString(16);
+    const paddedHexCode = hexCode.padStart(2, '0');
+    return paddedHexCode;
+  });
+  return hexCodes.join('');
+};
+
+utility.uncamelCase = function(string) {
+  return string.replace(/([A-Z])/g, ' $1').replace(/^./,str => str.toUpperCase());
+};
+
+utility.DOM.empty = function(element) {
+  while(element.firstChild) {
+    element.removeChild(element.firstChild);
+  }
+};
+
+utility.DOM.getFirstChild = function(element) {
+  let firstChild = element.firstChild;
+  while(firstChild != null && firstChild.nodeType == 3) {
+    firstChild = firstChild.nextSibling;
+  }
+  return firstChild;
+};
+
+utility.DOM.getNextSibling = function(element) {
+  let nextSibling = element.nextSibling;
+  while(nextSibling != null && nextSibling.nodeType == 3) {
+    nextSibling = nextSibling.nextSibling;
+  }
+  return nextSibling;
+};
+
+utility.DOM.makeRadio = function(name, ...values) {
+  let radio = {};
+  for (let value of values) {
+    radio[value] = `<input type="radio" name="${name}" value="${value}" `;
+    if (value == 'other') {
+      radio[value] += 'checked';
+    }
+    radio[value] += '/>';
+  }
+  return radio;
+};
+
+utility.DOM.makeTableRow = function(tagName, ...strings) {
+  let row = document.createElement('tr'),
+      cells = [];
+  for (let i = 0, l = strings.length; i < l ; i++) {
+    cells.push(document.createElement(tagName));
+    cells[i].innerHTML = strings[i];
+  }
+  while(cells.length) {
+    row.appendChild(cells.shift());
+  }
+  return row;
+};
+
+utility.DOM.getRadioValue = function() {
+  const radio = app.modal.table.querySelectorAll('input[type="radio"]');
+  for (let i = 0; i < radio.length; i++) {
+    if (radio[i].checked) {
+      return radio[i].value;
+    }
+  }
+  return null;
+};
+
+utility.date.getFormattedDate = function(date) {
+  let year = date.getFullYear(),
+      month = (date.getMonth() + 1), // zero indexed
+      day = date.getDate(),
+      hour = date.getHours(),
+      minutes = date.getMinutes(),
+      ampm = 'am';
+
+  if (hour > 11) {
+    ampm = 'pm';
+    hour = hour % 12;
+  }
+  if (hour == 0) {
+    hour = 12;
+  }
+  return utility.date.zeropad(month) + '/' + utility.date.zeropad(day) + '/' +
+    year + ' ' + utility.date.zeropad(hour) + ':' +
+    utility.date.zeropad(minutes) + ' ' + ampm;
+};
+
+/**
+ * checks all date/time inputs and returns and object with two Date objects
+ * @return {object} - use .startTime and .endTime
+ */
+utility.date.parseDateAndTimeInputs = function() {
+  let startTime = new Date(app.pages.form.elements.form.startDate.value + 'T00:00:00'),
+      endTime = new Date(app.pages.form.elements.form.endDate.value + 'T00:00:00'),
+      startHour = +app.pages.form.elements.form.startHour.value,
+      endHour = +app.pages.form.elements.form.endHour.value,
+      startMinute = +app.pages.form.elements.form.startMinute.value,
+      endMinute = +app.pages.form.elements.form.endMinute.value;
+  function ampmConverter(ampm, hour) {
+    if (ampm == 'PM' && hour != 12) {
+      hour += 12;
+    } else if (ampm == 'AM' && hour == 12) { // i.e. 12 AM
+      hour = 0;
+    }
+    return hour;
+  }
+  startHour = ampmConverter(app.pages.form.elements.form.startAMPM.value, startHour);
+  endHour = ampmConverter(app.pages.form.elements.form.endAMPM.value, endHour);
+  startTime.setHours(startHour);
+  startTime.setMinutes(startMinute);
+  endTime.setHours(endHour);
+  endTime.setMinutes(endMinute);
+
+  return { startTime: startTime, endTime: endTime };
+};
+
+/**
+ * @param {string} dateString
+ * @return {Date}
+ */
+utility.date.parseFormattedDate = function(dateString) {
+  // mm/dd/yyyy hh:mm am
+  let month   = dateString.slice(0,2),
+      day     = dateString.slice(3,5),
+      year    = dateString.slice(6,10),
+      hour    = dateString.slice(11,13),
+      minutes = dateString.slice(14,16),
+      ampm    = dateString.slice(17,19);
+  // convert ampm to 24 hour
+  if (ampm == 'pm') {
+    ampm = 12;
+  } else {
+    ampm = 0;
+  }
+  hour = hour % 12 + ampm;
+
+  return new Date(year + '-' + utility.date.zeropad(month) + '-' +
+           utility.date.zeropad(day) + 'T' + utility.date.zeropad(hour) + ':' +
+           utility.date.zeropad(minutes) + ':00'
+  );
+};
+
+utility.date.roundMinutes = function(minutes) {
+  let minute = minutes % 10;
+  if (minute < 5) { // roll back to :00
+    minutes -= minute;
+  } else { // roll back to :05
+    minutes -= minute - 5;
+  }
+  return minutes;
+};
+
+utility.date.parseHours = function(hours) {
+  if (hours > 12) {
+    return hours - 12;
+  } else if (hours == 0) {
+    return hours + 12;
+  } else {
+    return hours;
+  }
+};
+
+utility.date.parseAMPM = function(hours) {
+  if (hours >= 12) {
+    return 'PM';
+  } else {
+    return 'AM';
+  }
+};
+
+utility.date.zeropad = function(x) {
+  x = +x;
+  if (x < 10) {
+    return '0' + x;
+  } else {
+    return x;
+  }
+};
+
+utility.makeForm = function() {
+  let notes = JSON.parse(app.pages.form.elements.form.notes.value);
+  notes.push(app.changes.makeNote());
+  let form = {
+    bookedStudents: app.pages.form.elements.form.bookedStudents.value,
+    bookingId: app.pages.form.elements.form.bookingId.value,
+    contact: app.pages.form.elements.form.contact.value,
+    endTime: app.pages.form.elements.form.endTime.value,
+    id: app.pages.form.elements.form.id.value,
+    location: app.pages.form.elements.form.location.value,
+    project: app.pages.form.elements.form.project.value,
+    overnight: app.pages.form.elements.form.overnight.value,
+    startTime: app.pages.form.elements.form.startTime.value,
+    tape: app.pages.form.elements.form.tape.value,
+    items: JSON.parse(app.pages.form.elements.form.items.value),
+    notes: notes,
+    students: JSON.parse(app.pages.form.elements.form.students.value),
+    hash: app.pages.form.elements.form.hash.value,
+  };
+  return form;
+};
+
+utility.sortForms = function(forms, sortBy) {
+  const currentPage = app.pages[app.cache.currentFormstack];
+  if (! sortBy) {
+    sortBy = currentPage.sortBy;
+  } else {
+    if (sortBy == currentPage.sortBy) { // toggle descending/ascending
+      currentPage.sortDescending = ! currentPage.sortDescending;
+    }
+    currentPage.sortBy = sortBy;
+  }
+  let compare;
+  switch (sortBy) {
+    case 'startTime':
+    case 'endTime':
+      compare = function(a,b) {
+        let dateA = utility.date.parseFormattedDate(a[sortBy]).getTime(),
+            dateB = utility.date.parseFormattedDate(b[sortBy]).getTime();
+        if (dateA < dateB) {
+          return -1;
+        }
+        if (dateA > dateB) {
+          return 1;
+        }
+        if (dateA == dateB) {
+          return 0;
+        }
+      };
+      break;
+    case 'location':
+      compare = function(a,b) {
+        if (a[sortBy] < b[sortBy]) {
+          return -1;
+        }
+        if (a[sortBy] > b[sortBy]) {
+          return 1;
+        }
+        if (a[sortBy] == b[sortBy]) {
+          return 0;
+        }
+      };
+      break;
+    case 'contact':
+    case 'tape':
+    case 'overnight':
+    case 'items':
+    case 'project':
+    case 'bookingId':
+      compare = function(a,b) {
+        if (a[sortBy] < b[sortBy]) {
+          return -1;
+        }
+        if (a[sortBy] > b[sortBy]) {
+          return 1;
+        }
+        if (a[sortBy] == b[sortBy]) {
+          return 0;
+        }
+      };
+      break;
+    case 'bookedStudents':
+    case 'students':
+      compare = function(a,b) {
+        let nameSort = function(c,d) {
+          if (c.name < d.name) {
+            return -1;
+          }
+          if (c.name > d.name) {
+            return 1;
+          }
+          if (c.name == d.name) {
+            return 0;
+          }
+        };
+        a.students.sort(nameSort);
+        b.students.sort(nameSort);
+        if (a.students[0].name < b.students[0].name) {
+          return -1;
+        }
+        if (a.students[0].name > b.students[0].name) {
+          return 1;
+        }
+        if (a.students[0].name == b.students[0].name) {
+          return 0;
+        }
+      };
+      break;
+    case 'type':
+      compare = function(a,b) {
+        let active = function(student) {
+          return student.checkIn;
+        };
+        a = +(a.students.some(active));
+        b = +(b.students.some(active));
+        if (a > b) {
+          return -1;
+        }
+        if (a < b) {
+          return 1;
+        }
+        if (a == b) {
+          return 0;
+        }
+      };
+      break;
+  }
+  forms.sort(compare);
+  if (currentPage.sortDescending) {
+    forms.reverse();
+  }
+  return forms;
+};
+
+/**
+ * @param {string} [prefix] - optional prefix to note
+ *   usage: undefined for global notes, "John Doe: " for student
+ */
+utility.saveNote = function(prefix) {
+  if (! prefix) {
+    prefix = "";
+  }
+  const input = app.modal.getText();
+  if (input.length < 1) {
+    return;
+  }
+  const notes = JSON.parse(app.pages.form.elements.form.notes.value);
+  const note = {
+    timestamp: Date.now(),
+    author: app.elements.usernameDisplay.textContent,
+    body: prefix + input,
+  };
+  let shortNotes = note.body;
+  if (shortNotes.length > 10) {
+    shortNotes = shortNotes.slice(0, 10) + "...";
+  }
+  const change = {
+    target: {
+      name: 'notes',
+      value: shortNotes
+    }
+  };
+  const p = document.createElement('p');
+  p.textContent = 'Note: ' + '[' + note.author + '] ' + note.body;
+
+  notes.push(note);
+  app.pages.form.elements.form.notes.value = JSON.stringify(notes);
+  app.pages.form.handleChange(change);
+
+  app.pages.form.elements.noteSection.appendChild(p);
+  if (app.pages.form.elements.noteSection.classList.contains('hidden')) {
+    app.pages.form.elements.noteSection.classList.remove('hidden');
+  }
+};
+</script>

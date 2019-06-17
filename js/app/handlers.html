@@ -1,0 +1,94 @@
+<script>
+// Window level event handlers.
+// Page and page element handlers are found under their respective pages
+/* global app isBlankForm */
+app.handlers = {
+  /**
+   * Attach this function to the beforeunload event whevener there is a form with
+   * unsaved changes displayed.
+   * @see {@link https://developer.mozilla.org/en-US/docs/Web/Events/beforeunload}
+   * @see app.changes.saved
+   * @todo does not work in Safari due to frame of different security origin
+   * @todo does not work in Chrome 67
+   * @todo this looks promising: https://jes.al/2016/03/preventing-back-button-navigation-in-SPAs/
+   */
+  beforeunload: function(event) {
+    if (! app.changes.saved) {
+      var confirmationMessage = "Are you sure?";
+      event.returnValue = confirmationMessage;     // Gecko, Trident, Chrome 34+
+      return confirmationMessage;              // Gecko, WebKit, Chrome <34
+    } else {
+      app.handlers.unload();
+    }
+  },
+
+  /**
+   * @see js/app/pages/Form
+   * @see js/Init
+   * prevents users from updating the form while the form is being saved
+   */
+  checkLock: function(event) {
+    if (app.pages.form.isShowing() &&
+        app.pages.form.isLocked() &&
+        app.modal.container.classList.contains("hidden")) {
+      event.stopPropagation();
+    }
+  },
+
+  /**
+   * @see js/app/DoCommand
+   * clickButton usually routes user actions to js.app.doCommand, sometimes
+   *   with some additional filitering/modifying here
+   */
+  clickButton: function(click) {
+    if (click.target.tagName != 'BUTTON') {
+      return;
+    }
+
+    if (click.target.value == "checkInButton") {
+      app.doCommand('checkInButton', click.target.dataset.itemid);
+      return;
+    }
+    
+    if (click.target.dataset.itemid) {
+      app.omnibox.element.value = click.target.dataset.itemid;
+    }
+
+    if (click.target.value.slice(0,9) == 'loseData_') {
+      app.changes.saved = true;
+      app.pages.form.elements.updateButtonHint.textContent = '';
+      app.pages.form.elements.updateFormButton.disabled = true;
+      app.pages.form.elements.undoButton.disabled = true;
+      click.target.value = click.target.value.slice(9, click.target.value.length);
+      // check if blank form, undo actions from Display::displayNewForm
+      if (isBlankForm(app.cache.savedForm)) {
+        app.cache.openForms.pop();
+        --app.cache.currentIndex;
+      }
+    }
+    app.doCommand(click.target.value);
+  },
+  keydown: function(keydown) {
+    // Allow esc to safely exit error messages
+    if (keydown.key == 'Escape') {
+      if (!app.modal.container.classList.contains('hidden')) {
+        app.modal.hide();
+      } else {
+        keydown.target.blur();
+      }
+    }
+
+    // Allow cmd + enter to submit/update form
+    if (! app.pages.form.elements.updateFormButton.disabled &&
+          app.modal.container.classList.contains('hidden')) {
+      if ((keydown.metaKey || keydown.ctrlKey) && keydown.key == 'Enter') {
+        app.doCommand('updateForm');
+        return;
+      }
+    }
+  },
+  unload: function() {
+    app.run.doPost({ post: 'unload' });
+  },
+};
+</script>

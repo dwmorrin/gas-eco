@@ -1,16 +1,16 @@
 <script>
 /* global app utility */
-app.pages.archive = {
+app.pages.closed = {
   elements: {
-    container:   document.querySelector('div.archiveContainer'),
+    container:   document.querySelector('div.closedContainer'),
     queryButton: document.querySelector('button[value="query"]'),
     queryCount:  document.querySelector('span.querycount'),
     queryInputs: document.querySelector('form.query'),
-    tableBody:   document.querySelector('tbody.archive'),
-    tableHead:   document.querySelector('thead.archive'),
+    tableBody:   document.querySelector('tbody.closed'),
+    tableHead:   document.querySelector('thead.closed'),
   },
   getDateRangeAsJSON: function() {
-    let inputs = app.pages.archive.elements.queryInputs;
+    let inputs = app.pages.closed.elements.queryInputs;
     let range = {};
     range.start = utility.date.getFormattedDate(
       new Date(inputs.start.value + 'T00:00:00')
@@ -23,8 +23,8 @@ app.pages.archive = {
   handleChange: function(change) {
     if (change.target.getAttribute('type') == 'date') {
       // see if new date range exceeds old date range
-      let range    = app.pages.archive.range,
-          inputs   = app.pages.archive.elements.queryInputs,
+      let range    = app.pages.closed.range,
+          inputs   = app.pages.closed.elements.queryInputs,
           z = utility.date.zeropad;
       let start    = new Date(inputs.start.value + 'T00:00:00'),
           end      = new Date(inputs.end.value   + 'T23:59:59'),
@@ -40,9 +40,9 @@ app.pages.archive = {
       }
       if (start.getTime() < oldStart.getTime() ||
             end.getTime() > oldEnd.getTime()) {
-        app.pages.archive.update();
+        app.pages.closed.update();
       } else {
-        app.pages.archive.query();
+        app.pages.closed.query();
       }
       // update range
       range.start = start.getFullYear() + '-'
@@ -55,26 +55,26 @@ app.pages.archive = {
     let findForm = function(form) {
       return form.id == click.target.parentNode.getAttribute('data-id');
     };
-    let index = app.cache.archive.findIndex(findForm);
+    let index = app.cache.closed.findIndex(findForm);
     if (index < 0) {
       return;
     }
     app.cache.currentIndex = index;
-    app.doCommand('displayForm', app.cache.archive[index], true);
+    app.doCommand('displayForm', app.cache.closed[index], true);
   },
   handleClickTableHead: function(click) {
     app.doCommand('sortForms', click.target.dataset.sort);
   },
   init: function() {
-    let inputs = app.pages.archive.elements.queryInputs,
+    let inputs = app.pages.closed.elements.queryInputs,
         today = new Date();
     today = today.getFullYear() +
       '-' + utility.date.zeropad(today.getMonth() + 1) +
       '-' + utility.date.zeropad(today.getDate());
     inputs.start.value = today;
     inputs.end.value = today;
-    app.pages.archive.range.start = today;
-    app.pages.archive.range.end   = today;
+    app.pages.closed.range.start = today;
+    app.pages.closed.range.end   = today;
   },
   /* query: see external file */
   range: {
@@ -88,31 +88,31 @@ app.pages.archive = {
     today.setSeconds(0);
     today.setMilliseconds(0);
     const selectedEndTime = new Date(
-      app.pages.archive.range.end + 'T00:00:00'
+      app.pages.closed.range.end + 'T00:00:00'
     ).getTime();
     return selectedEndTime >= today.getTime();
   },
   show: function() {
-    app.cache.currentFormstack = app.strings.formstack.archive;
-    if (app.pages.archive.isTodaySelected()) {
-      app.pages.archive.update();
+    app.cache.currentFormstack = app.strings.formstack.closed;
+    if (app.pages.closed.isTodaySelected()) {
+      app.pages.closed.update();
     } else {
-      app.pages.archive.query();
+      app.pages.closed.query();
     }
-    app.pages.archive.elements.container.classList.remove("hidden");
+    app.pages.closed.elements.container.classList.remove("hidden");
   },
   hide: function() {
-    app.pages.archive.elements.container.classList.add("hidden");
+    app.pages.closed.elements.container.classList.add("hidden");
   },
   refreshId: NaN,
   setInterval: function() {},
   sortBy: 'startTime',
   sortDescending: false,
   update: function() {
-    app.spinner.inside(app.pages.archive.elements.queryButton);
+    app.spinner.inside(app.pages.closed.elements.queryButton);
     app.run.doGet({
-      get: 'archive',
-      dateRangeJSON: app.pages.archive.getDateRangeAsJSON(),
+      get: 'closed',
+      dateRangeJSON: app.pages.closed.getDateRangeAsJSON(),
     });
   },
 };

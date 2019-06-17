@@ -1,11 +1,11 @@
 <script>
-/* global app utility populateArchiveTable */
-app.pages.archive.filters = {
+/* global app utility populateClosedTable */
+app.pages.closed.filters = {
   isBooked: form => (form.bookingId),
   isNotBooked: form => (! form.bookingId),
   isTape: form => (form.tape),
   byStudentName: form => {
-    const inputs = app.pages.archive.elements.queryInputs;
+    const inputs = app.pages.closed.elements.queryInputs;
     const studentQuery = inputs.students.value.toLowerCase().split(',');
     studentQuery.forEach(utility.cleanStudent);
     let found = studentQuery.find(queryArg => {
@@ -20,7 +20,7 @@ app.pages.archive.filters = {
     return true;
   },
   byMatchAllItemID: form => {
-    const inputs = app.pages.archive.elements.queryInputs;
+    const inputs = app.pages.closed.elements.queryInputs;
     const itemQuery = inputs.items.value.toLowerCase().split(',');
     const itemsOnForm = form.items.slice();
     for (let i = 0; i < itemQuery.length; ++i) {
@@ -42,7 +42,7 @@ app.pages.archive.filters = {
     return true;
   },
   byMatchAnyItemID: form => {
-    const inputs = app.pages.archive.elements.queryInputs;
+    const inputs = app.pages.closed.elements.queryInputs;
     const itemQuery = inputs.items.value.toLowerCase().split(',');
     const itemsOnForm = form.items.slice();
     for (let i = 0; i < itemQuery.length; ++i) {
@@ -146,7 +146,7 @@ app.pages.archive.filters = {
     }
   },
   byTimeRange: form => {
-    const inputs = app.pages.archive.elements.queryInputs;
+    const inputs = app.pages.closed.elements.queryInputs;
     const startRange = new Date(inputs.start.value + 'T00:00:00'),
           endRange = new Date(inputs.end.value  + 'T23:59:59'),
           start = utility.date.parseFormattedDate(form.startTime);
@@ -157,7 +157,7 @@ app.pages.archive.filters = {
     return true;
   },
   byLocation: form => {
-    const inputs = app.pages.archive.elements.queryInputs;
+    const inputs = app.pages.closed.elements.queryInputs;
     if (inputs.location.value != 'Other') {
       if (form.location != inputs.location.value) {
         return false;
@@ -171,57 +171,57 @@ app.pages.archive.filters = {
   },
 };
 
-app.pages.archive.query = function() {
-  // forms:  use app.cache.archive
-  // inputs: use app.pages.archive.elements.queryInputs[input]
-  const archiveElements = app.pages.archive.elements.container,
-        inputs = app.pages.archive.elements.queryInputs,
+app.pages.closed.query = function() {
+  // forms:  use app.cache.closed
+  // inputs: use app.pages.closed.elements.queryInputs[input]
+  const closedElements = app.pages.closed.elements.container,
+        inputs = app.pages.closed.elements.queryInputs,
         appliedFilters = [];
 
-  const dateInputs = archiveElements.querySelectorAll('input[type="date"]');
+  const dateInputs = closedElements.querySelectorAll('input[type="date"]');
   if (! dateInputs[0].value) { // initialize date range inputs
-    app.pages.archive.init();
+    app.pages.closed.init();
   }
   
-  appliedFilters.push(app.pages.archive.filters.byTimeRange); // always run
+  appliedFilters.push(app.pages.closed.filters.byTimeRange); // always run
 
   if (inputs.location.value != "All") {
-    appliedFilters.push(app.pages.archive.filters.byLocation);
+    appliedFilters.push(app.pages.closed.filters.byLocation);
   }
 
   if (inputs.students.value) {
-    appliedFilters.push(app.pages.archive.filters.byStudentName);
+    appliedFilters.push(app.pages.closed.filters.byStudentName);
   }
 
   if (inputs.items.value && inputs.matchItems.value == "all") {
-    appliedFilters.push(app.pages.archive.filters.byMatchAllItemID);
+    appliedFilters.push(app.pages.closed.filters.byMatchAllItemID);
   }
 
   if (inputs.items.value && inputs.matchItems.value == "any") {
-    appliedFilters.push(app.pages.archive.filters.byMatchAnyItemID);
+    appliedFilters.push(app.pages.closed.filters.byMatchAnyItemID);
   }
 
-  const checkboxes = archiveElements.querySelectorAll('input[type="checkbox"]');
+  const checkboxes = closedElements.querySelectorAll('input[type="checkbox"]');
   for (let i = 0; i < checkboxes.length; ++i) {
     if (checkboxes[i].checked) {
-      appliedFilters.push(app.pages.archive.filters[checkboxes[i].name]);
+      appliedFilters.push(app.pages.closed.filters[checkboxes[i].name]);
     }
   }
 
-  app.cache.archiveFiltered = appliedFilters.reduce(
-    (forms, func) => forms.filter(func), app.cache.archive
+  app.cache.closedFiltered = appliedFilters.reduce(
+    (forms, func) => forms.filter(func), app.cache.closed
   );
 
-  if (app.cache.archiveFiltered.length == 1) {
-    app.pages.archive.elements
-      .queryCount.textContent = app.cache.archiveFiltered
+  if (app.cache.closedFiltered.length == 1) {
+    app.pages.closed.elements
+      .queryCount.textContent = app.cache.closedFiltered
         .length + ' form';
   } else {
-    app.pages.archive
-      .elements.queryCount.textContent = app.cache.archiveFiltered
+    app.pages.closed
+      .elements.queryCount.textContent = app.cache.closedFiltered
         .length + ' forms';
   }
-  utility.sortForms(app.cache.archiveFiltered);
-  populateArchiveTable(app.cache.archiveFiltered);
+  utility.sortForms(app.cache.closedFiltered);
+  populateClosedTable(app.cache.closedFiltered);
 };
 </script>
