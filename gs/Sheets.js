@@ -362,16 +362,13 @@ function makeStudentFromDataGAS_(studentData) {
 /* ********* WRITERS *********** */
 
 /* exported writeCodabarGAS_ */
-function writeCodabarGAS_(netId, codabar, update) {
+function writeCodabarGAS_(netId, codabar) {
   var sheet = SpreadsheetApp.openById(index.students.SHEET_ID)
     .getSheetByName(index.students.SHEET_NAME);
   var data = sheet.getDataRange().getValues();
   var i = data.findRowContaining(netId, index.students.NETID, true);
   if (typeof i == "undefined") {
     throw new Error ('Could not write codabar for ' + netId);
-  }
-  if (data[i][index.students.id] && ! update) {
-    throw new Error("ID EXISTS");
   }
   sheet.getRange(i + 1, index.students.ID + 1).setValue(codabar);
 }

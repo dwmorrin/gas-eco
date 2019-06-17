@@ -29,13 +29,6 @@ app.modal = {
                "message in error, choose \"close\".",
       ok:      "Submit",
     },
-    updateCodabar: {
-      heading: "Add new ID",
-      body:    "Whoa - there is another ID already registered to that NetID. " +
-               "If you are sure you are updating their ID, " +
-               "click \"Update\", otherwise click \"Close\".",
-      ok:      "Update",
-    },
     collision: {
       heading: "Uh-oh, your form conflicts with another form",
       body:    "Unfortunately, no automatic fix is available, but your form " +
@@ -187,17 +180,6 @@ app.modal = {
     app.modal.tmp = codabar;
   },
 
-  confirmUpdateCodabar: function(netId, codabar /* strings */) {
-    const m = app.modal;
-    m.blurAllTextInputs();
-    m.setStrings('updateCodabar');
-    m.ok.textContent += " " + netId;
-    m.heading.textContent += " for " + netId + "?";
-    m.ok.setAttribute('value', 'codabarUpdateOK');
-    m.input.value = netId;
-    m.tmp = codabar;
-    m.show(app.modal.container, app.modal.ok);
-  },
   getNote: function() {
     app.modal.setStrings('note');
     app.modal.show(app.modal.container, app.modal.ok, app.modal.textarea);

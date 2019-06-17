@@ -48,8 +48,7 @@ app.doCommand = function(command,...options) {
     }
     case 'codabar': {
       const codabar = app.modal.tmp,
-            netId = app.modal.getInput(),
-            update = options[0] || false;
+            netId = app.modal.getInput();
       const student = app.cache.students.find(
         student => student.netId.toLowerCase() == netId
       );
@@ -61,22 +60,14 @@ app.doCommand = function(command,...options) {
         ));
         break;
       }
-      if (student.id && ! update) {
-        app.modal.confirmUpdateCodabar(netId, codabar);
-        break;
-      }
       app.spinner.inside(app.pages.form.elements.updateFormButton);
       app.run.doPost({
         post: 'codabar',
         netId,
         codabar,
-        update: update
       });
       break;
     }
-    case 'codabarUpdateOK':
-      app.doCommand('codabar', true);
-      break;
     case 'collisionResolve': {
       const form = app.modal.tmp.storedForm;
       app.cache[app.cache.currentFormstack][app.cache.currentIndex] = form;
