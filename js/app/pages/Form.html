@@ -48,18 +48,11 @@ app.pages.form = {
   },
   /** for form validation and attach beforeunload listener for unsaved changes */
   handleChange: function(change) {
-    if (change.target.classList &&
-        change.target.classList.contains("selectQuantity")) {
+    if ((change.target.classList &&
+         change.target.classList.contains("selectQuantity")) ||
+         change.target == app.omnibox.element) {
       return;
     }
-    app.changes.saved = false;
-    app.pages.form.elements.undoButton.removeAttribute('disabled');
-    if (!app.pages.form.elements.form.id) {
-      app.pages.form.elements.updateFormButton.textContent = "Submit";
-    } else {
-      app.pages.form.elements.updateFormButton.textContent = "Update";
-    }
-    app.pages.form.elements.updateFormButton.classList.add('create');
 
     switch (change.target.name) {
       case 'location':
@@ -75,7 +68,6 @@ app.pages.form = {
       case 'endAMPM':
         app.pages.form.handleChangeTime(change);
         break;
-      case 'manual':
       case 'notes':
         app.changes.add(change);
         break;
@@ -84,7 +76,19 @@ app.pages.form = {
         toast(change.target.value + " OK");
         app.changes.add(change);
         break;
+      case 'manual': // SPECIAL CASE
+        app.changes.add(change);
+        return; // no change to buttons or "saved" state for manual entries
     }
+
+    app.changes.saved = false;
+    app.pages.form.elements.undoButton.removeAttribute('disabled');
+    if (! app.pages.form.elements.form.id) {
+      app.pages.form.elements.updateFormButton.textContent = "Submit";
+    } else {
+      app.pages.form.elements.updateFormButton.textContent = "Update";
+    }
+    app.pages.form.elements.updateFormButton.classList.add('create');
 
     const okToPost = isFormOkToPost();
     if (okToPost) {
