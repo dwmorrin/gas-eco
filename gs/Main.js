@@ -306,19 +306,10 @@ function isValidForm_(form) {
 }
 
 /**
- * @param {obj} request - .netId{string}, .codabar{string}, .update{bool}
+ * @param {obj} request - .netId{string}, .codabar{string}
  */
 function postCodabar_(request) {
-  try {
-    writeCodabarGAS_(request.netId, request.codabar, request.update);
-  } catch (error) {
-    if (/ID EXISTS/.test(error)) {
-      throw new Error("Oops, we have another ID saved for " + request.netId +
-        ". Trying refreshing your browser."
-      );
-    }
-    throw error;
-  }
+  writeCodabarGAS_(request.netId, request.codabar);
 }
 
 /** @see doPost */
