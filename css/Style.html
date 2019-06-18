@@ -65,6 +65,7 @@ div.modal input {
 div.modal p {
   height: 100%;
   margin: 0;
+  min-width: 300px;
   overflow: auto;
   padding: 20px 20px 5px 20px;
   width: 90%;
@@ -77,7 +78,6 @@ div.modal table {
 }
 
 div.modal textarea {
-  width: 500px;
   height: 50px;
 }
 
@@ -143,18 +143,12 @@ input.omnibox {
   margin-right: 0; /* bringing button close */
 }
 
-input.omnibox, button {
-  margin: 10px;
-}
-
 input.omnibox:focus {
   background-color: lightcyan;
 }
 
 label {
   float: left;
-  margin-right: 10px;
-  text-align: right;
   width: 200px;
 }
 
@@ -167,14 +161,13 @@ section h4 {
   margin: 2px 0 7px 5px;
 }
 
+section.globalnotes p {
+  font-weight: bold;
+}
+
 span.updateButtonHint {
   color: grey;
   font-style: italic;
-}
-
-span.usernameContainer {
-  position: absolute;
-  right: 0;
 }
 
 svg.buttonIcon {
@@ -186,6 +179,10 @@ table {
   table-layout: fixed;
   width: 99%;
   margin-left: 5px;
+}
+
+td {
+  padding: 1px;
 }
 
 th {
@@ -345,5 +342,44 @@ tr.inactive td:not(:first-child) {
 
 .hidden {
   display: none !important; /* class selector is low specificity, doesn't apply to specific styles without !important */
+}
+
+/* desktop view only */
+@media screen and (min-width: 501px) {
+  div.modal textarea { width: 500px; }
+  input.omnibox, button { margin: 2px; }
+  label {
+    margin-right: 10px;
+    text-align: right;
+  }
+  span.usernameContainer {
+    position: absolute;
+    right: 0;
+  }
+}
+
+/* mobile view only */
+@media screen and (max-width: 500px) {
+  div.modal h1 { font-size: medium; }
+  div.modal textarea { width: 300px; }
+  input.omnibox, button { margin: 5px !important; }
+  button[value="changeLog"] { display: none; }
+  section.formControls { display: grid; }
+  span.currentFormstackDisplay { text-align: center; }
+  span.usernameContainer { display: block; }
+  table.staticFields tr,
+  table.staticFields td,
+  tbody.archive tr,
+  tbody.studentList tr,
+  tbody.itemList tr {
+    display: grid;
+  }
+  tbody.studentList tr,
+  tbody.itemList tr[data-barcode], /* avoiding item notes row */
+  tbody.itemList tr[data-id] {
+    border: 1px solid grey;
+  }
+  thead.archive,
+  thead.form { display: none; }
 }
 </style>
