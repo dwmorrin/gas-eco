@@ -232,6 +232,10 @@ app.modal = {
     }
   },
 
+  isShowing: function () {
+    return ! app.modal.container.classList.contains("hidden");
+  },
+
   signatureReady: function() {
     let m = app.modal;
     m.setStrings('signatureReady');
