@@ -320,7 +320,9 @@ app.pages.form = {
     if (isNaN(app.pages.form.timeoutId)) {
       app.pages.form.setTimeout();
     }
-    app.omnibox.element.focus();
+    if (! app.modal.isShowing()) {
+      app.omnibox.element.focus();
+    }
   },
   timeoutId: NaN,
   unlock: function() {
