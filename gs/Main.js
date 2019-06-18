@@ -46,7 +46,8 @@ function doGet(request) {
   if (! request.get) {
     webpage = HtmlService.createTemplateFromFile('html/index');
     webpage = webpage.evaluate();
-    webpage.setTitle('Equipment Check-Out');
+    webpage.setTitle('Equipment Check-Out')
+      .addMetaTag("viewport", "width=device-width");
     return webpage;
   }
 

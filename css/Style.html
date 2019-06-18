@@ -143,8 +143,16 @@ input.omnibox {
   margin-right: 0; /* bringing button close */
 }
 
-input.omnibox, button {
-  margin: 10px;
+@media screen and (min-width: 501px) {
+  input.omnibox, button {
+    margin: 2px;
+  }
+}
+
+@media screen and (max-width: 500px) {
+  input.omnibox, button {
+    margin: 5px !important;
+  }
 }
 
 input.omnibox:focus {
@@ -153,9 +161,14 @@ input.omnibox:focus {
 
 label {
   float: left;
-  margin-right: 10px;
-  text-align: right;
   width: 200px;
+}
+
+@media screen and (min-width: 501px) {
+  label {
+    margin-right: 10px;
+    text-align: right;
+  }
 }
 
 section {
@@ -172,9 +185,23 @@ span.updateButtonHint {
   font-style: italic;
 }
 
-span.usernameContainer {
-  position: absolute;
-  right: 0;
+@media screen and (min-width: 501px) {
+  span.usernameContainer {
+    position: absolute;
+    right: 0;
+  }
+}
+
+@media screen and (max-width: 500px) {
+  section.formControls {
+    display: grid;
+  }
+  span.currentFormstackDisplay {
+    text-align: center;
+  }
+  span.usernameContainer {
+    display: block;
+  }
 }
 
 svg.buttonIcon {
@@ -188,6 +215,10 @@ table {
   margin-left: 5px;
 }
 
+td {
+  padding: 1px;
+}
+
 th {
   font-weight: bold;
 }
@@ -199,6 +230,16 @@ th > img {
 span.alert {
   color: red;
   font-weight: bold;
+}
+
+@media screen and (max-width: 500px) {
+  table.staticFields tr,
+  table.staticFields td,
+  tbody.archive tr,
+  tbody.studentList tr,
+  tbody.itemList tr {
+    display: grid;
+  }
 }
 
 tr.inactive img {
@@ -278,6 +319,13 @@ thead.formStudents th:nth-child(3) {
 
 thead.formStudents th:nth-child(4) {
   width: 20%;
+}
+
+@media screen and (max-width: 500px) {
+  thead.archive,
+  thead.form {
+    display: none;
+  }
 }
 
 tbody.open td {
