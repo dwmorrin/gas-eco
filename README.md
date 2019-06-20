@@ -2,8 +2,11 @@
 Google Apps Script inventory management program.
 
 ## Features
-* Works with barcodes to associate items with students.
-* Uses Sheets as a database.
+* Uses Sheets as a database to track inventory checked out to users
+* web app UI set up for use with barcode scanners
+
+## Non-features
+* Currently tailored for a specific use case (generalizing is on the todo list)
 
 ## Code organization
 ### Client-side
@@ -26,13 +29,9 @@ Google Apps Script inventory management program.
 #### Models
 * gs/Booking
 * gs/Form
-* gs/Item
 * gs/Note
 * gs/Student
 
 #### Controllers
 * gs/Main: implementation agnostic router of requests, responses
 * gs/Sheets: the Sheets implementation specific code
-
-#### Deprecated
-* gs/Demo: the demo implementation specific code
