@@ -194,10 +194,9 @@ app.pages.form = {
     }
   },
   handleCopyItems: function() {
-    const items = app.pages.form.elements.form.items.value;
-    // do something here so that we only pass itemID, barcode, and description. 
-    // Possibly better to just create a new item list.
-    utility.copyToClipboard(items);
+    const items = JSON.parse(app.pages.form.elements.form.items.value);
+    items.forEach(utility.stripItem);
+    utility.copyToClipboard(JSON.stringify(items));
   },
   handleClickTable: function(click) {
     const isArchive = app.cache.currentFormstack == 'archive';

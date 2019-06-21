@@ -12,6 +12,21 @@ utility.cleanStudent = (value, index, array) => {
   array[index] = array[index].replace(/\s/g, '');
 },
 
+utility.stripItem = (value, index, array) => {
+  array[index] = {
+    id: array[index].id,
+    checkIn: null,
+    checkOut: null,
+    quantity: array[index].quantity,
+    serialized: array[index].serialized,
+    barcode: array[index].barcode,
+    description: array[index].description,
+    checkedOut: null,
+    notes: '',
+    missing: false
+  };
+},
+
 utility.copyToClipboard = function(data) {
   var textArea = document.createElement("textarea");
   textArea.value = data;
