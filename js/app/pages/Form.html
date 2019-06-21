@@ -32,7 +32,7 @@ app.pages.form = {
       app.omnibox.element.focus();
       return;
     } else {
-      const isArchive = (app.cache.currentFormstack == 'archive') ? true : false;
+      const isArchive = app.cache.currentFormstack == 'archive';
       displayForm(stack[++app.cache.currentIndex], isArchive);
     }
   },
@@ -42,7 +42,7 @@ app.pages.form = {
       app.omnibox.element.focus();
       return;
     } else {
-      const isArchive = (app.cache.currentFormstack == 'archive') ? true : false;
+      const isArchive = app.cache.currentFormstack == 'archive';
       displayForm(stack[--app.cache.currentIndex], isArchive);
     }
   },
@@ -172,7 +172,7 @@ app.pages.form = {
   },
 
   handleClickItem: function(click) {
-    const isArchive = (app.cache.currentFormstack == 'archive') ? true : false;
+    const isArchive = app.cache.currentFormstack == 'archive';
     if (isArchive){
       return;
     }
@@ -193,7 +193,7 @@ app.pages.form = {
     }
   },
   handleClickTable: function(click) {
-    const isArchive = (app.cache.currentFormstack == 'archive') ? true : false;
+    const isArchive = app.cache.currentFormstack == 'archive';
     if (isArchive){
       return;
     }
@@ -256,7 +256,7 @@ app.pages.form = {
     app.omnibox.parse();
   },
   handleClickStudent: function(click) {
-    const isArchive = (app.cache.currentFormstack == 'archive') ? true : false;
+    const isArchive = app.cache.currentFormstack == 'archive';
     if (isArchive){
       return;
     }
