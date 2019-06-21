@@ -12,6 +12,26 @@ utility.cleanStudent = (value, index, array) => {
   array[index] = array[index].replace(/\s/g, '');
 },
 
+utility.copyToClipboard = function(data) {
+  var textArea = document.createElement("textarea");
+  textArea.value = data;
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+
+  try {
+    var successful = document.execCommand('copy');
+    var msg = successful ? 'successful' : 'unsuccessful';
+    // this will becaome a modal message
+    console.log('Copying text command was ' + msg);
+  } catch (err) {
+    // this will become a modal message
+    console.log('Oops, unable to copy');
+  }
+
+  document.body.removeChild(textArea);
+};
+
 utility.digestMessage = function(message) {
   const encoder = new TextEncoder();
   const data = encoder.encode(message);

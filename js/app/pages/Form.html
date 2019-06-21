@@ -24,6 +24,7 @@ app.pages.form = {
     updateButtonHint:        document.querySelector('span.updateButtonHint'),
     updateFormButton:        document.querySelector('button[value="updateForm"]'),
     undoButton:              document.querySelector('button[value="undo"]'),
+    copyButton:              document.querySelector('.copyButton'),
   },
   getNext: function() {
     // get the next form from either the open stack or the archive stack
@@ -191,6 +192,12 @@ app.pages.form = {
       }
       app.modal.handleItemNote(item);
     }
+  },
+  handleCopyItems: function() {
+    const items = app.pages.form.elements.form.items.value;
+    // do something here so that we only pass itemID, barcode, and description. 
+    // Possibly better to just create a new item list.
+    utility.copyToClipboard(items);
   },
   handleClickTable: function(click) {
     const isArchive = app.cache.currentFormstack == 'archive';
