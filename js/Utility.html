@@ -1,6 +1,6 @@
 <script>
 /** Utility */
-/* global app */
+/* global app toast */
 var utility = { DOM: {}, date: {}, };
 
 utility.cleanItem = item => {
@@ -18,30 +18,49 @@ utility.stripItem = (value, index, array) => {
     checkIn: null,
     checkOut: null,
     quantity: array[index].quantity,
-    serialized: array[index].serialized,
-    barcode: array[index].barcode,
-    description: array[index].description,
-    checkedOut: null,
     notes: '',
-    missing: false
+    missing: false,
+    barcode: array[index].barcode,
+    serialized: array[index].serialized,    
+    description: array[index].description,
+    checkedOut: true
   };
 },
 
+utility.removeInvalidItem = (item, index, array) => {
+  const items = app.cache.items;
+  const manualItemIdregex = /^MANUAL/;
+  if (items.indexOf(item) < 0 && !manualItemIdregex.test(item.id)){
+    array.splice(index, 1);
+  }
+},
+
 utility.copyToClipboard = function(data) {
-  var textArea = document.createElement("textarea");
+  const textArea = document.createElement("textarea");
+  textArea.style.position = 'fixed';
+  textArea.style.top = 0;
+  textArea.style.left = 0;
+  textArea.style.width = '2em';
+  textArea.style.height = '2em';
+  textArea.style.padding = 0;
+  textArea.style.border = 'none';
+  textArea.style.outline = 'none';
+  textArea.style.boxShadow = 'none';
+  textArea.style.background = 'transparent';
+
   textArea.value = data;
   document.body.appendChild(textArea);
   textArea.focus();
   textArea.select();
 
   try {
-    var successful = document.execCommand('copy');
-    var msg = successful ? 'successful' : 'unsuccessful';
+    const successful = document.execCommand('copy');
+    const msg = successful ? 'successful' : 'unsuccessful';
     // this will becaome a modal message
-    console.log('Copying text command was ' + msg);
+    toast("Items coppied successfully");
   } catch (err) {
     // this will become a modal message
-    console.log('Oops, unable to copy');
+    toast('Sorry, the items were not copied. Please try again.');
   }
 
   document.body.removeChild(textArea);

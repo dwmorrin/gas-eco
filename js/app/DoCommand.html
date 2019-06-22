@@ -76,6 +76,12 @@ app.doCommand = function(command,...options) {
       displayForm(form);
       break;
     }
+    case 'copyItems': {
+      const items = JSON.parse(app.pages.form.elements.form.items.value);
+      items.forEach(utility.stripItem);
+      utility.copyToClipboard(JSON.stringify(items));
+      break;
+    }
     case 'displayForm': {
       const form = options[0],
             isArchive = Boolean(options[1]);
