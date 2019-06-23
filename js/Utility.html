@@ -16,6 +16,8 @@ utility.stripItem = (value, index, array) => {
   // only the quantity and barcode are needed, because the integrity
   // check will pull the other information from the cache
   array[index] = {
+    id: array[index].id,
+    description: array[index].description,
     quantity: array[index].quantity,
     barcode: array[index].barcode,
   };
@@ -25,6 +27,8 @@ utility.itemIntegrityCheck = (item, index, array) => {
   const items = app.cache.items;
   const manualItemIdregex = /^MANUAL/;
   var found = false;
+  // tries to locate the item in the inventory and
+  // sets the properties as they are in the inventory
   for (let entry of items){
     if (entry.barcode == item.barcode){
       found = true;
@@ -42,13 +46,15 @@ utility.itemIntegrityCheck = (item, index, array) => {
     }
   }
   if (!found && !manualItemIdregex.test(item.id)){
-    console.log('removed ' + item.description + ' because it is not on the inventory');
+    // removes the item if not manual and not found in inventory.
     array.splice(index,1);
   }
 },
 
 utility.copyToClipboard = function(data) {
   const textArea = document.createElement("textarea");
+
+  // ensures that copying the items will not cause the screen to scroll down
   textArea.style.position = 'fixed';
   textArea.style.top = 0;
   textArea.style.left = 0;
@@ -66,15 +72,13 @@ utility.copyToClipboard = function(data) {
   textArea.select();
 
   try {
-    const successful = document.execCommand('copy');
-    const msg = successful ? 'successful' : 'unsuccessful';
-    // this will becaome a modal message
+    // copies the items
+    document.execCommand('copy');
     toast("Items coppied successfully");
   } catch (err) {
-    // this will become a modal message
     toast('Sorry, the items were not copied. Please try again.');
   }
-
+  // removes the text area after copying so that it is not seen
   document.body.removeChild(textArea);
 };
 
