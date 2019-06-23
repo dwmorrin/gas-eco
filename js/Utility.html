@@ -38,14 +38,15 @@ utility.itemIntegrityCheck = (item, index, array) => {
         item.quantity = 1;
       }
       item.id = entry.id;
-      item.checkedOut = true;
-      item.checkIn = null;
-      item.checkOut = null;
-      item.missing = false;
-      item.notes = '';
     }
   }
-  if (!found && !manualItemIdregex.test(item.id)){
+  if (found || manualItemIdregex.test(item.id)){
+    item.checkedOut = true;
+    item.checkIn = null;
+    item.checkOut = null;
+    item.missing = false;
+    item.notes = '';
+  } else{
     // removes the item if not manual and not found in inventory.
     array.splice(index,1);
   }
