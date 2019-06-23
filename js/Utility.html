@@ -1,6 +1,6 @@
 <script>
 /** Utility */
-/* global app */
+/* global app toast */
 var utility = { DOM: {}, date: {}, };
 
 utility.cleanItem = item => {
@@ -11,6 +11,77 @@ utility.cleanItem = item => {
 utility.cleanStudent = (value, index, array) => {
   array[index] = array[index].replace(/\s/g, '');
 },
+
+utility.stripItem = (value, index, array) => {
+  // only the quantity and barcode are needed, because the integrity
+  // check will pull the other information from the cache
+  array[index] = {
+    id: array[index].id,
+    description: array[index].description,
+    quantity: array[index].quantity,
+    barcode: array[index].barcode,
+  };
+},
+
+utility.itemIntegrityCheck = (item, index, array) => {
+  const items = app.cache.items;
+  const manualItemIdregex = /^MANUAL/;
+  var found = false;
+  // tries to locate the item in the inventory and
+  // sets the properties as they are in the inventory
+  for (let entry of items){
+    if (entry.barcode == item.barcode){
+      found = true;
+      item.description = entry.description;
+      item.serialized = entry.serialized;
+      if (item.serialized){
+        item.quantity = 1;
+      }
+      item.id = entry.id;
+    }
+  }
+  if (found || manualItemIdregex.test(item.id)){
+    item.checkedOut = true;
+    item.checkIn = null;
+    item.checkOut = null;
+    item.missing = false;
+    item.notes = '';
+  } else{
+    // removes the item if not manual and not found in inventory.
+    app.modal.handleError(new Error('Oops!, "' + item.description + '" was not found in our inventory. If this was a manual item, try entering it as a new manual item.'));
+    delete array[index];
+  }
+},
+
+utility.copyToClipboard = function(data) {
+  const textArea = document.createElement("textarea");
+
+  // ensures that copying the items will not cause the screen to scroll down
+  textArea.style.position = 'fixed';
+  textArea.style.top = 0;
+  textArea.style.left = 0;
+  textArea.style.width = '2em';
+  textArea.style.height = '2em';
+  textArea.style.padding = 0;
+  textArea.style.border = 'none';
+  textArea.style.outline = 'none';
+  textArea.style.boxShadow = 'none';
+  textArea.style.background = 'transparent';
+
+  textArea.value = data;
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+  try {
+    // copies the items
+    document.execCommand('copy');
+    toast("Items coppied successfully");
+  } catch (err) {
+    toast('Sorry, the items were not copied. Please try again.');
+  }
+  // removes the text area after copying so that it is not seen
+  document.body.removeChild(textArea);
+};
 
 utility.digestMessage = function(message) {
   const encoder = new TextEncoder();

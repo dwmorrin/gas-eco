@@ -165,10 +165,20 @@ app.omnibox = {
   },
   parse: function() {
     let codabar = /^[a-d][0-9]{5,}[a-d]$/, // "a123...789b" pattern
+        json = /^\[{"id":/,
         parsed,
         value = app.omnibox.element.value;
 
     if (! value) { // nothing was entered, abort
+      return;
+    }
+    else if(json.test(value)){
+      // parses the pasted quantity and barcodess
+      let pasted = JSON.parse(value);
+      // confirms non-manual items match the corresponding inventory entry
+      pasted.forEach(utility.itemIntegrityCheck);
+      // checks out each item in the quantity provided
+      pasted.forEach(app.omnibox.handleItem);
       return;
     } else {     // case insensitive
       value = value.toLowerCase();
