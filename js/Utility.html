@@ -13,25 +13,37 @@ utility.cleanStudent = (value, index, array) => {
 },
 
 utility.stripItem = (value, index, array) => {
+  // only the quantity and barcode are needed, because the integrity
+  // check will pull the other information from the cache
   array[index] = {
-    id: array[index].id,
-    checkIn: null,
-    checkOut: null,
     quantity: array[index].quantity,
-    notes: '',
-    missing: false,
     barcode: array[index].barcode,
-    serialized: array[index].serialized,    
-    description: array[index].description,
-    checkedOut: true
   };
 },
 
-utility.removeInvalidItem = (item, index, array) => {
+utility.itemIntegrityCheck = (item, index, array) => {
   const items = app.cache.items;
   const manualItemIdregex = /^MANUAL/;
-  if (items.indexOf(item) < 0 && !manualItemIdregex.test(item.id)){
-    array.splice(index, 1);
+  var found = false;
+  for (let entry of items){
+    if (entry.barcode == item.barcode){
+      found = true;
+      item.description = entry.description;
+      item.serialized = entry.serialized;
+      if (item.serialized){
+        item.quantity = 1;
+      }
+      item.id = entry.id;
+      item.checkedOut = true;
+      item.checkIn = null;
+      item.checkOut = null;
+      item.missing = false;
+      item.notes = '';
+    }
+  }
+  if (!found && !manualItemIdregex.test(item.id)){
+    console.log('removed ' + item.description + ' because it is not on the inventory');
+    array.splice(index,1);
   }
 },
 

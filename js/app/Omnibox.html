@@ -165,7 +165,7 @@ app.omnibox = {
   },
   parse: function() {
     let codabar = /^[a-d][0-9]{5,}[a-d]$/, // "a123...789b" pattern
-        json = /^\[{"id":/,
+        json = /^\[{"quantity":/,
         parsed,
         value = app.omnibox.element.value;
 
@@ -174,7 +174,7 @@ app.omnibox = {
     }
     else if(json.test(value)){
       let pasted = JSON.parse(value);
-      //pasted.forEach(utility.removeInvalidItem);
+      pasted.forEach(utility.itemIntegrityCheck);
       pasted.forEach(app.omnibox.handleItem);
       return;
     } else {     // case insensitive
