@@ -48,7 +48,8 @@ utility.itemIntegrityCheck = (item, index, array) => {
     item.notes = '';
   } else{
     // removes the item if not manual and not found in inventory.
-    array.splice(index,1);
+    app.modal.handleError(new Error('Oops!, "' + item.description + '" was not found in our inventory. If this was a manual item, try entering it as a new manual item.'));
+    delete array[index];
   }
 },
 
@@ -71,7 +72,6 @@ utility.copyToClipboard = function(data) {
   document.body.appendChild(textArea);
   textArea.focus();
   textArea.select();
-
   try {
     // copies the items
     document.execCommand('copy');
