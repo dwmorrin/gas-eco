@@ -23,12 +23,12 @@ utility.stripItem = (value, index, array) => {
   };
 },
 
-utility.itemIntegrityCheck = (item, index, array) => {
+utility.getItemFromCache = (item, index, array) => {
   const items = app.cache.items;
   const manualItemIdregex = /^MANUAL/;
   // tries to locate the item in the inventory and
   // sets the properties as they are in the inventory
-  var found = items.find(entry => entry.barcode == item.barcode);
+  const found = items.find(entry => entry.barcode == item.barcode);
   if (found){
     item.description = found.description;
     item.serialized = found.serialized;
