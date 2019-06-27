@@ -160,12 +160,14 @@ function displayForm(form, archived) {
     els.omniboxButton.setAttribute('disabled', true);
     els.updateButtonHint.textContent = 'This is a closed form.  ' +
       'You cannot edit it.';
+    els.copyButton.classList.remove('hidden');
   } else {
     app.omnibox.element.removeAttribute('disabled');
     els.newNoteButton.removeAttribute('disabled');
     els.manualButton.removeAttribute('disabled');
     els.omniboxButton.removeAttribute('disabled');
     els.updateButtonHint.textContent = '';
+    els.copyButton.classList.add('hidden');
   }
 
   app.spinner.element.classList.add('hidden');
