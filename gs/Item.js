@@ -1,8 +1,21 @@
 /* exported  Item_ */
-function Item_(id) {
-  this.barcode;          // {string}
-  this.id = id;          // {string}
-  this.checkedOut;       // {bool}
+function Item_(itemData) {
+  // Inventory cheat sheet: [[Location, Category, Sub Category, Manufacturer , Model,
+  //  Description, Serial, Item ID, Barcode No., Reserveable, Reservations, Check-Out History, Repair History, Checked-Out, ID, Qnty, Notes]]
+  var dataIndex = {
+    SHEET_ID    : '1XYu7fGgmuZ3DTa8y2JNbwwKuHw8_XNJ4VEwgZCf_UME',
+    SHEET_NAME  : 'Inventory',
+    MAKE        : 3,
+    MODEL       : 4,
+    DESCRIPTION : 5,
+    ID          : 7,
+    BARCODE     : 8,
+    HISTORY     : 11,
+    CHECKED_OUT : 13
+  };
+  this.barcode = itemData[dataIndex.BARCODE];// {string}
+  this.id = itemData[dataIndex.ID];          // {string}
+  this.checkedOut = Boolean(itemData[dataIndex.CHECKED_OUT]);
   this.checkIn = null;   // {string} formatted date
   this.checkOut = null;  // {string} formatted date
   this.description;      // {string} make, model, etc
@@ -10,6 +23,11 @@ function Item_(id) {
   this.notes = '';       // {string} saves the notes for the item
   this.missing = false;  // {bool} true if item cannot be found when form is closed
 
+  if (itemData[dataIndex.MAKE] && itemData[dataIndex.MODEL]) {
+    this.description = itemData[dataIndex.MAKE] + ' ' + itemData[dataIndex.MODEL];
+  } else {
+    this.description = itemData[dataIndex.DESCRIPTION];
+  }
 
   this.getId = function() { return this.id; };
   this.getQuantity = function() { return this.quantity; };
@@ -62,4 +80,5 @@ function Item_(id) {
     }
     return this;
   };
+  this.setSerialized();
 }
