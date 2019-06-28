@@ -145,15 +145,6 @@ app.doCommand = function(command,...options) {
           value: description + ' qty ' + item.quantity,
         }
       };
-      if (quantity < 1 || isNaN(quantity) ||
-          Math.floor(quantity) != quantity) {
-        app.modal.handleError(
-          new Error("Invalid quantity: " + quantity +
-            ". Use a positive number.  Scan the item again to check-in."
-          )
-        );
-        return;
-      }
       // is the item on the saved form? Quantity cannot be decreased.
       const savedItem = app.cache.savedForm.items.find(i => i.description == description);
       if (savedItem && quantity < savedItem.quantity) {
@@ -165,7 +156,12 @@ app.doCommand = function(command,...options) {
         );
         return;
       }
-      item.quantity = quantity;
+      try {
+        item.setQuantity(quantity);
+      } catch (error) {
+        app.modal.handleError(error);
+        return;
+      }
       // Update form.items
       app.pages.form.elements.form.items.value = JSON.stringify(items);
       // Update display
