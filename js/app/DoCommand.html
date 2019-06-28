@@ -78,7 +78,7 @@ app.doCommand = function(command,...options) {
     }
     case 'copyItems': {
       const items = JSON.parse(app.pages.form.elements.form.items.value);
-      items.forEach(utility.stripItem);
+      items.forEach(utility.item.strip);
       utility.copyToClipboard(JSON.stringify(items));
       break;
     }

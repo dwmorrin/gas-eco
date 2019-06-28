@@ -1,7 +1,7 @@
 <script>
 /** Utility */
 /* global app toast */
-var utility = { DOM: {}, date: {}, };
+var utility = { DOM: {}, date: {}, item: {}, };
 
 utility.cleanItem = item => {
   item = item.replace(/\s/g, '').replace(/-0+/, '-');
@@ -12,7 +12,7 @@ utility.cleanStudent = (value, index, array) => {
   array[index] = array[index].replace(/\s/g, '');
 },
 
-utility.stripItem = (value, index, array) => {
+utility.item.strip = (value, index, array) => {
   // only the quantity and barcode are needed, because the integrity
   // check will pull the other information from the cache
   array[index] = {
@@ -23,7 +23,7 @@ utility.stripItem = (value, index, array) => {
   };
 },
 
-utility.getItemFromCache = (item, index, array) => {
+utility.item.getCached = (item, index, array) => {
   const items = app.cache.items;
   const manualItemIdregex = /^MANUAL/;
   // tries to locate the item in the inventory and
@@ -45,7 +45,7 @@ utility.getItemFromCache = (item, index, array) => {
     item.notes = '';
   } else{
     // removes the item if not manual and not found in inventory.
-    app.modal.handleError(new Error('Oops!, "' + item.description + 
+    app.modal.handleError(new Error('Oops!, "' + item.description +
     '" was not found in our inventory. If this was a manual item, try' +
     ' entering it as a new manual item.'));
     delete array[index];

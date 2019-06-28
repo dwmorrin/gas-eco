@@ -176,7 +176,7 @@ app.omnibox = {
       // parses the pasted quantity and barcodess
       let pasted = JSON.parse(value);
       // confirms non-manual items match the corresponding inventory entry
-      pasted.forEach(utility.getItemFromCache);
+      pasted.forEach(utility.item.getCached);
       // checks out each item in the quantity provided
       pasted.forEach(app.omnibox.handleItem);
       return;
