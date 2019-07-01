@@ -8,8 +8,6 @@ function Booking_(bookingData) {
     throw 'Booking cannot be generated without booking data';
   }
   var dataIndex = {
-    SHEET_ID   : '1zl4FBglYgCdR_FMdfbIQOOpnt9b8TwgnjxzRwcekPrY',
-    SHEET_NAME : 'Daily Booking Data',
     ID         : 0,
     START_TIME : 1,
     END_TIME   : 2,
@@ -50,11 +48,28 @@ function Booking_(bookingData) {
   this.getContact = function() { return this.contact; };
   this.getId = function() { return this.id; };
   this.getEndTime = function() { return this.endTime; };
-  this.getItems = function() { return this.items; };
+  /**
+   * @returns {string[][]} - 2d array of item info, null if no items
+   */
+  this.getItems = function() {
+    if (typeof this.items != "string") {
+      return null;
+    }
+    var items = this.items.split(',');
+    items.forEach(function(item, index, array) {
+      array[index] = item.split(';');
+    });
+    return items;
+  };
   this.getLocation = function() { return this.location; };
   this.getProject = function() { return this.project; };
   this.getStartTime = function() { return this.startTime; };
-  this.getBookedStudents = function() { return this.bookedStudents; };
+  /**
+   * @returns {string[]} - array of student names
+   */
+  this.getBookedStudents = function() {
+    return this.bookedStudents.replace(/, /g, ',').split(',');
+  };
   this.getTape = function() { return this.tape; };
   
   // Setters

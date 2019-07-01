@@ -1,10 +1,6 @@
 /* exported  Item_ */
 function Item_(itemData) {
-  // Inventory cheat sheet: [[Location, Category, Sub Category, Manufacturer , Model,
-  //  Description, Serial, Item ID, Barcode No., Reserveable, Reservations, Check-Out History, Repair History, Checked-Out, ID, Qnty, Notes]]
   var dataIndex = {
-    SHEET_ID    : '1XYu7fGgmuZ3DTa8y2JNbwwKuHw8_XNJ4VEwgZCf_UME',
-    SHEET_NAME  : 'Inventory',
     MAKE        : 3,
     MODEL       : 4,
     DESCRIPTION : 5,
@@ -34,30 +30,9 @@ function Item_(itemData) {
   this.getDescription = function() { return this.description; };
   this.isCheckedOut = function() { return this.checkedOut; };
 
-  this.incrementQuantity = function() {
-    if (this.serialized) {
-      // cannot change quantity
-      throw new Error(this.id + " is serialized and cannot have quantity changed, increment method called");
-    } else {
-      this.quantity++;
-      return this;
-    }
-  };
-  this.decrementQuantity = function () {
-    if (this.serialized) {
-      // cannot change quantity
-      throw new Error(this.id + " is serialized and cannot have quantity changed, decrement method called");
-    } else if (this.quantity == 1) {
-      throw new Error(this.id + " cannot have quantity less than 1, decrement method called");
-    } else {
-      this.quantity--;
-      return this;
-    }
-  };
   this.setQuantity = function(integer) {
-    if (this.serialized) {
-      // cannot have quantity > 1 if item Id exists, silent fail
-      return this;
+    if (this.serialized && integer != 1) {
+      throw new Error("Cannot change quantity of a serialized item");
     } else {
       if (integer != Math.floor(integer) || integer != Math.abs(integer)) { // not a good input
         throw new Error('item.setQuantity requires positive integer values only, recieved ' + integer);
@@ -69,7 +44,7 @@ function Item_(itemData) {
   this.setBarcode = function(str) { this.barcode = str; return this; };
   this.setDescription = function(str) { this.description = str; return this; };
   this.setCheckedOut = function(bool) { this.checkedOut = Boolean(bool); return this; };
-  this.setSerialized = function() { // TODO bug: do not run this before setting barcode!!
+  this.setSerialized = function() {
     if (! this.barcode ) {
       this.serialized = false;
     }

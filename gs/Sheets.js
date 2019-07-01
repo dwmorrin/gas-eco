@@ -137,39 +137,35 @@ function createDailyBookingFormsGAS_() {
 function createBookingFormGAS_(booking) {
   var form = new Form_(),
       bookedStudents = booking.getBookedStudents(),
-      itemStringArray = booking.getItems(),
+      bookedItems = booking.getItems(),
       items = [],
-      studentStringArray,
       students = [];
 
   // handle booking students -> form students
-  studentStringArray = bookedStudents.replace(/, /g, ',').split(',');
-  studentStringArray.forEach(function getArrayOfStudentsByName(studentName) {
+  bookedStudents.forEach(function getArrayOfStudentsByName(studentName) {
     var data = getSheetDataByIdGAS_(
-      studentName, index.students.SHEET_ID,
-      index.students.SHEET_NAME, index.students.NAME
+      studentName,
+      index.students.SHEET_ID,
+      index.students.SHEET_NAME,
+      index.students.NAME
     );
     students.push(makeStudentFromDataGAS_(data));
   });
 
   // handle booking items -> form items
-  if (itemStringArray) {
-    itemStringArray = itemStringArray.split(',');
-    itemStringArray.forEach(function getArrayOfItemsById(stringData) {
-      var bookingData = stringData.split(';'); // [desc, id, qty]
+  if (bookedItems) {
+    bookedItems.forEach(function (itemRecord) {
+      var id = itemRecord[1],
+          qty = itemRecord[2];
       var itemData = getSheetDataByIdGAS_(
-        bookingData[1], index.items.SHEET_ID,
-        index.items.SHEET_NAME, index.items.ID
+        id,
+        index.items.SHEET_ID,
+        index.items.SHEET_NAME,
+        index.items.ID
       );
-      try { // TODO this try block only for proof of concept purposes. debug for production
-        var item = new Item_(itemData);
-        item.setDescription(bookingData[0])
-          .setSerialized()
-          .setQuantity(bookingData[2]);
-        items.push(item);
-      } catch(e) {
-        // ignoring errors for proof of concept.  Don't ignore this in production.
-      }
+      var item = new Item_(itemData);
+      item.setQuantity(qty);
+      items.push(item);
     });
   }
 
