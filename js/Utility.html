@@ -1,20 +1,31 @@
 <script>
 /** Utility */
 /* global app toast */
-var utility = { DOM: {}, date: {}, item: {}, };
+let utility = { DOM: {}, date: {}, item: {}, };
 
+/**
+ * TODO this should be to an Item constructor
+ */
 utility.cleanItem = item => {
   item = item.replace(/\s/g, '').replace(/-0+/, '-');
   return item;
 };
 
+/**
+ * TODO this should be moved to a Student constructor
+ */
 utility.cleanStudent = (value, index, array) => {
   array[index] = array[index].replace(/\s/g, '');
 },
 
+/**
+ * strip is a callback function for array.prototype.forEach
+ *   used by the "copy to clipboard" UI element to create a minified
+ *   JSON string of items
+ * TODO this should be moved to an Item constructor
+ */
 utility.item.strip = (value, index, array) => {
-  // only the quantity and barcode are needed, because the integrity
-  // check will pull the other information from the cache
+  // only quantity and barcode needed; getCached gets other info
   array[index] = {
     id: array[index].id,
     description: array[index].description,
@@ -23,38 +34,42 @@ utility.item.strip = (value, index, array) => {
   };
 },
 
+/**
+ * getCached is a callback function for array.protype.forEach
+ *   used by the "copy to clipboard" UI element to verify that non-manual
+ *   items match the records in the inventory
+ * TODO this should be moved to an Item constructor
+ */
 utility.item.getCached = (item, index, array) => {
   const items = app.cache.items;
-  const manualItemIdregex = /^MANUAL/;
-  // tries to locate the item in the inventory and
-  // sets the properties as they are in the inventory
-  const found = items.find(entry => entry.barcode == item.barcode);
-  if (found){
-    item.description = found.description;
-    item.serialized = found.serialized;
-    if (item.serialized){
+  // rebuild item from inventory record
+  const cachedItem = items.find(_item => _item.barcode == item.barcode);
+  if (cachedItem) {
+    item.description = cachedItem.description;
+    item.serialized = cachedItem.serialized;
+    if (item.serialized) {
       item.quantity = 1;
     }
-    item.id = found.id;
+    item.id = cachedItem.id;
   }
-  if (found || manualItemIdregex.test(item.id)){
+  if (cachedItem || /^MANUAL/.test(item.id)) {
     item.checkedOut = true;
     item.checkIn = null;
     item.checkOut = null;
     item.missing = false;
     item.notes = '';
-  } else{
-    // removes the item if not manual and not found in inventory.
-    app.modal.handleError(new Error('Oops!, "' + item.description +
-    '" was not found in our inventory. If this was a manual item, try' +
-    ' entering it as a new manual item.'));
-    delete array[index];
-  }
+    return;
+  } 
+  // removes the item if not manual and not found in inventory.
+  app.modal.handleError(new Error(
+    'Oops!, "' + item.description + '" ' + 'was not found in our inventory. ' +
+    'If this was a manual item, try entering it as a new manual item.'
+  ));
+  delete array[index];
 },
 
 utility.copyToClipboard = function(data) {
   const textArea = document.createElement("textarea");
-
   // ensures that copying the items will not cause the screen to scroll down
   textArea.setAttribute('readonly', true);
   textArea.value = data;

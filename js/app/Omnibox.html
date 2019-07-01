@@ -163,94 +163,92 @@ app.omnibox = {
     // Fake change event
     app.pages.form.handleChange(change);
   },
+  /**
+   * parse examines the current value of the omnibox text input element
+   *   and passes the value to the correct handler or shows the user an error.
+   */
   parse: function() {
-    let codabar = /^[a-d][0-9]{5,}[a-d]$/, // "a123...789b" pattern
-        json = /^\s*\[\s*{\s*"/,
-        parsed,
-        value = app.omnibox.element.value;
+    let value = app.omnibox.element.value;
 
     if (! value) { // nothing was entered, abort
       return;
     }
-    else if (json.test(value)){
-      // parses the pasted quantity and barcodess
-      let pasted = JSON.parse(value);
-      // confirms non-manual items match the corresponding inventory entry
-      pasted.forEach(utility.item.getCached);
-      // checks out each item in the quantity provided
+    
+    const jsonRegex = /^\s*\[\s*{\s*"/;
+    if (jsonRegex.test(value)) {
+      const pasted = JSON.parse(value);
+      pasted.forEach(utility.item.getCached); // verifies non-manual items match inventory
       pasted.forEach(app.omnibox.handleItem);
       return;
-    } else {     // case insensitive
-      value = value.toLowerCase();
     }
-    // DETERMINE TYPE
-    if (codabar.test(value)) { // Check student id
+
+    value = value.toLowerCase(); // case insenstive input
+    let parsed;
+    // DETERMINE TYPE: ID card barcode, item barcode, item ID/SKU, student name
+    const codabarRegex = /^[a-d][0-9]{5,}[a-d]$/; // "a123...789b" pattern
+    if (codabarRegex.test(value)) { // Check student id
       parsed = app.cache.students.find(
         student => student.id.toLowerCase() == value
       );
       if (parsed) {
         app.omnibox.handleStudent(parsed);
+        return;
       } else {
         app.omnibox.handleNewCodabar(value);
         return;
       }
     }
 
-    if (! parsed) { // Check student name and id
-      const idType = /^[a-z]+[0-9]+/.test(value) ? 'netId' : 'name';
-      parsed = app.cache.students.find(
-        student => student[idType].toLowerCase() == value
-      );
-      if (parsed) {
-        app.modal.manualEntryAlert(app.omnibox.element.value);
-        app.omnibox.handleStudent(parsed);
-      }
+    const idType = /^[a-z]+[0-9]+/.test(value) ? 'netId' : 'name'; // Check student name and id
+    parsed = app.cache.students.find(
+      student => student[idType].toLowerCase() == value
+    );
+    if (parsed) {
+      app.modal.manualEntryAlert(app.omnibox.element.value);
+      app.omnibox.handleStudent(parsed);
+      return;
     }
 
-    if (! parsed) { // Check item Ids and barcodes
-      const itemIdregex = /[A-Za-z]+-[A-Za-z0-9]+/, // letter(s), hyphen, digit(s) or letter(s)
-            barcoderegex = /^[0-9]+$/,              // only digits
-            dashzero = /-0+/,                       // dash then one of more zeroes
-            manualItemIdregex = /^manual/;
-      if (itemIdregex.test(value)) {
-        value = value.replace(dashzero, '-'); // strip leading zeroes
-        parsed = app.cache.items.find(
+    const itemIdregex = /[A-Za-z]+-[A-Za-z0-9]+/, // letter(s), hyphen, digit(s) or letter(s)
+          barcoderegex = /^[0-9]+$/;              // only digits
+    if (itemIdregex.test(value)) {
+      const dashzero = /-0+/; // dash then one or more zeroes
+      value = value.replace(dashzero, '-'); // strip leading zeroes
+      parsed = app.cache.items.find(
+        item => item.id.toLowerCase().replace(dashzero, '-') == value
+      );
+      if (!parsed && /^manual/.test(value)) {
+        parsed = (JSON.parse(app.pages.form.elements.form.items.value)).find(
           item => item.id.toLowerCase().replace(dashzero, '-') == value
         );
-        if (!parsed && manualItemIdregex.test(value)) {
-          parsed = (JSON.parse(app.pages.form.elements.form.items.value)).find(
-            item => item.id.toLowerCase().replace(dashzero, '-') == value
-          );
-        } else {
-          app.modal.manualEntryAlert(app.omnibox.element.value);
-        }
-      } else if (barcoderegex.test(value)) { // assume it's a barcode
-        if (value == app.strings.manualItemBarcode) {
-          app.omnibox.clear();
-          app.doCommand("newManual");
-          return;
-        }
-        parsed = app.cache.items.find(item => {
-          if (! item.barcode) {
-            return false;
-          }
-          const barcode = "" + item.barcode;
-          return barcode.toLowerCase() == value;
-        });
+      } else {
+        app.modal.manualEntryAlert(app.omnibox.element.value);
       }
-      if (parsed) {
-        app.omnibox.handleItem(parsed);
+    } else if (barcoderegex.test(value)) { // assume it's a barcode
+      if (value == app.strings.manualItemBarcode) {
+        app.omnibox.clear();
+        app.doCommand("newManual");
+        return;
       }
+      parsed = app.cache.items.find(item => {
+        if (! item.barcode) {
+          return false;
+        }
+        const barcode = "" + item.barcode;
+        return barcode.toLowerCase() == value;
+      });
+    }
+    if (parsed) {
+      app.omnibox.handleItem(parsed);
+      return;
     }
 
-    if (! parsed) {
-      app.modal.handleError(new Error(value + ' ' + app.strings.parserError));
-      app.omnibox.element.classList.add('error');
-      window.setTimeout(
-        () => app.omnibox.element.classList.remove('error'), 2000
-      );
-    }
-
+    // end of checks; if still in the function then show the user an error
+    app.modal.handleError(new Error(value + ' ' + app.strings.parserError));
+    app.omnibox.element.classList.add('error');
+    window.setTimeout(
+      () => app.omnibox.element.classList.remove('error'), 2000
+    );
   },
 };
 </script>
