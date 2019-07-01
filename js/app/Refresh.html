@@ -87,7 +87,7 @@ app.refresh = function(response, context) {
     case 'items':
       app.cache.items = JSON.parse(response.items);
       app.cache.items.forEach((item, index, cache) => {
-        cache[index] = Item(item);
+        cache[index] = new Item(item);
       });
       break;
     case 'openForms':
