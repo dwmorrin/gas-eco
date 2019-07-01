@@ -1,10 +1,3 @@
-/**
- * Implementation hints:
- * HOW TO WRITE A FORM TO DISK
- * let a form without an id represent an unsaved form, and let your form writer figure out if its
- * writing a new form or updating an old form by checking whether the id is null or not. 
- * The writer can then call createId on the form when an id is needed.
- */
 /* global utility */
 /* exported Form_ */
 function Form_(id) {
