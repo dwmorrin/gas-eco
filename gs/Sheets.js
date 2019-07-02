@@ -126,7 +126,7 @@ function createDailyBookingFormsGAS_() {
   var data = bookingSheet.getDataRange().getValues();
   data.shift();
   data.forEach(function getArrayOfBookingForms(bookingData) {
-    createBookingFormGAS_(makeBookingFromDataGAS_(bookingData));
+    createBookingFormGAS_(new Booking_(bookingData));
   });
 }
 
@@ -137,39 +137,35 @@ function createDailyBookingFormsGAS_() {
 function createBookingFormGAS_(booking) {
   var form = new Form_(),
       bookedStudents = booking.getBookedStudents(),
-      itemStringArray = booking.getItems(),
+      bookedItems = booking.getItems(),
       items = [],
-      studentStringArray,
       students = [];
 
   // handle booking students -> form students
-  studentStringArray = bookedStudents.replace(/, /g, ',').split(',');
-  studentStringArray.forEach(function getArrayOfStudentsByName(studentName) {
+  bookedStudents.forEach(function getArrayOfStudentsByName(studentName) {
     var data = getSheetDataByIdGAS_(
-      studentName, index.students.SHEET_ID,
-      index.students.SHEET_NAME, index.students.NAME
+      studentName,
+      index.students.SHEET_ID,
+      index.students.SHEET_NAME,
+      index.students.NAME
     );
     students.push(makeStudentFromDataGAS_(data));
   });
 
   // handle booking items -> form items
-  if (itemStringArray) {
-    itemStringArray = itemStringArray.split(',');
-    itemStringArray.forEach(function getArrayOfItemsById(stringData) {
-      var bookingData = stringData.split(';'); // [desc, id, qty]
+  if (bookedItems) {
+    bookedItems.forEach(function (itemRecord) {
+      var id = itemRecord[1],
+          qty = itemRecord[2];
       var itemData = getSheetDataByIdGAS_(
-        bookingData[1], index.items.SHEET_ID,
-        index.items.SHEET_NAME, index.items.ID
+        id,
+        index.items.SHEET_ID,
+        index.items.SHEET_NAME,
+        index.items.ID
       );
-      try { // TODO this try block only for proof of concept purposes. debug for production
-        var item = makeItemFromDataGAS_(itemData);
-        item.setDescription(bookingData[0])
-          .setSerialized()
-          .setQuantity(bookingData[2]);
-        items.push(item);
-      } catch(e) {
-        // ignoring errors for proof of concept.  Don't ignore this in production.
-      }
+      var item = new Item_(itemData);
+      item.setQuantity(qty);
+      items.push(item);
     });
   }
 
@@ -203,7 +199,7 @@ function getAllItemsGAS_() {
   data.forEach(function getArrayOfItemsByData(itemData) {
     if (itemBarcode.test(itemData[index.items.BARCODE]) ||
         itemIdregex.test(itemData[index.items.ID])    ) {
-      items.push(makeItemFromDataGAS_(itemData));
+      items.push(new Item_(itemData));
     }
   });
   return items;
@@ -282,25 +278,6 @@ function getSheetDataByIdGAS_(value, sheetId, sheetName, idIndex) {
 
 /* ********* MAKERS *********** */
 
-/**
- * @param {[]} bookingData
- * @return {Booking}
- */
-function makeBookingFromDataGAS_(bookingData) {
-  var booking = new Booking_(bookingData[index.bookings.ID]);
-
-  booking.setBookedStudents(bookingData[index.bookings.STUDENTS])
-    .setItems(bookingData[index.bookings.ITEMS])
-    .setStartTime(utility.date.getFormattedDate(bookingData[index.bookings.START_TIME]))
-    .setEndTime(utility.date.getFormattedDate(bookingData[index.bookings.END_TIME]))
-    .setLocation(bookingData[index.bookings.LOCATION])
-    .setContact(bookingData[index.bookings.CONTACT])
-    .setTape(bookingData[index.bookings.TAPE])
-    .setProject(bookingData[index.bookings.PROJECT]);
-
-  return booking;
-}
-
 /** @param {object []} sheetData - a row pulled from Forms Sheet */
 function makeFormFromDataGAS_(sheetData) {
   var form = new Form_(sheetData[index.forms.ID]),
@@ -322,26 +299,6 @@ function makeFormFromDataGAS_(sheetData) {
     .setHash();
 
   return form;
-}
-
-function makeItemFromDataGAS_(itemData) {
-  var item = new Item_(itemData[index.items.ID]),
-      description;
-
-  // Item has only a simple 'description' field
-  // Sheet implementation (this) must distill available fields into description
-  if (itemData[index.items.MAKE] && itemData[index.items.MODEL]) {
-    description = itemData[index.items.MAKE] + ' ' + itemData[index.items.MODEL];
-  } else {
-    description = itemData[index.items.DESCRIPTION];
-  }
-
-  item.setBarcode(itemData[index.items.BARCODE])
-    .setSerialized()
-    .setDescription(description)
-    .setCheckedOut(itemData[index.items.CHECKED_OUT]);
-
-  return item;
 }
 
 function makeStudentFromDataGAS_(studentData) {
