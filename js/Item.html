@@ -16,55 +16,52 @@ function Item(obj) {
   this.notes = obj.notes;            // {string} saves the notes for the item
   this.missing = obj.missing;        // {bool} true if item cannot be found when form is closed
 
-
-  this.getId = function() { return this.id; };
-  this.getQuantity = function() { return this.quantity; };
-  this.getDescription = function() { return this.description; };
-  this.getStripped = function() {
-    return {
-      id: this.id,
-      description: this.description,
-      quantity: this.quantity,
-      barcode: this.barcode
-    };
-  };
-
-  this.isCheckedOut = function() { return this.checkedOut; };
-
-  this.setQuantity = function(integer) {
-    if (this.serialized && integer != 1) {
-      throw new Error("Cannot change quantity of a serialized item");
-    } else {
-      if (isNaN(integer) ||
-          integer != Math.floor(integer) ||
-          integer != Math.abs(integer)) {
-        throw new Error(
-          "Invalid quantity: " + integer + ". Use a positive number.  " +
-          "Scan the item to check-in."
-        );
-      }
-      this.quantity = integer;
-      return this;
-    }
-  };
-
-  this.setBarcode = function(str) { this.barcode = str; return this; };
-  this.setDescription = function(str) { this.description = str; return this; };
-  this.setCheckedOut = function(bool) { this.checkedOut = Boolean(bool); return this; };
-  this.setSerialized = function() { // TODO bug: do not run this before setting barcode!!
-    if (! this.barcode ) {
-      this.serialized = false;
-    }
-    if (+this.barcode > 9999 && +this.barcode < 10101) { // reserved barcode range TODO put in config settings
-      this.serialized = false;
-    } else {
-      this.serialized = true;
-    }
-    return this;
-  };
-  this.setSerialized();
+  if (! this.barcode ) {
+    this.serialized = false;
+  }
+  if (+this.barcode > 9999 && +this.barcode < 10101) { // reserved barcode range TODO put in config settings
+    this.serialized = false;
+  } else {
+    this.serialized = true;
+  }
 }
 
+// Item prototype functions
+
+Item.prototype.getId = function() { return this.id; };
+Item.prototype.getQuantity = function() { return this.quantity; };
+Item.prototype.getDescription = function() { return this.description; };
+Item.prototype.getStripped = function() {
+  return {
+    id: this.id,
+    description: this.description,
+    quantity: this.quantity,
+    barcode: this.barcode
+  };
+};
+
+Item.prototype.isCheckedOut = function() { return this.checkedOut; };
+
+Item.prototype.setQuantity = function(integer) {
+  if (this.serialized && integer != 1) {
+    throw new Error("Cannot change quantity of a serialized item");
+  } else {
+    if (isNaN(integer) ||
+        integer != Math.floor(integer) ||
+        integer != Math.abs(integer)) {
+      throw new Error(
+        "Invalid quantity: " + integer + ". Use a positive number.  " +
+        "Scan the item to check-in."
+      );
+    }
+    this.quantity = integer;
+    return this;
+  }
+};
+
+Item.prototype.setBarcode = function(str) { this.barcode = str; return this; };
+Item.prototype.setDescription = function(str) { this.description = str; return this; };
+Item.prototype.setCheckedOut = function(bool) { this.checkedOut = Boolean(bool); return this; };
 Item.prototype.match = (item) => {
   if (this.id) {
     return item.id == this.id;
@@ -80,10 +77,30 @@ Item.prototype.match = (item) => {
 Item.prototype.cache = []; // Item[]
 
 Item.prototype.getCached = function() {
+  if (/^manual/i.test(this.id)) {
+    this.checkedOut = true;
+    this.checkIn = null;
+    this.checkOut = null;
+    this.missing = false;
+    this.notes = "";
+    return new Item(this);
+  }
   const cachedItem = this.cache.find(item => item.match(this));
   if (! cachedItem) {
     throw new Error(`Cannot find ${this.description} ${this.id} in the inventory`);
   }
-  return cachedItem;
+  return new Item(cachedItem);
+};
+
+/**
+ * returns a minimal info object for use with JSON exporting
+ */
+Item.prototype.getStripped = function () {
+  return {
+    id: this.id,
+    description: this.description,
+    quantity: this.quantity,
+    barcode: this.barcode
+  };
 };
 </script>
