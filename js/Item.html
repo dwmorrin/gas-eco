@@ -1,6 +1,11 @@
 <script>
 /* exported  Item */
 function Item(obj) {
+  "use strict";
+  if (! (this instanceof Item)) {
+    throw new Error("Item() needs to be called with `new`");
+  }
+
   this.barcode = obj.barcode;        // {string}
   this.id = obj.id;                  // {string}
   this.checkedOut = obj.checkedOut;  // {bool}
@@ -59,4 +64,26 @@ function Item(obj) {
   };
   this.setSerialized();
 }
+
+Item.prototype.match = (item) => {
+  if (this.id) {
+    return item.id == this.id;
+  } else if (! isNaN(+this.barcode) && +this.barcode < 10000) {
+    return item.barcode == this.barcode;
+  }
+  if (this.description) {
+    return item.description == this.description;
+  }
+  return false;
+};
+
+Item.prototype.cache = []; // Item[]
+
+Item.prototype.getCached = function() {
+  const cachedItem = this.cache.find(item => item.match(this));
+  if (! cachedItem) {
+    throw new Error(`Cannot find ${this.description} ${this.id} in the inventory`);
+  }
+  return cachedItem;
+};
 </script>

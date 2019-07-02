@@ -85,8 +85,8 @@ app.refresh = function(response, context) {
       app.pages.form.elements.updateFormButton.textContent = "Update";
       break;
     case 'items':
-      app.cache.items = JSON.parse(response.items);
-      app.cache.items.forEach((item, index, cache) => {
+      Item.prototype.cache = JSON.parse(response.items);
+      Item.prototype.cache.forEach((item, index, cache) => {
         cache[index] = new Item(item);
       });
       break;

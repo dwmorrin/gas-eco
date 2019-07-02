@@ -1,5 +1,6 @@
 <script>
 /* global
+Item
 app
 isCheckOutStudentOk
 isCheckInItemOk
@@ -204,7 +205,7 @@ app.omnibox = {
             manualItemIdregex = /^manual/;
       if (itemIdregex.test(value)) {
         value = value.replace(dashzero, '-'); // strip leading zeroes
-        parsed = app.cache.items.find(
+        parsed = Item.prototype.cache.find(
           item => item.id.toLowerCase().replace(dashzero, '-') == value
         );
         if (!parsed && manualItemIdregex.test(value)) {
@@ -220,7 +221,7 @@ app.omnibox = {
           app.doCommand("newManual");
           return;
         }
-        parsed = app.cache.items.find(item => {
+        parsed = Item.prototype.cache.find(item => {
           if (! item.barcode) {
             return false;
           }
