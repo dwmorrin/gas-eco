@@ -25,35 +25,32 @@ function Item_(itemData) {
     this.description = itemData[dataIndex.DESCRIPTION];
   }
 
-  this.getId = function() { return this.id; };
-  this.getQuantity = function() { return this.quantity; };
-  this.getDescription = function() { return this.description; };
-  this.isCheckedOut = function() { return this.checkedOut; };
-
-  this.setQuantity = function(integer) {
-    if (this.serialized && integer != 1) {
-      throw new Error("Cannot change quantity of a serialized item");
-    } else {
-      if (integer != Math.floor(integer) || integer != Math.abs(integer)) { // not a good input
-        throw new Error('item.setQuantity requires positive integer values only, recieved ' + integer);
-      }
-      this.quantity = integer;
-      return this;
-    }
-  };
-  this.setBarcode = function(str) { this.barcode = str; return this; };
-  this.setDescription = function(str) { this.description = str; return this; };
-  this.setCheckedOut = function(bool) { this.checkedOut = Boolean(bool); return this; };
-  this.setSerialized = function() {
-    if (! this.barcode ) {
-      this.serialized = false;
-    }
-    if (+this.barcode > 9999 && +this.barcode < 10101) { // reserved barcode range TODO put in config settings
-      this.serialized = false;
-    } else {
-      this.serialized = true;
-    }
-    return this;
-  };
-  this.setSerialized();
+  if (! this.barcode ) {
+    this.serialized = false;
+  }
+  if (+this.barcode > 9999 && +this.barcode < 10101) { // reserved barcode range TODO put in config settings
+    this.serialized = false;
+  } else {
+    this.serialized = true;
+  }
 }
+
+Item_.prototype.getId = function() { return this.id; };
+Item_.prototype.getQuantity = function() { return this.quantity; };
+Item_.prototype.getDescription = function() { return this.description; };
+Item_.prototype.isCheckedOut = function() { return this.checkedOut; };
+
+Item_.prototype.setBarcode = function(str) { this.barcode = str; return this; };
+Item_.prototype.setCheckedOut = function(bool) { this.checkedOut = Boolean(bool); return this; };
+Item_.prototype.setDescription = function(str) { this.description = str; return this; };
+Item_.prototype.setQuantity = function(integer) {
+  if (this.serialized && integer != 1) {
+    throw new Error("Cannot change quantity of a serialized item");
+  } else {
+    if (integer != Math.floor(integer) || integer != Math.abs(integer)) { // not a good input
+      throw new Error('item.setQuantity requires positive integer values only, recieved ' + integer);
+    }
+    this.quantity = integer;
+    return this;
+  }
+};
