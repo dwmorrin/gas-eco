@@ -26,32 +26,6 @@ function Item(obj) {
 
   this.isCheckedOut = function() { return this.checkedOut; };
 
-  this.incrementQuantity = function() {
-    if (this.serialized) {
-      throw new Error(
-        this.id + " is serialized and cannot have the quantity changed."
-      );
-    } else {
-      this.quantity++;
-      return this;
-    }
-  };
-
-  this.decrementQuantity = function () {
-    if (this.serialized) {
-      throw new Error(
-        this.id + " is serialized and cannot have quantity changed"
-      );
-    } else if (this.quantity == 1) {
-      throw new Error(
-        this.id + " cannot have quantity less than 1"
-      );
-    } else {
-      this.quantity--;
-      return this;
-    }
-  };
-
   this.setQuantity = function(integer) {
     if (this.serialized && integer != 1) {
       throw new Error("Cannot change quantity of a serialized item");
@@ -83,5 +57,6 @@ function Item(obj) {
     }
     return this;
   };
+  this.setSerialized();
 }
 </script>
