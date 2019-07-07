@@ -1,0 +1,47 @@
+<script>
+/* global Item */
+/* exported Inventory */
+/**
+ * Inventory wraps an array with specialized functions
+ */
+function Inventory(jsonArray) {
+  let items = [];
+  this.setItems = function(array) {
+    if (! Array.isArray(array)) {
+      throw new Error(`${array} is not an array`);
+    }
+    items = array;
+  };
+  this.push = function(item) {
+    items.push(item);
+  };
+  this.getByBarcode = function(barcode) {
+    return items.find(item => {
+      if (! item.barcode) {
+        return false;
+      }
+      // TODO Item should enforce that barcodes are strings, not numbers
+      return item.barcode.toLowerCase() == barcode;
+    });
+  };
+  this.getById = function(id) {
+    id = id.toLowerCase().replace(/-0+/, '-');
+    return items.find(item => item.id === id);
+  };
+  this.find = function(func) {
+    return items.find(func);
+  };
+  this.stringify = function() {
+    const copy = [];
+    items.forEach(item => copy.push(item.stringify()));
+    return JSON.stringify(copy);
+  };
+  if (! jsonArray) {
+    return this;
+  }
+  items = JSON.parse(jsonArray);
+  items.forEach(function (string, index, array) {
+    array[index] = new Item(JSON.parse(string));
+  });
+}
+</script>

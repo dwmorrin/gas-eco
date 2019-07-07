@@ -7,7 +7,6 @@
 /* global
 app
 displayForm
-Item
 populateFormsTable
 toast
 utility
@@ -85,10 +84,7 @@ app.refresh = function(response, context) {
       app.pages.form.elements.updateFormButton.textContent = "Update";
       break;
     case 'items':
-      Item.prototype.cache = JSON.parse(response.items);
-      Item.prototype.cache.forEach((item, index, cache) => {
-        cache[index] = new Item(item);
-      });
+      app.inventory(JSON.parse(response.items));
       break;
     case 'openForms':
       if (response.unlock) {

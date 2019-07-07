@@ -13,9 +13,11 @@ app.omnibox = {
     app.omnibox.element.value = '';
   },
   element: document.querySelector('input.omnibox'),
-  /** TODO - handle qty input or multiple scans of things like cables */
   handleItem: function(item, quantityToReturn) {
     const items = (JSON.parse(app.pages.form.elements.form.items.value) || []);
+    items.forEach((item, index, array) => {
+      array[index] = new Item(item);
+    });
     const itemOnForm = items.find(i => {
       if (item.id && i.id == item.id) {
         return true;
@@ -39,7 +41,7 @@ app.omnibox = {
       items.push(item);
       change.target.value += ' check-out';
     } else if (quantityToReturn && quantityToReturn != "all") {
-      itemOnForm.quantity -= quantityToReturn;
+      itemOnForm.changeQuantity(-quantityToReturn);
       change.target.value = `returned ${quantityToReturn} ${change.target.value}`;
     } else {
       if (itemOnForm.checkOut && itemOnForm.checkIn) { // checkout again?
@@ -213,14 +215,10 @@ app.omnibox = {
     const itemIdregex = /[A-Za-z]+-[A-Za-z0-9]+/, // letter(s), hyphen, digit(s) or letter(s)
           barcoderegex = /^[0-9]+$/;              // only digits
     if (itemIdregex.test(value)) {
-      const dashzero = /-0+/; // dash then one or more zeroes
-      value = value.replace(dashzero, '-'); // strip leading zeroes
-      parsed = Item.prototype.cache.find(
-        item => item.id.toLowerCase().replace(dashzero, '-') == value
-      );
+      parsed = app.inventory.getById(value);
       if (!parsed && /^manual/.test(value)) {
         parsed = (JSON.parse(app.pages.form.elements.form.items.value)).find(
-          item => item.id.toLowerCase().replace(dashzero, '-') == value
+          item => item.id.toLowerCase().replace(/-0+/, '-') == value
         );
       } else {
         app.modal.manualEntryAlert(app.omnibox.element.value);
@@ -231,16 +229,10 @@ app.omnibox = {
         app.doCommand("newManual");
         return;
       }
-      parsed = Item.prototype.cache.find(item => {
-        if (! item.barcode) {
-          return false;
-        }
-        const barcode = "" + item.barcode;
-        return barcode.toLowerCase() == value;
-      });
+      parsed = app.inventory.getByBarcode(value);
     }
     if (parsed) {
-      app.omnibox.handleItem(parsed);
+      app.omnibox.handleItem(new Item(parsed));
       return;
     }
 

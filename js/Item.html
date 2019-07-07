@@ -1,35 +1,79 @@
 <script>
 /* exported  Item */
-function Item(obj) {
+function Item({
+  barcode = null,
+  id = null,
+  checkedOut = false,
+  checkIn = null,
+  checkOut = null,
+  description = null,
+  qty = 1,
+  notes = null,
+  missing = false
+}) {
   "use strict";
   if (! (this instanceof Item)) {
     throw new Error("Item() needs to be called with `new`");
   }
 
-  this.barcode = obj.barcode;        // {string}
-  this.id = obj.id;                  // {string}
-  this.checkedOut = obj.checkedOut;  // {bool}
-  this.checkIn = obj.checkIn;        // {string} formatted date
-  this.checkOut = obj.checkOut;      // {string} formatted date
-  this.description = obj.description;// {string} make, model, etc
-  this.quantity = obj.quantity;      // {int}
-  this.notes = obj.notes;            // {string} saves the notes for the item
-  this.missing = obj.missing;        // {bool} true if item cannot be found when form is closed
-
-  if (! this.barcode ) {
-    this.serialized = false;
+  // private properties
+  const serialized = Boolean(barcode) && (+barcode < 10000 || +barcode > 10100);
+  let quantity = 1;              // {int}
+  if (! isNaN(qty) && qty > 1) {
+    quantity = qty;
   }
-  if (+this.barcode > 9999 && +this.barcode < 10101) { // reserved barcode range TODO put in config settings
-    this.serialized = false;
-  } else {
-    this.serialized = true;
+
+  // public properties
+  this.barcode = barcode;        // {string}
+  this.id = id;                  // {string}
+  this.checkedOut = checkedOut;  // {bool}
+  this.checkIn = checkIn;        // {string} formatted date
+  this.checkOut = checkOut;      // {string} formatted date
+  this.description = description;// {string} make, model, etc
+  this.notes = notes;            // {string} saves the notes for the item
+  this.missing = missing;        // {bool} true if item cannot be found when form is closed
+
+  this.changeQuantity = function(integer) {
+    if (serialized) {
+      throw new Error("Cannot change quantity of a serialized item");
+    }
+    if (! isPositiveInteger(quantity + integer)) {
+      throw new Error(`Invalid quantity: ${integer}`);
+    }
+    quantity += integer;
+    return this;
+  };
+  this.setQuantity = function(integer) {
+    if (serialized) {
+      throw new Error("Cannot change quantity of a serialized item");
+    }
+    if (! isPositiveInteger(integer)) {
+      throw new Error(`Invalid quantity: ${integer}`);
+    }
+    quantity = integer;
+    return this;
+  };
+  this.getQuantity = function() {
+    return quantity;
+  };
+  this.isSerialized = function() {
+    return serialized;
+  };
+  // private helper functions
+  function isPositiveInteger(integer) {
+    return ! isNaN(integer) &&
+      Math.floor(integer) === integer &&
+      Math.abs(integer) === integer;
   }
 }
 
 // Item prototype functions
 
+// shared properties
+Item.prototype.cache = []; // Item[]
+
+// getters
 Item.prototype.getId = function() { return this.id; };
-Item.prototype.getQuantity = function() { return this.quantity; };
 Item.prototype.getDescription = function() { return this.description; };
 Item.prototype.getStripped = function() {
   return {
@@ -39,29 +83,14 @@ Item.prototype.getStripped = function() {
     barcode: this.barcode
   };
 };
-
 Item.prototype.isCheckedOut = function() { return this.checkedOut; };
 
-Item.prototype.setQuantity = function(integer) {
-  if (this.serialized && integer != 1) {
-    throw new Error("Cannot change quantity of a serialized item");
-  } else {
-    if (isNaN(integer) ||
-        integer != Math.floor(integer) ||
-        integer != Math.abs(integer)) {
-      throw new Error(
-        "Invalid quantity: " + integer + ". Use a positive number.  " +
-        "Scan the item to check-in."
-      );
-    }
-    this.quantity = integer;
-    return this;
-  }
-};
-
+// setters
 Item.prototype.setBarcode = function(str) { this.barcode = str; return this; };
 Item.prototype.setDescription = function(str) { this.description = str; return this; };
 Item.prototype.setCheckedOut = function(bool) { this.checkedOut = Boolean(bool); return this; };
+
+// utilities
 Item.prototype.match = (item) => {
   if (this.id) {
     return item.id == this.id;
@@ -74,7 +103,6 @@ Item.prototype.match = (item) => {
   return false;
 };
 
-Item.prototype.cache = []; // Item[]
 
 Item.prototype.getCached = function() {
   if (/^manual/i.test(this.id)) {
@@ -102,5 +130,11 @@ Item.prototype.getStripped = function () {
     quantity: this.quantity,
     barcode: this.barcode
   };
+};
+
+Item.prototype.stringify = function() {
+  const copy = Object.assign({}, this);
+  copy.quantity = this.getQuantity();
+  return JSON.stringify(copy);
 };
 </script>
