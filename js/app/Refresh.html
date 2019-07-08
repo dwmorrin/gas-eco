@@ -84,7 +84,7 @@ app.refresh = function(response, context) {
       app.pages.form.elements.updateFormButton.textContent = "Update";
       break;
     case 'items':
-      app.inventory(JSON.parse(response.items));
+      app.inventory.setItems(JSON.parse(response.items));
       break;
     case 'openForms':
       if (response.unlock) {
