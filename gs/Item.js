@@ -9,48 +9,88 @@ function Item_(itemData) {
     HISTORY     : 11,
     CHECKED_OUT : 13
   };
-  this.barcode = itemData[dataIndex.BARCODE];// {string}
-  this.id = itemData[dataIndex.ID];          // {string}
-  this.checkedOut = Boolean(itemData[dataIndex.CHECKED_OUT]);
-  this.checkIn = null;   // {string} formatted date
-  this.checkOut = null;  // {string} formatted date
-  this.description;      // {string} make, model, etc
-  this.quantity = 1;     // {int}
-  this.notes = '';       // {string} saves the notes for the item
-  this.missing = false;  // {bool} true if item cannot be found when form is closed
-
-  if (itemData[dataIndex.MAKE] && itemData[dataIndex.MODEL]) {
-    this.description = itemData[dataIndex.MAKE] + ' ' + itemData[dataIndex.MODEL];
-  } else {
-    this.description = itemData[dataIndex.DESCRIPTION];
+  
+  if (! (this instanceof Item_)) {
+    throw new Error("Item_() needs to be called with new");
   }
 
-  if (! this.barcode ) {
-    this.serialized = false;
+  // Initially created from String[] from Google Sheets
+  if (Array.isArray(itemData)) {
+    this.barcode = itemData[dataIndex.BARCODE];// {string}
+    this.id = itemData[dataIndex.ID];          // {string}
+    this.checkedOut = Boolean(itemData[dataIndex.CHECKED_OUT]);
+    this.checkIn = "";    // {string} formatted date
+    this.checkOut = "";   // {string} formatted date
+    this.description = "";// {string} make, model, etc
+    this.notes = "";      // {string} saves the notes for the item
+    this.missing = false; // {bool} true if item cannot be found when form is closed
+
+    if (itemData[dataIndex.MAKE] && itemData[dataIndex.MODEL]) {
+      this.description = itemData[dataIndex.MAKE] + ' ' + itemData[dataIndex.MODEL];
+    } else {
+      this.description = itemData[dataIndex.DESCRIPTION];
+    }
+  } else { // When creating from obj as parsed JSON from client:
+    this.barcode = itemData.barcode ? "" + itemData.barcode : "";
+    this.id = itemData.id ? "" + itemData.id : "";
+    this.checkedOut = Boolean(itemData.checkedOut);
+    this.checkIn = itemData.checkIn ? "" + itemData.checkIn : "";
+    this.checkOut = itemData.checkOut ? "" + itemData.checkOut : "";
+    this.description = itemData.description ? "" + itemData.description : "";
+    this.notes = itemData.notes ? "" + itemData.notes : "";
+    this.missing = Boolean(itemData.missing);
   }
-  if (+this.barcode > 9999 && +this.barcode < 10101) { // reserved barcode range TODO put in config settings
-    this.serialized = false;
-  } else {
-    this.serialized = true;
+  // private members
+  /**
+   * serialized identifies non-fungible items
+   */
+  var serialized = Boolean(this.barcode) &&
+    (+this.barcode < 10000 || +this.barcode > 10100);
+
+  this.isSerialized = function() { return serialized; };
+
+  /**
+   * quantity is only mutable for non-serialized items
+   *   must be a positive integer e.g. [1,inf)
+   */
+  var quantity = 1;
+
+  this.getQuantity = function() { return quantity; };
+  this.changeQuantity = function(integer) {
+    if (serialized) {
+      throw new Error("Cannot change quantity of a serialized item");
+    }
+    if (! isPositiveInteger(quantity + integer)) {
+      throw new Error("Invalid quantity: " + integer);
+    }
+    quantity += integer;
+    return this;
+  };
+  this.setQuantity = function(integer) {
+    if (serialized) {
+      throw new Error("Cannot change quantity of a serialized item");
+    }
+    if (! isPositiveInteger(integer)) {
+      throw new Error("Invalid quantity: " + integer);
+    }
+    quantity = integer;
+    return this;
+  };
+
+  // private helper functions
+  function isPositiveInteger(integer) {
+    return ! isNaN(integer) &&
+      Math.floor(integer) === integer &&
+      Math.abs(integer) === integer;
   }
 }
 
-Item_.prototype.getId = function() { return this.id; };
-Item_.prototype.getQuantity = function() { return this.quantity; };
-Item_.prototype.getDescription = function() { return this.description; };
-Item_.prototype.isCheckedOut = function() { return this.checkedOut; };
-
-Item_.prototype.setBarcode = function(str) { this.barcode = str; return this; };
-Item_.prototype.setCheckedOut = function(bool) { this.checkedOut = Boolean(bool); return this; };
-Item_.prototype.setDescription = function(str) { this.description = str; return this; };
-Item_.prototype.setQuantity = function(integer) {
-  if (this.serialized && integer != 1) {
-    throw new Error("Cannot change quantity of a serialized item");
-  } else {
-    if (integer != Math.floor(integer) || integer != Math.abs(integer)) { // not a good input
-      throw new Error('item.setQuantity requires positive integer values only, recieved ' + integer);
-    }
-    this.quantity = integer;
-    return this;
-  }
+/**
+ * archive returns a plain object with the quantity made public
+ * used by Inventory when stringifying
+ */
+Item_.prototype.archive = function() {
+  var obj = Object.assign({}, this);
+  obj.quantity = this.getQuantity();
+  return obj;
 };

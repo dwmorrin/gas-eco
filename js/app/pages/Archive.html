@@ -52,15 +52,8 @@ app.pages.archive = {
     }
   },
   handleClickTable: function(click) {
-    let findForm = function(form) {
-      return form.id == click.target.parentNode.getAttribute('data-id');
-    };
-    let index = app.cache.archive.findIndex(findForm);
-    if (index < 0) {
-      return;
-    }
-    app.cache.currentIndex = index;
-    app.doCommand('displayForm', app.cache.archive[index], true);
+    const id = click.target.parentNode.getAttribute('data-id');
+    app.doCommand('displayForm', app.cache.archive.getByID(id), true);
   },
   handleClickTableHead: function(click) {
     app.doCommand('sortForms', click.target.dataset.sort);

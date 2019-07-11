@@ -1,14 +1,14 @@
 <script>
 /* exported  Item */
 function Item({
-  barcode = null,
-  id = null,
+  barcode = "",
+  id = "",
   checkedOut = false,
-  checkIn = null,
-  checkOut = null,
-  description = null,
+  checkIn = "",
+  checkOut = "",
+  description = "",
   qty = 1,
-  notes = null,
+  notes = "",
   missing = false
 }) {
   if (! (this instanceof Item)) {
@@ -23,14 +23,15 @@ function Item({
   }
 
   // public properties
-  this.barcode = barcode;        // {string}
-  this.id = id;                  // {string}
-  this.checkedOut = checkedOut;  // {bool}
-  this.checkIn = checkIn;        // {string} formatted date
-  this.checkOut = checkOut;      // {string} formatted date
-  this.description = description;// {string} make, model, etc
-  this.notes = notes;            // {string} saves the notes for the item
-  this.missing = missing;        // {bool} true if item cannot be found when form is closed
+  // enforcing input like id=null or barcode=10 are coerced into strings
+  this.barcode = barcode ? "" + barcode : "";
+  this.id = id ? "" + id : "";
+  this.checkedOut = Boolean(checkedOut);
+  this.checkIn = checkIn ? "" + checkIn : "";
+  this.checkOut = checkOut ? "" + checkOut : "";
+  this.description = description ? "" + description : "";
+  this.notes = notes ? "" + notes : "";
+  this.missing = Boolean(missing);
 
   this.changeQuantity = function(integer) {
     if (serialized) {
@@ -66,11 +67,7 @@ function Item({
   }
 }
 
-// Item prototype functions
-
-// shared properties
-Item.prototype.cache = []; // Item[]
-
+// public methods
 // getters
 Item.prototype.getId = function() { return this.id; };
 Item.prototype.getDescription = function() { return this.description; };
@@ -83,26 +80,6 @@ Item.prototype.getStripped = function() {
   };
 };
 Item.prototype.isCheckedOut = function() { return this.checkedOut; };
-
-// setters
-Item.prototype.setBarcode = function(str) { this.barcode = str; return this; };
-Item.prototype.setDescription = function(str) { this.description = str; return this; };
-Item.prototype.setCheckedOut = function(bool) { this.checkedOut = Boolean(bool); return this; };
-
-// utilities
-Item.prototype.match = (item) => {
-  if (this.id) {
-    return item.id == this.id;
-  } else if (! isNaN(+this.barcode) && +this.barcode < 10000) {
-    return item.barcode == this.barcode;
-  }
-  if (this.description) {
-    return item.description == this.description;
-  }
-  return false;
-};
-
-
 Item.prototype.getCached = function() {
   if (/^manual/i.test(this.id)) {
     this.checkedOut = true;
@@ -129,6 +106,34 @@ Item.prototype.getStripped = function () {
     quantity: this.quantity,
     barcode: this.barcode
   };
+};
+
+// setters
+Item.prototype.setBarcode = function(str) { this.barcode = str; return this; };
+Item.prototype.setDescription = function(str) { this.description = str; return this; };
+Item.prototype.setCheckedOut = function(bool) { this.checkedOut = Boolean(bool); return this; };
+
+// utilities
+Item.prototype.match = (item) => {
+  if (this.id) {
+    return item.id == this.id;
+  } else if (! isNaN(+this.barcode) && +this.barcode < 10000) {
+    return item.barcode == this.barcode;
+  }
+  if (this.description) {
+    return item.description == this.description;
+  }
+  return false;
+};
+
+/**
+ * archive returns a plain object with the quantity made public
+ * used by Inventory when stringifying
+ */
+Item.prototype.archive = function() {
+  const obj = Object.assign({}, this);
+  obj.quantity = this.getQuantity();
+  return obj;
 };
 
 Item.prototype.stringify = function() {

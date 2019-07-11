@@ -1,5 +1,5 @@
 <script>
-/* global Inventory */
+/* global Inventory Stack */
 /**
  * signature of the app object
  */
@@ -24,12 +24,11 @@ const app = {
 
 /** app state */
 app.cache = {
-  archive:             [],
+  archive:             new Stack(),
   archiveFiltered:     [],
   currentFormstack:    "",
-  currentIndex:         0,
-  openForms:           [],
-  savedForm:           {},
+  openForms:           new Stack(),
+  savedForm:           null, // Form
   signatureTimeoutId: NaN,
   students:            [],
 };

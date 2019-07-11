@@ -1,16 +1,13 @@
 <script>
 // Window level event handlers.
 // Page and page element handlers are found under their respective pages
-/* global app isBlankForm */
+/* global app displayForm */
 app.handlers = {
   /**
    * Attach this function to the beforeunload event whevener there is a form with
    * unsaved changes displayed.
    * @see {@link https://developer.mozilla.org/en-US/docs/Web/Events/beforeunload}
    * @see app.changes.saved
-   * @todo does not work in Safari due to frame of different security origin
-   * @todo does not work in Chrome 67
-   * @todo this looks promising: https://jes.al/2016/03/preventing-back-button-navigation-in-SPAs/
    */
   beforeunload: function(event) {
     if (! app.changes.saved) {
@@ -61,9 +58,12 @@ app.handlers = {
       app.pages.form.elements.undoButton.disabled = true;
       click.target.value = click.target.value.slice(9, click.target.value.length);
       // check if blank form, undo actions from Display::displayNewForm
-      if (isBlankForm(app.cache.savedForm)) {
+      if (app.cache.savedForm.isBlank()) {
         app.cache.openForms.pop();
-        --app.cache.currentIndex;
+        if (/(previous|next)Form/.test(click.target.value)) {
+          displayForm(app.cache.openForms.getCurrentForm(), app.cache.currentFormstack == 'archive');
+          return;
+        }
       }
     }
     app.doCommand(click.target.value);

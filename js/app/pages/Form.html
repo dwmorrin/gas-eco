@@ -27,25 +27,30 @@ app.pages.form = {
     copyButton:              document.querySelector('button[value="copyItems"]'),
   },
   getNext: function() {
-    // get the next form from either the open stack or the archive stack
-    const stack = app.cache[app.cache.currentFormstack];
-    if (app.cache.currentIndex == stack.length - 1) { // we're already at the end
+    const form = app.cache[app.cache.currentFormstack].getNext();
+    if (! form) { // we're already at the end
       app.omnibox.element.focus();
       return;
-    } else {
-      const isArchive = app.cache.currentFormstack == 'archive';
-      displayForm(stack[++app.cache.currentIndex], isArchive);
     }
+    if (! app.changes.saved) {
+      app.cache[app.cache.currentFormstack].getPrevious(); // fix currentIndex
+      app.modal.handleUnsavedForm('nextForm');
+      return;
+    }
+    displayForm(form, app.cache.currentFormstack == 'archive');
   },
   getPrevious: function() {
-    const stack = app.cache[app.cache.currentFormstack];
-    if (app.cache.currentIndex == 0) { // we're already at the beginning
+    const form = app.cache[app.cache.currentFormstack].getPrevious();
+    if (! form) { // we're already at the beginning
       app.omnibox.element.focus();
       return;
-    } else {
-      const isArchive = app.cache.currentFormstack == 'archive';
-      displayForm(stack[--app.cache.currentIndex], isArchive);
     }
+    if (! app.changes.saved) {
+      app.cache[app.cache.currentFormstack].getNext(); // fix currentIndex
+      app.modal.handleUnsavedForm('previousForm');
+      return;
+    }
+    displayForm(form, app.cache.currentFormstack == 'archive');
   },
   /** for form validation and attach beforeunload listener for unsaved changes */
   handleChange: function(change) {
@@ -182,9 +187,11 @@ app.pages.form = {
       const itemRow = (click.target.classList.contains('itemnotes'))
         ? click.target.parentNode.previousSibling
         : click.target.parentNode;
-      const items = JSON.parse(app.pages.form.elements.form.items.value);
+      const form = app.cache.openForms.getCurrentForm();
       const key = itemRow.dataset.id === '' ? "barcode" : "id";
-      const item = items.find(i => i[key] == itemRow.dataset[key]);
+      const item = itemRow.dataset.id === '' ?
+        form.items.getByBarcode(itemRow.dataset.barcode) :
+        form.items.getById(itemRow.dataset.id);
       if (! item) {
         app.modal.handleError(
           new Error('cannot take note for ' + itemRow.dataset[key])

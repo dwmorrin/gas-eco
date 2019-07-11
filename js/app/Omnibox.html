@@ -14,11 +14,12 @@ app.omnibox = {
   },
   element: document.querySelector('input.omnibox'),
   handleItem: function(item, quantityToReturn) {
-    const items = (JSON.parse(app.pages.form.elements.form.items.value) || []);
-    items.forEach((item, index, array) => {
-      array[index] = new Item(item);
-    });
-    const itemOnForm = items.find(i => {
+    const form = app.cache.openForms.getCurrentForm();
+    //const items = (JSON.parse(app.pages.form.elements.form.items.value) || []);
+    //items.forEach((item, index, array) => {
+    //  array[index] = new Item(item);
+    //});
+    const itemOnForm = form.items.find(i => {
       if (item.id && i.id == item.id) {
         return true;
       }
@@ -30,15 +31,16 @@ app.omnibox = {
     const change = { // fake change event
       target: {
         name: 'items',
-        value: (item.id && ! /^manual/i.test(item.id))
-          ? item.id
-          : item.description
+        value: (item.id && ! /^manual/i.test(item.id)) ?
+          item.id :
+          item.description
       }
     };
 
     if (! itemOnForm) { // new item
+      item = new Item(item); // copy it
       item.checkOut = utility.date.getFormattedDate(new Date());
-      items.push(item);
+      form.items.push(item);
       change.target.value += ' check-out';
     } else if (quantityToReturn && quantityToReturn != "all") {
       itemOnForm.changeQuantity(-quantityToReturn);
@@ -73,10 +75,10 @@ app.omnibox = {
     }
 
     // Update form.items
-    app.pages.form.elements.form.items.value = JSON.stringify(items);
+    app.pages.form.elements.form.items.value = form.items.stringify();
     // Update display
     utility.DOM.empty(app.pages.form.elements.itemList);
-    items.reverse().forEach(populateItemList);
+    form.items.reverse().forEach(populateItemList);
     app.omnibox.clear();
     // Fake change event
     app.pages.form.handleChange(change);
@@ -217,7 +219,7 @@ app.omnibox = {
     if (itemIdregex.test(value)) {
       parsed = app.inventory.getById(value);
       if (!parsed && /^manual/.test(value)) {
-        parsed = (JSON.parse(app.pages.form.elements.form.items.value)).find(
+        parsed = app.cache.openForms.getCurrentForm().items.find(
           item => item.id.toLowerCase().replace(/-0+/, '-') == value
         );
       } else {

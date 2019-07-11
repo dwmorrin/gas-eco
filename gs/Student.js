@@ -12,7 +12,6 @@ function Student_(id) {
   this.getCheckIn = function() { return this.checkIn; };
   this.getCheckOut = function() { return this.checkOut; };
   this.getContact = function() { return this.contact; };
-  this.getId = function() { return this.id; };
   this.getName = function() { return this.name; };
   this.getNetId = function() { return this.netId; };
   this.isSignatureOnFile = function() { return this.signatureOnFile; };

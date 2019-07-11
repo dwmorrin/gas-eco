@@ -8,15 +8,8 @@ app.pages.openForms = {
     formsTableHead:     document.querySelector('thead.open'),
   },
   handleClickTable: function(click) {
-    let findForm = function(form) {
-      return form.id == click.target.parentNode.getAttribute('data-id');
-    };
-    const index = app.cache.openForms.findIndex(findForm);
-    if (index < 0) {
-      return;
-    }
-    app.cache.currentIndex = index;
-    app.doCommand('displayForm', app.cache.openForms[index], false);
+    const id = click.target.parentNode.getAttribute('data-id');
+    app.doCommand('displayForm', app.cache.openForms.getByID(id), false);
   },
   handleClickTableHead: function(click) {
     app.doCommand('sortForms', click.target.dataset.sort);

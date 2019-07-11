@@ -4,7 +4,7 @@
  * @param {bool} archived - is this a closed form?
  * @return void
  */
-/* global app utility */
+/* global app utility Form */
 /* exported
      populateArchiveTable
      displayForm
@@ -20,10 +20,8 @@ function displayForm(form, archived) {
       case 'items': {
         let items = form[key];
         utility.DOM.empty(els.itemList);
-        if (items.length == 0) {
-          els.form.items.value = JSON.stringify([]);
-        } else {
-          els.form.items.value = JSON.stringify(items);
+        els.form.items.value = items.stringify();
+        if (items.getLength() > 0) {
           const slice = items.slice();
           slice.reverse().forEach(populateItemList);
         }
@@ -131,7 +129,7 @@ function displayForm(form, archived) {
   }
 
   // copy form
-  app.cache.savedForm = Object.assign({}, form);
+  app.cache.savedForm = new Form(form);
 
   // clear changes
   app.changes.clear();
@@ -147,9 +145,10 @@ function displayForm(form, archived) {
     els.updateFormButton.classList.remove('create');
   }
 
-  // indicate where this form is in the current `stack' (e.g. open or closed/archive)
-  els .currentFormstackDisplay.textContent = (app.cache.currentIndex + 1) +
-    "/" + app.cache[app.cache.currentFormstack].length;
+  // indicate where this form is in the current stack, e.g. "1/6"
+  const stack = app.cache[app.cache.currentFormstack];
+  els.currentFormstackDisplay.textContent = (stack.getCurrentIndex() + 1) +
+    "/" + stack.getLength();
 
   // this was added to handle displaying closed forms
   // @todo - should this be combined with the other update init section above?
@@ -185,7 +184,7 @@ function populateFormsTable(forms) {
   utility.DOM.empty(app.pages.openForms.elements.equipmentTableBody);
 
   // if there's no forms...
-  if (forms.length == 0) {
+  if (forms.getLength() == 0) {
     let cell = document.createElement('td'),
         row = document.createElement('tr');
     cell.textContent = 'No open forms';
@@ -260,16 +259,17 @@ function populateEquipmentOutList(item) {
 function populateItemList(item) {
   let checkInButton, checkIn;
   const noteRow = document.createElement('tr'),
-        notes = document.createElement('td');
-  if (! item.checkIn && ! item.serialized) {
+        notes = document.createElement('td'),
+        quantity = item.getQuantity();
+  if (! item.checkIn && ! item.isSerialized()) {
     const id = item.id ? item.id : item.barcode;
     checkInButton = `<button class="action"
                              value="checkInButton"
                              data-itemid="${id}">Check In</button>`;
-    if (item.quantity > 1) {
+    if (quantity > 1) {
       checkInButton += `<select data-itemid="${id}" class="selectQuantity">
         <option value="all">All</option>`;
-      for (let i = 1; i < item.quantity; ++i) {
+      for (let i = 1; i < quantity; ++i) {
         checkInButton += `<option>${i}</option>`;
       }
       checkInButton += `</select>`;
@@ -281,12 +281,12 @@ function populateItemList(item) {
     checkIn = checkInButton || item.checkIn;
   }
   const itemRow = utility.DOM.makeTableRow(
-    'td', item.quantity, item.description,
+    'td', quantity, item.description,
     item.id, item.checkOut, checkIn
   );
   itemRow.setAttribute('data-id', item.id);
   itemRow.setAttribute('data-barcode', item.barcode);
-  if (! item.serialized) {
+  if (! item.isSerialized()) {
     itemRow.classList.add('nonserialized');
   } else {
     itemRow.classList.add('serialized');

@@ -1,30 +1,29 @@
-<script>
-/* global Item */
-/* exported Inventory */
-/**
- * Inventory wraps an array with specialized functions
- */
-function Inventory(array) {
-  let items = [];
+/* global Item_ */
+/* exported Inventory_ */
+function Inventory_(array) {
+  var items = [];
   this.setItems = function(array) {
     if (! Array.isArray(array)) {
-      throw new Error(`${array} is not an array`);
+      throw new Error(array + "is not an array");
     }
     items = array;
-    if (! (items[0] instanceof Item)) {
+    if (! (items[0] instanceof Item_)) {
       items.forEach(function (obj, index, array) {
-        array[index] = new Item(obj);
+        array[index] = new Item_(obj);
       });
     }
   };
   if (array) {
     this.setItems(array);
   }
+  this.push = function(item) {
+    if (! (item instanceof Item_)) {
+      throw new Error(item + "is not an Item_");
+    }
+    items.push(item);
+  };
   this.slice = function() {
     return items.slice();
-  };
-  this.push = function(item) {
-    items.push(item);
   };
   /**
    * non-mutating wrapper for reverse
@@ -34,7 +33,7 @@ function Inventory(array) {
     return items.slice().reverse();
   };
   this.getByBarcode = function(barcode) {
-    return items.find(item => {
+    return items.find(function(item) {
       if (! item.barcode) {
         return false;
       }
@@ -43,7 +42,7 @@ function Inventory(array) {
   };
   this.getById = function(id) {
     id = id.toLowerCase().replace(/-0+/, '-');
-    return items.find(item => {
+    return items.find(function(item) {
       if (! item.id) {
         return false;
       }
@@ -53,9 +52,18 @@ function Inventory(array) {
   this.find = function(func) {
     return items.find(func);
   };
+  this.archive = function() {
+    var copy = [];
+    items.forEach(function(item) {
+      copy.push(item.archive());
+    });
+    return copy;
+  };
   this.stringify = function() {
-    const copy = [];
-    items.forEach(item => copy.push(item.archive()));
+    var copy = [];
+    items.forEach(function(item) {
+      copy.push(item.archive());
+    });
     return JSON.stringify(copy);
   };
   this.forEach = function(func) {
@@ -63,4 +71,3 @@ function Inventory(array) {
   };
   this.getLength = function() { return items.length; };
 }
-</script>

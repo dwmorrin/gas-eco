@@ -13,15 +13,6 @@ function isAllGearReturned() {
   });
 }
 
-/**
- * @param {object} form
- * @returns {bool}
- */
-/* exported isBlankForm */
-function isBlankForm(form) {
-  return form.id == null;
-}
-
 /** @return {bool} */
 function isThereAnActiveStudent() {
   const students = JSON.parse(app.pages.form.elements.form.students.value),

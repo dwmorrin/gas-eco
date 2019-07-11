@@ -4,6 +4,7 @@
  * most of these are primarily driven by mouse clicks, usually on button elements
  */
 /* global
+      Form
       app
       displayForm
       populateFormsTable
@@ -70,7 +71,7 @@ app.doCommand = function(command,...options) {
     }
     case 'collisionResolve': {
       const form = app.modal.tmp.storedForm;
-      app.cache[app.cache.currentFormstack][app.cache.currentIndex] = form;
+      app.cache[app.cache.currentFormstack].replaceCurrent(form);
       app.changes.saved = true;
       app.pages.form.lockButtons();
       displayForm(form);
@@ -93,31 +94,19 @@ app.doCommand = function(command,...options) {
         app.modal.handleUnsavedForm(command);
         return;
       }
-      app.cache.savedForm = {
-        id: null, bookingId: null, bookedStudents: null, endTime: null,
-        location: null, overnight: null, project: null, contact: null,
-        startTime: null, tape: null, students: [], items: [], notes: []
-      };
+      app.cache.savedForm = new Form({});
       app.cache.currentFormstack = app.strings.formstack.openForms;
-      const length = app.cache.openForms.push(app.cache.savedForm);
-      app.cache.currentIndex = length - 1;
+      app.cache.openForms.push(app.cache.savedForm);
       app.changes.saved = false;
       displayForm(app.cache.savedForm);
       break;
     }
     case 'itemNote': {
       const description = app.modal.tmp.description,
-            items = JSON.parse(app.pages.form.elements.form.items.value);
-      let item;
-      if (app.modal.tmp.id) {
-        item = items.find(i => i.id == app.modal.tmp.id);
-      } else if (+app.modal.tmp.barcode < +app.strings.manualItemBarcode) {
-        item = items.find(i => i.barcode == app.modal.tmp.barcode);
-      } else {
-        item = items.find(i => i.description == description);
-      }
-      let change = { target: { name: 'items' } };
-      let value = utility.DOM.getRadioValue();
+            form = app.cache.openForms.getCurrentForm(),
+            item = app.modal.tmp;
+      const change = { target: { name: 'items' } };
+      const value = utility.DOM.getRadioValue();
       if (value == 'other') {
         const note = app.modal.getText();
         if (note.length < 1) {
@@ -133,9 +122,9 @@ app.doCommand = function(command,...options) {
         item.missing = true;
         change.target.value = description + ' marked as missing';
       }
-      app.pages.form.elements.form.items.value = JSON.stringify(items);
+      app.pages.form.elements.form.items.value = form.items.stringify();
       utility.DOM.empty(app.pages.form.elements.itemList);
-      items.reverse().forEach(populateItemList);
+      form.items.reverse().forEach(populateItemList);
       app.pages.form.handleChange(change);
       break;
     }
@@ -185,10 +174,6 @@ app.doCommand = function(command,...options) {
       app.modal.getManual();
       break;
     case 'nextForm':
-      if (! app.changes.saved) {
-        app.modal.handleUnsavedForm(command);
-        return;
-      }
       app.pages.form.getNext();
       break;
     case 'openForms':
@@ -203,10 +188,6 @@ app.doCommand = function(command,...options) {
       app.omnibox.parse();
       break;
     case 'previousForm':
-      if (! app.changes.saved) {
-        app.modal.handleUnsavedForm(command);
-        return;
-      }
       app.pages.form.getPrevious();
       break;
     case 'query':

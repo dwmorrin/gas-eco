@@ -189,14 +189,14 @@ utility.date.parseDateAndTimeInputs = function() {
       endHour = +app.pages.form.elements.form.endHour.value,
       startMinute = +app.pages.form.elements.form.startMinute.value,
       endMinute = +app.pages.form.elements.form.endMinute.value;
-  function ampmConverter(ampm, hour) {
+  const ampmConverter = (ampm, hour) => {
     if (ampm == 'PM' && hour != 12) {
       hour += 12;
     } else if (ampm == 'AM' && hour == 12) { // i.e. 12 AM
       hour = 0;
     }
     return hour;
-  }
+  };
   startHour = ampmConverter(app.pages.form.elements.form.startAMPM.value, startHour);
   endHour = ampmConverter(app.pages.form.elements.form.endAMPM.value, endHour);
   startTime.setHours(startHour);
@@ -204,7 +204,7 @@ utility.date.parseDateAndTimeInputs = function() {
   endTime.setHours(endHour);
   endTime.setMinutes(endMinute);
 
-  return { startTime: startTime, endTime: endTime };
+  return {startTime, endTime};
 };
 
 /**

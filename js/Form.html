@@ -1,0 +1,46 @@
+<script>
+/* global Inventory */
+/* exported Form */
+function Form({
+  bookedStudents = null,
+  bookingId = null,
+  contact = null,
+  endTime = null,
+  id = null,
+  location = null,
+  project = null,
+  overnight = null,
+  startTime = null,
+  tape = null,
+  hash = null,
+  items = null,
+  notes = [],
+  students = []
+}) {
+  this.items = items instanceof Inventory ? items : new Inventory(items);
+  this.bookedStudents = bookedStudents;
+  this.bookingId = bookingId;
+  this.contact = contact;
+  this.endTime = endTime;
+  this.id = id;
+  this.location = location;
+  this.project = project;
+  this.overnight = overnight;
+  this.startTime = startTime;
+  this.tape = tape;
+  this.hash = hash;
+  this.notes = notes;
+  this.students = students;
+}
+/**
+ * isBlank determines if a form is a new, blank form (could be called `isNew`)
+ */
+Form.prototype.isBlank = function() { return this.id === null; };
+
+Form.prototype.stringify = function() {
+  const items = this.items.stringify();
+  const copy = Object.assign({}, this);
+  copy.items = items;
+  return JSON.stringify(copy);
+};
+</script>
