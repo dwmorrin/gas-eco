@@ -16,6 +16,12 @@ function Item({
   }
 
   // private properties
+  /**
+   * serialized identifies non-fungible items
+   * an item is serialized if it has a barcode NOT in the range 10000-10100
+   *
+   * items with item IDs are sometimes non-serialized if they are manual entries
+   */
   const serialized = Boolean(barcode) && (+barcode < 10000 || +barcode > 10100);
   let quantity = 1;              // {int}
   if (! isNaN(qty) && qty > 1) {

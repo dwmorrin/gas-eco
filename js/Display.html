@@ -18,7 +18,7 @@ function displayForm(form, archived) {
   for (let key in form) {
     switch (key) {
       case 'items': {
-        let items = form[key];
+        const items = form[key];
         utility.DOM.empty(els.itemList);
         els.form.items.value = items.stringify();
         if (items.getLength() > 0) {

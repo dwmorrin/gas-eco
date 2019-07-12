@@ -96,7 +96,7 @@ app.doCommand = function(command,...options) {
       }
       app.cache.savedForm = new Form({});
       app.cache.currentFormstack = app.strings.formstack.openForms;
-      app.cache.openForms.push(app.cache.savedForm);
+      app.cache.openForms.push(new Form({}));
       app.changes.saved = false;
       displayForm(app.cache.savedForm);
       break;
@@ -194,10 +194,6 @@ app.doCommand = function(command,...options) {
       app.pages.archive.query();
       break;
     case 'revert':
-      app.changes.saved = true;
-      app.pages.form.elements.undoButton.setAttribute('disabled', true);
-      app.pages.form.elements.updateButtonHint.textContent = '';
-      app.pages.form.elements.updateFormButton.setAttribute('disabled', true);
       displayForm(app.cache.savedForm);
       break;
     case 'saveNote': {
@@ -281,7 +277,10 @@ app.doCommand = function(command,...options) {
       app.omnibox.parse();
       app.pages.form.lock();
       app.spinner.inside(app.pages.form.elements.updateFormButton);
-      app.run.doPost({ post: 'updateForm', form: JSON.stringify(utility.makeForm()) });
+      app.run.doPost({
+        post: 'updateForm',
+        form: app.pages.form.getForm().stringify(),
+      });
       break;
     case 'undo':
       app.modal.handleUndo();

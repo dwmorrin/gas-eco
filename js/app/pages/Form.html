@@ -1,5 +1,5 @@
 <script>
-/* global app displayForm utility isFormOkToPost isFormReadyToClose toast */
+/* global Form app displayForm utility isFormOkToPost isFormReadyToClose toast */
 app.pages.form = {
   checkForms: function() {
     app.run
@@ -25,6 +25,30 @@ app.pages.form = {
     updateFormButton:        document.querySelector('button[value="updateForm"]'),
     undoButton:              document.querySelector('button[value="undo"]'),
     copyButton:              document.querySelector('button[value="copyItems"]'),
+  },
+  /**
+   * getForm takes the DOM representation of the form and
+   *   returns a Form object
+   */
+  getForm: function() {
+    const notes = JSON.parse(app.pages.form.elements.form.notes.value);
+    notes.push(app.changes.makeNote());
+    return new Form({
+      bookedStudents: app.pages.form.elements.form.bookedStudents.value,
+      bookingId: app.pages.form.elements.form.bookingId.value,
+      contact: app.pages.form.elements.form.contact.value,
+      endTime: app.pages.form.elements.form.endTime.value,
+      id: app.pages.form.elements.form.id.value,
+      location: app.pages.form.elements.form.location.value,
+      project: app.pages.form.elements.form.project.value,
+      overnight: app.pages.form.elements.form.overnight.value,
+      startTime: app.pages.form.elements.form.startTime.value,
+      tape: app.pages.form.elements.form.tape.value,
+      items: JSON.parse(app.pages.form.elements.form.items.value),
+      notes: notes,
+      students: JSON.parse(app.pages.form.elements.form.students.value),
+      hash: app.pages.form.elements.form.hash.value,
+    });
   },
   getNext: function() {
     const form = app.cache[app.cache.currentFormstack].getNext();

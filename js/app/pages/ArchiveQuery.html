@@ -64,20 +64,10 @@ app.pages.archive.filters = {
     return false;
   },
   byMissingItem: form => {
-    for (let item of form.items) {
-      if (item.missing) {
-        return true;
-      }
-    }
-    return false;
+    return form.items.some(item => item.missing);
   },
   byStudentLeft: form => {
-    for (let student of form.students) {
-      if (student.left) {
-        return true;
-      }
-    }
-    return false;
+    return form.students.some(student => student.left);
   },
   byHasManual: form => {
     for (let note of form.notes) {
@@ -215,11 +205,11 @@ app.pages.archive.query = function() {
   if (app.cache.archiveFiltered.length == 1) {
     app.pages.archive.elements
       .queryCount.textContent = app.cache.archiveFiltered
-        .length + ' form';
+        .getLength + ' form';
   } else {
     app.pages.archive
       .elements.queryCount.textContent = app.cache.archiveFiltered
-        .length + ' forms';
+        .getLength + ' forms';
   }
   utility.sortForms(app.cache.archiveFiltered);
   populateArchiveTable(app.cache.archiveFiltered);

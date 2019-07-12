@@ -204,7 +204,7 @@ function getArchivedFormsGAS_(dateRangeJSON) {
   var sheet = SpreadsheetApp.openById(index.forms.SHEET_ID)
     .getSheetByName(index.forms.ARCHIVE_NAME);
   var data = sheet.getDataRange().getValues(),
-      forms = [];
+      forms = new Stack_();
   data.shift();
   data.forEach(function(row) { forms.push(new Form_(row).setHash()); });
   forms = forms.filter(function(form) {
@@ -215,7 +215,7 @@ function getArchivedFormsGAS_(dateRangeJSON) {
       end.getTime()   <= dateRange.end.getTime()
     );
   });
-  return forms;
+  return forms.archive();
 }
 
 /** @return {[]} an array of Forms */

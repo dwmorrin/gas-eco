@@ -270,28 +270,6 @@ utility.date.zeropad = function(x) {
   }
 };
 
-utility.makeForm = function() {
-  let notes = JSON.parse(app.pages.form.elements.form.notes.value);
-  notes.push(app.changes.makeNote());
-  let form = {
-    bookedStudents: app.pages.form.elements.form.bookedStudents.value,
-    bookingId: app.pages.form.elements.form.bookingId.value,
-    contact: app.pages.form.elements.form.contact.value,
-    endTime: app.pages.form.elements.form.endTime.value,
-    id: app.pages.form.elements.form.id.value,
-    location: app.pages.form.elements.form.location.value,
-    project: app.pages.form.elements.form.project.value,
-    overnight: app.pages.form.elements.form.overnight.value,
-    startTime: app.pages.form.elements.form.startTime.value,
-    tape: app.pages.form.elements.form.tape.value,
-    items: JSON.parse(app.pages.form.elements.form.items.value),
-    notes: notes,
-    students: JSON.parse(app.pages.form.elements.form.students.value),
-    hash: app.pages.form.elements.form.hash.value,
-  };
-  return form;
-};
-
 utility.sortForms = function(forms, sortBy) {
   const currentPage = app.pages[app.cache.currentFormstack];
   if (! sortBy) {

@@ -3,8 +3,11 @@
 function Inventory_(array) {
   var items = [];
   this.setItems = function(array) {
+    if (typeof array === "string") { // when new Form has nested JSON TODO confirm this isn't a bug in the client side, i.e. double stringifying
+      array = JSON.parse(array);
+    }
     if (! Array.isArray(array)) {
-      throw new Error(array + "is not an array");
+      throw new Error(array + "(" + typeof array + ")" + " is not an array");
     }
     items = array;
     if (! (items[0] instanceof Item_)) {
@@ -16,14 +19,25 @@ function Inventory_(array) {
   if (array) {
     this.setItems(array);
   }
+
+  // getLength allows access to items.length
+  this.getLength = function() { return items.length; };
+
+  // this section exposes standard array methods
+  this.every = function(func) {
+    return items.every(func);
+  };
+  this.find = function(func) {
+    return items.find(func);
+  };
+  this.forEach = function(func) {
+    items.forEach(func);
+  };
   this.push = function(item) {
     if (! (item instanceof Item_)) {
       throw new Error(item + "is not an Item_");
     }
     items.push(item);
-  };
-  this.slice = function() {
-    return items.slice();
   };
   /**
    * non-mutating wrapper for reverse
@@ -32,6 +46,11 @@ function Inventory_(array) {
   this.reverse = function() {
     return items.slice().reverse();
   };
+  this.slice = function() {
+    return items.slice();
+  };
+
+  // this section provides custom access to items array
   this.getByBarcode = function(barcode) {
     return items.find(function(item) {
       if (! item.barcode) {
@@ -49,9 +68,6 @@ function Inventory_(array) {
       return item.id.toLowerCase().replace(/-0+/, '-') === id;
     });
   };
-  this.find = function(func) {
-    return items.find(func);
-  };
   this.archive = function() {
     var copy = [];
     items.forEach(function(item) {
@@ -66,8 +82,4 @@ function Inventory_(array) {
     });
     return JSON.stringify(copy);
   };
-  this.forEach = function(func) {
-    items.forEach(func);
-  };
-  this.getLength = function() { return items.length; };
 }

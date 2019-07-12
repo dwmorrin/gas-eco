@@ -8,7 +8,7 @@ function Inventory(array) {
   let items = [];
   this.setItems = function(array) {
     if (! Array.isArray(array)) {
-      throw new Error(`${array} is not an array`);
+      throw new Error(`${array} (${typeof array}) is not an array`);
     }
     items = array;
     if (! (items[0] instanceof Item)) {
@@ -20,8 +20,22 @@ function Inventory(array) {
   if (array) {
     this.setItems(array);
   }
-  this.slice = function() {
-    return items.slice();
+
+  // getLength exposes the array length
+  this.getLength = function() { return items.length; };
+
+  // this section exposes array functions
+  this.forEach = function(func) {
+    items.forEach(func);
+  };
+  /**
+   * @returns Item[] - NOT Inventory!
+   */
+  this.filter = function(func) {
+    return items.filter(func);
+  };
+  this.find = function(func) {
+    return items.find(func);
   };
   this.push = function(item) {
     items.push(item);
@@ -33,6 +47,18 @@ function Inventory(array) {
   this.reverse = function() {
     return items.slice().reverse();
   };
+  /**
+   * TODO confirm we want to return Item[] and not new Inventory!
+   *      users may expect to get a copy of an Inventory, not a downgraded array
+   */
+  this.slice = function() {
+    return items.slice();
+  };
+  this.some = function(func) {
+    return items.some(func);
+  };
+  
+  // this section has custom methods for the Inventory array
   this.getByBarcode = function(barcode) {
     return items.find(item => {
       if (! item.barcode) {
@@ -50,17 +76,10 @@ function Inventory(array) {
       return item.id.toLowerCase().replace(/-0+/, '-') === id;
     });
   };
-  this.find = function(func) {
-    return items.find(func);
-  };
   this.stringify = function() {
     const copy = [];
     items.forEach(item => copy.push(item.archive()));
     return JSON.stringify(copy);
   };
-  this.forEach = function(func) {
-    items.forEach(func);
-  };
-  this.getLength = function() { return items.length; };
 }
 </script>

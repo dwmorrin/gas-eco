@@ -27,7 +27,9 @@ app.refresh = function(response, context) {
       } else { // remove spinner from query button
         app.pages.archive.elements.queryButton.innerHTML = 'Update View';
       }
-      app.cache.archive = JSON.parse(response.formList);
+      var formList = JSON.parse(response.formList);
+      console.log(formList);
+      app.cache.archive.importForms(formList);
       app.pages.archive.query();
       break;
     case 'checkForms': {
@@ -58,7 +60,7 @@ app.refresh = function(response, context) {
           // another instance has already updated this form; do not set timeout
           app.run.doPost({
             post: "rejected",
-            form: JSON.stringify(utility.makeForm())
+            form: app.pages.form.getForm().stringify(),
           });
           app.modal.handleError({
             target: "collision",
@@ -87,7 +89,6 @@ app.refresh = function(response, context) {
       app.inventory.setItems(JSON.parse(response.items));
       break;
     case 'openForms':
-      console.log(response.formList);
       if (response.unlock) {
         app.elements.openFormsButton.removeAttribute('disabled');
       }

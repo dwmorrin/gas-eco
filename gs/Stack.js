@@ -26,6 +26,9 @@ function Stack_(formsArray) {
   this.getLength = function() {
     return forms.length;
   };
+  this.filter = function(func) {
+    return new Stack_(forms.filter(func));
+  };
   this.push = function(form) {
     if (! (form instanceof Form_)) {
       throw new Error(form + "is not Form_");

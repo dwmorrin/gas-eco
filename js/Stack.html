@@ -47,6 +47,12 @@ function Stack() {
     }
     currentIndex = index;
   };
+  /**
+   * @returns Form[] - NOT Stack
+   */
+  this.filter = function(func) {
+    return forms.filter(func);
+  };
   this.findIndex = function(func) {
     return forms.findIndex(func);
   };

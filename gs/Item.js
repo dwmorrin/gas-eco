@@ -43,6 +43,9 @@ function Item_(itemData) {
   // private members
   /**
    * serialized identifies non-fungible items
+   * an item is serialized if it has a barcode NOT in the range 10000-10100
+   *
+   * items with item IDs are sometimes non-serialized if they are manual entries
    */
   var serialized = Boolean(this.barcode) &&
     (+this.barcode < 10000 || +this.barcode > 10100);

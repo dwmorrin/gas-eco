@@ -118,7 +118,7 @@ function doPost(request) {
       startSignature_(request.netid);
       break;
     case 'updateForm':
-      var form = new Form_(request.form);
+      var form = new Form_(JSON.parse(request.form));
       try {
         if (isFormReadyToClose_(form) || isNoShow_(form)) {
           closeForm_(form);
