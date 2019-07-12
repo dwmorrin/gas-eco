@@ -274,6 +274,8 @@ function populateItemList(item) {
       }
       checkInButton += `</select>`;
     }
+  } else if (! item.checkIn && item.isSerialized()) {
+    checkInButton = `<i>Scan barcode to return</i>`;
   }
   if (item.missing == true) {
     checkIn = `<span class="alert">ITEM IS MISSING</span>`;
@@ -305,11 +307,13 @@ function populateStudentList(student) {
   if (student.left){
     checkOut = `<span class="alert">DID NOT CHECK OUT</span>`;
   } else {
-    checkOut = student.checkOut;
+    checkOut = student.checkOut || `<i>Scan ID to sign out</i>`;
   }
-  app.pages.form.elements.studentList.appendChild(utility.DOM.makeTableRow(
+  const studentRow = utility.DOM.makeTableRow(
     'td', student.name, student.netId, student.checkIn, checkOut
-  ));
+  );
+  studentRow.setAttribute('data-netid', student.netId);
+  app.pages.form.elements.studentList.appendChild(studentRow);
 }
 
 function populateArchiveTable(forms) {

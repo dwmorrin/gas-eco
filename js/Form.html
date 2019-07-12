@@ -32,10 +32,77 @@ function Form({
   this.notes = notes;
   this.students = students;
 }
+Form.prototype.hasActiveStudent = function() {
+  const studentCounter = function(count, student) {
+    if (student.checkIn && !(student.checkOut || student.left)) {
+      return count + 1;
+    } else {
+      return count;
+    }
+  };
+  const activeStudents = this.students.reduce(studentCounter, 0);
+  return activeStudents > 1;
+};
+Form.prototype.hasItemsOut = function() {
+  return this.items.every(item => {
+    if (item.checkOut) {
+      return ! item.checkIn || ! item.missing;
+    }
+    return false;
+  });
+};
+Form.prototype.hasStudent = function(student) {
+  return Boolean(this.students.find(s => s.id == student.id));
+};
 /**
  * isBlank determines if a form is a new, blank form (could be called `isNew`)
  */
 Form.prototype.isBlank = function() { return this.id === null; };
+Form.prototype.isNoShow = function() {
+  if (! this.id) {
+    return false; // we are only looking at booked forms
+  }
+  const gracePeriod = 15; // minutes
+  const start = new Date(this.startTime),
+        now = Date.now();
+  start.setMinutes(start.getMinutes() + gracePeriod);
+  if (now > start.getTime() && ! this.students.some(s => s.checkIn)) {
+    return true;
+  }
+  return false;
+};
+Form.prototype.isReadyToClose = function() {
+  // Need at least 1 check-in, and everyone checked-in must be checked-out
+  return this.students.some(student => student.checkIn) && this.students.every(
+    student => {
+      if (student.checkIn) {
+        return student.checkOut || student.left;
+      }
+      return true;
+    }
+  );
+};
+Form.prototype.isReadyToPost = function() {
+  if (! this.location) {
+    return false;
+  }
+  if (this.startTime === this.endTime) {
+    return false;
+  }
+  const someStudentsAreActive = this.students.some(
+    s => (s.checkIn && ! (s.checkOut || s.left))
+  );
+  const someItemsAreOut = this.items.some(
+    i => (i.checkOut && ! (i.checkIn || i.missing))
+  );
+  if (someItemsAreOut && ! someStudentsAreActive) {
+    return false;
+  }
+  if (this.students.length == 0) { // finally, is anybody on the form?
+    return false;
+  }
+  return true;
+};
 
 Form.prototype.stringify = function() {
   const items = this.items.stringify();

@@ -27,9 +27,7 @@ app.refresh = function(response, context) {
       } else { // remove spinner from query button
         app.pages.archive.elements.queryButton.innerHTML = 'Update View';
       }
-      var formList = JSON.parse(response.formList);
-      console.log(formList);
-      app.cache.archive.importForms(formList);
+      app.cache.archive.importForms(JSON.parse(response.formList));
       app.pages.archive.query();
       break;
     case 'checkForms': {
@@ -60,7 +58,7 @@ app.refresh = function(response, context) {
           // another instance has already updated this form; do not set timeout
           app.run.doPost({
             post: "rejected",
-            form: app.pages.form.getForm().stringify(),
+            form: staleForm.stringify(),
           });
           app.modal.handleError({
             target: "collision",

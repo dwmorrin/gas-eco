@@ -289,18 +289,15 @@ app.modal = {
     m.textarea.focus();
   },
 
-  handleQuantityChange: function(itemDescription) {
-    // get item
-    const items = JSON.parse(app.pages.form.elements.form.items.value);
-    const item = items.find(i => i.description == itemDescription);
-    if (! item || item.serialized) {
+  handleQuantityChange: function(item) {
+    if (! item || item.isSerialized()) {
       return;
     }
     const m = app.modal;
     m.blurAllTextInputs();
     m.ok.setAttribute('value', 'itemQuantity');
     app.modal.input.setAttribute('placeholder', '');
-    m.tmp = itemDescription;
+    m.tmp = item; // so we can asynchronously fetch if user selects OK
     m.setStrings('itemQuantity');
     m.show(m.container, m.input, m.ok);
     m.input.focus();

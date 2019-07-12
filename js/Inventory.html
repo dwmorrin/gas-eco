@@ -25,6 +25,9 @@ function Inventory(array) {
   this.getLength = function() { return items.length; };
 
   // this section exposes array functions
+  this.every = function(func) {
+    items.every(func);
+  };
   this.forEach = function(func) {
     items.forEach(func);
   };
@@ -74,6 +77,17 @@ function Inventory(array) {
         return false;
       }
       return item.id.toLowerCase().replace(/-0+/, '-') === id;
+    });
+  };
+  this.getByItem = function(item) {
+    return items.find(i => {
+      if (i.id && i.id == item.id) {
+        return true;
+      }
+      if (i.barcode && i.barcode == item.barcode) {
+        return true;
+      }
+      return false;
     });
   };
   this.stringify = function() {

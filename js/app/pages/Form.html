@@ -1,5 +1,5 @@
 <script>
-/* global Form app displayForm utility isFormOkToPost isFormReadyToClose toast */
+/* global Form app displayForm utility toast */
 app.pages.form = {
   checkForms: function() {
     app.run
@@ -120,10 +120,10 @@ app.pages.form = {
     }
     app.pages.form.elements.updateFormButton.classList.add('create');
 
-    const okToPost = isFormOkToPost();
-    if (okToPost) {
+    const form = app.cache.openForms.getCurrentForm();
+    if (form.isReadyToPost()) {
       // are we ready to close?
-      if (isFormReadyToClose()) {
+      if (form.isReadyToClose()) {
         app.pages.form.elements.updateFormButton.textContent = 'Update and Close';
       } // Enable update button
       app.pages.form.elements.updateFormButton.removeAttribute('disabled');
@@ -137,15 +137,15 @@ app.pages.form = {
     if (change.target.value == 'Other') {
       change.target.value = 'none'; // in case the modal is cancelled
       app.modal.getLocation();
-    } else { // it's not other, make sure 'Other' label is reset, log the change
-      app.pages.form.elements.locationOtherOption.textContent = 'Other';
-      app.changes.add(change);
+      return;
     }
+    app.cache.openForms.getCurrentForm().location = change.target.value;
+    // it's not other, make sure 'Other' label is reset, log the change
+    app.pages.form.elements.locationOtherOption.textContent = 'Other';
+    app.changes.add(change);
   },
   handleChangeTime: function(change) {
-    let t = utility.date.parseDateAndTimeInputs(),
-        type = change.target.name.slice(0,1),
-        newChange = { target: {} };
+    let t = utility.date.parseDateAndTimeInputs();
     // CHECK #0: Are t.start and t.end valid?
     if (window.isNaN(t.startTime.getTime())) {
       app.pages.form.elements.form.startDate.classList.add('error');
@@ -189,8 +189,13 @@ app.pages.form = {
       app.pages.form.elements.form.startMinute.classList.remove('error');
       app.pages.form.elements.form.startAMPM.classList.remove('error');
     }
-    app.pages.form.elements.form.startTime.value = utility.date.getFormattedDate(t.startTime);
-    app.pages.form.elements.form.endTime.value = utility.date.getFormattedDate(t.endTime);
+    const form = app.cache.openForms.getCurrentForm();
+    const startTime = utility.date.getFormattedDate(t.startTime);
+    app.pages.form.elements.form.startTime.value = form.startTime = startTime;
+    const endTime = utility.date.getFormattedDate(t.endTime);
+    app.pages.form.elements.form.endTime.value = form.endTime = endTime;
+    const type = change.target.name.slice(0,1),
+          newChange = { target: {} };
     if (type == 's') {
       newChange.target.name = 'startTime';
       newChange.target.value = app.pages.form.elements.form.startTime.value;
@@ -237,9 +242,9 @@ app.pages.form = {
     }
     if (click.target.parentNode.firstChild == click.target) { // should be quantity
       // handle quantity changes
-      const indexOfItemDescription = 1;
-      const cells = click.target.parentNode.getElementsByTagName('td');
-      app.modal.handleQuantityChange(cells[indexOfItemDescription].textContent);
+      const barcode = click.target.parentNode.dataset.barcode;
+      const item = app.cache.openForms.getCurrentForm().items.getByBarcode(barcode);
+      app.modal.handleQuantityChange(item);
       return;
     }
     if (click.target.classList.contains('editable')) {
@@ -295,12 +300,9 @@ app.pages.form = {
     if (click.metaKey) {
       return;
     }
-    let netId = utility.DOM.getNextSibling(
-      utility.DOM.getFirstChild(click.target.parentNode)
-    ).textContent,
-        student,
-        students = JSON.parse(app.pages.form.elements.form.students.value);
-    student = students.find(s => s.netId == netId);
+    const netId = click.target.parentNode.dataset.netid;
+    const students = app.cache.openForms.getCurrentForm().students;
+    const student = students.find(s => s.netId == netId);
     if (!student) {
       app.modal.handleError(
         new Error('could not find student with NetID ' + netId)

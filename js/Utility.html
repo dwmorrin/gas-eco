@@ -124,7 +124,7 @@ utility.DOM.getNextSibling = function(element) {
 };
 
 utility.DOM.makeRadio = function(name, ...values) {
-  let radio = {};
+  const radio = {};
   for (let value of values) {
     radio[value] = `<input type="radio" name="${name}" value="${value}" `;
     if (value == 'other') {
@@ -136,12 +136,12 @@ utility.DOM.makeRadio = function(name, ...values) {
 };
 
 utility.DOM.makeTableRow = function(tagName, ...strings) {
-  let row = document.createElement('tr'),
-      cells = [];
+  const cells = [];
   for (let i = 0, l = strings.length; i < l ; i++) {
     cells.push(document.createElement(tagName));
     cells[i].innerHTML = strings[i];
   }
+  const row = document.createElement('tr');
   while(cells.length) {
     row.appendChild(cells.shift());
   }
@@ -159,12 +159,12 @@ utility.DOM.getRadioValue = function() {
 };
 
 utility.date.getFormattedDate = function(date) {
-  let year = date.getFullYear(),
-      month = (date.getMonth() + 1), // zero indexed
-      day = date.getDate(),
-      hour = date.getHours(),
-      minutes = date.getMinutes(),
-      ampm = 'am';
+  const year = date.getFullYear(),
+        month = (date.getMonth() + 1), // zero indexed
+        day = date.getDate(),
+        minutes = date.getMinutes();
+  let ampm = 'am',
+      hour = date.getHours();
 
   if (hour > 11) {
     ampm = 'pm';

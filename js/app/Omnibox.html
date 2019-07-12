@@ -2,8 +2,6 @@
 /* global
 Item
 app
-isCheckOutStudentOk
-isCheckInItemOk
 populateItemList
 populateStudentList
 utility
@@ -15,10 +13,6 @@ app.omnibox = {
   element: document.querySelector('input.omnibox'),
   handleItem: function(item, quantityToReturn) {
     const form = app.cache.openForms.getCurrentForm();
-    //const items = (JSON.parse(app.pages.form.elements.form.items.value) || []);
-    //items.forEach((item, index, array) => {
-    //  array[index] = new Item(item);
-    //});
     const itemOnForm = form.items.find(i => {
       if (item.id && i.id == item.id) {
         return true;
@@ -61,7 +55,17 @@ app.omnibox = {
         );
         return;
       } else if (itemOnForm.checkOut) { // Its a check-in
-        if (! isCheckInItemOk(itemOnForm)) {
+        const savedItem = app.cache.savedForms.items.getByItem(item);
+        if (! savedItem || ! savedItem.checkOut) {
+          app.omnibox.clear();
+          if (! item.isSerialized()) {
+            app.modal.handleQuantityChange(item);
+            return;
+          }
+          app.modal.handleError(
+            new Error(
+              `${item.description} was just checked-out. Update or revert the form to continue.`
+            ));
           return;
         }
         itemOnForm.checkIn = utility.date.getFormattedDate(new Date());
@@ -101,11 +105,10 @@ app.omnibox = {
   },
   /** @param {Student} input */
   handleStudent: function(student) {
-    let students = (
-      JSON.parse(app.pages.form.elements.form.students.value) || []
-    );
-    let studentOnForm = students.find(s => s.id == student.id);
-    let change = { // fake change event
+    const form = app.cache.openForms.getCurrentForm();
+    const students = form.students;
+    const studentOnForm = students.find(s => s.id == student.id);
+    const change = { // fake change event
       target: {
         name: 'students',
         value: student.name
@@ -129,12 +132,15 @@ app.omnibox = {
         if (studentOnForm.checkIn && studentOnForm.checkOut) {
           throw new Error(studentOnForm.name + ' is already checked out.');
         } else if (studentOnForm.checkIn) {
-          if (isCheckOutStudentOk(student)) {
-            studentOnForm.checkOut = utility.date.getFormattedDate(new Date());
-            change.target.value += ' check-out';
-          } else {
+          const savedStudent = app.cache.savedForm.students.find(s => s.id == student.id);
+          if (! savedStudent || ! savedStudent.checkIn) {
+            throw new Error( `${student.name} was just checked-in. Update the form before checking out.`);
+          }
+          if (form.hasItemsOut()) {
             throw new Error(app.strings.studentCheckOutError);
           }
+          studentOnForm.checkOut = utility.date.getFormattedDate(new Date());
+          change.target.value += ' check-out';
         } else {
           if (! student.signatureOnFile) {
             app.modal.signatureWait();

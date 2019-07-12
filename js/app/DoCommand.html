@@ -25,7 +25,7 @@ app.doCommand = function(command,...options) {
     }
     case 'changeLog':
       app.modal.displayChangeLog(
-        JSON.parse(app.pages.form.elements.form.notes.value)
+        app.cache[app.cache.currentFormstack].getCurrentForm().notes
       );
       break;
     case 'checkInButton': {
@@ -129,19 +129,20 @@ app.doCommand = function(command,...options) {
       break;
     }
     case 'itemQuantity': {
-      const description = app.modal.tmp;
       const quantity = +app.modal.getInput();
-      const items = JSON.parse(app.pages.form.elements.form.items.value);
+      const items = app.cache.openForms.getCurrentForm().items;
       // note: we shouldn't be here unless item is not serialized, thus description is unique
-      const item = items.find(i => i.description == description);
+      const item = app.modal.tmp;
       const itemchange = {
         target: {
           name: 'items',
-          value: description + ' qty ' + item.quantity,
+          value: item.description + ' qty ' + item.getQuantity(),
         }
       };
       // is the item on the saved form? Quantity cannot be decreased.
-      const savedItem = app.cache.savedForm.items.find(i => i.description == description);
+      const savedItem = app.cache.savedForm.items.find(
+        i => i.description == item.description
+      );
       if (savedItem && quantity < savedItem.quantity) {
         app.modal.handleError(
           new Error(quantity + " is less than the previous quantity " +
@@ -253,10 +254,11 @@ app.doCommand = function(command,...options) {
     }
     case 'studentNote': {
       const value = utility.DOM.getRadioValue();
-      const students = (
-        JSON.parse(app.pages.form.elements.form.students.value) || []
-      );
+      const students = app.cache.openForms.getCurrentForm().students;
       const student = students.find(s => s.id == app.modal.tmp.id);
+      if (! student) {
+        app.modal.handleError(new Error("oops... could not find student on form"));
+      }
       if (value == 'left') {
         student.left = true;
         app.pages.form.handleChange({
@@ -279,7 +281,8 @@ app.doCommand = function(command,...options) {
       app.spinner.inside(app.pages.form.elements.updateFormButton);
       app.run.doPost({
         post: 'updateForm',
-        form: app.pages.form.getForm().stringify(),
+        //form: app.pages.form.getForm().stringify(),
+        form: app.cache.openForms.getCurrentForm().stringify(),
       });
       break;
     case 'undo':
