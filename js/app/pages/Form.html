@@ -6,6 +6,7 @@ app.pages.form = {
       .withUserObject({ timeoutId: app.pages.form.timeoutId })
       .doGet({ get: "checkForms" });
   },
+  currentStack: null,
   elements: {
     container:               document.querySelector('div.formContainer'),
     currentFormstackDisplay: document.querySelector('span.currentFormstackDisplay'),
@@ -26,55 +27,31 @@ app.pages.form = {
     undoButton:              document.querySelector('button[value="undo"]'),
     copyButton:              document.querySelector('button[value="copyItems"]'),
   },
-  /**
-   * getForm takes the DOM representation of the form and
-   *   returns a Form object
-   */
-  getForm: function() {
-    const notes = JSON.parse(app.pages.form.elements.form.notes.value);
-    notes.push(app.changes.makeNote());
-    return new Form({
-      bookedStudents: app.pages.form.elements.form.bookedStudents.value,
-      bookingId: app.pages.form.elements.form.bookingId.value,
-      contact: app.pages.form.elements.form.contact.value,
-      endTime: app.pages.form.elements.form.endTime.value,
-      id: app.pages.form.elements.form.id.value,
-      location: app.pages.form.elements.form.location.value,
-      project: app.pages.form.elements.form.project.value,
-      overnight: app.pages.form.elements.form.overnight.value,
-      startTime: app.pages.form.elements.form.startTime.value,
-      tape: app.pages.form.elements.form.tape.value,
-      items: JSON.parse(app.pages.form.elements.form.items.value),
-      notes: notes,
-      students: JSON.parse(app.pages.form.elements.form.students.value),
-      hash: app.pages.form.elements.form.hash.value,
-    });
-  },
   getNext: function() {
-    const form = app.cache[app.cache.currentFormstack].getNext();
+    const form = app.pages.form.currentStack.getNext();
     if (! form) { // we're already at the end
       app.omnibox.element.focus();
       return;
     }
     if (! app.changes.saved) {
-      app.cache[app.cache.currentFormstack].getPrevious(); // fix currentIndex
+      app.pages.form.currentStack.getPrevious(); // fix currentIndex
       app.modal.handleUnsavedForm('nextForm');
       return;
     }
-    displayForm(form, app.cache.currentFormstack == 'archive');
+    displayForm(form);
   },
   getPrevious: function() {
-    const form = app.cache[app.cache.currentFormstack].getPrevious();
+    const form = app.pages.form.currentStack.getPrevious();
     if (! form) { // we're already at the beginning
       app.omnibox.element.focus();
       return;
     }
     if (! app.changes.saved) {
-      app.cache[app.cache.currentFormstack].getNext(); // fix currentIndex
+      app.pages.form.currentStack.getNext(); // fix currentIndex
       app.modal.handleUnsavedForm('previousForm');
       return;
     }
-    displayForm(form, app.cache.currentFormstack == 'archive');
+    displayForm(form);
   },
   /** for form validation and attach beforeunload listener for unsaved changes */
   handleChange: function(change) {
@@ -120,7 +97,7 @@ app.pages.form = {
     }
     app.pages.form.elements.updateFormButton.classList.add('create');
 
-    const form = app.cache.openForms.getCurrentForm();
+    const form = app.pages.openForms.getCurrentForm();
     if (form.isReadyToPost()) {
       // are we ready to close?
       if (form.isReadyToClose()) {
@@ -139,7 +116,7 @@ app.pages.form = {
       app.modal.getLocation();
       return;
     }
-    app.cache.openForms.getCurrentForm().location = change.target.value;
+    app.pages.openForms.getCurrentForm().location = change.target.value;
     // it's not other, make sure 'Other' label is reset, log the change
     app.pages.form.elements.locationOtherOption.textContent = 'Other';
     app.changes.add(change);
@@ -189,7 +166,7 @@ app.pages.form = {
       app.pages.form.elements.form.startMinute.classList.remove('error');
       app.pages.form.elements.form.startAMPM.classList.remove('error');
     }
-    const form = app.cache.openForms.getCurrentForm();
+    const form = app.pages.openForms.getCurrentForm();
     const startTime = utility.date.getFormattedDate(t.startTime);
     app.pages.form.elements.form.startTime.value = form.startTime = startTime;
     const endTime = utility.date.getFormattedDate(t.endTime);
@@ -207,8 +184,7 @@ app.pages.form = {
   },
 
   handleClickItem: function(click) {
-    const isArchive = app.cache.currentFormstack == 'archive';
-    if (isArchive){
+    if (app.pages.form.currentStack === app.pages.archive.stack) {
       return;
     }
     if (click.target != click.target.parentNode.firstChild ||
@@ -216,7 +192,7 @@ app.pages.form = {
       const itemRow = (click.target.classList.contains('itemnotes'))
         ? click.target.parentNode.previousSibling
         : click.target.parentNode;
-      const form = app.cache.openForms.getCurrentForm();
+      const form = app.pages.openForms.getCurrentForm();
       const key = itemRow.dataset.id === '' ? "barcode" : "id";
       const item = itemRow.dataset.id === '' ?
         form.items.getByBarcode(itemRow.dataset.barcode) :
@@ -230,11 +206,10 @@ app.pages.form = {
     }
   },
   handleClickTable: function(click) {
-    const isArchive = app.cache.currentFormstack == 'archive';
-    if (isArchive){
+    if (app.pages.form.currentStack === app.pages.archive.stack) {
       return;
     }
-    if (click.target.classList.contains('itemnotes')){
+    if (click.target.classList.contains('itemnotes')) {
       return;
     }
     if (click.target.tagName != 'TD') {
@@ -243,7 +218,7 @@ app.pages.form = {
     if (click.target.parentNode.firstChild == click.target) { // should be quantity
       // handle quantity changes
       const barcode = click.target.parentNode.dataset.barcode;
-      const item = app.cache.openForms.getCurrentForm().items.getByBarcode(barcode);
+      const item = app.pages.openForms.getCurrentForm().items.getByBarcode(barcode);
       app.modal.handleQuantityChange(item);
       return;
     }
@@ -279,7 +254,7 @@ app.pages.form = {
       }
     }
     // cmd clicks only from here on
-    if (!click.metaKey) {
+    if (! click.metaKey) {
       return;
     }
     let cells = click.target.parentNode.getElementsByTagName('td');
@@ -293,15 +268,14 @@ app.pages.form = {
     app.omnibox.parse();
   },
   handleClickStudent: function(click) {
-    const isArchive = app.cache.currentFormstack == 'archive';
-    if (isArchive){
+    if (app.pages.form.currentStack === app.pages.archive.stack) {
       return;
     }
     if (click.metaKey) {
       return;
     }
     const netId = click.target.parentNode.dataset.netid;
-    const students = app.cache.openForms.getCurrentForm().students;
+    const students = app.pages.openForms.getCurrentForm().students;
     const student = students.find(s => s.netId == netId);
     if (!student) {
       app.modal.handleError(
@@ -343,9 +317,10 @@ app.pages.form = {
     els.locationSelect.value = "none";
     els.locationOtherOption.value = els.locationOtherOption.textContent = "Other";
   },
+  savedForm: new Form({}),
   setTimeout: function() {
     // do not set this when viewing the archive stack
-    if (app.cache.currentFormstack == app.strings.formstack.openForms) {
+    if (app.pages.form.currentStack === app.pages.openForms.stack) {
       app.pages.form.timeoutId = window.setTimeout(app.pages.form.checkForms, 60000);
     }
   },

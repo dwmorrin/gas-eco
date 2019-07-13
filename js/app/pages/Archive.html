@@ -1,5 +1,5 @@
 <script>
-/* global app utility */
+/* global app Stack utility populateArchiveTable */
 app.pages.archive = {
   elements: {
     container:   document.querySelector('div.archiveContainer'),
@@ -53,10 +53,11 @@ app.pages.archive = {
   },
   handleClickTable: function(click) {
     const id = click.target.parentNode.getAttribute('data-id');
-    app.doCommand('displayForm', app.cache.archive.getByID(id), true);
+    app.doCommand('displayForm', app.pages.archive.stack.getByID(id), true);
   },
   handleClickTableHead: function(click) {
-    app.doCommand('sortForms', click.target.dataset.sort);
+    app.pages.archive.stack.sortForms(click.target.dataset.sort);
+    populateArchiveTable(app.pages.archive.stack);
   },
   init: function() {
     let inputs = app.pages.archive.elements.queryInputs,
@@ -86,7 +87,7 @@ app.pages.archive = {
     return selectedEndTime >= today.getTime();
   },
   show: function() {
-    app.cache.currentFormstack = app.strings.formstack.archive;
+    app.pages.form.currentStack = app.pages.archive.stack;
     if (app.pages.archive.isTodaySelected()) {
       app.pages.archive.update();
     } else {
@@ -101,6 +102,7 @@ app.pages.archive = {
   setInterval: function() {},
   sortBy: 'startTime',
   sortDescending: false,
+  stack: new Stack(),
   update: function() {
     app.spinner.inside(app.pages.archive.elements.queryButton);
     app.run.doGet({

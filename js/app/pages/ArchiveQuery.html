@@ -1,5 +1,5 @@
 <script>
-/* global app utility populateArchiveTable */
+/* global app utility populateArchiveTable Stack */
 app.pages.archive.filters = {
   isBooked: form => (form.bookingId),
   isNotBooked: form => (! form.bookingId),
@@ -162,8 +162,6 @@ app.pages.archive.filters = {
 };
 
 app.pages.archive.query = function() {
-  // forms:  use app.cache.archive
-  // inputs: use app.pages.archive.elements.queryInputs[input]
   const archiveElements = app.pages.archive.elements.container,
         inputs = app.pages.archive.elements.queryInputs,
         appliedFilters = [];
@@ -198,20 +196,15 @@ app.pages.archive.query = function() {
     }
   }
 
-  app.cache.archiveFiltered = appliedFilters.reduce(
-    (forms, func) => forms.filter(func), app.cache.archive
-  );
+  app.pages.archive.filteredStack = new Stack(appliedFilters.reduce(
+    (forms, func) => forms.filter(func), app.pages.archive.stack
+  ));
 
-  if (app.cache.archiveFiltered.length == 1) {
-    app.pages.archive.elements
-      .queryCount.textContent = app.cache.archiveFiltered
-        .getLength + ' form';
-  } else {
-    app.pages.archive
-      .elements.queryCount.textContent = app.cache.archiveFiltered
-        .getLength + ' forms';
-  }
-  utility.sortForms(app.cache.archiveFiltered);
-  populateArchiveTable(app.cache.archiveFiltered);
+  const length = app.pages.archive.filteredStack.getLength();
+  app.pages.archive.elements.queryCount.textContent = length == 1 ?
+    `${length} form` :
+    `${length} forms`;
+  app.pages.archive.filteredStack.sortForms();
+  populateArchiveTable(app.pages.archive.filteredStack);
 };
 </script>

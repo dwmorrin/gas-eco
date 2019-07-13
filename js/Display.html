@@ -11,7 +11,8 @@
      populateFormsTable
      toast
 */
-function displayForm(form, archived) {
+function displayForm(form) {
+  const archived = app.pages.form.currentStack === app.pages.archive.stack;
   const formPage = app.pages.form;
   const els = formPage.elements;
   formPage.resetLocation();
@@ -129,7 +130,7 @@ function displayForm(form, archived) {
   }
 
   // copy form
-  app.cache.savedForm = new Form(form);
+  app.pages.form.savedForm = new Form(form);
 
   // clear changes
   app.changes.clear();
@@ -146,7 +147,7 @@ function displayForm(form, archived) {
   }
 
   // indicate where this form is in the current stack, e.g. "1/6"
-  const stack = app.cache[app.cache.currentFormstack];
+  const stack = app.pages.form.currentStack;
   els.currentFormstackDisplay.textContent = (stack.getCurrentIndex() + 1) +
     "/" + stack.getLength();
 

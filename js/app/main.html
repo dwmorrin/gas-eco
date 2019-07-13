@@ -1,5 +1,5 @@
 <script>
-/* global Inventory Stack */
+/* global Inventory */
 /**
  * signature of the app object
  */
@@ -15,6 +15,7 @@ const app = {
   omnibox:   {},                         // possibly should be under pages.form
   pages:     {},                         // the different single page views
   refresh:   function(/* response */){}, // server callback switch block
+  roster:    [],                         // Student[]
   run:       null,                       // defined in jsInit, main server call
   showPage:  function(/* page */){},     // shows a single view to the user
   spinner:   {},                         // the spinner object
@@ -22,18 +23,7 @@ const app = {
   withErrorHandler: null,                // defined in jsInit, main server error handler
 };
 
-/** app state */
-app.cache = {
-  archive:             new Stack(),
-  archiveFiltered:     [],
-  currentFormstack:    "",
-  openForms:           new Stack(),
-  savedForm:           null, // Form
-  signatureTimeoutId: NaN,
-  students:            [],
-};
-
-app.pages = {      // must have show and hide functions
+app.pages = { // must have show and hide functions
   archive:     {},
   form:        {},
   openForms:   {},

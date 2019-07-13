@@ -58,10 +58,10 @@ app.handlers = {
       app.pages.form.elements.undoButton.disabled = true;
       click.target.value = click.target.value.slice(9, click.target.value.length);
       // check if blank form, undo actions from Display::displayNewForm
-      if (app.cache.savedForm.isBlank()) {
-        app.cache.openForms.pop();
+      if (app.pages.form.savedForm.isBlank()) {
+        app.pages.openForms.stack.pop();
         if (/(previous|next)Form/.test(click.target.value)) {
-          displayForm(app.cache.openForms.getCurrentForm(), app.cache.currentFormstack == 'archive');
+          displayForm(app.pages.openForms.getCurrentForm());
           return;
         }
       }

@@ -1,5 +1,5 @@
 <script>
-/* global Form */
+/* global Form utility */
 /* exported Stack */
 /**
  * Stack is a container for Form objects,
@@ -8,6 +8,8 @@
 function Stack() {
   let forms = [],
       currentIndex = 0;
+  this.sortBy = "startTime";
+  this.sortDescending = false;
   this.getCurrentForm = function() {
     return forms[currentIndex];
   };
@@ -21,6 +23,7 @@ function Stack() {
     forms.forEach((form, index, array) => {
       array[index] = new Form(form);
     });
+    return this;
   };
   this.replace = function(form) {
     if (! (form instanceof Form)) {
@@ -98,4 +101,114 @@ function Stack() {
     return forms[--currentIndex];
   };
 }
+Stack.prototype.sortForms = function(sortBy) {
+  if (! sortBy) {
+    sortBy = this.sortBy;
+  } else {
+    if (sortBy === this.sortBy) {
+      this.sortDescending = ! this.sortDescending;
+    }
+    this.sortBy = sortBy;
+  }
+  let compare;
+  switch (sortBy) {
+    case 'startTime':
+    case 'endTime':
+      compare = function(a,b) {
+        let dateA = utility.date.parseFormattedDate(a[sortBy]).getTime(),
+            dateB = utility.date.parseFormattedDate(b[sortBy]).getTime();
+        if (dateA < dateB) {
+          return -1;
+        }
+        if (dateA > dateB) {
+          return 1;
+        }
+        if (dateA == dateB) {
+          return 0;
+        }
+      };
+      break;
+    case 'location':
+      compare = function(a,b) {
+        if (a[sortBy] < b[sortBy]) {
+          return -1;
+        }
+        if (a[sortBy] > b[sortBy]) {
+          return 1;
+        }
+        if (a[sortBy] == b[sortBy]) {
+          return 0;
+        }
+      };
+      break;
+    case 'contact':
+    case 'tape':
+    case 'overnight':
+    case 'items':
+    case 'project':
+    case 'bookingId':
+      compare = function(a,b) {
+        if (a[sortBy] < b[sortBy]) {
+          return -1;
+        }
+        if (a[sortBy] > b[sortBy]) {
+          return 1;
+        }
+        if (a[sortBy] == b[sortBy]) {
+          return 0;
+        }
+      };
+      break;
+    case 'bookedStudents':
+    case 'students':
+      compare = function(a,b) {
+        let nameSort = function(c,d) {
+          if (c.name < d.name) {
+            return -1;
+          }
+          if (c.name > d.name) {
+            return 1;
+          }
+          if (c.name == d.name) {
+            return 0;
+          }
+        };
+        a.students.sort(nameSort);
+        b.students.sort(nameSort);
+        if (a.students[0].name < b.students[0].name) {
+          return -1;
+        }
+        if (a.students[0].name > b.students[0].name) {
+          return 1;
+        }
+        if (a.students[0].name == b.students[0].name) {
+          return 0;
+        }
+      };
+      break;
+    case 'type':
+      compare = function(a,b) {
+        let active = function(student) {
+          return student.checkIn;
+        };
+        a = +(a.students.some(active));
+        b = +(b.students.some(active));
+        if (a > b) {
+          return -1;
+        }
+        if (a < b) {
+          return 1;
+        }
+        if (a == b) {
+          return 0;
+        }
+      };
+      break;
+  }
+  this.sort(compare);
+  if (this.sortDescending) {
+    this.reverse();
+  }
+  return this;
+};
 </script>

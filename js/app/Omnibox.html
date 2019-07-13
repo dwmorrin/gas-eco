@@ -12,7 +12,7 @@ app.omnibox = {
   },
   element: document.querySelector('input.omnibox'),
   handleItem: function(item, quantityToReturn) {
-    const form = app.cache.openForms.getCurrentForm();
+    const form = app.pages.openForms.getCurrentForm();
     const itemOnForm = form.items.find(i => {
       if (item.id && i.id == item.id) {
         return true;
@@ -55,7 +55,7 @@ app.omnibox = {
         );
         return;
       } else if (itemOnForm.checkOut) { // Its a check-in
-        const savedItem = app.cache.savedForms.items.getByItem(item);
+        const savedItem = app.pages.form.savedForm.items.getByItem(item);
         if (! savedItem || ! savedItem.checkOut) {
           app.omnibox.clear();
           if (! item.isSerialized()) {
@@ -105,7 +105,7 @@ app.omnibox = {
   },
   /** @param {Student} input */
   handleStudent: function(student) {
-    const form = app.cache.openForms.getCurrentForm();
+    const form = app.pages.openForms.getCurrentForm();
     const students = form.students;
     const studentOnForm = students.find(s => s.id == student.id);
     const change = { // fake change event
@@ -119,9 +119,6 @@ app.omnibox = {
       if (! student.signatureOnFile) {
         app.modal.signatureWait();
         app.run.doPost({ post: 'startSignature', netid: student.netId });
-        app.cache.signatureTimeoutId = window.setTimeout(
-          () => app.run.doPost({ post: 'signatureTimeout' }),
-          (10 * 60 * 1000) /* 10 minutes */);
         return;
       }
       student.checkIn = utility.date.getFormattedDate(new Date());
@@ -132,7 +129,7 @@ app.omnibox = {
         if (studentOnForm.checkIn && studentOnForm.checkOut) {
           throw new Error(studentOnForm.name + ' is already checked out.');
         } else if (studentOnForm.checkIn) {
-          const savedStudent = app.cache.savedForm.students.find(s => s.id == student.id);
+          const savedStudent = app.pages.form.savedForm.students.find(s => s.id == student.id);
           if (! savedStudent || ! savedStudent.checkIn) {
             throw new Error( `${student.name} was just checked-in. Update the form before checking out.`);
           }
@@ -145,9 +142,6 @@ app.omnibox = {
           if (! student.signatureOnFile) {
             app.modal.signatureWait();
             app.run.doPost({ post: 'startSignature', netid: student.netId});
-            app.cache.signatureTimeoutId = window.setTimeout(
-              () => app.run.doPost({ post: 'signatureTimeout' }),
-              (10 * 60 * 1000) /* 10 minutes */);
             return;
           } else {
             studentOnForm.checkIn = utility.date.getFormattedDate(new Date());
@@ -198,7 +192,7 @@ app.omnibox = {
     // DETERMINE TYPE: ID card barcode, item barcode, item ID/SKU, student name
     const codabarRegex = /^[a-d][0-9]{5,}[a-d]$/; // "a123...789b" pattern
     if (codabarRegex.test(value)) { // Check student id
-      parsed = app.cache.students.find(
+      parsed = app.roster.find(
         student => student.id.toLowerCase() == value
       );
       if (parsed) {
@@ -211,7 +205,7 @@ app.omnibox = {
     }
 
     const idType = /^[a-z]+[0-9]+/.test(value) ? 'netId' : 'name'; // Check student name and id
-    parsed = app.cache.students.find(
+    parsed = app.roster.find(
       student => student[idType].toLowerCase() == value
     );
     if (parsed) {
@@ -225,7 +219,7 @@ app.omnibox = {
     if (itemIdregex.test(value)) {
       parsed = app.inventory.getById(value);
       if (!parsed && /^manual/.test(value)) {
-        parsed = app.cache.openForms.getCurrentForm().items.find(
+        parsed = app.pages.openForms.getCurrentForm().items.find(
           item => item.id.toLowerCase().replace(/-0+/, '-') == value
         );
       } else {
