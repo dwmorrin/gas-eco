@@ -195,7 +195,6 @@ app.pages.archive.query = function() {
       appliedFilters.push(app.pages.archive.filters[checkboxes[i].name]);
     }
   }
-
   app.pages.archive.filteredStack = new Stack(appliedFilters.reduce(
     (forms, func) => forms.filter(func), app.pages.archive.stack
   ));
