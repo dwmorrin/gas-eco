@@ -5,14 +5,16 @@
  * Stack is a container for Form objects,
  *   wraps a private array with custom methods
  *
- * @param {Form[]} formArray - for copying
  */
-function Stack(formArray) {
+function Stack() {
   let forms = [],
       currentIndex = 0;
-  if (Array.isArray(formArray) && (formArray[0] instanceof Form)) {
-    forms = formArray.slice();
-  }
+  this.setForms = function(formArray) {
+    if (Array.isArray(formArray) && (formArray[0] instanceof Form)) {
+      forms = formArray.slice();
+      currentIndex = 0;
+    }
+  };
   this.sortBy = "startTime";
   this.sortDescending = false;
   this.getCurrentForm = function() {

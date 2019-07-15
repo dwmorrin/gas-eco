@@ -184,7 +184,7 @@ app.pages.form = {
   },
 
   handleClickItem: function(click) {
-    if (app.pages.form.currentStack === app.pages.archive.stack) {
+    if (app.pages.form.currentStack === app.pages.archive.filteredStack) {
       return;
     }
     if (click.target != click.target.parentNode.firstChild ||
@@ -206,7 +206,7 @@ app.pages.form = {
     }
   },
   handleClickTable: function(click) {
-    if (app.pages.form.currentStack === app.pages.archive.stack) {
+    if (app.pages.form.currentStack === app.pages.archive.filteredStack) {
       return;
     }
     if (click.target.classList.contains('itemnotes')) {
@@ -268,7 +268,7 @@ app.pages.form = {
     app.omnibox.parse();
   },
   handleClickStudent: function(click) {
-    if (app.pages.form.currentStack === app.pages.archive.stack) {
+    if (app.pages.form.currentStack === app.pages.archive.filteredStack) {
       return;
     }
     if (click.metaKey) {

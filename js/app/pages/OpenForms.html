@@ -12,7 +12,7 @@ app.pages.openForms = {
   },
   handleClickTable: function(click) {
     const id = click.target.parentNode.getAttribute('data-id');
-    app.doCommand('displayForm', app.pages.openForms.stack.getByID(id), false);
+    app.doCommand('displayForm', app.pages.openForms.stack.getByID(id));
   },
   handleClickTableHead: function(click) {
     app.pages.openForms.stack.sortForms(click.target.dataset.sort);

@@ -1,5 +1,5 @@
 <script>
-/* global app utility populateArchiveTable Stack */
+/* global app utility populateArchiveTable */
 app.pages.archive.filters = {
   isBooked: form => (form.bookingId),
   isNotBooked: form => (! form.bookingId),
@@ -195,7 +195,7 @@ app.pages.archive.query = function() {
       appliedFilters.push(app.pages.archive.filters[checkboxes[i].name]);
     }
   }
-  app.pages.archive.filteredStack = new Stack(appliedFilters.reduce(
+  app.pages.archive.filteredStack.setForms(appliedFilters.reduce(
     (forms, func) => forms.filter(func), app.pages.archive.stack
   ));
 

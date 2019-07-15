@@ -82,9 +82,7 @@ app.doCommand = function(command,...options) {
       break;
     }
     case 'displayForm': {
-      const form = options[0],
-            isArchive = Boolean(options[1]);
-      displayForm(form, isArchive);
+      displayForm(options[0]);
       break;
     }
     case 'displayNewForm': {

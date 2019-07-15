@@ -38,7 +38,7 @@ app.refresh = function(response, context) {
       // determine current context, see app.pages.form.{show,hide}
       // for why timeoutId shows context
       if (context.timeoutId != app.pages.form.timeoutId ||
-          app.pages.form.currentStack === app.pages.archive.stack) {
+          app.pages.form.currentStack === app.pages.archive.filteredStack) {
         break;
       }
       newForms.sortForms();

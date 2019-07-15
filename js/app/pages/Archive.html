@@ -9,6 +9,7 @@ app.pages.archive = {
     tableBody:   document.querySelector('tbody.archive'),
     tableHead:   document.querySelector('thead.archive'),
   },
+  filteredStack: new Stack(),
   getDateRangeAsJSON: function() {
     let inputs = app.pages.archive.elements.queryInputs;
     let range = {};
@@ -53,7 +54,7 @@ app.pages.archive = {
   },
   handleClickTable: function(click) {
     const id = click.target.parentNode.getAttribute('data-id');
-    app.doCommand('displayForm', app.pages.archive.stack.getByID(id), true);
+    app.doCommand('displayForm', app.pages.archive.filteredStack.getByID(id));
   },
   handleClickTableHead: function(click) {
     app.pages.archive.stack.sortForms(click.target.dataset.sort);
@@ -87,12 +88,12 @@ app.pages.archive = {
     return selectedEndTime >= today.getTime();
   },
   show: function() {
-    app.pages.form.currentStack = app.pages.archive.stack;
     if (app.pages.archive.isTodaySelected()) {
       app.pages.archive.update();
     } else {
       app.pages.archive.query();
     }
+    app.pages.form.currentStack = app.pages.archive.filteredStack;
     app.pages.archive.elements.container.classList.remove("hidden");
   },
   hide: function() {

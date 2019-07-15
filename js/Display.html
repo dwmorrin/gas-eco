@@ -12,7 +12,6 @@
      toast
 */
 function displayForm(form) {
-  const archived = app.pages.form.currentStack === app.pages.archive.stack;
   const formPage = app.pages.form;
   const els = formPage.elements;
   formPage.resetLocation();
@@ -152,8 +151,8 @@ function displayForm(form) {
     "/" + stack.getLength();
 
   // this was added to handle displaying closed forms
-  // @todo - should this be combined with the other update init section above?
-  if (archived) {
+  // TODO should this be combined with the other update init section above?
+  if (stack === app.pages.archive.filteredStack) {
     app.omnibox.element.setAttribute('disabled', true);
     els.newNoteButton.setAttribute('disabled', true);
     els.manualButton.setAttribute('disabled', true);
@@ -317,11 +316,14 @@ function populateStudentList(student) {
   app.pages.form.elements.studentList.appendChild(studentRow);
 }
 
-function populateArchiveTable(forms) {
+/**
+ * @param {Stack} formStack
+ */
+function populateArchiveTable(formStack) {
   utility.DOM.empty(app.pages.archive.elements.tableBody);
 
   // if there's no forms...
-  if (forms.length == 0) {
+  if (formStack.getLength() == 0) {
     let cell = document.createElement('td'),
         row = document.createElement('tr');
     cell.textContent = 'No forms matched your search.';
@@ -334,17 +336,25 @@ function populateArchiveTable(forms) {
   }
 
   // else populate
-  forms.forEach(makeArchiveTableRows);
+  formStack.forEach(makeArchiveTableRows);
 }
 
 function makeArchiveTableRows(form) {
-  let hasItems = (form.items.length > 0) ? 'YES' : 'NO';
+  let hasItems = (form.items.getLength() > 0) ? "YES" : "NO";
   let row = utility.DOM.makeTableRow(
-    'td', app.strings.documentIcon, form.startTime, form.endTime,
-    form.location, form.bookingId, form.bookedStudents, form.contact,
-    form.project, form.tape, form.overnight,
-    (form.bookedStudents || form.students.map(student => student.name).join(', ')),
-    hasItems
+    'td',
+    app.strings.documentIcon,
+    form.startTime,
+    form.endTime,
+    form.location,
+    form.students.map(student => student.name).join(', '),
+    hasItems,
+    form.bookingId,
+    form.bookedStudents,
+    form.contact,
+    form.project,
+    form.tape? "YES" : "",
+    form.overnight? "YES" : ""
   );
   row.setAttribute('data-id', form.id);
   app.pages.archive.elements.tableBody.appendChild(row);
