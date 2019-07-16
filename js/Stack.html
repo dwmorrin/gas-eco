@@ -10,7 +10,8 @@ function Stack() {
   let forms = [],
       currentIndex = 0;
   this.setForms = function(formArray) {
-    if (Array.isArray(formArray) && (formArray[0] instanceof Form)) {
+    if (Array.isArray(formArray) &&
+      ((formArray[0] instanceof Form) || formArray.length === 0)) {
       forms = formArray.slice();
       currentIndex = 0;
     }

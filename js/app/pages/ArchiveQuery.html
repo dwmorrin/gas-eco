@@ -5,7 +5,6 @@ app.pages.archive.filters = {
   isNotBooked: form => (! form.bookingId),
   isTape: form => (form.tape),
   byStudentName: form => {
-    debugger;
     const inputs = app.pages.archive.elements.queryInputs;
     const studentQuery = inputs.students.value.toLowerCase().split(',');
     return studentQuery.every(nameLookingFor => {
@@ -18,17 +17,13 @@ app.pages.archive.filters = {
   },
   byMatchAllItemID: form => {
     const inputs = app.pages.archive.elements.queryInputs;
-    const itemQuery = inputs.items.value.toLowerCase().split(',');
-    return itemQuery.every(itemLookingFor => {
-      return form.items.find(item => itemLookingFor.id === item.id);
-    });
+    const itemQuery = inputs.items.value.toUpperCase().split(',');
+    return itemQuery.every(form.items.contains);
   },
   byMatchAnyItemID: form => {
     const inputs = app.pages.archive.elements.queryInputs;
-    const itemQuery = inputs.items.value.toLowerCase().split(',');
-    return itemQuery.some(itemLookingFor => {
-      return form.items.find(item => itemLookingFor.id === item.id);
-    });
+    const itemQuery = inputs.items.value.toUpperCase().split(',');
+    return itemQuery.some(form.items.contains);
   },
   byMissingItem: form => {
     return form.items.some(item => item.missing);
@@ -163,8 +158,8 @@ app.pages.archive.query = function() {
     }
   }
   app.pages.archive.filteredStack.setForms(appliedFilters.reduce(
-    (forms, func) => forms.filter(func), app.pages.archive.stack
-  ));
+    (forms, func) => forms.filter(func), app.pages.archive.stack)
+  );
 
   const length = app.pages.archive.filteredStack.getLength();
   app.pages.archive.elements.queryCount.textContent = length == 1 ?

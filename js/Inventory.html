@@ -62,6 +62,13 @@ function Inventory(array) {
   };
   
   // this section has custom methods for the Inventory array
+  this.contains = function(query) {
+    query = query.replace(/\s/g, '').replace(/-0+/, '-');
+    return items.find(item => {
+      const id = item.id.replace(/\s/g, '').replace(/-0+/, '-');
+      return query === id || item.description.toUpperCase().includes(query);
+    });
+  };
   this.getByBarcode = function(barcode) {
     return items.find(item => {
       if (! item.barcode) {

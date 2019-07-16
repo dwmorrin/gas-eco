@@ -53,6 +53,9 @@ app.pages.archive = {
     }
   },
   handleClickTable: function(click) {
+    if (click.target.parentNode.classList.contains("hoveroff")) {
+      return;
+    }
     const id = click.target.parentNode.getAttribute('data-id');
     app.doCommand('displayForm', app.pages.archive.filteredStack.getByID(id));
   },
