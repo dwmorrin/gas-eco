@@ -76,9 +76,9 @@ app.doCommand = function(command,...options) {
       break;
     }
     case 'copyItems': {
-      const items = app.pages.form.currentStack.getCurrentForm().items;
-      items.forEach(utility.item.strip);
-      utility.copyToClipboard(JSON.stringify(items));
+      utility.copyToClipboard(JSON.stringify(
+        app.pages.form.currentStack.getCurrentForm().items.getStripped()
+      ));
       break;
     }
     case 'displayForm': {
@@ -117,7 +117,6 @@ app.doCommand = function(command,...options) {
         item.missing = true;
         change.target.value = `${item.description} marked as missing`;
       }
-      app.pages.form.elements.form.items.value = form.items.stringify();
       utility.DOM.empty(app.pages.form.elements.itemList);
       form.items.reverse().forEach(populateItemList);
       app.pages.form.handleChange(change);
@@ -153,8 +152,6 @@ app.doCommand = function(command,...options) {
         app.modal.handleError(error);
         return;
       }
-      // Update form.items
-      app.pages.form.elements.form.items.value = JSON.stringify(items);
       // Update display
       utility.DOM.empty(app.pages.form.elements.itemList);
       items.reverse().forEach(populateItemList);
@@ -251,7 +248,6 @@ app.doCommand = function(command,...options) {
             value: student.name + ' left without checking out'
           }
         });
-        app.pages.form.elements.form.students.value = JSON.stringify(students);
         utility.DOM.empty(app.pages.form.elements.studentList);
         students.forEach(populateStudentList);
       } else if (value == "other") {

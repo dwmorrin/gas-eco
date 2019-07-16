@@ -3,9 +3,6 @@
 function Inventory_(array) {
   var items = [];
   this.setItems = function(array) {
-    if (typeof array === "string") { // when new Form has nested JSON TODO confirm this isn't a bug in the client side, i.e. double stringifying
-      array = JSON.parse(array);
-    }
     if (! Array.isArray(array)) {
       throw new Error(array + "(" + typeof array + ")" + " is not an array");
     }

@@ -90,10 +90,22 @@ function Inventory(array) {
       return false;
     });
   };
-  this.stringify = function() {
+  this.getStripped = function() {
+    const copy = [];
+    items.forEach(item => {
+      copy.push({
+        id: item.id,
+        description: item.description,
+        quantity: item.getQuantity(),
+        barcode: item.barcode
+      });
+    });
+    return copy;
+  };
+  this.archive = function() {
     const copy = [];
     items.forEach(item => copy.push(item.archive()));
-    return JSON.stringify(copy);
+    return copy;
   };
 }
 </script>

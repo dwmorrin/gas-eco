@@ -105,9 +105,8 @@ Form.prototype.isReadyToPost = function() {
 };
 
 Form.prototype.stringify = function() {
-  const items = this.items.stringify();
   const copy = Object.assign({}, this);
-  copy.items = items;
+  copy.items = this.items.archive();
   return JSON.stringify(copy);
 };
 </script>

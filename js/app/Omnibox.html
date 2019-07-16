@@ -78,8 +78,6 @@ app.omnibox = {
       }
     }
 
-    // Update form.items
-    app.pages.form.elements.form.items.value = form.items.stringify();
     // Update display
     utility.DOM.empty(app.pages.form.elements.itemList);
     form.items.reverse().forEach(populateItemList);
@@ -159,8 +157,6 @@ app.omnibox = {
         return;
       }
     }
-    // Update form.students
-    app.pages.form.elements.form.students.value = JSON.stringify(students);
     // Update display
     utility.DOM.empty(app.pages.form.elements.studentList);
     students.forEach(populateStudentList);
@@ -179,11 +175,8 @@ app.omnibox = {
       return;
     }
     
-    const jsonRegex = /^\s*\[\s*{\s*"/;
-    if (jsonRegex.test(value)) {
-      const pasted = JSON.parse(value);
-      pasted.forEach(utility.item.getCached); // verifies non-manual items match inventory
-      pasted.forEach(app.omnibox.handleItem);
+    if (/^\s*\[\s*{\s*"/.test(value)) { // JSON array of objects: "[{}]"
+      JSON.parse(value).forEach(app.omnibox.handleItem);
       return;
     }
 

@@ -1,72 +1,7 @@
 <script>
 /** Utility */
 /* global app toast */
-let utility = { DOM: {}, date: {}, item: {}, };
-
-/**
- * TODO this should be to an Item constructor
- */
-utility.cleanItem = item => {
-  item = item.replace(/\s/g, '').replace(/-0+/, '-');
-  return item;
-};
-
-/**
- * TODO this should be moved to a Student constructor
- */
-utility.cleanStudent = (value, index, array) => {
-  array[index] = array[index].replace(/\s/g, '');
-},
-
-/**
- * strip is a callback function for array.prototype.forEach
- *   used by the "copy to clipboard" UI element to create a minified
- *   JSON string of items
- * TODO this should be moved to an Item constructor
- */
-utility.item.strip = (value, index, array) => {
-  // only quantity and barcode needed; getCached gets other info
-  array[index] = {
-    id: array[index].id,
-    description: array[index].description,
-    quantity: array[index].quantity,
-    barcode: array[index].barcode,
-  };
-},
-
-/**
- * getCached is a callback function for array.protype.forEach
- *   used by the "copy to clipboard" UI element to verify that non-manual
- *   items match the records in the inventory
- * TODO this should be moved to an Item constructor
- */
-utility.item.getCached = (item, index, array) => {
-  const items = app.inventory;
-  // rebuild item from inventory record
-  const cachedItem = items.find(_item => _item.barcode == item.barcode);
-  if (cachedItem) {
-    item.description = cachedItem.description;
-    item.serialized = cachedItem.serialized;
-    if (item.serialized) {
-      item.quantity = 1;
-    }
-    item.id = cachedItem.id;
-  }
-  if (cachedItem || /^MANUAL/.test(item.id)) {
-    item.checkedOut = true;
-    item.checkIn = null;
-    item.checkOut = null;
-    item.missing = false;
-    item.notes = '';
-    return;
-  } 
-  // removes the item if not manual and not found in inventory.
-  app.modal.handleError(new Error(
-    'Oops!, "' + item.description + '" ' + 'was not found in our inventory. ' +
-    'If this was a manual item, try entering it as a new manual item.'
-  ));
-  delete array[index];
-},
+const utility = { DOM: {}, date: {} };
 
 utility.copyToClipboard = function(data) {
   const textArea = document.createElement("textarea");

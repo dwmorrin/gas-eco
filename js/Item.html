@@ -72,66 +72,6 @@ function Item({
       Math.abs(integer) === integer;
   }
 }
-
-// public methods
-// getters
-Item.prototype.getId = function() { return this.id; };
-Item.prototype.getDescription = function() { return this.description; };
-Item.prototype.getStripped = function() {
-  return {
-    id: this.id,
-    description: this.description,
-    quantity: this.quantity,
-    barcode: this.barcode
-  };
-};
-Item.prototype.isCheckedOut = function() { return this.checkedOut; };
-Item.prototype.getCached = function() {
-  if (/^manual/i.test(this.id)) {
-    this.checkedOut = true;
-    this.checkIn = null;
-    this.checkOut = null;
-    this.missing = false;
-    this.notes = "";
-    return new Item(this);
-  }
-  const cachedItem = this.cache.find(item => item.match(this));
-  if (! cachedItem) {
-    throw new Error(`Cannot find ${this.description} ${this.id} in the inventory`);
-  }
-  return new Item(cachedItem);
-};
-
-/**
- * returns a minimal info object for use with JSON exporting
- */
-Item.prototype.getStripped = function () {
-  return {
-    id: this.id,
-    description: this.description,
-    quantity: this.quantity,
-    barcode: this.barcode
-  };
-};
-
-// setters
-Item.prototype.setBarcode = function(str) { this.barcode = str; return this; };
-Item.prototype.setDescription = function(str) { this.description = str; return this; };
-Item.prototype.setCheckedOut = function(bool) { this.checkedOut = Boolean(bool); return this; };
-
-// utilities
-Item.prototype.match = (item) => {
-  if (this.id) {
-    return item.id == this.id;
-  } else if (! isNaN(+this.barcode) && +this.barcode < 10000) {
-    return item.barcode == this.barcode;
-  }
-  if (this.description) {
-    return item.description == this.description;
-  }
-  return false;
-};
-
 /**
  * archive returns a plain object with the quantity made public
  * used by Inventory when stringifying
@@ -140,11 +80,5 @@ Item.prototype.archive = function() {
   const obj = Object.assign({}, this);
   obj.quantity = this.getQuantity();
   return obj;
-};
-
-Item.prototype.stringify = function() {
-  const copy = Object.assign({}, this);
-  copy.quantity = this.getQuantity();
-  return JSON.stringify(copy);
 };
 </script>

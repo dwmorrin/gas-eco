@@ -5,63 +5,30 @@ app.pages.archive.filters = {
   isNotBooked: form => (! form.bookingId),
   isTape: form => (form.tape),
   byStudentName: form => {
+    debugger;
     const inputs = app.pages.archive.elements.queryInputs;
     const studentQuery = inputs.students.value.toLowerCase().split(',');
-    studentQuery.forEach(utility.cleanStudent);
-    let found = studentQuery.find(queryArg => {
+    return studentQuery.every(nameLookingFor => {
+      nameLookingFor = nameLookingFor.toLowerCase().replace(/\s/g, '');
       return form.students.find(student => {
-        let name = student.name.toLowerCase().replace(/\s/g, '');
-        return (name.search(queryArg) > -1);
+        const name = student.name.toLowerCase().replace(/\s/g, '');
+        return nameLookingFor === name;
       });
     });
-    if (! found) {
-      return false;
-    }
-    return true;
   },
   byMatchAllItemID: form => {
     const inputs = app.pages.archive.elements.queryInputs;
     const itemQuery = inputs.items.value.toLowerCase().split(',');
-    const itemsOnForm = form.items.slice();
-    for (let i = 0; i < itemQuery.length; ++i) {
-      const queryId = utility.cleanItem(itemQuery[i]);
-      const index = itemsOnForm.findIndex(item => {
-        const itemId = item.id.toLowerCase().replace(/-0+/, '-');
-        const itemDesc = item.description.toLowerCase();
-        if (itemId.search(queryId) > -1   ||
-            itemDesc.search(itemQuery[i].trim()) > -1) {
-          return true;
-        }
-        return false;
-      });
-      if (index < 0) {
-        return false;
-      }
-      itemsOnForm.splice(index, 1);
-    }
-    return true;
+    return itemQuery.every(itemLookingFor => {
+      return form.items.find(item => itemLookingFor.id === item.id);
+    });
   },
   byMatchAnyItemID: form => {
     const inputs = app.pages.archive.elements.queryInputs;
     const itemQuery = inputs.items.value.toLowerCase().split(',');
-    const itemsOnForm = form.items.slice();
-    for (let i = 0; i < itemQuery.length; ++i) {
-      const queryId = utility.cleanItem(itemQuery[i]);
-      const index = itemsOnForm.findIndex(item => {
-        const itemId = item.id.toLowerCase().replace(/-0+/, '-');
-        const itemDesc = item.description.toLowerCase();
-        if (itemId.search(queryId) > -1   ||
-            itemDesc.search(itemQuery[i].trim()) > -1) {
-          return true;
-        }
-        return false;
-      });
-      if (index > -1) {
-        return true;
-      }
-      itemsOnForm.splice(index, 1);
-    }
-    return false;
+    return itemQuery.some(itemLookingFor => {
+      return form.items.find(item => itemLookingFor.id === item.id);
+    });
   },
   byMissingItem: form => {
     return form.items.some(item => item.missing);
