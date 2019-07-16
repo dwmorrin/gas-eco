@@ -103,6 +103,7 @@ app.omnibox = {
   },
   /** @param {Student} input */
   handleStudent: function(student) {
+    student = Object.assign({}, student);
     const form = app.pages.openForms.getCurrentForm();
     const students = form.students;
     const studentOnForm = students.find(s => s.id == student.id);

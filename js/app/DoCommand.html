@@ -90,11 +90,11 @@ app.doCommand = function(command,...options) {
         app.modal.handleUnsavedForm(command);
         return;
       }
-      app.pages.form.savedForm = new Form({});
+      const newForm = new Form({});
       app.pages.form.currentStack = app.pages.openForms.stack;
-      app.pages.openForms.stack.push(new Form({}));
+      app.pages.openForms.stack.push(newForm);
       app.changes.saved = false;
-      displayForm(app.pages.form.savedForm);
+      displayForm(newForm);
       break;
     }
     case 'itemNote': {
@@ -187,7 +187,7 @@ app.doCommand = function(command,...options) {
       app.pages.archive.query();
       break;
     case 'revert':
-      displayForm(app.pages.form.savedForm);
+      displayForm(app.pages.openForms.getCurrentForm());
       break;
     case 'saveNote': {
       utility.saveNote();

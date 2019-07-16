@@ -17,7 +17,7 @@ function Form({
   notes = [],
   students = []
 }) {
-  this.items = items instanceof Inventory ? items : new Inventory(items);
+  this.items = new Inventory(items);
   this.bookedStudents = bookedStudents;
   this.bookingId = bookingId;
   this.contact = contact;
@@ -29,8 +29,13 @@ function Form({
   this.startTime = startTime;
   this.tape = tape;
   this.hash = hash;
-  this.notes = notes;
-  this.students = students;
+  this.notes = notes.slice();
+  this.students = students.slice();
+  if (students.length > 0) { // copy
+    students.forEach((value, index, array) => {
+      array[index] = Object.assign({}, value);
+    });
+  }
 }
 Form.prototype.hasActiveStudent = function() {
   const studentCounter = function(count, student) {

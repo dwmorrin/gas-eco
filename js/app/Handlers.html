@@ -1,7 +1,7 @@
 <script>
 // Window level event handlers.
 // Page and page element handlers are found under their respective pages
-/* global app displayForm */
+/* global app displayForm Form */
 app.handlers = {
   /**
    * Attach this function to the beforeunload event whevener there is a form with
@@ -56,14 +56,18 @@ app.handlers = {
       app.pages.form.elements.updateButtonHint.textContent = '';
       app.pages.form.elements.updateFormButton.disabled = true;
       app.pages.form.elements.undoButton.disabled = true;
-      click.target.value = click.target.value.slice(9, click.target.value.length);
+      click.target.value = click.target.value.slice('loseData_'.length, click.target.value.length);
       // check if blank form, undo actions from Display::displayNewForm
       if (app.pages.form.savedForm.isBlank()) {
         app.pages.openForms.stack.pop();
         if (/(previous|next)Form/.test(click.target.value)) {
           displayForm(app.pages.openForms.getCurrentForm());
           return;
+        } else {
+          app.doCommand("displayNewForm");
         }
+      } else {
+        app.pages.openForms.stack.replaceCurrent(new Form(app.pages.form.savedForm));
       }
     }
     app.doCommand(click.target.value);

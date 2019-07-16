@@ -18,7 +18,7 @@ function Inventory(array) {
     }
   };
   if (array) {
-    this.setItems(array);
+    this.setItems(array.slice());
   }
 
   // getLength exposes the array length
