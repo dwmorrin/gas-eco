@@ -299,6 +299,7 @@ app.modal = {
     app.modal.input.setAttribute('placeholder', '');
     m.tmp = item; // so we can asynchronously fetch if user selects OK
     m.setStrings('itemQuantity');
+    m.body.textContent += ` (current quantity: ${item.getQuantity()})`;
     m.show(m.container, m.input, m.ok);
     m.input.focus();
   },
