@@ -212,7 +212,7 @@ app.omnibox = {
           barcoderegex = /^[0-9]+$/;              // only digits
     if (itemIdregex.test(value)) {
       parsed = app.inventory.getById(value);
-      if (!parsed && /^manual/.test(value)) {
+      if (! parsed && /^manual/.test(value)) {
         parsed = app.pages.openForms.getCurrentForm().items.find(
           item => item.id.toLowerCase().replace(/-0+/, '-') == value
         );
@@ -234,10 +234,7 @@ app.omnibox = {
 
     // end of checks; if still in the function then show the user an error
     app.modal.handleError(new Error(value + ' ' + app.strings.parserError));
-    app.omnibox.element.classList.add('error');
-    window.setTimeout(
-      () => app.omnibox.element.classList.remove('error'), 2000
-    );
+    app.omnibox.clear();
   },
 };
 </script>
