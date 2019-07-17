@@ -1,8 +1,7 @@
 <script>
 /* global
+Item
 app
-isCheckOutStudentOk
-isCheckInItemOk
 populateItemList
 populateStudentList
 utility
@@ -12,10 +11,9 @@ app.omnibox = {
     app.omnibox.element.value = '';
   },
   element: document.querySelector('input.omnibox'),
-  /** TODO - handle qty input or multiple scans of things like cables */
   handleItem: function(item, quantityToReturn) {
-    const items = (JSON.parse(app.pages.form.elements.form.items.value) || []);
-    const itemOnForm = items.find(i => {
+    const form = app.pages.openForms.getCurrentForm();
+    const itemOnForm = form.items.find(i => {
       if (item.id && i.id == item.id) {
         return true;
       }
@@ -27,18 +25,19 @@ app.omnibox = {
     const change = { // fake change event
       target: {
         name: 'items',
-        value: (item.id && ! /^manual/i.test(item.id))
-          ? item.id
-          : item.description
+        value: (item.id && ! /^manual/i.test(item.id)) ?
+          item.id :
+          item.description
       }
     };
 
     if (! itemOnForm) { // new item
+      item = new Item(item); // copy it
       item.checkOut = utility.date.getFormattedDate(new Date());
-      items.push(item);
+      form.items.push(item);
       change.target.value += ' check-out';
     } else if (quantityToReturn && quantityToReturn != "all") {
-      itemOnForm.quantity -= quantityToReturn;
+      itemOnForm.changeQuantity(-quantityToReturn);
       change.target.value = `returned ${quantityToReturn} ${change.target.value}`;
     } else {
       if (itemOnForm.checkOut && itemOnForm.checkIn) { // checkout again?
@@ -56,7 +55,17 @@ app.omnibox = {
         );
         return;
       } else if (itemOnForm.checkOut) { // Its a check-in
-        if (! isCheckInItemOk(itemOnForm)) {
+        const savedItem = app.pages.form.savedForm.items.getByItem(item);
+        if (! savedItem || ! savedItem.checkOut) {
+          app.omnibox.clear();
+          if (! item.isSerialized()) {
+            app.modal.handleQuantityChange(item);
+            return;
+          }
+          app.modal.handleError(
+            new Error(
+              `${item.description} was just checked-out. Update or revert the form to continue.`
+            ));
           return;
         }
         itemOnForm.checkIn = utility.date.getFormattedDate(new Date());
@@ -69,11 +78,9 @@ app.omnibox = {
       }
     }
 
-    // Update form.items
-    app.pages.form.elements.form.items.value = JSON.stringify(items);
     // Update display
     utility.DOM.empty(app.pages.form.elements.itemList);
-    items.reverse().forEach(populateItemList);
+    form.items.reverse().forEach(populateItemList);
     app.omnibox.clear();
     // Fake change event
     app.pages.form.handleChange(change);
@@ -96,11 +103,11 @@ app.omnibox = {
   },
   /** @param {Student} input */
   handleStudent: function(student) {
-    let students = (
-      JSON.parse(app.pages.form.elements.form.students.value) || []
-    );
-    let studentOnForm = students.find(s => s.id == student.id);
-    let change = { // fake change event
+    student = Object.assign({}, student);
+    const form = app.pages.openForms.getCurrentForm();
+    const students = form.students;
+    const studentOnForm = students.find(s => s.id == student.id);
+    const change = { // fake change event
       target: {
         name: 'students',
         value: student.name
@@ -111,9 +118,6 @@ app.omnibox = {
       if (! student.signatureOnFile) {
         app.modal.signatureWait();
         app.run.doPost({ post: 'startSignature', netid: student.netId });
-        app.cache.signatureTimeoutId = window.setTimeout(
-          () => app.run.doPost({ post: 'signatureTimeout' }),
-          (10 * 60 * 1000) /* 10 minutes */);
         return;
       }
       student.checkIn = utility.date.getFormattedDate(new Date());
@@ -124,19 +128,19 @@ app.omnibox = {
         if (studentOnForm.checkIn && studentOnForm.checkOut) {
           throw new Error(studentOnForm.name + ' is already checked out.');
         } else if (studentOnForm.checkIn) {
-          if (isCheckOutStudentOk(student)) {
-            studentOnForm.checkOut = utility.date.getFormattedDate(new Date());
-            change.target.value += ' check-out';
-          } else {
+          const savedStudent = app.pages.form.savedForm.students.find(s => s.id == student.id);
+          if (! savedStudent || ! savedStudent.checkIn) {
+            throw new Error( `${student.name} was just checked-in. Update the form before checking out.`);
+          }
+          if (form.hasItemsOut()) {
             throw new Error(app.strings.studentCheckOutError);
           }
+          studentOnForm.checkOut = utility.date.getFormattedDate(new Date());
+          change.target.value += ' check-out';
         } else {
           if (! student.signatureOnFile) {
             app.modal.signatureWait();
             app.run.doPost({ post: 'startSignature', netid: student.netId});
-            app.cache.signatureTimeoutId = window.setTimeout(
-              () => app.run.doPost({ post: 'signatureTimeout' }),
-              (10 * 60 * 1000) /* 10 minutes */);
             return;
           } else {
             studentOnForm.checkIn = utility.date.getFormattedDate(new Date());
@@ -154,8 +158,6 @@ app.omnibox = {
         return;
       }
     }
-    // Update form.students
-    app.pages.form.elements.form.students.value = JSON.stringify(students);
     // Update display
     utility.DOM.empty(app.pages.form.elements.studentList);
     students.forEach(populateStudentList);
@@ -174,11 +176,8 @@ app.omnibox = {
       return;
     }
     
-    const jsonRegex = /^\s*\[\s*{\s*"/;
-    if (jsonRegex.test(value)) {
-      const pasted = JSON.parse(value);
-      pasted.forEach(utility.item.getCached); // verifies non-manual items match inventory
-      pasted.forEach(app.omnibox.handleItem);
+    if (/^\s*\[\s*{\s*"/.test(value)) { // JSON array of objects: "[{}]"
+      JSON.parse(value).forEach(app.omnibox.handleItem);
       return;
     }
 
@@ -187,7 +186,7 @@ app.omnibox = {
     // DETERMINE TYPE: ID card barcode, item barcode, item ID/SKU, student name
     const codabarRegex = /^[a-d][0-9]{5,}[a-d]$/; // "a123...789b" pattern
     if (codabarRegex.test(value)) { // Check student id
-      parsed = app.cache.students.find(
+      parsed = app.roster.find(
         student => student.id.toLowerCase() == value
       );
       if (parsed) {
@@ -200,7 +199,7 @@ app.omnibox = {
     }
 
     const idType = /^[a-z]+[0-9]+/.test(value) ? 'netId' : 'name'; // Check student name and id
-    parsed = app.cache.students.find(
+    parsed = app.roster.find(
       student => student[idType].toLowerCase() == value
     );
     if (parsed) {
@@ -212,14 +211,10 @@ app.omnibox = {
     const itemIdregex = /[A-Za-z]+-[A-Za-z0-9]+/, // letter(s), hyphen, digit(s) or letter(s)
           barcoderegex = /^[0-9]+$/;              // only digits
     if (itemIdregex.test(value)) {
-      const dashzero = /-0+/; // dash then one or more zeroes
-      value = value.replace(dashzero, '-'); // strip leading zeroes
-      parsed = app.cache.items.find(
-        item => item.id.toLowerCase().replace(dashzero, '-') == value
-      );
+      parsed = app.inventory.getById(value);
       if (!parsed && /^manual/.test(value)) {
-        parsed = (JSON.parse(app.pages.form.elements.form.items.value)).find(
-          item => item.id.toLowerCase().replace(dashzero, '-') == value
+        parsed = app.pages.openForms.getCurrentForm().items.find(
+          item => item.id.toLowerCase().replace(/-0+/, '-') == value
         );
       } else {
         app.modal.manualEntryAlert(app.omnibox.element.value);
@@ -230,16 +225,10 @@ app.omnibox = {
         app.doCommand("newManual");
         return;
       }
-      parsed = app.cache.items.find(item => {
-        if (! item.barcode) {
-          return false;
-        }
-        const barcode = "" + item.barcode;
-        return barcode.toLowerCase() == value;
-      });
+      parsed = app.inventory.getByBarcode(value);
     }
     if (parsed) {
-      app.omnibox.handleItem(parsed);
+      app.omnibox.handleItem(new Item(parsed));
       return;
     }
 

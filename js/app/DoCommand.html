@@ -4,10 +4,9 @@
  * most of these are primarily driven by mouse clicks, usually on button elements
  */
 /* global
+      Form
       app
       displayForm
-      populateFormsTable
-      populateArchiveTable
       populateStudentList
       populateItemList
       utility
@@ -15,7 +14,7 @@
 app.doCommand = function(command,...options) {
   switch (command) {
     case 'archivedForms': {
-      if (!app.changes.saved) {
+      if (! app.changes.saved) {
         app.modal.handleUnsavedForm(command);
         return;
       }
@@ -24,12 +23,12 @@ app.doCommand = function(command,...options) {
     }
     case 'changeLog':
       app.modal.displayChangeLog(
-        JSON.parse(app.pages.form.elements.form.notes.value)
+        app.pages.form.currentStack.getCurrentForm().notes
       );
       break;
     case 'checkInButton': {
       const itemID = options[0];
-      const savedItem = app.cache.savedForm.items.find(
+      const savedItem = app.pages.form.savedForm.items.find(
         item => (item.barcode || item.id) == itemID
       );
       if (! savedItem) {
@@ -38,18 +37,16 @@ app.doCommand = function(command,...options) {
         ));
         break;
       }
-      let quantityToReturn;
-      if (savedItem.quantity > 1) {
-        const quantityInput = document.querySelector(`select[data-itemid="${itemID}"]`);
-        quantityToReturn = quantityInput.value;
-      }
+      const quantityToReturn = savedItem.getQuantity() > 1 ?
+        document.querySelector(`select[data-itemid="${itemID}"]`).value :
+        undefined;
       app.omnibox.handleItem(savedItem, quantityToReturn);
       break;
     }
     case 'codabar': {
       const codabar = app.modal.tmp,
             netId = app.modal.getInput();
-      const student = app.cache.students.find(
+      const student = app.roster.find(
         student => student.netId.toLowerCase() == netId
       );
       if (! student){
@@ -70,22 +67,20 @@ app.doCommand = function(command,...options) {
     }
     case 'collisionResolve': {
       const form = app.modal.tmp.storedForm;
-      app.cache[app.cache.currentFormstack][app.cache.currentIndex] = form;
+      app.pages.form.currentStack.replaceCurrent(form);
       app.changes.saved = true;
       app.pages.form.lockButtons();
       displayForm(form);
       break;
     }
     case 'copyItems': {
-      const items = JSON.parse(app.pages.form.elements.form.items.value);
-      items.forEach(utility.item.strip);
-      utility.copyToClipboard(JSON.stringify(items));
+      utility.copyToClipboard(JSON.stringify(
+        app.pages.form.currentStack.getCurrentForm().items.getStripped()
+      ));
       break;
     }
     case 'displayForm': {
-      const form = options[0],
-            isArchive = Boolean(options[1]);
-      displayForm(form, isArchive);
+      displayForm(options[0]);
       break;
     }
     case 'displayNewForm': {
@@ -93,76 +88,50 @@ app.doCommand = function(command,...options) {
         app.modal.handleUnsavedForm(command);
         return;
       }
-      app.cache.savedForm = {
-        id: null, bookingId: null, bookedStudents: null, endTime: null,
-        location: null, overnight: null, project: null, contact: null,
-        startTime: null, tape: null, students: [], items: [], notes: []
-      };
-      app.cache.currentFormstack = app.strings.formstack.openForms;
-      const length = app.cache.openForms.push(app.cache.savedForm);
-      app.cache.currentIndex = length - 1;
+      const newForm = new Form({});
+      app.pages.form.currentStack = app.pages.openForms.stack;
+      app.pages.openForms.stack.push(newForm);
       app.changes.saved = false;
-      displayForm(app.cache.savedForm);
+      displayForm(newForm);
       break;
     }
     case 'itemNote': {
-      const description = app.modal.tmp.description,
-            items = JSON.parse(app.pages.form.elements.form.items.value);
-      let item;
-      if (app.modal.tmp.id) {
-        item = items.find(i => i.id == app.modal.tmp.id);
-      } else if (+app.modal.tmp.barcode < +app.strings.manualItemBarcode) {
-        item = items.find(i => i.barcode == app.modal.tmp.barcode);
-      } else {
-        item = items.find(i => i.description == description);
-      }
-      let change = { target: { name: 'items' } };
-      let value = utility.DOM.getRadioValue();
+      const form = app.pages.openForms.getCurrentForm(),
+            item = app.modal.tmp;
+      const change = { target: { name: 'items' } };
+      const value = utility.DOM.getRadioValue();
       if (value == 'other') {
         const note = app.modal.getText();
         if (note.length < 1) {
           return;
         }
-        change.target.value = description + " added note: " + note;
-        if (! item.notes) {
-          item.notes = note;
-        } else {
-          item.notes += ", " + note;
-        }
+        change.target.value = `${item.description} added note: ${note}`;
+        item.notes = item.notes ? item.notes + `, ${note}` : note;
       } else if (value == "missing") {
         item.missing = true;
-        change.target.value = description + ' marked as missing';
+        change.target.value = `${item.description} marked as missing`;
       }
-      app.pages.form.elements.form.items.value = JSON.stringify(items);
       utility.DOM.empty(app.pages.form.elements.itemList);
-      items.reverse().forEach(populateItemList);
+      form.items.reverse().forEach(populateItemList);
       app.pages.form.handleChange(change);
       break;
     }
     case 'itemQuantity': {
-      const description = app.modal.tmp;
       const quantity = +app.modal.getInput();
-      const items = JSON.parse(app.pages.form.elements.form.items.value);
+      const items = app.pages.openForms.getCurrentForm().items;
       // note: we shouldn't be here unless item is not serialized, thus description is unique
-      const item = items.find(i => i.description == description);
+      const item = app.modal.tmp;
       const itemchange = {
         target: {
           name: 'items',
-          value: description + ' qty ' + item.quantity,
+          value: item.description + ' qty ' + item.getQuantity(),
         }
       };
-      if (quantity < 1 || isNaN(quantity) ||
-          Math.floor(quantity) != quantity) {
-        app.modal.handleError(
-          new Error("Invalid quantity: " + quantity +
-            ". Use a positive number.  Scan the item again to check-in."
-          )
-        );
-        return;
-      }
       // is the item on the saved form? Quantity cannot be decreased.
-      const savedItem = app.cache.savedForm.items.find(i => i.description == description);
-      if (savedItem && quantity < savedItem.quantity) {
+      const savedItem = app.pages.form.savedForm.items.find(
+        i => i.description == item.description
+      );
+      if (savedItem && quantity < savedItem.getQuantity()) {
         app.modal.handleError(
           new Error(quantity + " is less than the previous quantity " +
             savedItem.quantity + ". You can only enter a larger amount " +
@@ -171,9 +140,12 @@ app.doCommand = function(command,...options) {
         );
         return;
       }
-      item.quantity = quantity;
-      // Update form.items
-      app.pages.form.elements.form.items.value = JSON.stringify(items);
+      try {
+        item.setQuantity(quantity);
+      } catch (error) {
+        app.modal.handleError(error);
+        return;
+      }
       // Update display
       utility.DOM.empty(app.pages.form.elements.itemList);
       items.reverse().forEach(populateItemList);
@@ -189,10 +161,6 @@ app.doCommand = function(command,...options) {
       app.modal.getManual();
       break;
     case 'nextForm':
-      if (! app.changes.saved) {
-        app.modal.handleUnsavedForm(command);
-        return;
-      }
       app.pages.form.getNext();
       break;
     case 'openForms':
@@ -207,24 +175,16 @@ app.doCommand = function(command,...options) {
       app.omnibox.parse();
       break;
     case 'previousForm':
-      if (! app.changes.saved) {
-        app.modal.handleUnsavedForm(command);
-        return;
-      }
       app.pages.form.getPrevious();
       break;
     case 'query':
       app.pages.archive.query();
       break;
     case 'revert':
-      app.changes.saved = true;
-      app.pages.form.elements.undoButton.setAttribute('disabled', true);
-      app.pages.form.elements.updateButtonHint.textContent = '';
-      app.pages.form.elements.updateFormButton.setAttribute('disabled', true);
-      displayForm(app.cache.savedForm);
+      displayForm(app.pages.openForms.getCurrentForm());
       break;
     case 'saveNote': {
-      utility.saveNote();
+      app.pages.form.saveNote();
       break;
     }
     case 'saveManual': {
@@ -265,25 +225,12 @@ app.doCommand = function(command,...options) {
       break;
     }
     case 'signatureRecheck':
-      window.clearTimeout(app.cache.signatureTimeoutId);
       app.run.doGet({ get: 'students',  init: false});
       break;
-    case 'sortForms': {
-      const sortType = options[0],
-            forms = utility.sortForms(app.cache[app.cache.currentFormstack], sortType);
-      if (app.cache.currentFormstack == app.strings.formstack.openForms) {
-        populateFormsTable(forms);
-      } else {
-        populateArchiveTable(forms);
-      }
-      break;
-    }
     case 'studentNote': {
       const value = utility.DOM.getRadioValue();
-      const students = (
-        JSON.parse(app.pages.form.elements.form.students.value) || []
-      );
-      const student = students.find(s => s.id == app.modal.tmp.id);
+      const students = app.pages.openForms.getCurrentForm().students;
+      const student = app.modal.tmp;
       if (value == 'left') {
         student.left = true;
         app.pages.form.handleChange({
@@ -292,20 +239,25 @@ app.doCommand = function(command,...options) {
             value: student.name + ' left without checking out'
           }
         });
-        app.pages.form.elements.form.students.value = JSON.stringify(students);
         utility.DOM.empty(app.pages.form.elements.studentList);
         students.forEach(populateStudentList);
       } else if (value == "other") {
-        utility.saveNote(student.name + ": ");
+        app.pages.form.saveNote(student.name + ": ");
       }
       break;
     }
-    case 'updateForm':
+    case 'updateForm': {
       app.omnibox.parse();
       app.pages.form.lock();
       app.spinner.inside(app.pages.form.elements.updateFormButton);
-      app.run.doPost({ post: 'updateForm', form: JSON.stringify(utility.makeForm()) });
+      const form = app.pages.openForms.getCurrentForm();
+      form.notes.push(app.changes.makeNote());
+      app.run.doPost({
+        post: 'updateForm',
+        form: form.stringify(),
+      });
       break;
+    }
     case 'undo':
       app.modal.handleUndo();
       break;

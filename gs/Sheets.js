@@ -4,47 +4,23 @@ getUser_
 Form_
 Booking_
 utility
+Inventory_
 Item_
+Stack_
 Student_
 */
 /* ********* GLOBAL VARIABLES *********** */
 var index = {
   bookings: {
     SHEET_ID   : '1zl4FBglYgCdR_FMdfbIQOOpnt9b8TwgnjxzRwcekPrY',
-    SHEET_NAME : 'Daily Booking Data',
-    ID         : 0,
-    START_TIME : 1,
-    END_TIME   : 2,
-    LOCATION   : 3,
-    STUDENTS   : 4,
-    CONTACT    : 5,
-    PROJECT    : 6,
-    TAPE       : 7,
-    DOLBY      : 8,
-    LIVE_ROOM  : 9,
-    ITEMS      : 10
+    SHEET_NAME : 'Daily Booking Data'
   },
   forms: {
     SHEET_ID        : '1yMDg9w-vjZxeOYgES-XsicoWp9VvjV3xqCmdZhAyNI4',
     SHEET_NAME      : 'Forms',
     REJECTED_NAME   : 'Rejected',
-    ARCHIVE_NAME    : 'Archive',
-    ID              : 0,
-    START_TIME      : 1,
-    END_TIME        : 2,
-    LOCATION        : 3,
-    BOOKING_ID      : 4,
-    BOOKED_STUDENTS : 5,
-    CONTACT         : 6,
-    PROJECT         : 7,
-    TAPE            : 8,
-    OVERNIGHT       : 9,
-    STUDENTS        : 10,
-    ITEMS           : 11,
-    NOTES           : 12
+    ARCHIVE_NAME    : 'Archive'
   },
-  // Inventory cheat sheet: [[Location, Category, Sub Category, Manufacturer , Model,
-  //  Description, Serial, Item ID, Barcode No., Reserveable, Reservations, Check-Out History, Repair History, Checked-Out, ID, Qnty, Notes]]
   items: {
     SHEET_ID    : '1XYu7fGgmuZ3DTa8y2JNbwwKuHw8_XNJ4VEwgZCf_UME',
     SHEET_NAME  : 'Inventory',
@@ -73,10 +49,11 @@ function checkItemsGAS_(form) {
   var sheet = SpreadsheetApp.openById(index.items.SHEET_ID)
     .getSheetByName(index.items.SHEET_NAME);
   var data = sheet.getDataRange().getValues();
-  form.items.forEach(function checkItems(item) {
+  form.items.forEach(checkItems);
+  function checkItems(item) {
     var id = item.id ? "id" : "barcode";
     if (! item.checkIn && item.checkOut && ! item.checkedOut) { // requesting checkout
-      if (! item.serialized) {
+      if (! item.isSerialized()) {
         item.checkedOut = true;
         return;
       }
@@ -93,7 +70,7 @@ function checkItemsGAS_(form) {
         }
       }
     } else if (item.checkIn && item.checkedOut) { // requesting check-in
-      if (! item.serialized) {
+      if (! item.isSerialized()) {
         item.checkedOut = false;
         return;
       }
@@ -110,7 +87,7 @@ function checkItemsGAS_(form) {
         }
       }
     }
-  });
+  }
   return form;
 }
 
@@ -135,10 +112,9 @@ function createDailyBookingFormsGAS_() {
  * @return {Form}
  */
 function createBookingFormGAS_(booking) {
-  var form = new Form_(),
-      bookedStudents = booking.getBookedStudents(),
+  var bookedStudents = booking.getBookedStudents(),
       bookedItems = booking.getItems(),
-      items = [],
+      items = new Inventory_(),
       students = [];
 
   // handle booking students -> form students
@@ -169,16 +145,18 @@ function createBookingFormGAS_(booking) {
     });
   }
 
-  form.setBookedStudents(bookedStudents)
-    .setBookingId(booking.getId())
-    .setItems(items)
-    .setStartTime(booking.getStartTime())
-    .setEndTime(booking.getEndTime())
-    .setLocation(booking.getLocation())
-    .setContact(booking.getContact())
-    .setTape(booking.getTape())
-    .setProject(booking.getProject())
-    .setStudents(students);
+  var form = new Form_({
+    bookedStudents: bookedStudents,
+    bookingId: booking.id,
+    items: items,
+    startTime: booking.startTime,
+    endTime: booking.endTime,
+    location: booking.location,
+    contact: booking.contact,
+    tape: booking.tape,
+    project: booking.project,
+    students: students
+  }).setHash();
 
   writeFormToSheetGAS_(form);
 
@@ -193,10 +171,10 @@ function getAllItemsGAS_() {
     .getSheetByName(index.items.SHEET_NAME);
   var data = sheet.getDataRange().getValues();
   data.shift();
-  var items = [];
+  var items = new Inventory_();
   var itemIdregex = /[A-Za-z]+-[A-Za-z0-9]+/; // one or more letters, hyphen, one or more digits/letters
   var itemBarcode = /^\d+$/;
-  data.forEach(function getArrayOfItemsByData(itemData) {
+  data.forEach(function (itemData) {
     if (itemBarcode.test(itemData[index.items.BARCODE]) ||
         itemIdregex.test(itemData[index.items.ID])    ) {
       items.push(new Item_(itemData));
@@ -226,9 +204,9 @@ function getArchivedFormsGAS_(dateRangeJSON) {
   var sheet = SpreadsheetApp.openById(index.forms.SHEET_ID)
     .getSheetByName(index.forms.ARCHIVE_NAME);
   var data = sheet.getDataRange().getValues(),
-      forms = [];
+      forms = new Stack_();
   data.shift();
-  data.forEach(function(row) { forms.push(makeFormFromDataGAS_(row)); });
+  data.forEach(function(row) { forms.push(new Form_(row).setHash()); });
   forms = forms.filter(function(form) {
     var start = utility.date.parseFormattedDate(form.startTime);
     var end = utility.date.parseFormattedDate(form.endTime);
@@ -237,7 +215,7 @@ function getArchivedFormsGAS_(dateRangeJSON) {
       end.getTime()   <= dateRange.end.getTime()
     );
   });
-  return forms;
+  return forms.archive();
 }
 
 /** @return {[]} an array of Forms */
@@ -246,12 +224,12 @@ function getOpenFormsGAS_() {
   var formsSheet = SpreadsheetApp.openById(index.forms.SHEET_ID)
     .getSheetByName(index.forms.SHEET_NAME);
   var data = formsSheet.getDataRange().getValues(),
-      forms = [];
+      forms = new Stack_();
   data.shift();
   data.forEach(function getArrayOfForms(sheetData) {
-    forms.push(makeFormFromDataGAS_(sheetData));
+    forms.push(new Form_(sheetData).setHash());
   });
-  return forms;
+  return forms.archive();
 }
 
 /**
@@ -277,30 +255,6 @@ function getSheetDataByIdGAS_(value, sheetId, sheetName, idIndex) {
 }
 
 /* ********* MAKERS *********** */
-
-/** @param {object []} sheetData - a row pulled from Forms Sheet */
-function makeFormFromDataGAS_(sheetData) {
-  var form = new Form_(sheetData[index.forms.ID]),
-      studentInfo = JSON.parse(sheetData[index.forms.STUDENTS]),
-      itemsInfo = JSON.parse(sheetData[index.forms.ITEMS]),
-      notes = JSON.parse(sheetData[index.forms.NOTES]);
-
-  form.setBookingId(sheetData[index.forms.BOOKING_ID])
-    .setBookedStudents(sheetData[index.forms.BOOKED_STUDENTS])
-    .setItems(itemsInfo)
-    .setStartTime(utility.date.getFormattedDate(sheetData[index.forms.START_TIME]))
-    .setEndTime(utility.date.getFormattedDate(sheetData[index.forms.END_TIME]))
-    .setLocation(sheetData[index.forms.LOCATION])
-    .setContact(sheetData[index.forms.CONTACT])
-    .setTape(sheetData[index.forms.TAPE])
-    .setProject(sheetData[index.forms.PROJECT])
-    .setStudents(studentInfo)
-    .setNotes(notes)
-    .setHash();
-
-  return form;
-}
-
 function makeStudentFromDataGAS_(studentData) {
   var student = new Student_(studentData[index.students.ID]),
       signature = false;
@@ -340,22 +294,8 @@ function writeCodabarGAS_(netId, codabar) {
 function writeRejectedFormToSheetGAS_(form) {
   var ss = SpreadsheetApp.openById(index.forms.SHEET_ID);
   var formSheet = ss.getSheetByName(index.forms.REJECTED_NAME);
-  var values = [
-    form.getId(),
-    form.getStartTime(),
-    form.getEndTime(),
-    form.getLocation(),
-    form.getBookingId(),
-    form.getBookedStudents(),
-    form.getContact(),
-    form.getProject(),
-    form.getTape(),
-    form.getOvernight(),
-    JSON.stringify(form.getStudents()),
-    JSON.stringify(form.getItems()),
-    JSON.stringify(form.getNotes()),
-    getUser_()
-  ];
+  var values = form.getAsArray();
+  values.push(getUser_());
   formSheet.appendRow(values);
 }
 
@@ -363,28 +303,14 @@ function writeFormToSheetGAS_(form, closeAndArchive) {
   var ss = SpreadsheetApp.openById(index.forms.SHEET_ID);
   var formSheet = ss.getSheetByName(index.forms.SHEET_NAME);
   var data = formSheet.getDataRange().getValues();
-  var id = form.getId();
-  var values = [
-    id,
-    form.getStartTime(),
-    form.getEndTime(),
-    form.getLocation(),
-    form.getBookingId(),
-    form.getBookedStudents(),
-    form.getContact(),
-    form.getProject(),
-    form.getTape(),
-    form.getOvernight(),
-    JSON.stringify(form.getStudents()),
-    JSON.stringify(form.getItems()),
-    JSON.stringify(form.getNotes())
-  ];
+  var id = form.id;
+  var values = form.getAsArray();
 
   if (! id) { // create
     values[0] = form.createId();
     formSheet.appendRow(values);
     // see TODO below for more info on why this is necessary
-    return makeFormFromDataGAS_(
+    return new Form_(
       formSheet.getRange(formSheet.getLastRow(), 1, 1, 13).getValues()[0]
     ).setHash();
   }
@@ -399,8 +325,8 @@ function writeFormToSheetGAS_(form, closeAndArchive) {
   // Do not allow write unless user was editing most
   // recent form.  Use try/catch around call to this function
   // to handle this error
-  var storedForm = makeFormFromDataGAS_(data[index_]);
-  if (form.getHash() != storedForm.getHash()) {
+  var storedForm = new Form_(data[index_]).setHash();
+  if (form.hash != storedForm.hash) {
     var error = new Error("form collision: " + form.id);
     error.ECO_storedForm = JSON.stringify(storedForm);
     error.ECO_submittedForm = JSON.stringify(form);
@@ -425,7 +351,7 @@ function writeFormToSheetGAS_(form, closeAndArchive) {
   //   `values` variable directly comes up with a different hash due to
   //   Sheet converting numbers and dates. Consider plain text format to eliminate
   //   the extra retrieval step.
-  return makeFormFromDataGAS_(range.getValues()[0]).setHash();
+  return new Form_(range.getValues()[0]).setHash();
 }
 
 /* exported writeSignatureToSheetGAS_ */
@@ -441,6 +367,7 @@ function writeSignatureToSheetGAS_(request) {
 }
 
 /* exported startSignature_ */
+// TODO don't hardcode A1; just append a row with the Net ID
 function startSignature_(netid) {
   var sheet = SpreadsheetApp.openById(index.students.SHEET_ID)
     .getSheetByName(index.students.SIGNATURE_SHEET_NAME);
@@ -448,6 +375,7 @@ function startSignature_(netid) {
 }
 
 /* exported clearSignatureValidationGAS_ */
+// TODO don't hardcode A1; search for the Net ID to clear off
 function clearSignatureValidationGAS_() {
   var sheet = SpreadsheetApp.openById(index.students.SHEET_ID)
     .getSheetByName(index.students.SIGNATURE_SHEET_NAME);

@@ -1,0 +1,83 @@
+<script>
+/* exported  Item */
+function Item({
+  barcode = "",
+  id = "",
+  checkedOut = false,
+  checkIn = "",
+  checkOut = "",
+  description = "",
+  quantity = 1,
+  notes = "",
+  missing = false
+}) {
+  if (! (this instanceof Item)) {
+    throw new Error("Item() needs to be called with `new`");
+  }
+
+  // private properties
+  /**
+   * serialized identifies non-fungible items
+   * an item is serialized if it has a barcode NOT in the range 10000-10100
+   *
+   * items with item IDs are sometimes non-serialized if they are manual entries
+   */
+  const serialized = Boolean(barcode) && (+barcode < 10000 || +barcode > 10100);
+  if (isNaN(quantity) || quantity < 1) {
+    throw new Error(`invalid quantity: ${quantity}`);
+  }
+
+  // public properties
+  // enforcing input like id=null or barcode=10 are coerced into strings
+  this.barcode = barcode ? "" + barcode : "";
+  this.id = id ? "" + id : "";
+  this.checkedOut = Boolean(checkedOut);
+  this.checkIn = checkIn ? "" + checkIn : "";
+  this.checkOut = checkOut ? "" + checkOut : "";
+  this.description = description ? "" + description : "";
+  this.notes = notes ? "" + notes : "";
+  this.missing = Boolean(missing);
+
+  this.changeQuantity = function(integer) {
+    if (serialized) {
+      throw new Error("Cannot change quantity of a serialized item");
+    }
+    if (! isPositiveInteger(quantity + integer)) {
+      throw new Error(`Invalid quantity: ${integer}`);
+    }
+    quantity += integer;
+    return this;
+  };
+  this.setQuantity = function(integer) {
+    if (serialized) {
+      throw new Error("Cannot change quantity of a serialized item");
+    }
+    if (! isPositiveInteger(integer)) {
+      throw new Error(`Invalid quantity: ${integer}`);
+    }
+    quantity = integer;
+    return this;
+  };
+  this.getQuantity = function() {
+    return quantity;
+  };
+  this.isSerialized = function() {
+    return serialized;
+  };
+  // private helper functions
+  function isPositiveInteger(integer) {
+    return ! isNaN(integer) &&
+      Math.floor(integer) === integer &&
+      Math.abs(integer) === integer;
+  }
+}
+/**
+ * archive returns a plain object with the quantity made public
+ * used by Inventory when stringifying
+ */
+Item.prototype.archive = function() {
+  const obj = Object.assign({}, this);
+  obj.quantity = this.getQuantity();
+  return obj;
+};
+</script>

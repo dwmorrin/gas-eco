@@ -1,72 +1,7 @@
 <script>
 /** Utility */
 /* global app toast */
-let utility = { DOM: {}, date: {}, item: {}, };
-
-/**
- * TODO this should be to an Item constructor
- */
-utility.cleanItem = item => {
-  item = item.replace(/\s/g, '').replace(/-0+/, '-');
-  return item;
-};
-
-/**
- * TODO this should be moved to a Student constructor
- */
-utility.cleanStudent = (value, index, array) => {
-  array[index] = array[index].replace(/\s/g, '');
-},
-
-/**
- * strip is a callback function for array.prototype.forEach
- *   used by the "copy to clipboard" UI element to create a minified
- *   JSON string of items
- * TODO this should be moved to an Item constructor
- */
-utility.item.strip = (value, index, array) => {
-  // only quantity and barcode needed; getCached gets other info
-  array[index] = {
-    id: array[index].id,
-    description: array[index].description,
-    quantity: array[index].quantity,
-    barcode: array[index].barcode,
-  };
-},
-
-/**
- * getCached is a callback function for array.protype.forEach
- *   used by the "copy to clipboard" UI element to verify that non-manual
- *   items match the records in the inventory
- * TODO this should be moved to an Item constructor
- */
-utility.item.getCached = (item, index, array) => {
-  const items = app.cache.items;
-  // rebuild item from inventory record
-  const cachedItem = items.find(_item => _item.barcode == item.barcode);
-  if (cachedItem) {
-    item.description = cachedItem.description;
-    item.serialized = cachedItem.serialized;
-    if (item.serialized) {
-      item.quantity = 1;
-    }
-    item.id = cachedItem.id;
-  }
-  if (cachedItem || /^MANUAL/.test(item.id)) {
-    item.checkedOut = true;
-    item.checkIn = null;
-    item.checkOut = null;
-    item.missing = false;
-    item.notes = '';
-    return;
-  } 
-  // removes the item if not manual and not found in inventory.
-  app.modal.handleError(new Error(
-    'Oops!, "' + item.description + '" ' + 'was not found in our inventory. ' +
-    'If this was a manual item, try entering it as a new manual item.'
-  ));
-  delete array[index];
-},
+const utility = { DOM: {}, date: {} };
 
 utility.copyToClipboard = function(data) {
   const textArea = document.createElement("textarea");
@@ -124,7 +59,7 @@ utility.DOM.getNextSibling = function(element) {
 };
 
 utility.DOM.makeRadio = function(name, ...values) {
-  let radio = {};
+  const radio = {};
   for (let value of values) {
     radio[value] = `<input type="radio" name="${name}" value="${value}" `;
     if (value == 'other') {
@@ -136,12 +71,12 @@ utility.DOM.makeRadio = function(name, ...values) {
 };
 
 utility.DOM.makeTableRow = function(tagName, ...strings) {
-  let row = document.createElement('tr'),
-      cells = [];
+  const cells = [];
   for (let i = 0, l = strings.length; i < l ; i++) {
     cells.push(document.createElement(tagName));
     cells[i].innerHTML = strings[i];
   }
+  const row = document.createElement('tr');
   while(cells.length) {
     row.appendChild(cells.shift());
   }
@@ -159,12 +94,12 @@ utility.DOM.getRadioValue = function() {
 };
 
 utility.date.getFormattedDate = function(date) {
-  let year = date.getFullYear(),
-      month = (date.getMonth() + 1), // zero indexed
-      day = date.getDate(),
-      hour = date.getHours(),
-      minutes = date.getMinutes(),
-      ampm = 'am';
+  const year = date.getFullYear(),
+        month = (date.getMonth() + 1), // zero indexed
+        day = date.getDate(),
+        minutes = date.getMinutes();
+  let ampm = 'am',
+      hour = date.getHours();
 
   if (hour > 11) {
     ampm = 'pm';
@@ -189,14 +124,14 @@ utility.date.parseDateAndTimeInputs = function() {
       endHour = +app.pages.form.elements.form.endHour.value,
       startMinute = +app.pages.form.elements.form.startMinute.value,
       endMinute = +app.pages.form.elements.form.endMinute.value;
-  function ampmConverter(ampm, hour) {
+  const ampmConverter = (ampm, hour) => {
     if (ampm == 'PM' && hour != 12) {
       hour += 12;
     } else if (ampm == 'AM' && hour == 12) { // i.e. 12 AM
       hour = 0;
     }
     return hour;
-  }
+  };
   startHour = ampmConverter(app.pages.form.elements.form.startAMPM.value, startHour);
   endHour = ampmConverter(app.pages.form.elements.form.endAMPM.value, endHour);
   startTime.setHours(startHour);
@@ -204,7 +139,7 @@ utility.date.parseDateAndTimeInputs = function() {
   endTime.setHours(endHour);
   endTime.setMinutes(endMinute);
 
-  return { startTime: startTime, endTime: endTime };
+  return {startTime, endTime};
 };
 
 /**
@@ -267,181 +202,6 @@ utility.date.zeropad = function(x) {
     return '0' + x;
   } else {
     return x;
-  }
-};
-
-utility.makeForm = function() {
-  let notes = JSON.parse(app.pages.form.elements.form.notes.value);
-  notes.push(app.changes.makeNote());
-  let form = {
-    bookedStudents: app.pages.form.elements.form.bookedStudents.value,
-    bookingId: app.pages.form.elements.form.bookingId.value,
-    contact: app.pages.form.elements.form.contact.value,
-    endTime: app.pages.form.elements.form.endTime.value,
-    id: app.pages.form.elements.form.id.value,
-    location: app.pages.form.elements.form.location.value,
-    project: app.pages.form.elements.form.project.value,
-    overnight: app.pages.form.elements.form.overnight.value,
-    startTime: app.pages.form.elements.form.startTime.value,
-    tape: app.pages.form.elements.form.tape.value,
-    items: JSON.parse(app.pages.form.elements.form.items.value),
-    notes: notes,
-    students: JSON.parse(app.pages.form.elements.form.students.value),
-    hash: app.pages.form.elements.form.hash.value,
-  };
-  return form;
-};
-
-utility.sortForms = function(forms, sortBy) {
-  const currentPage = app.pages[app.cache.currentFormstack];
-  if (! sortBy) {
-    sortBy = currentPage.sortBy;
-  } else {
-    if (sortBy == currentPage.sortBy) { // toggle descending/ascending
-      currentPage.sortDescending = ! currentPage.sortDescending;
-    }
-    currentPage.sortBy = sortBy;
-  }
-  let compare;
-  switch (sortBy) {
-    case 'startTime':
-    case 'endTime':
-      compare = function(a,b) {
-        let dateA = utility.date.parseFormattedDate(a[sortBy]).getTime(),
-            dateB = utility.date.parseFormattedDate(b[sortBy]).getTime();
-        if (dateA < dateB) {
-          return -1;
-        }
-        if (dateA > dateB) {
-          return 1;
-        }
-        if (dateA == dateB) {
-          return 0;
-        }
-      };
-      break;
-    case 'location':
-      compare = function(a,b) {
-        if (a[sortBy] < b[sortBy]) {
-          return -1;
-        }
-        if (a[sortBy] > b[sortBy]) {
-          return 1;
-        }
-        if (a[sortBy] == b[sortBy]) {
-          return 0;
-        }
-      };
-      break;
-    case 'contact':
-    case 'tape':
-    case 'overnight':
-    case 'items':
-    case 'project':
-    case 'bookingId':
-      compare = function(a,b) {
-        if (a[sortBy] < b[sortBy]) {
-          return -1;
-        }
-        if (a[sortBy] > b[sortBy]) {
-          return 1;
-        }
-        if (a[sortBy] == b[sortBy]) {
-          return 0;
-        }
-      };
-      break;
-    case 'bookedStudents':
-    case 'students':
-      compare = function(a,b) {
-        let nameSort = function(c,d) {
-          if (c.name < d.name) {
-            return -1;
-          }
-          if (c.name > d.name) {
-            return 1;
-          }
-          if (c.name == d.name) {
-            return 0;
-          }
-        };
-        a.students.sort(nameSort);
-        b.students.sort(nameSort);
-        if (a.students[0].name < b.students[0].name) {
-          return -1;
-        }
-        if (a.students[0].name > b.students[0].name) {
-          return 1;
-        }
-        if (a.students[0].name == b.students[0].name) {
-          return 0;
-        }
-      };
-      break;
-    case 'type':
-      compare = function(a,b) {
-        let active = function(student) {
-          return student.checkIn;
-        };
-        a = +(a.students.some(active));
-        b = +(b.students.some(active));
-        if (a > b) {
-          return -1;
-        }
-        if (a < b) {
-          return 1;
-        }
-        if (a == b) {
-          return 0;
-        }
-      };
-      break;
-  }
-  forms.sort(compare);
-  if (currentPage.sortDescending) {
-    forms.reverse();
-  }
-  return forms;
-};
-
-/**
- * @param {string} [prefix] - optional prefix to note
- *   usage: undefined for global notes, "John Doe: " for student
- */
-utility.saveNote = function(prefix) {
-  if (! prefix) {
-    prefix = "";
-  }
-  const input = app.modal.getText();
-  if (input.length < 1) {
-    return;
-  }
-  const notes = JSON.parse(app.pages.form.elements.form.notes.value);
-  const note = {
-    timestamp: Date.now(),
-    author: app.elements.usernameDisplay.textContent,
-    body: prefix + input,
-  };
-  let shortNotes = note.body;
-  if (shortNotes.length > 10) {
-    shortNotes = shortNotes.slice(0, 10) + "...";
-  }
-  const change = {
-    target: {
-      name: 'notes',
-      value: shortNotes
-    }
-  };
-  const p = document.createElement('p');
-  p.textContent = 'Note: ' + '[' + note.author + '] ' + note.body;
-
-  notes.push(note);
-  app.pages.form.elements.form.notes.value = JSON.stringify(notes);
-  app.pages.form.handleChange(change);
-
-  app.pages.form.elements.noteSection.appendChild(p);
-  if (app.pages.form.elements.noteSection.classList.contains('hidden')) {
-    app.pages.form.elements.noteSection.classList.remove('hidden');
   }
 };
 </script>

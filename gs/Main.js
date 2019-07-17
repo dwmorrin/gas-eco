@@ -105,7 +105,7 @@ function doPost(request) {
       response.students = getAllStudents_();
       break;
     case 'rejected':
-      writeRejectedFormToSheetGAS_(readForm_(request.form));
+      writeRejectedFormToSheetGAS_(new Form_(request.form));
       break;
     case 'signature':
       postSignature_(request);
@@ -118,14 +118,14 @@ function doPost(request) {
       startSignature_(request.netid);
       break;
     case 'updateForm':
-      var form = readForm_(request.form);
+      var form = new Form_(JSON.parse(request.form));
       try {
         if (isFormReadyToClose_(form) || isNoShow_(form)) {
           closeForm_(form);
           request.post = 'openForms';
           response.formList = getOpenForms_();
         } else {
-          response.form = JSON.stringify(postForm_(form));
+          response.form = postForm_(form).stringify();
         }
       } catch (error) {
         if (/^form collision/i.test(error.message)) {
@@ -158,7 +158,7 @@ function deleteForm_() {
 
 /** @see doGet */
 function getAllItems_() {
-  return JSON.stringify(getAllItemsGAS_());
+  return getAllItemsGAS_().stringify();
 }
 
 /** @see doGet */
@@ -322,37 +322,6 @@ function postForm_(form) {
 // //run.doPost({ post: 'signature', dataURL: dataURL, id: studentId });
 function postSignature_(request) {
   return writeSignatureToSheetGAS_(request);
-}
-
-/**
- * This helper function restores a proper form with functions when the client transmits a form
- * that has been stripped of functions
- * @see doPost
- * @param {object} formObj - this object should be a Form without functions, sent from the client
- * @return {Form}
- */
-function readForm_(formObj) {
-  formObj = JSON.parse(formObj);
-  var form;
-  if (! formObj.id) {
-    form = new Form_();
-  } else {
-    form = new Form_(formObj.id);
-  }
-  form.setBookedStudents(formObj.bookedStudents)
-    .setBookingId(formObj.bookingId)
-    .setContact(formObj.contact)
-    .setEndTime(formObj.endTime)
-    .setStartTime(formObj.startTime)
-    .setLocation(formObj.location)
-    .setProject(formObj.project)
-    .setTape(formObj.tape)
-    .setOvernight(formObj.overnight)
-    .setStudents(formObj.students)
-    .setItems(formObj.items)
-    .setNotes(formObj.notes)
-    .setHash(formObj.hash);
-  return form;
 }
 
 var utility = { date: {}, hash: {} };

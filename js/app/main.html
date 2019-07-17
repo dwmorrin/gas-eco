@@ -1,4 +1,5 @@
 <script>
+/* global Inventory */
 /**
  * signature of the app object
  */
@@ -9,10 +10,12 @@ const app = {
   elements:  {},                         // top level elements e.g. global navigation
   errors:    [],                         // error stack to ensure all errors get displayed to user
   handlers:  {},                         // event methods
+  inventory: new Inventory(),
   modal:     {},                         // the modal pop up window
   omnibox:   {},                         // possibly should be under pages.form
   pages:     {},                         // the different single page views
   refresh:   function(/* response */){}, // server callback switch block
+  roster:    [],                         // Student[]
   run:       null,                       // defined in jsInit, main server call
   showPage:  function(/* page */){},     // shows a single view to the user
   spinner:   {},                         // the spinner object
@@ -20,20 +23,7 @@ const app = {
   withErrorHandler: null,                // defined in jsInit, main server error handler
 };
 
-/** app state */
-app.cache = {
-  archive:             [],
-  archiveFiltered:     [],
-  currentFormstack:    "",
-  currentIndex:         0,
-  items:               [],
-  openForms:           [],
-  savedForm:           {},
-  signatureTimeoutId: NaN,
-  students:            [],
-};
-
-app.pages = {      // must have show and hide functions
+app.pages = { // must have show and hide functions
   archive:     {},
   form:        {},
   openForms:   {},
@@ -83,7 +73,10 @@ app.strings = {
   updateDisabledHint: 'please enter start time, end time, location, ' +
                       'and at least one student',
   updateButton: {
-    enabled: 'Submit',
+    enabled: {
+      CREATE: "Submit",
+      UPDATE: "Update"
+    },
     disabled: 'all changes saved',
   },
   updateHint: {

@@ -1,16 +1,13 @@
 <script>
 // Window level event handlers.
 // Page and page element handlers are found under their respective pages
-/* global app isBlankForm */
+/* global app displayForm Form */
 app.handlers = {
   /**
    * Attach this function to the beforeunload event whevener there is a form with
    * unsaved changes displayed.
    * @see {@link https://developer.mozilla.org/en-US/docs/Web/Events/beforeunload}
    * @see app.changes.saved
-   * @todo does not work in Safari due to frame of different security origin
-   * @todo does not work in Chrome 67
-   * @todo this looks promising: https://jes.al/2016/03/preventing-back-button-navigation-in-SPAs/
    */
   beforeunload: function(event) {
     if (! app.changes.saved) {
@@ -59,11 +56,19 @@ app.handlers = {
       app.pages.form.elements.updateButtonHint.textContent = '';
       app.pages.form.elements.updateFormButton.disabled = true;
       app.pages.form.elements.undoButton.disabled = true;
-      click.target.value = click.target.value.slice(9, click.target.value.length);
+      click.target.value = click.target.value.slice('loseData_'.length, click.target.value.length);
       // check if blank form, undo actions from Display::displayNewForm
-      if (isBlankForm(app.cache.savedForm)) {
-        app.cache.openForms.pop();
-        --app.cache.currentIndex;
+      if (app.pages.form.savedForm.isBlank()) {
+        app.pages.openForms.stack.pop();
+        if (/(previous|next)Form/.test(click.target.value)) {
+          displayForm(app.pages.openForms.getCurrentForm());
+          return;
+        } else if (click.target.value === "revert") {
+          app.doCommand("displayNewForm");
+          return;
+        }
+      } else { // we were editing an active form; kill it
+        app.pages.openForms.stack.replaceCurrent(new Form(app.pages.form.savedForm));
       }
     }
     app.doCommand(click.target.value);

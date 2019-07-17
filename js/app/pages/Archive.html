@@ -1,5 +1,5 @@
 <script>
-/* global app utility */
+/* global app Stack utility populateArchiveTable */
 app.pages.archive = {
   elements: {
     container:   document.querySelector('div.archiveContainer'),
@@ -9,6 +9,7 @@ app.pages.archive = {
     tableBody:   document.querySelector('tbody.archive'),
     tableHead:   document.querySelector('thead.archive'),
   },
+  filteredStack: new Stack(),
   getDateRangeAsJSON: function() {
     let inputs = app.pages.archive.elements.queryInputs;
     let range = {};
@@ -52,18 +53,15 @@ app.pages.archive = {
     }
   },
   handleClickTable: function(click) {
-    let findForm = function(form) {
-      return form.id == click.target.parentNode.getAttribute('data-id');
-    };
-    let index = app.cache.archive.findIndex(findForm);
-    if (index < 0) {
+    if (click.target.parentNode.classList.contains("hoveroff")) {
       return;
     }
-    app.cache.currentIndex = index;
-    app.doCommand('displayForm', app.cache.archive[index], true);
+    const id = click.target.parentNode.getAttribute('data-id');
+    app.doCommand('displayForm', app.pages.archive.filteredStack.getByID(id));
   },
   handleClickTableHead: function(click) {
-    app.doCommand('sortForms', click.target.dataset.sort);
+    app.pages.archive.stack.sortForms(click.target.dataset.sort);
+    populateArchiveTable(app.pages.archive.stack);
   },
   init: function() {
     let inputs = app.pages.archive.elements.queryInputs,
@@ -93,12 +91,12 @@ app.pages.archive = {
     return selectedEndTime >= today.getTime();
   },
   show: function() {
-    app.cache.currentFormstack = app.strings.formstack.archive;
     if (app.pages.archive.isTodaySelected()) {
       app.pages.archive.update();
     } else {
       app.pages.archive.query();
     }
+    app.pages.form.currentStack = app.pages.archive.filteredStack;
     app.pages.archive.elements.container.classList.remove("hidden");
   },
   hide: function() {
@@ -108,6 +106,7 @@ app.pages.archive = {
   setInterval: function() {},
   sortBy: 'startTime',
   sortDescending: false,
+  stack: new Stack(),
   update: function() {
     app.spinner.inside(app.pages.archive.elements.queryButton);
     app.run.doGet({

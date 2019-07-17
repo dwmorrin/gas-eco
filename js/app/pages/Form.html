@@ -1,10 +1,20 @@
 <script>
-/* global app displayForm utility isFormOkToPost isFormReadyToClose toast */
+/* global Form app displayForm utility toast */
 app.pages.form = {
   checkForms: function() {
     app.run
       .withUserObject({ timeoutId: app.pages.form.timeoutId })
       .doGet({ get: "checkForms" });
+  },
+  currentStack: null,
+  disable: function() {
+    app.omnibox.element.setAttribute('disabled', true);
+    this.elements.newNoteButton.setAttribute('disabled', true);
+    this.elements.manualButton.setAttribute('disabled', true);
+    this.elements.omniboxButton.setAttribute('disabled', true);
+    this.elements.updateButtonHint.textContent = 'This is a closed form.  ' +
+      'You cannot edit it.';
+    this.elements.copyButton.classList.remove('hidden');
   },
   elements: {
     container:               document.querySelector('div.formContainer'),
@@ -26,26 +36,45 @@ app.pages.form = {
     undoButton:              document.querySelector('button[value="undo"]'),
     copyButton:              document.querySelector('button[value="copyItems"]'),
   },
-  getNext: function() {
-    // get the next form from either the open stack or the archive stack
-    const stack = app.cache[app.cache.currentFormstack];
-    if (app.cache.currentIndex == stack.length - 1) { // we're already at the end
-      app.omnibox.element.focus();
-      return;
+  enable: function() {
+    app.omnibox.element.removeAttribute('disabled');
+    this.elements.newNoteButton.removeAttribute('disabled');
+    this.elements.manualButton.removeAttribute('disabled');
+    this.elements.omniboxButton.removeAttribute('disabled');
+    this.elements.updateButtonHint.textContent = '';
+    this.elements.copyButton.classList.add('hidden');
+    if (app.pages.openForms.getCurrentForm().isBlank()) {
+      this.elements.updateFormButton.textContent = app.strings.updateButton.enabled.CREATE;
     } else {
-      const isArchive = app.cache.currentFormstack == 'archive';
-      displayForm(stack[++app.cache.currentIndex], isArchive);
+      this.elements.updateFormButton.textContent = app.strings.updateButton.disabled;
+      this.elements.updateFormButton.classList.remove('create');
     }
   },
-  getPrevious: function() {
-    const stack = app.cache[app.cache.currentFormstack];
-    if (app.cache.currentIndex == 0) { // we're already at the beginning
+  getNext: function() {
+    const form = app.pages.form.currentStack.getNext();
+    if (! form) { // we're already at the end
       app.omnibox.element.focus();
       return;
-    } else {
-      const isArchive = app.cache.currentFormstack == 'archive';
-      displayForm(stack[--app.cache.currentIndex], isArchive);
     }
+    if (! app.changes.saved) {
+      app.pages.form.currentStack.getPrevious(); // fix currentIndex
+      app.modal.handleUnsavedForm('nextForm');
+      return;
+    }
+    displayForm(form);
+  },
+  getPrevious: function() {
+    const form = app.pages.form.currentStack.getPrevious();
+    if (! form) { // we're already at the beginning
+      app.omnibox.element.focus();
+      return;
+    }
+    if (! app.changes.saved) {
+      app.pages.form.currentStack.getNext(); // fix currentIndex
+      app.modal.handleUnsavedForm('previousForm');
+      return;
+    }
+    displayForm(form);
   },
   /** for form validation and attach beforeunload listener for unsaved changes */
   handleChange: function(change) {
@@ -84,17 +113,17 @@ app.pages.form = {
 
     app.changes.saved = false;
     app.pages.form.elements.undoButton.removeAttribute('disabled');
-    if (! app.pages.form.elements.form.id) {
-      app.pages.form.elements.updateFormButton.textContent = "Submit";
+    const form = app.pages.openForms.getCurrentForm();
+    if (form.isBlank()) {
+      app.pages.form.elements.updateFormButton.textContent = app.strings.updateButton.enabled.CREATE;
     } else {
-      app.pages.form.elements.updateFormButton.textContent = "Update";
+      app.pages.form.elements.updateFormButton.textContent = app.strings.updateButton.enabled.UPDATE;
     }
     app.pages.form.elements.updateFormButton.classList.add('create');
 
-    const okToPost = isFormOkToPost();
-    if (okToPost) {
+    if (form.isReadyToPost()) {
       // are we ready to close?
-      if (isFormReadyToClose()) {
+      if (form.isReadyToClose()) {
         app.pages.form.elements.updateFormButton.textContent = 'Update and Close';
       } // Enable update button
       app.pages.form.elements.updateFormButton.removeAttribute('disabled');
@@ -108,15 +137,15 @@ app.pages.form = {
     if (change.target.value == 'Other') {
       change.target.value = 'none'; // in case the modal is cancelled
       app.modal.getLocation();
-    } else { // it's not other, make sure 'Other' label is reset, log the change
-      app.pages.form.elements.locationOtherOption.textContent = 'Other';
-      app.changes.add(change);
+      return;
     }
+    app.pages.openForms.getCurrentForm().location = change.target.value;
+    // it's not other, make sure 'Other' label is reset, log the change
+    app.pages.form.elements.locationOtherOption.textContent = 'Other';
+    app.changes.add(change);
   },
   handleChangeTime: function(change) {
-    let t = utility.date.parseDateAndTimeInputs(),
-        type = change.target.name.slice(0,1),
-        newChange = { target: {} };
+    let t = utility.date.parseDateAndTimeInputs();
     // CHECK #0: Are t.start and t.end valid?
     if (window.isNaN(t.startTime.getTime())) {
       app.pages.form.elements.form.startDate.classList.add('error');
@@ -160,8 +189,13 @@ app.pages.form = {
       app.pages.form.elements.form.startMinute.classList.remove('error');
       app.pages.form.elements.form.startAMPM.classList.remove('error');
     }
-    app.pages.form.elements.form.startTime.value = utility.date.getFormattedDate(t.startTime);
-    app.pages.form.elements.form.endTime.value = utility.date.getFormattedDate(t.endTime);
+    const form = app.pages.openForms.getCurrentForm();
+    const startTime = utility.date.getFormattedDate(t.startTime);
+    app.pages.form.elements.form.startTime.value = form.startTime = startTime;
+    const endTime = utility.date.getFormattedDate(t.endTime);
+    app.pages.form.elements.form.endTime.value = form.endTime = endTime;
+    const type = change.target.name.slice(0,1),
+          newChange = { target: {} };
     if (type == 's') {
       newChange.target.name = 'startTime';
       newChange.target.value = app.pages.form.elements.form.startTime.value;
@@ -173,8 +207,7 @@ app.pages.form = {
   },
 
   handleClickItem: function(click) {
-    const isArchive = app.cache.currentFormstack == 'archive';
-    if (isArchive){
+    if (app.pages.form.currentStack === app.pages.archive.filteredStack) {
       return;
     }
     if (click.target != click.target.parentNode.firstChild ||
@@ -182,9 +215,11 @@ app.pages.form = {
       const itemRow = (click.target.classList.contains('itemnotes'))
         ? click.target.parentNode.previousSibling
         : click.target.parentNode;
-      const items = JSON.parse(app.pages.form.elements.form.items.value);
+      const form = app.pages.openForms.getCurrentForm();
       const key = itemRow.dataset.id === '' ? "barcode" : "id";
-      const item = items.find(i => i[key] == itemRow.dataset[key]);
+      const item = itemRow.dataset.id === '' ?
+        form.items.getByBarcode(itemRow.dataset.barcode) :
+        form.items.getById(itemRow.dataset.id);
       if (! item) {
         app.modal.handleError(
           new Error('cannot take note for ' + itemRow.dataset[key])
@@ -194,11 +229,10 @@ app.pages.form = {
     }
   },
   handleClickTable: function(click) {
-    const isArchive = app.cache.currentFormstack == 'archive';
-    if (isArchive){
+    if (app.pages.form.currentStack === app.pages.archive.filteredStack) {
       return;
     }
-    if (click.target.classList.contains('itemnotes')){
+    if (click.target.classList.contains('itemnotes')) {
       return;
     }
     if (click.target.tagName != 'TD') {
@@ -206,9 +240,9 @@ app.pages.form = {
     }
     if (click.target.parentNode.firstChild == click.target) { // should be quantity
       // handle quantity changes
-      const indexOfItemDescription = 1;
-      const cells = click.target.parentNode.getElementsByTagName('td');
-      app.modal.handleQuantityChange(cells[indexOfItemDescription].textContent);
+      const barcode = click.target.parentNode.dataset.barcode;
+      const item = app.pages.openForms.getCurrentForm().items.getByBarcode(barcode);
+      app.modal.handleQuantityChange(item);
       return;
     }
     if (click.target.classList.contains('editable')) {
@@ -243,7 +277,7 @@ app.pages.form = {
       }
     }
     // cmd clicks only from here on
-    if (!click.metaKey) {
+    if (! click.metaKey) {
       return;
     }
     let cells = click.target.parentNode.getElementsByTagName('td');
@@ -257,19 +291,15 @@ app.pages.form = {
     app.omnibox.parse();
   },
   handleClickStudent: function(click) {
-    const isArchive = app.cache.currentFormstack == 'archive';
-    if (isArchive){
+    if (app.pages.form.currentStack === app.pages.archive.filteredStack) {
       return;
     }
     if (click.metaKey) {
       return;
     }
-    let netId = utility.DOM.getNextSibling(
-      utility.DOM.getFirstChild(click.target.parentNode)
-    ).textContent,
-        student,
-        students = JSON.parse(app.pages.form.elements.form.students.value);
-    student = students.find(s => s.netId == netId);
+    const netId = click.target.parentNode.dataset.netid;
+    const students = app.pages.openForms.getCurrentForm().students;
+    const student = students.find(s => s.netId == netId);
     if (!student) {
       app.modal.handleError(
         new Error('could not find student with NetID ' + netId)
@@ -310,9 +340,42 @@ app.pages.form = {
     els.locationSelect.value = "none";
     els.locationOtherOption.value = els.locationOtherOption.textContent = "Other";
   },
+  savedForm: new Form({}),
+  saveNote: function(prefix = "") {
+    const input = app.modal.getText();
+    if (input.length < 1) {
+      return;
+    }
+    const form = app.pages.openForms.getCurrentForm();
+    const note = {
+      timestamp: Date.now(),
+      author: app.elements.usernameDisplay.textContent,
+      body: prefix + input,
+    };
+    let shortNotes = note.body;
+    if (shortNotes.length > 10) {
+      shortNotes = shortNotes.slice(0, 10) + "...";
+    }
+    const change = {
+      target: {
+        name: 'notes',
+        value: shortNotes
+      }
+    };
+    const p = document.createElement('p');
+    p.textContent = 'Note: ' + '[' + note.author + '] ' + note.body;
+
+    form.notes.push(note);
+    this.handleChange(change);
+
+    this.elements.noteSection.appendChild(p);
+    if (this.elements.noteSection.classList.contains('hidden')) {
+      this.elements.noteSection.classList.remove('hidden');
+    }
+  },
   setTimeout: function() {
     // do not set this when viewing the archive stack
-    if (app.cache.currentFormstack == app.strings.formstack.openForms) {
+    if (app.pages.form.currentStack === app.pages.openForms.stack) {
       app.pages.form.timeoutId = window.setTimeout(app.pages.form.checkForms, 60000);
     }
   },

@@ -4,26 +4,23 @@
  * @param {bool} archived - is this a closed form?
  * @return void
  */
-/* global app utility */
+/* global app utility Form */
 /* exported
      populateArchiveTable
      displayForm
      populateFormsTable
      toast
 */
-function displayForm(form, archived) {
+function displayForm(form) {
   const formPage = app.pages.form;
   const els = formPage.elements;
   formPage.resetLocation();
   for (let key in form) {
     switch (key) {
       case 'items': {
-        let items = form[key];
+        const items = form[key];
         utility.DOM.empty(els.itemList);
-        if (items.length == 0) {
-          els.form.items.value = JSON.stringify([]);
-        } else {
-          els.form.items.value = JSON.stringify(items);
+        if (items.getLength() > 0) {
           const slice = items.slice();
           slice.reverse().forEach(populateItemList);
         }
@@ -57,10 +54,7 @@ function displayForm(form, archived) {
       case 'students': {
         let students = form[key];
         utility.DOM.empty(els.studentList);
-        if (students.length == 0) {
-          els.form.students.value = JSON.stringify([]);
-        } else {
-          els.form.students.value = JSON.stringify(students);
+        if (students.length > 0) {
           students.forEach(populateStudentList);
         }
         break;
@@ -81,7 +75,9 @@ function displayForm(form, archived) {
           if (td.nextElementSibling) {
             td.nextElementSibling.classList.add('hidden');
           }
-          els.form[key].value = form[key];
+          if (key == 'location' || key == 'startTime' || key == 'endTime') {
+            els.form[key].value = form[key];
+          }
           // if "Other" value, we need to put that value back into the select
           if (key == 'location' && els.form.location.value == "") {
             els.locationOtherOption.value = els.locationOtherOption.textContent = form[key];
@@ -118,56 +114,28 @@ function displayForm(form, archived) {
               break;
             default:
               td.parentNode.classList.add('hidden');
-              els.form[key].value = '';
           }
         }
-        break;
-      case 'id': // fallthrough
-      case 'bookingId': // fallthrough
-      case 'hash':
-        els.form[key].value = form[key];
         break;
     }
   }
 
   // copy form
-  app.cache.savedForm = Object.assign({}, form);
+  app.pages.form.savedForm = new Form(form);
 
-  // clear changes
+  // cleanup
   app.changes.clear();
-
-  // clear omnibox
   app.omnibox.clear();
 
-  // init update button
-  if (! form.id) {
-    els.updateFormButton.textContent = app.strings.updateButton.enabled;
-  } else {
-    els.updateFormButton.textContent = app.strings.updateButton.disabled;
-    els.updateFormButton.classList.remove('create');
-  }
+  // indicate where this form is in the current stack, e.g. "1/6"
+  const stack = app.pages.form.currentStack;
+  els.currentFormstackDisplay.textContent = (stack.getCurrentIndex() + 1) +
+    "/" + stack.getLength();
 
-  // indicate where this form is in the current `stack' (e.g. open or closed/archive)
-  els .currentFormstackDisplay.textContent = (app.cache.currentIndex + 1) +
-    "/" + app.cache[app.cache.currentFormstack].length;
-
-  // this was added to handle displaying closed forms
-  // @todo - should this be combined with the other update init section above?
-  if (archived) {
-    app.omnibox.element.setAttribute('disabled', true);
-    els.newNoteButton.setAttribute('disabled', true);
-    els.manualButton.setAttribute('disabled', true);
-    els.omniboxButton.setAttribute('disabled', true);
-    els.updateButtonHint.textContent = 'This is a closed form.  ' +
-      'You cannot edit it.';
-    els.copyButton.classList.remove('hidden');
+  if (stack === app.pages.archive.filteredStack) {
+    formPage.disable();
   } else {
-    app.omnibox.element.removeAttribute('disabled');
-    els.newNoteButton.removeAttribute('disabled');
-    els.manualButton.removeAttribute('disabled');
-    els.omniboxButton.removeAttribute('disabled');
-    els.updateButtonHint.textContent = '';
-    els.copyButton.classList.add('hidden');
+    formPage.enable();
   }
 
   app.spinner.element.classList.add('hidden');
@@ -185,7 +153,7 @@ function populateFormsTable(forms) {
   utility.DOM.empty(app.pages.openForms.elements.equipmentTableBody);
 
   // if there's no forms...
-  if (forms.length == 0) {
+  if (forms.getLength() == 0) {
     let cell = document.createElement('td'),
         row = document.createElement('tr');
     cell.textContent = 'No open forms';
@@ -260,20 +228,23 @@ function populateEquipmentOutList(item) {
 function populateItemList(item) {
   let checkInButton, checkIn;
   const noteRow = document.createElement('tr'),
-        notes = document.createElement('td');
-  if (! item.checkIn && ! item.serialized) {
+        notes = document.createElement('td'),
+        quantity = item.getQuantity();
+  if (! item.checkIn && ! item.isSerialized()) {
     const id = item.id ? item.id : item.barcode;
     checkInButton = `<button class="action"
                              value="checkInButton"
                              data-itemid="${id}">Check In</button>`;
-    if (item.quantity > 1) {
+    if (quantity > 1) {
       checkInButton += `<select data-itemid="${id}" class="selectQuantity">
         <option value="all">All</option>`;
-      for (let i = 1; i < item.quantity; ++i) {
+      for (let i = 1; i < quantity; ++i) {
         checkInButton += `<option>${i}</option>`;
       }
       checkInButton += `</select>`;
     }
+  } else if (! item.checkIn && item.isSerialized()) {
+    checkInButton = `<i>Scan barcode to return</i>`;
   }
   if (item.missing == true) {
     checkIn = `<span class="alert">ITEM IS MISSING</span>`;
@@ -281,12 +252,12 @@ function populateItemList(item) {
     checkIn = checkInButton || item.checkIn;
   }
   const itemRow = utility.DOM.makeTableRow(
-    'td', item.quantity, item.description,
+    'td', quantity, item.description,
     item.id, item.checkOut, checkIn
   );
   itemRow.setAttribute('data-id', item.id);
   itemRow.setAttribute('data-barcode', item.barcode);
-  if (! item.serialized) {
+  if (! item.isSerialized()) {
     itemRow.classList.add('nonserialized');
   } else {
     itemRow.classList.add('serialized');
@@ -305,18 +276,23 @@ function populateStudentList(student) {
   if (student.left){
     checkOut = `<span class="alert">DID NOT CHECK OUT</span>`;
   } else {
-    checkOut = student.checkOut;
+    checkOut = student.checkOut || `<i>Scan ID to sign out</i>`;
   }
-  app.pages.form.elements.studentList.appendChild(utility.DOM.makeTableRow(
+  const studentRow = utility.DOM.makeTableRow(
     'td', student.name, student.netId, student.checkIn, checkOut
-  ));
+  );
+  studentRow.setAttribute('data-netid', student.netId);
+  app.pages.form.elements.studentList.appendChild(studentRow);
 }
 
-function populateArchiveTable(forms) {
+/**
+ * @param {Stack} formStack
+ */
+function populateArchiveTable(formStack) {
   utility.DOM.empty(app.pages.archive.elements.tableBody);
 
   // if there's no forms...
-  if (forms.length == 0) {
+  if (formStack.getLength() == 0) {
     let cell = document.createElement('td'),
         row = document.createElement('tr');
     cell.textContent = 'No forms matched your search.';
@@ -329,17 +305,25 @@ function populateArchiveTable(forms) {
   }
 
   // else populate
-  forms.forEach(makeArchiveTableRows);
+  formStack.forEach(makeArchiveTableRows);
 }
 
 function makeArchiveTableRows(form) {
-  let hasItems = (form.items.length > 0) ? 'YES' : 'NO';
+  let hasItems = (form.items.getLength() > 0) ? "YES" : "NO";
   let row = utility.DOM.makeTableRow(
-    'td', app.strings.documentIcon, form.startTime, form.endTime,
-    form.location, form.bookingId, form.bookedStudents, form.contact,
-    form.project, form.tape, form.overnight,
-    (form.bookedStudents || form.students.map(student => student.name).join(', ')),
-    hasItems
+    'td',
+    app.strings.documentIcon,
+    form.startTime,
+    form.endTime,
+    form.location,
+    form.students.map(student => student.name).join(', '),
+    hasItems,
+    form.bookingId,
+    form.bookedStudents,
+    form.contact,
+    form.project,
+    form.tape? "YES" : "",
+    form.overnight? "YES" : ""
   );
   row.setAttribute('data-id', form.id);
   app.pages.archive.elements.tableBody.appendChild(row);

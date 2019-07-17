@@ -5,11 +5,12 @@
  * this is attached to google.script.run.withSuccessHandler
  */
 /* global
+Form
+Stack
 app
 displayForm
 populateFormsTable
 toast
-utility
 */
 
 /**
@@ -25,32 +26,30 @@ app.refresh = function(response, context) {
       } else { // remove spinner from query button
         app.pages.archive.elements.queryButton.innerHTML = 'Update View';
       }
-      app.cache.archive = JSON.parse(response.formList);
+      app.pages.archive.stack.importForms(JSON.parse(response.formList));
       app.pages.archive.query();
       break;
     case 'checkForms': {
-      const newForms = JSON.parse(response.formList);
+      let newForms = JSON.parse(response.formList);
       if (! newForms[0]) {
         break;
       }
+      newForms = new Stack(newForms);
       // determine current context, see app.pages.form.{show,hide}
       // for why timeoutId shows context
       if (context.timeoutId != app.pages.form.timeoutId ||
-          app.cache.currentFormstack == app.strings.formstack.archive) {
+          app.pages.form.currentStack === app.pages.archive.filteredStack) {
         break;
       }
-      utility.sortForms(newForms);
-      const staleForm = app.cache[app.cache.currentFormstack][app.cache.currentIndex];
-      const index = newForms.findIndex(form => form.id == staleForm.id);
-      if (index < 0) {
-        // new forms catch here
+      newForms.sortForms();
+      const staleForm = app.pages.form.currentStack.getCurrentForm();
+      const newForm = newForms.getByID(staleForm.id);
+      if (! newForm) { // must be a new form, nothing to do, abort
         break;
       }
-      const newForm = newForms[index];
       // are changes saved?
       if (app.changes.saved) {
-        app.cache.openForms = newForms;
-        app.cache.currentIndex = index;
+        app.pages.openForms.stack = newForms;
         app.doCommand("displayForm", newForm);
         app.pages.form.setTimeout();
       } else {
@@ -58,7 +57,7 @@ app.refresh = function(response, context) {
           // another instance has already updated this form; do not set timeout
           app.run.doPost({
             post: "rejected",
-            form: JSON.stringify(utility.makeForm())
+            form: staleForm.stringify(),
           });
           app.modal.handleError({
             target: "collision",
@@ -72,7 +71,7 @@ app.refresh = function(response, context) {
       break;
     }
     case 'codabar':
-      app.cache.students = JSON.parse(response.students);
+      app.roster = JSON.parse(response.students);
       app.modal.hide();
       app.pages.form.elements.updateFormButton.textContent = "Update";
       app.omnibox.parse();
@@ -84,17 +83,17 @@ app.refresh = function(response, context) {
       app.pages.form.elements.updateFormButton.textContent = "Update";
       break;
     case 'items':
-      app.cache.items = JSON.parse(response.items);
+      app.inventory.setItems(JSON.parse(response.items));
       break;
     case 'openForms':
       if (response.unlock) {
         app.elements.openFormsButton.removeAttribute('disabled');
       }
-      app.cache.currentFormstack = app.strings.formstack.openForms;
+      app.pages.form.currentStack = app.pages.openForms.stack;
       app.changes.saved = true;
-      app.cache.openForms = JSON.parse(response.formList);
-      utility.sortForms(app.cache.openForms);
-      populateFormsTable(app.cache.openForms);
+      app.pages.openForms.stack.importForms(JSON.parse(response.formList))
+        .sortForms();
+      populateFormsTable(app.pages.openForms.stack);
       app.spinner.off();
       app.showPage(app.pages.openForms);
       break;
@@ -102,14 +101,14 @@ app.refresh = function(response, context) {
       toast("The form you were editing was saved on the server.");
       break;
     case 'signature':
-      app.cache.students = JSON.parse(response.students);
+      app.roster = JSON.parse(response.students);
       app.omnibox.parse();
       break;
     case 'startSignature':
       app.modal.signatureReady();
       break;
     case 'students': // doCommand 'signatureRecheck' refreshes here
-      app.cache.students = JSON.parse(response.students);
+      app.roster = JSON.parse(response.students);
       if (response.unlock) {
         app.elements.newFormButton.removeAttribute('disabled');
       } else {
@@ -120,19 +119,10 @@ app.refresh = function(response, context) {
       app.changes.saved = true;
       app.pages.form.lockButtons(); // disables "update" until next change
       app.pages.form.unlock(); // allows editing of form
-      const updatedForm = JSON.parse(response.form);
-      const index = app.cache.openForms.findIndex(
-        (form) => (! form.id || form.id == updatedForm.id)
-      );
-      if (index > -1) {
-        app.cache.openForms[index] = updatedForm;
-      } else {
-        throw new Error("cannot find " + updatedForm.id + " in local forms");
-      }
-      populateFormsTable(app.cache.openForms); // this doesn't actually show the forms or change user's context
-      app.cache.currentIndex = app.cache.openForms.findIndex( // get updated index
-        (form) => (! form.id || form.id == updatedForm.id)
-      );
+      const updatedForm = new Form(JSON.parse(response.form));
+      app.pages.openForms.stack.replace(updatedForm);
+      populateFormsTable(app.pages.openForms.stack); // this doesn't actually show the forms or change user's context
+      app.pages.openForms.stack.updateIndex(updatedForm);
       displayForm(updatedForm);
       break;
     }

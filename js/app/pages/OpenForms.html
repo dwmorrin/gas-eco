@@ -1,5 +1,5 @@
 <script>
-/* global app populateFormsTable */
+/* global app populateFormsTable Stack */
 app.pages.openForms = {
   elements: {
     container:          document.querySelector('div.openFormsContainer'),
@@ -7,19 +7,16 @@ app.pages.openForms = {
     formsTableBody:     document.querySelector('tbody.open'),
     formsTableHead:     document.querySelector('thead.open'),
   },
+  getCurrentForm: function() {
+    return app.pages.openForms.stack.getCurrentForm();
+  },
   handleClickTable: function(click) {
-    let findForm = function(form) {
-      return form.id == click.target.parentNode.getAttribute('data-id');
-    };
-    const index = app.cache.openForms.findIndex(findForm);
-    if (index < 0) {
-      return;
-    }
-    app.cache.currentIndex = index;
-    app.doCommand('displayForm', app.cache.openForms[index], false);
+    const id = click.target.parentNode.getAttribute('data-id');
+    app.doCommand('displayForm', app.pages.openForms.stack.getByID(id));
   },
   handleClickTableHead: function(click) {
-    app.doCommand('sortForms', click.target.dataset.sort);
+    app.pages.openForms.stack.sortForms(click.target.dataset.sort);
+    populateFormsTable(app.pages.openForms.stack);
   },
   show: function() {
     app.pages.openForms.elements.container.classList.remove("hidden");
@@ -37,9 +34,8 @@ app.pages.openForms = {
   refreshId: NaN,
   setInterval: function() {
     // this client-side only interval is just for getting the forms to change color
-    app.pages.openForms.refreshId = window.setInterval(populateFormsTable, 60000, app.cache.openForms);
+    app.pages.openForms.refreshId = window.setInterval(populateFormsTable, 60000, app.pages.openForms.stack);
   },
-  sortBy: 'startTime',
-  sortDescending: false,
+  stack: new Stack(),
 };
 </script>

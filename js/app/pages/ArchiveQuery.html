@@ -7,77 +7,29 @@ app.pages.archive.filters = {
   byStudentName: form => {
     const inputs = app.pages.archive.elements.queryInputs;
     const studentQuery = inputs.students.value.toLowerCase().split(',');
-    studentQuery.forEach(utility.cleanStudent);
-    let found = studentQuery.find(queryArg => {
+    return studentQuery.every(nameLookingFor => {
+      nameLookingFor = nameLookingFor.toLowerCase().replace(/\s/g, '');
       return form.students.find(student => {
-        let name = student.name.toLowerCase().replace(/\s/g, '');
-        return (name.search(queryArg) > -1);
+        const name = student.name.toLowerCase().replace(/\s/g, '');
+        return name.includes(nameLookingFor);
       });
     });
-    if (! found) {
-      return false;
-    }
-    return true;
   },
   byMatchAllItemID: form => {
     const inputs = app.pages.archive.elements.queryInputs;
-    const itemQuery = inputs.items.value.toLowerCase().split(',');
-    const itemsOnForm = form.items.slice();
-    for (let i = 0; i < itemQuery.length; ++i) {
-      const queryId = utility.cleanItem(itemQuery[i]);
-      const index = itemsOnForm.findIndex(item => {
-        const itemId = item.id.toLowerCase().replace(/-0+/, '-');
-        const itemDesc = item.description.toLowerCase();
-        if (itemId.search(queryId) > -1   ||
-            itemDesc.search(itemQuery[i].trim()) > -1) {
-          return true;
-        }
-        return false;
-      });
-      if (index < 0) {
-        return false;
-      }
-      itemsOnForm.splice(index, 1);
-    }
-    return true;
+    const itemQuery = inputs.items.value.toUpperCase().split(',');
+    return itemQuery.every(form.items.contains);
   },
   byMatchAnyItemID: form => {
     const inputs = app.pages.archive.elements.queryInputs;
-    const itemQuery = inputs.items.value.toLowerCase().split(',');
-    const itemsOnForm = form.items.slice();
-    for (let i = 0; i < itemQuery.length; ++i) {
-      const queryId = utility.cleanItem(itemQuery[i]);
-      const index = itemsOnForm.findIndex(item => {
-        const itemId = item.id.toLowerCase().replace(/-0+/, '-');
-        const itemDesc = item.description.toLowerCase();
-        if (itemId.search(queryId) > -1   ||
-            itemDesc.search(itemQuery[i].trim()) > -1) {
-          return true;
-        }
-        return false;
-      });
-      if (index > -1) {
-        return true;
-      }
-      itemsOnForm.splice(index, 1);
-    }
-    return false;
+    const itemQuery = inputs.items.value.toUpperCase().split(',');
+    return itemQuery.some(form.items.contains);
   },
   byMissingItem: form => {
-    for (let item of form.items) {
-      if (item.missing) {
-        return true;
-      }
-    }
-    return false;
+    return form.items.some(item => item.missing);
   },
   byStudentLeft: form => {
-    for (let student of form.students) {
-      if (student.left) {
-        return true;
-      }
-    }
-    return false;
+    return form.students.some(student => student.left);
   },
   byHasManual: form => {
     for (let note of form.notes) {
@@ -172,8 +124,6 @@ app.pages.archive.filters = {
 };
 
 app.pages.archive.query = function() {
-  // forms:  use app.cache.archive
-  // inputs: use app.pages.archive.elements.queryInputs[input]
   const archiveElements = app.pages.archive.elements.container,
         inputs = app.pages.archive.elements.queryInputs,
         appliedFilters = [];
@@ -207,21 +157,15 @@ app.pages.archive.query = function() {
       appliedFilters.push(app.pages.archive.filters[checkboxes[i].name]);
     }
   }
-
-  app.cache.archiveFiltered = appliedFilters.reduce(
-    (forms, func) => forms.filter(func), app.cache.archive
+  app.pages.archive.filteredStack.setForms(appliedFilters.reduce(
+    (forms, func) => forms.filter(func), app.pages.archive.stack)
   );
 
-  if (app.cache.archiveFiltered.length == 1) {
-    app.pages.archive.elements
-      .queryCount.textContent = app.cache.archiveFiltered
-        .length + ' form';
-  } else {
-    app.pages.archive
-      .elements.queryCount.textContent = app.cache.archiveFiltered
-        .length + ' forms';
-  }
-  utility.sortForms(app.cache.archiveFiltered);
-  populateArchiveTable(app.cache.archiveFiltered);
+  const length = app.pages.archive.filteredStack.getLength();
+  app.pages.archive.elements.queryCount.textContent = length == 1 ?
+    `${length} form` :
+    `${length} forms`;
+  app.pages.archive.filteredStack.sortForms();
+  populateArchiveTable(app.pages.archive.filteredStack);
 };
 </script>
