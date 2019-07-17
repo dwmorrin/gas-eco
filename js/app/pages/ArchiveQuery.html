@@ -11,7 +11,7 @@ app.pages.archive.filters = {
       nameLookingFor = nameLookingFor.toLowerCase().replace(/\s/g, '');
       return form.students.find(student => {
         const name = student.name.toLowerCase().replace(/\s/g, '');
-        return nameLookingFor === name;
+        return name.includes(nameLookingFor);
       });
     });
   },

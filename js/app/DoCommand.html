@@ -190,7 +190,7 @@ app.doCommand = function(command,...options) {
       displayForm(app.pages.openForms.getCurrentForm());
       break;
     case 'saveNote': {
-      utility.saveNote();
+      app.pages.form.saveNote();
       break;
     }
     case 'saveManual': {
@@ -236,10 +236,7 @@ app.doCommand = function(command,...options) {
     case 'studentNote': {
       const value = utility.DOM.getRadioValue();
       const students = app.pages.openForms.getCurrentForm().students;
-      const student = students.find(s => s.id == app.modal.tmp.id);
-      if (! student) {
-        app.modal.handleError(new Error("oops... could not find student on form"));
-      }
+      const student = app.modal.tmp;
       if (value == 'left') {
         student.left = true;
         app.pages.form.handleChange({
@@ -251,19 +248,22 @@ app.doCommand = function(command,...options) {
         utility.DOM.empty(app.pages.form.elements.studentList);
         students.forEach(populateStudentList);
       } else if (value == "other") {
-        utility.saveNote(student.name + ": ");
+        app.pages.form.saveNote(student.name + ": ");
       }
       break;
     }
-    case 'updateForm':
+    case 'updateForm': {
       app.omnibox.parse();
       app.pages.form.lock();
       app.spinner.inside(app.pages.form.elements.updateFormButton);
+      const form = app.pages.openForms.getCurrentForm();
+      form.notes.push(app.changes.makeNote());
       app.run.doPost({
         post: 'updateForm',
-        form: app.pages.openForms.getCurrentForm().stringify(),
+        form: form.stringify(),
       });
       break;
+    }
     case 'undo':
       app.modal.handleUndo();
       break;

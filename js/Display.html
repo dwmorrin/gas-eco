@@ -123,42 +123,19 @@ function displayForm(form) {
   // copy form
   app.pages.form.savedForm = new Form(form);
 
-  // clear changes
+  // cleanup
   app.changes.clear();
-
-  // clear omnibox
   app.omnibox.clear();
-
-  // init update button
-  if (! form.id) {
-    els.updateFormButton.textContent = app.strings.updateButton.enabled;
-  } else {
-    els.updateFormButton.textContent = app.strings.updateButton.disabled;
-    els.updateFormButton.classList.remove('create');
-  }
 
   // indicate where this form is in the current stack, e.g. "1/6"
   const stack = app.pages.form.currentStack;
   els.currentFormstackDisplay.textContent = (stack.getCurrentIndex() + 1) +
     "/" + stack.getLength();
 
-  // this was added to handle displaying closed forms
-  // TODO should this be combined with the other update init section above?
   if (stack === app.pages.archive.filteredStack) {
-    app.omnibox.element.setAttribute('disabled', true);
-    els.newNoteButton.setAttribute('disabled', true);
-    els.manualButton.setAttribute('disabled', true);
-    els.omniboxButton.setAttribute('disabled', true);
-    els.updateButtonHint.textContent = 'This is a closed form.  ' +
-      'You cannot edit it.';
-    els.copyButton.classList.remove('hidden');
+    formPage.disable();
   } else {
-    app.omnibox.element.removeAttribute('disabled');
-    els.newNoteButton.removeAttribute('disabled');
-    els.manualButton.removeAttribute('disabled');
-    els.omniboxButton.removeAttribute('disabled');
-    els.updateButtonHint.textContent = '';
-    els.copyButton.classList.add('hidden');
+    formPage.enable();
   }
 
   app.spinner.element.classList.add('hidden');

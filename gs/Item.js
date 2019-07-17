@@ -14,6 +14,13 @@ function Item_(itemData) {
     throw new Error("Item_() needs to be called with new");
   }
 
+  /**
+   * quantity is only mutable for non-serialized items
+   *   must be a positive integer e.g. [1,inf)
+   * @private
+   */
+  var quantity = 1;
+
   // Initially created from String[] from Google Sheets
   if (Array.isArray(itemData)) {
     this.barcode = itemData[dataIndex.BARCODE];// {string}
@@ -39,24 +46,19 @@ function Item_(itemData) {
     this.description = itemData.description ? "" + itemData.description : "";
     this.notes = itemData.notes ? "" + itemData.notes : "";
     this.missing = Boolean(itemData.missing);
+    quantity = itemData.quantity;
   }
-  // private members
   /**
    * serialized identifies non-fungible items
    * an item is serialized if it has a barcode NOT in the range 10000-10100
    *
    * items with item IDs are sometimes non-serialized if they are manual entries
+   * @private
    */
   var serialized = Boolean(this.barcode) &&
     (+this.barcode < 10000 || +this.barcode > 10100);
 
   this.isSerialized = function() { return serialized; };
-
-  /**
-   * quantity is only mutable for non-serialized items
-   *   must be a positive integer e.g. [1,inf)
-   */
-  var quantity = 1;
 
   this.getQuantity = function() { return quantity; };
   this.changeQuantity = function(integer) {

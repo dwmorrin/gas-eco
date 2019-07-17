@@ -7,6 +7,15 @@ app.pages.form = {
       .doGet({ get: "checkForms" });
   },
   currentStack: null,
+  disable: function() {
+    app.omnibox.element.setAttribute('disabled', true);
+    this.elements.newNoteButton.setAttribute('disabled', true);
+    this.elements.manualButton.setAttribute('disabled', true);
+    this.elements.omniboxButton.setAttribute('disabled', true);
+    this.elements.updateButtonHint.textContent = 'This is a closed form.  ' +
+      'You cannot edit it.';
+    this.elements.copyButton.classList.remove('hidden');
+  },
   elements: {
     container:               document.querySelector('div.formContainer'),
     currentFormstackDisplay: document.querySelector('span.currentFormstackDisplay'),
@@ -26,6 +35,20 @@ app.pages.form = {
     updateFormButton:        document.querySelector('button[value="updateForm"]'),
     undoButton:              document.querySelector('button[value="undo"]'),
     copyButton:              document.querySelector('button[value="copyItems"]'),
+  },
+  enable: function() {
+    app.omnibox.element.removeAttribute('disabled');
+    this.elements.newNoteButton.removeAttribute('disabled');
+    this.elements.manualButton.removeAttribute('disabled');
+    this.elements.omniboxButton.removeAttribute('disabled');
+    this.elements.updateButtonHint.textContent = '';
+    this.elements.copyButton.classList.add('hidden');
+    if (app.pages.openForms.getCurrentForm().isBlank()) {
+      this.elements.updateFormButton.textContent = app.strings.updateButton.enabled.CREATE;
+    } else {
+      this.elements.updateFormButton.textContent = app.strings.updateButton.disabled;
+      this.elements.updateFormButton.classList.remove('create');
+    }
   },
   getNext: function() {
     const form = app.pages.form.currentStack.getNext();
@@ -90,14 +113,14 @@ app.pages.form = {
 
     app.changes.saved = false;
     app.pages.form.elements.undoButton.removeAttribute('disabled');
-    if (! app.pages.form.elements.form.id) {
-      app.pages.form.elements.updateFormButton.textContent = "Submit";
+    const form = app.pages.openForms.getCurrentForm();
+    if (form.isBlank()) {
+      app.pages.form.elements.updateFormButton.textContent = app.strings.updateButton.enabled.CREATE;
     } else {
-      app.pages.form.elements.updateFormButton.textContent = "Update";
+      app.pages.form.elements.updateFormButton.textContent = app.strings.updateButton.enabled.UPDATE;
     }
     app.pages.form.elements.updateFormButton.classList.add('create');
 
-    const form = app.pages.openForms.getCurrentForm();
     if (form.isReadyToPost()) {
       // are we ready to close?
       if (form.isReadyToClose()) {
@@ -318,6 +341,38 @@ app.pages.form = {
     els.locationOtherOption.value = els.locationOtherOption.textContent = "Other";
   },
   savedForm: new Form({}),
+  saveNote: function(prefix = "") {
+    const input = app.modal.getText();
+    if (input.length < 1) {
+      return;
+    }
+    const form = app.pages.openForms.getCurrentForm();
+    const note = {
+      timestamp: Date.now(),
+      author: app.elements.usernameDisplay.textContent,
+      body: prefix + input,
+    };
+    let shortNotes = note.body;
+    if (shortNotes.length > 10) {
+      shortNotes = shortNotes.slice(0, 10) + "...";
+    }
+    const change = {
+      target: {
+        name: 'notes',
+        value: shortNotes
+      }
+    };
+    const p = document.createElement('p');
+    p.textContent = 'Note: ' + '[' + note.author + '] ' + note.body;
+
+    form.notes.push(note);
+    this.handleChange(change);
+
+    this.elements.noteSection.appendChild(p);
+    if (this.elements.noteSection.classList.contains('hidden')) {
+      this.elements.noteSection.classList.remove('hidden');
+    }
+  },
   setTimeout: function() {
     // do not set this when viewing the archive stack
     if (app.pages.form.currentStack === app.pages.openForms.stack) {

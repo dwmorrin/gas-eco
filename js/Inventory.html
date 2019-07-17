@@ -3,11 +3,16 @@
 /* exported Inventory */
 /**
  * Inventory wraps an array with specialized functions
+ * warning: array methods like slice() and filter() return Item[], not Inventory
+ * warning: array methods return Item[] with **references** to Items, not copies
+ * To copy items, pass the returns
  */
 function Inventory(array) {
   let items = [];
   this.setItems = function(array) {
-    if (! Array.isArray(array)) {
+    if ((array instanceof Inventory) || Array.isArray(array)) {
+      array = array.slice();
+    } else {
       throw new Error(`${array} (${typeof array}) is not an array`);
     }
     items = array;
@@ -18,7 +23,7 @@ function Inventory(array) {
     }
   };
   if (array) {
-    this.setItems(array.slice());
+    this.setItems(array);
   }
 
   // getLength exposes the array length
@@ -31,9 +36,6 @@ function Inventory(array) {
   this.forEach = function(func) {
     items.forEach(func);
   };
-  /**
-   * @returns Item[] - NOT Inventory!
-   */
   this.filter = function(func) {
     return items.filter(func);
   };
@@ -43,17 +45,10 @@ function Inventory(array) {
   this.push = function(item) {
     items.push(item);
   };
-  /**
-   * non-mutating wrapper for reverse
-   * returns a copy (slice) of the private variable
-   */
+  // reverse calls slice first to prevent changing internal order of items
   this.reverse = function() {
     return items.slice().reverse();
   };
-  /**
-   * TODO confirm we want to return Item[] and not new Inventory!
-   *      users may expect to get a copy of an Inventory, not a downgraded array
-   */
   this.slice = function() {
     return items.slice();
   };

@@ -1,6 +1,9 @@
 <script>
 /* global Inventory */
 /* exported Form */
+/**
+ * @param {obj} - passing in an existing form makes a copy of that form
+ */
 function Form({
   bookedStudents = null,
   bookingId = null,
@@ -8,8 +11,8 @@ function Form({
   endTime = null,
   id = null,
   location = null,
-  project = null,
   overnight = null,
+  project = null,
   startTime = null,
   tape = null,
   hash = null,
@@ -30,9 +33,16 @@ function Form({
   this.tape = tape;
   this.hash = hash;
   this.notes = notes.slice();
+  if (this.notes.length > 0) { // copy
+    this.notes.forEach((value, index, array) => {
+      if (typeof value == "object") {
+        array[index] = Object.assign({}, value);
+      }
+    });
+  }
   this.students = students.slice();
-  if (students.length > 0) { // copy
-    students.forEach((value, index, array) => {
+  if (this.students.length > 0) { // copy
+    this.students.forEach((value, index, array) => {
       array[index] = Object.assign({}, value);
     });
   }

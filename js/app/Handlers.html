@@ -63,10 +63,11 @@ app.handlers = {
         if (/(previous|next)Form/.test(click.target.value)) {
           displayForm(app.pages.openForms.getCurrentForm());
           return;
-        } else {
+        } else if (click.target.value === "revert") {
           app.doCommand("displayNewForm");
+          return;
         }
-      } else {
+      } else { // we were editing an active form; kill it
         app.pages.openForms.stack.replaceCurrent(new Form(app.pages.form.savedForm));
       }
     }

@@ -204,45 +204,4 @@ utility.date.zeropad = function(x) {
     return x;
   }
 };
-
-/**
- * @param {string} [prefix] - optional prefix to note
- *   usage: undefined for global notes, "John Doe: " for student
- */
-utility.saveNote = function(prefix) {
-  if (! prefix) {
-    prefix = "";
-  }
-  const input = app.modal.getText();
-  if (input.length < 1) {
-    return;
-  }
-  const notes = JSON.parse(app.pages.form.elements.form.notes.value);
-  const note = {
-    timestamp: Date.now(),
-    author: app.elements.usernameDisplay.textContent,
-    body: prefix + input,
-  };
-  let shortNotes = note.body;
-  if (shortNotes.length > 10) {
-    shortNotes = shortNotes.slice(0, 10) + "...";
-  }
-  const change = {
-    target: {
-      name: 'notes',
-      value: shortNotes
-    }
-  };
-  const p = document.createElement('p');
-  p.textContent = 'Note: ' + '[' + note.author + '] ' + note.body;
-
-  notes.push(note);
-  app.pages.form.elements.form.notes.value = JSON.stringify(notes);
-  app.pages.form.handleChange(change);
-
-  app.pages.form.elements.noteSection.appendChild(p);
-  if (app.pages.form.elements.noteSection.classList.contains('hidden')) {
-    app.pages.form.elements.noteSection.classList.remove('hidden');
-  }
-};
 </script>
