@@ -1,6 +1,7 @@
 <script>
 /* global Form app displayForm utility toast */
 app.pages.form = {
+  autosaveID: NaN,
   checkForms: function() {
     app.run
       .withUserObject({ timeoutId: app.pages.form.timeoutId })
@@ -121,7 +122,16 @@ app.pages.form = {
     }
     app.pages.form.elements.updateFormButton.classList.add('create');
 
+    // clear the old autosave, if it exists
+    if (! window.isNaN(app.pages.form.autosaveID)) {
+      window.clearTimeout(app.pages.form.autosaveID);
+      app.pages.form.autosaveID = NaN;
+    }
     if (form.isReadyToPost()) {
+      // automatically try to save in 60 seconds
+      app.pages.form.autosaveID = window.setTimeout(() => {
+        app.doCommand("updateForm");
+      }, 60000);
       // are we ready to close?
       if (form.isReadyToClose()) {
         app.pages.form.elements.updateFormButton.textContent = 'Update and Close';
@@ -310,10 +320,14 @@ app.pages.form = {
   },
   hide: function() {
     app.pages.form.elements.container.classList.add("hidden");
-    if (! isNaN(app.pages.form.timeoutId)) {
+    if (! window.isNaN(app.pages.form.timeoutId)) {
       window.clearTimeout(app.pages.form.timeoutId);
+      app.pages.form.timeoutId = NaN;
     }
-    app.pages.form.timeoutId = NaN;
+    if (! window.isNaN(app.pages.form.autosaveID)) {
+      window.clearTimeout(app.pages.form.autosaveID);
+      app.pages.form.autosaveID = NaN;
+    }
     app.pages.form.unlock();
   },
   isLocked: function() {
@@ -381,7 +395,7 @@ app.pages.form = {
   },
   show: function() {
     app.pages.form.elements.container.classList.remove("hidden");
-    if (isNaN(app.pages.form.timeoutId)) {
+    if (window.isNaN(app.pages.form.timeoutId)) {
       app.pages.form.setTimeout();
     }
     if (! app.modal.isShowing()) {
