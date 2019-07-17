@@ -20,7 +20,7 @@ function Form({
   notes = [],
   students = []
 }) {
-  this.items = new Inventory(items);
+  this.items = new Inventory().setItems(items);
   this.bookedStudents = bookedStudents;
   this.bookingId = bookingId;
   this.contact = contact;
@@ -73,19 +73,6 @@ Form.prototype.hasStudent = function(student) {
  * isBlank determines if a form is a new, blank form (could be called `isNew`)
  */
 Form.prototype.isBlank = function() { return this.id === null; };
-Form.prototype.isNoShow = function() {
-  if (! this.id) {
-    return false; // we are only looking at booked forms
-  }
-  const gracePeriod = 15; // minutes
-  const start = new Date(this.startTime),
-        now = Date.now();
-  start.setMinutes(start.getMinutes() + gracePeriod);
-  if (now > start.getTime() && ! this.students.some(s => s.checkIn)) {
-    return true;
-  }
-  return false;
-};
 Form.prototype.isReadyToClose = function() {
   // Need at least 1 check-in, and everyone checked-in must be checked-out
   return this.students.some(student => student.checkIn) && this.students.every(

@@ -5,26 +5,26 @@
  * Inventory wraps an array with specialized functions
  * warning: array methods like slice() and filter() return Item[], not Inventory
  * warning: array methods return Item[] with **references** to Items, not copies
- * To copy items, pass the returns
+ * To copy an inventory: copy = new Inventory().setItems(oldInventory.slice())
  */
-function Inventory(array) {
+function Inventory() {
   let items = [];
   this.setItems = function(array) {
-    if ((array instanceof Inventory) || Array.isArray(array)) {
-      array = array.slice();
-    } else {
+    if (! array) {
+      return this;
+    }
+    if (! (array instanceof Inventory) && ! Array.isArray(array)) {
       throw new Error(`${array} (${typeof array}) is not an array`);
     }
-    items = array;
-    if (! (items[0] instanceof Item)) {
-      items.forEach(function (obj, index, array) {
-        array[index] = new Item(obj);
-      });
-    }
+    items = array.slice();
+    items.forEach(function (obj, index, array) {
+      if (obj instanceof Item) {
+        obj.quantity = obj.getQuantity();
+      }
+      array[index] = new Item(obj);
+    });
+    return this;
   };
-  if (array) {
-    this.setItems(array);
-  }
 
   // getLength exposes the array length
   this.getLength = function() { return items.length; };

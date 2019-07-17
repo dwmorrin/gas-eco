@@ -14,7 +14,7 @@
 app.doCommand = function(command,...options) {
   switch (command) {
     case 'archivedForms': {
-      if (!app.changes.saved) {
+      if (! app.changes.saved) {
         app.modal.handleUnsavedForm(command);
         return;
       }
@@ -37,11 +37,9 @@ app.doCommand = function(command,...options) {
         ));
         break;
       }
-      let quantityToReturn;
-      if (savedItem.quantity > 1) {
-        const quantityInput = document.querySelector(`select[data-itemid="${itemID}"]`);
-        quantityToReturn = quantityInput.value;
-      }
+      const quantityToReturn = savedItem.getQuantity() > 1 ?
+        document.querySelector(`select[data-itemid="${itemID}"]`).value :
+        undefined;
       app.omnibox.handleItem(savedItem, quantityToReturn);
       break;
     }
@@ -108,11 +106,7 @@ app.doCommand = function(command,...options) {
           return;
         }
         change.target.value = `${item.description} added note: ${note}`;
-        if (! item.notes) {
-          item.notes = note;
-        } else {
-          item.notes += `, ${note}`;
-        }
+        item.notes = item.notes ? item.notes + `, ${note}` : note;
       } else if (value == "missing") {
         item.missing = true;
         change.target.value = `${item.description} marked as missing`;
@@ -137,7 +131,7 @@ app.doCommand = function(command,...options) {
       const savedItem = app.pages.form.savedForm.items.find(
         i => i.description == item.description
       );
-      if (savedItem && quantity < savedItem.quantity) {
+      if (savedItem && quantity < savedItem.getQuantity()) {
         app.modal.handleError(
           new Error(quantity + " is less than the previous quantity " +
             savedItem.quantity + ". You can only enter a larger amount " +
