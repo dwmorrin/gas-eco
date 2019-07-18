@@ -119,7 +119,6 @@ app.doCommand = function(command,...options) {
     case 'itemQuantity': {
       const quantity = +app.modal.getInput();
       const items = app.pages.openForms.getCurrentForm().items;
-      // note: we shouldn't be here unless item is not serialized, thus description is unique
       const item = app.modal.tmp;
       const itemchange = {
         target: {
@@ -151,6 +150,25 @@ app.doCommand = function(command,...options) {
       items.reverse().forEach(populateItemList);
       // Fake change event
       itemchange.target.value += ' to ' + quantity;
+      app.pages.form.handleChange(itemchange);
+      break;
+    }
+    case 'itemQuantityPlusOne': {
+      const form = app.pages.openForms.getCurrentForm();
+      const item = form.items.getByItem(options[0]);
+      const quantity = item.getQuantity();
+      const itemchange = {
+        target: {
+          name: 'items',
+          value: item.description + ' qty ' + quantity,
+        }
+      };
+      item.changeQuantity(1);
+      // Update display
+      utility.DOM.empty(app.pages.form.elements.itemList);
+      form.items.reverse().forEach(populateItemList);
+      // Fake change event
+      itemchange.target.value += ' to ' + (quantity + 1);
       app.pages.form.handleChange(itemchange);
       break;
     }

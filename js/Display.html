@@ -251,8 +251,11 @@ function populateItemList(item) {
   } else {
     checkIn = checkInButton || item.checkIn;
   }
+  const quantityCell = item.isSerialized() ? quantity :
+    `<button class="quantity" value="itemQuantityChange">${quantity}</button>
+     <button class="quantity" value="itemQuantityPlusOne">+</button>`;
   const itemRow = utility.DOM.makeTableRow(
-    'td', quantity, item.description,
+    'td', quantityCell, item.description,
     item.id, item.checkOut, checkIn
   );
   itemRow.setAttribute('data-id', item.id);

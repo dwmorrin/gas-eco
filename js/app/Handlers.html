@@ -29,17 +29,73 @@ app.handlers = {
         app.pages.form.isLocked() &&
         ! app.modal.isShowing()) {
       event.stopPropagation();
+      return true;
     }
+    return false;
   },
 
   /**
    * @see js/app/DoCommand
-   * clickButton usually routes user actions to js.app.doCommand, sometimes
+   * click routes user actions, usually to js.app.doCommand, sometimes
    *   with some additional filitering/modifying here
    */
-  clickButton: function(click) {
-    if (click.target.tagName != 'BUTTON') {
+  click: function(click) {
+    if (app.handlers.checkLock(click)) {
       return;
+    }
+    if (click.target.tagName === 'BUTTON') {
+      app.handlers.button(click);
+      return;
+    }
+    if (/^T[DH]$/.test(click.target.tagName)) {
+      app.handlers.table(click);
+      return;
+    }
+  },
+  table: function(click) {
+    const containsClass = (element, className) => {
+      if (element.classList && element.classList.contains(className)) {
+        return true;
+      }
+    };
+    const path = click.composedPath();
+    if (path.find(el => containsClass(el, "openFormsContainer"))) {
+      if (click.target.tagName === 'TD') {
+        app.pages.openForms.handleClickTable(click);
+        return;
+      }
+      if (click.target.tagName === 'TH') {
+        app.pages.openForms.handleClickTableHead(click);
+        return;
+      }
+    }
+    if (path.find(el => containsClass(el, "itemList"))) {
+      app.pages.form.handleClickItem(click);
+      return;
+    }
+    if (path.find(el => containsClass(el, "studentList"))) {
+      app.pages.form.handleClickStudent(click);
+      return;
+    }
+    if (path.find(el => containsClass(el, "staticFields"))) {
+      app.pages.form.handleClickStaticTable(click);
+      return;
+    }
+    if (path.find(el => containsClass(el, "archive"))) {
+      if (click.target.tagName === 'TD') {
+        app.pages.archive.handleClickTable(click);
+        return;
+      }
+      if (click.target.tagName === 'TH') {
+        app.pages.archive.handleClickTableHead(click);
+        return;
+      }
+    }
+  },
+  button: function(click) {    
+    if (click.target.classList.contains("modalok") ||
+        click.target.classList.contains("modalcancel")) {
+      app.modal.hide();
     }
 
     if (click.target.value == "checkInButton") {
@@ -47,8 +103,17 @@ app.handlers = {
       return;
     }
 
-    if (click.target.dataset.itemid) {
-      app.omnibox.element.value = click.target.dataset.itemid;
+    if (click.target.value == "itemQuantityChange") {
+      const data = click.target.parentNode.parentNode.dataset;
+      app.modal.handleQuantityChange(app.pages.openForms.getCurrentForm()
+        .items.getByItem(data));
+      return;
+    }
+
+    if (click.target.value == "itemQuantityPlusOne") {
+      const data = click.target.parentNode.parentNode.dataset;
+      app.doCommand("itemQuantityPlusOne", data);
+      return;
     }
 
     if (click.target.value.slice(0,9) == 'loseData_') {
@@ -74,6 +139,9 @@ app.handlers = {
     app.doCommand(click.target.value);
   },
   keydown: function(keydown) {
+    if (app.handlers.checkLock(keydown)) {
+      return;
+    }
     // Allow esc to safely exit error messages
     if (keydown.key == 'Escape') {
       if (app.modal.isShowing()) {
@@ -90,6 +158,14 @@ app.handlers = {
         app.doCommand('updateForm');
         return;
       }
+    }
+
+    if (keydown.key === 'Enter' && app.modal.isShowing()) {
+      app.modal.handleKeydown(keydown.key);
+    }
+
+    if (keydown.target === app.omnibox.element) {
+      app.omnibox.handleKeydown(keydown);
     }
   },
   unload: function() {

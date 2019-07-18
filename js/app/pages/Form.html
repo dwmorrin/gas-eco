@@ -44,12 +44,7 @@ app.pages.form = {
     this.elements.omniboxButton.removeAttribute('disabled');
     this.elements.updateButtonHint.textContent = '';
     this.elements.copyButton.classList.add('hidden');
-    if (app.pages.openForms.getCurrentForm().isBlank()) {
-      this.elements.updateFormButton.textContent = app.strings.updateButton.enabled.CREATE;
-    } else {
-      this.elements.updateFormButton.textContent = app.strings.updateButton.disabled;
-      this.elements.updateFormButton.classList.remove('create');
-    }
+    this.refreshUpdateButton();
   },
   getNext: function() {
     const form = app.pages.form.currentStack.getNext();
@@ -220,8 +215,13 @@ app.pages.form = {
     if (app.pages.form.currentStack === app.pages.archive.filteredStack) {
       return;
     }
-    if (click.target != click.target.parentNode.firstChild ||
-        click.target.classList.contains('itemnotes')) {
+    const data = click.target.parentNode.dataset;
+    if (click.metaKey) {
+      app.omnibox.element.value = data.id || data.barcode;
+      app.omnibox.parse();
+      return;
+    }
+    if (click.target.classList.contains('itemnotes')) {
       const itemRow = (click.target.classList.contains('itemnotes'))
         ? click.target.parentNode.previousSibling
         : click.target.parentNode;
@@ -236,23 +236,20 @@ app.pages.form = {
         );
       }
       app.modal.handleItemNote(item);
+      return;
+    }
+    if (click.target === click.target.parentNode.firstChild) { // should be quantity
+      // handle quantity changes
+      const item = app.pages.openForms.getCurrentForm().items.getByBarcode(data.barcode);
+      app.modal.handleQuantityChange(item);
+      return;
     }
   },
-  handleClickTable: function(click) {
+  handleClickStaticTable: function(click) {
     if (app.pages.form.currentStack === app.pages.archive.filteredStack) {
       return;
     }
-    if (click.target.classList.contains('itemnotes')) {
-      return;
-    }
     if (click.target.tagName != 'TD') {
-      return;
-    }
-    if (click.target.parentNode.firstChild == click.target) { // should be quantity
-      // handle quantity changes
-      const barcode = click.target.parentNode.dataset.barcode;
-      const item = app.pages.openForms.getCurrentForm().items.getByBarcode(barcode);
-      app.modal.handleQuantityChange(item);
       return;
     }
     if (click.target.classList.contains('editable')) {
@@ -286,28 +283,17 @@ app.pages.form = {
         inputCell.classList.remove('hidden');
       }
     }
-    // cmd clicks only from here on
-    if (! click.metaKey) {
-      return;
-    }
-    let cells = click.target.parentNode.getElementsByTagName('td');
-    let index = 1, // assumes id in the 2nd cell for 'studentList'
-        id;
-    if (click.target.parentNode.parentNode.classList.contains('itemList')) {
-      index = 2; // assumes id in the 3rd cell
-    }
-    id = cells[index].textContent;
-    app.omnibox.element.value = id;
-    app.omnibox.parse();
   },
   handleClickStudent: function(click) {
     if (app.pages.form.currentStack === app.pages.archive.filteredStack) {
       return;
     }
+    const netId = click.target.parentNode.dataset.netid;
     if (click.metaKey) {
+      app.omnibox.element.value = netId;
+      app.omnibox.parse();
       return;
     }
-    const netId = click.target.parentNode.dataset.netid;
     const students = app.pages.openForms.getCurrentForm().students;
     const student = students.find(s => s.netId == netId);
     if (!student) {
@@ -348,6 +334,14 @@ app.pages.form = {
     app.pages.form.elements.undoButton.setAttribute('disabled', true);
     app.pages.form.elements.updateButtonHint.textContent = '';
     app.pages.form.elements.updateFormButton.setAttribute('disabled', true);
+  },
+  refreshUpdateButton: function() {
+    if (app.pages.openForms.getCurrentForm().isBlank()) {
+      this.elements.updateFormButton.textContent = app.strings.updateButton.enabled.CREATE;
+    } else {
+      this.elements.updateFormButton.textContent = app.strings.updateButton.disabled;
+      this.elements.updateFormButton.classList.remove('create');
+    }
   },
   resetLocation: function() {
     const els = app.pages.form.elements;
@@ -394,13 +388,14 @@ app.pages.form = {
     }
   },
   show: function() {
-    app.pages.form.elements.container.classList.remove("hidden");
-    if (window.isNaN(app.pages.form.timeoutId)) {
-      app.pages.form.setTimeout();
+    if (window.isNaN(this.timeoutId)) {
+      this.setTimeout();
     }
     if (! app.modal.isShowing()) {
       app.omnibox.element.focus();
     }
+    this.refreshUpdateButton();
+    this.elements.container.classList.remove("hidden");
   },
   timeoutId: NaN,
   unlock: function() {
