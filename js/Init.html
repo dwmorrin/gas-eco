@@ -26,8 +26,8 @@ app.pages.form.elements.focusGuardBottom.addEventListener(
 );
 // GLOBAL
 window.addEventListener('beforeunload', app.handlers.beforeunload);
-window.addEventListener('click', app.handlers.click, {capture: true});
-window.addEventListener('keydown', app.handlers.keydown, {capture: true});
+window.addEventListener('click', app.handlers.click);
+window.addEventListener('keydown', app.handlers.keydown);
 
 /** Display init - anything to do with what the user sees immediately */
 app.modal.hide(); // make sure everything is hidden that is supposed to be
@@ -44,10 +44,10 @@ app.run = app.withErrorHandler.withSuccessHandler(
 );
 
 /** Server calls - the initial server calls that happen automatically */
-app.run.doGet({ get: 'openForms', init: true }); // displays open forms
-app.run.doGet({ get: 'user' });                  // displays username
-app.run.doGet({ get: 'students',  init: true }); // gets the student info cache
-app.run.doGet({ get: 'items' });                 // gets the item info cache
+app.run.doGet({get: 'openForms', init: true}); // displays open forms
+app.run.doGet({get: 'user'});                  // displays username
+app.run.doGet({get: 'students',  init: true}); // gets the student info cache
+app.run.doGet({get: 'items'});                 // gets the item info cache
 app.run.doGet({
   get: 'archive',
   dateRangeJSON: app.pages.archive.getDateRangeAsJSON(),
