@@ -13,6 +13,16 @@
 */
 app.doCommand = function(command,...options) {
   switch (command) {
+    case 'ambiguousCheckIn': {
+      app.modal.hide();
+      app.omnibox.handleItem(app.modal.tmp, "all", false);
+      break;
+    }
+    case 'ambiguousCheckOut': {
+      app.modal.hide();
+      app.modal.handleQuantityChange(app.modal.tmp);
+      break;
+    }
     case 'archivedForms': {
       if (! app.changes.saved) {
         app.modal.handleUnsavedForm(command);
@@ -40,7 +50,7 @@ app.doCommand = function(command,...options) {
       const quantityToReturn = savedItem.getQuantity() > 1 ?
         document.querySelector(`select[data-itemid="${itemID}"]`).value :
         undefined;
-      app.omnibox.handleItem(savedItem, quantityToReturn);
+      app.omnibox.handleItem(savedItem, quantityToReturn, false);
       break;
     }
     case 'codabar': {
@@ -199,6 +209,10 @@ app.doCommand = function(command,...options) {
       app.pages.archive.query();
       break;
     case 'revert':
+      if (! window.isNaN(app.pages.form.autosaveID)) {
+        window.clearTimeout(app.pages.form.autosaveID);
+        app.pages.form.autosaveID = NaN;
+      }
       displayForm(app.pages.openForms.getCurrentForm());
       break;
     case 'saveNote': {
