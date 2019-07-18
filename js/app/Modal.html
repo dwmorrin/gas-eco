@@ -289,6 +289,13 @@ app.modal = {
     m.textarea.focus();
   },
 
+  handleKeydown: function(key) {
+    if (key == 'Enter') {
+      this.hide();
+      app.doCommand(this.ok.value);
+    }
+  },
+
   handleQuantityChange: function(item) {
     if (! item || item.isSerialized()) {
       return;
