@@ -11,7 +11,7 @@ app.omnibox = {
     app.omnibox.element.value = '';
   },
   element: document.querySelector('input.omnibox'),
-  handleItem: function(item, quantityToReturn) {
+  handleItem: function(item, quantityToReturn, ambiguous = true) {
     const form = app.pages.openForms.getCurrentForm();
     const itemOnForm = form.items.find(i => {
       if (item.id && i.id == item.id) {
@@ -45,11 +45,11 @@ app.omnibox = {
           new Error(itemOnForm.description + ' was already checked back in.')
         );
         // special case: delete manual item barcode; confusing to user otherwise
-        if (app.omnibox.element.value == app.strings.manualItemBarcode) {
-          app.omnibox.clear();
+        if (this.element.value == app.strings.manualItemBarcode) {
+          this.clear();
           return;
         }
-        app.omnibox.element.classList.add('error');
+        this.element.classList.add('error');
         window.setTimeout(
           () => app.omnibox.element.classList.remove('error'), 2000
         );
@@ -57,7 +57,7 @@ app.omnibox = {
       } else if (itemOnForm.checkOut) { // Its a check-in
         const savedItem = app.pages.form.savedForm.items.getByItem(item);
         if (! savedItem || ! savedItem.checkOut) {
-          app.omnibox.clear();
+          this.clear();
           if (! item.isSerialized()) {
             app.modal.handleQuantityChange(item);
             return;
@@ -66,6 +66,11 @@ app.omnibox = {
             new Error(
               `${item.description} was just checked-out. Update or revert the form to continue.`
             ));
+          return;
+        }
+        if (! item.isSerialized() && ambiguous) {
+          this.clear();
+          app.modal.handleAmbiguousItemAction(itemOnForm);
           return;
         }
         itemOnForm.checkIn = utility.date.getFormattedDate(new Date());
@@ -166,14 +171,14 @@ app.omnibox = {
    *   and passes the value to the correct handler or shows the user an error.
    */
   parse: function() {
-    let value = app.omnibox.element.value;
+    let value = this.element.value;
 
     if (! value) { // nothing was entered, abort
       return;
     }
     
     if (/^\s*\[\s*{\s*"/.test(value)) { // JSON array of objects: "[{}]"
-      JSON.parse(value).forEach(app.omnibox.handleItem);
+      JSON.parse(value).forEach(this.handleItem);
       return;
     }
 
@@ -186,12 +191,11 @@ app.omnibox = {
         student => student.id.toLowerCase() == value
       );
       if (parsed) {
-        app.omnibox.handleStudent(parsed);
-        return;
-      } else {
-        app.omnibox.handleNewCodabar(value);
+        this.handleStudent(parsed);
         return;
       }
+      this.handleNewCodabar(value);
+      return;
     }
 
     const idType = /^[a-z]+[0-9]+/.test(value) ? 'netId' : 'name'; // Check student name and id
@@ -199,8 +203,8 @@ app.omnibox = {
       student => student[idType].toLowerCase() == value
     );
     if (parsed) {
-      app.modal.manualEntryAlert(app.omnibox.element.value);
-      app.omnibox.handleStudent(parsed);
+      app.modal.manualEntryAlert(this.element.value);
+      this.handleStudent(parsed);
       return;
     }
 
@@ -213,24 +217,24 @@ app.omnibox = {
           item => item.id.toLowerCase().replace(/-0+/, '-') == value
         );
       } else {
-        app.modal.manualEntryAlert(app.omnibox.element.value);
+        app.modal.manualEntryAlert(this.element.value);
       }
     } else if (barcoderegex.test(value)) { // assume it's a barcode
       if (value == app.strings.manualItemBarcode) {
-        app.omnibox.clear();
+        this.clear();
         app.doCommand("newManual");
         return;
       }
       parsed = app.inventory.getByBarcode(value);
     }
     if (parsed) {
-      app.omnibox.handleItem(new Item(parsed));
+      this.handleItem(new Item(parsed));
       return;
     }
 
     // end of checks; if still in the function then show the user an error
     app.modal.handleError(new Error(value + ' ' + app.strings.parserError));
-    app.omnibox.clear();
+    this.clear();
   },
 };
 </script>

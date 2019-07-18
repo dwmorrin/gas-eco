@@ -129,6 +129,10 @@ app.handlers = {
           displayForm(app.pages.openForms.getCurrentForm());
           return;
         } else if (click.target.value === "revert") {
+          if (! window.isNaN(app.pages.form.autosaveID)) {
+            window.clearTimeout(app.pages.form.autosaveID);
+            app.pages.form.autosaveID = NaN;
+          }
           app.doCommand("displayNewForm");
           return;
         }

@@ -221,29 +221,20 @@ app.pages.form = {
       app.omnibox.parse();
       return;
     }
-    if (click.target.classList.contains('itemnotes')) {
-      const itemRow = (click.target.classList.contains('itemnotes'))
-        ? click.target.parentNode.previousSibling
-        : click.target.parentNode;
-      const form = app.pages.openForms.getCurrentForm();
-      const key = itemRow.dataset.id === '' ? "barcode" : "id";
-      const item = itemRow.dataset.id === '' ?
-        form.items.getByBarcode(itemRow.dataset.barcode) :
-        form.items.getById(itemRow.dataset.id);
-      if (! item) {
-        app.modal.handleError(
-          new Error('cannot take note for ' + itemRow.dataset[key])
-        );
-      }
-      app.modal.handleItemNote(item);
-      return;
+    const itemRow = (click.target.classList.contains('itemnotes'))
+      ? click.target.parentNode.previousSibling
+      : click.target.parentNode;
+    const form = app.pages.openForms.getCurrentForm();
+    const key = itemRow.dataset.id === '' ? "barcode" : "id";
+    const item = itemRow.dataset.id === '' ?
+      form.items.getByBarcode(itemRow.dataset.barcode) :
+      form.items.getById(itemRow.dataset.id);
+    if (! item) {
+      app.modal.handleError(
+        new Error('cannot take note for ' + itemRow.dataset[key])
+      );
     }
-    if (click.target === click.target.parentNode.firstChild) { // should be quantity
-      // handle quantity changes
-      const item = app.pages.openForms.getCurrentForm().items.getByBarcode(data.barcode);
-      app.modal.handleQuantityChange(item);
-      return;
-    }
+    app.modal.handleItemNote(item);
   },
   handleClickStaticTable: function(click) {
     if (app.pages.form.currentStack === app.pages.archive.filteredStack) {

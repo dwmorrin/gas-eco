@@ -17,6 +17,11 @@ app.modal = {
   tmp: undefined, // stores strings (although not restricted to strings only, usually some key needed if user selects 'ok'
 
   strings: {
+    ambiguous: {
+      heading: "Check in or out?",
+      body:    "",
+      ok:      "",
+    },
     changes: {
       heading: "Change Log",
       body:    "",
@@ -201,6 +206,27 @@ app.modal = {
     let value = inputElement.value.trim();
     inputElement.value = '';
     return value;
+  },
+
+  handleAmbiguousItemAction: function(item) {
+    this.tmp = item;
+    this.setStrings("ambiguous");
+    this.blurAllTextInputs();
+    this.body.textContent = 'Item: ' + item.description;
+    utility.DOM.empty(this.table);
+    this.table.appendChild(
+      utility.DOM.makeTableRow(
+        'td', "Check the item back in?",
+        `<button value="ambiguousCheckIn">Check In</button>`
+      )
+    );
+    this.table.appendChild(
+      utility.DOM.makeTableRow(
+        'td', "Check out more of these",
+        `<button value="ambiguousCheckOut">Check Out</button>`
+      )
+    );
+    this.show(this.container, this.table);
   },
 
   /**
