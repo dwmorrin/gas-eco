@@ -143,6 +143,17 @@ function displayForm(form) {
 
 }
 
+function displaySortedBy(stack, tableHead) {
+  const headers = tableHead.querySelectorAll("th"),
+        sortDirection = stack.sortDescending ? "descending" : "ascending";
+  for (let i = 0; i < headers.length; ++i) {
+    headers[i].classList.remove("sortedBy", "ascending", "descending");
+    if (headers[i].dataset.sort === stack.sortBy) {
+      headers[i].classList.add("sortedBy", sortDirection);
+    }
+  }
+}
+
 /**
  * This is a procedure to display to the user a compact list of the open forms
  * @param {object []} forms - an array of Forms
@@ -151,6 +162,9 @@ function displayForm(form) {
 function populateFormsTable(forms) {
   utility.DOM.empty(app.pages.openForms.elements.formsTableBody);
   utility.DOM.empty(app.pages.openForms.elements.equipmentTableBody);
+
+  // highlight the column currently sorted by
+  displaySortedBy(forms, app.pages.openForms.elements.formsTableHead);
 
   // if there's no forms...
   if (forms.getLength() == 0) {
@@ -293,6 +307,8 @@ function populateStudentList(student) {
  */
 function populateArchiveTable(formStack) {
   utility.DOM.empty(app.pages.archive.elements.tableBody);
+
+  displaySortedBy(formStack, app.pages.archive.elements.tableHead);
 
   // if there's no forms...
   if (formStack.getLength() == 0) {
