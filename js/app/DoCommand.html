@@ -247,7 +247,7 @@ app.doCommand = function(command,...options) {
                 value :otherLocation
               }
             };
-      if (otherLocation.length < 1){
+      if (otherLocation === "") {
         app.modal.getLocation();
         break;
       }
