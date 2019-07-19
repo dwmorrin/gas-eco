@@ -85,6 +85,9 @@ app.refresh = function(response, context) {
     case 'items':
       app.inventory.setItems(JSON.parse(response.items));
       break;
+    case 'invalid':
+      app.modal.handleError(response);
+      break;
     case 'openForms':
       if (response.unlock) {
         app.elements.openFormsButton.removeAttribute('disabled');
