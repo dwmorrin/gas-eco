@@ -127,7 +127,7 @@ function createBookingForm_(booking) {
       index.students.SHEET_NAME,
       index.students.NAME
     );
-    students.push(makeStudentFromData_(data));
+    students.push(new Student_(data));
   });
 
   // handle booking items -> form items
@@ -193,7 +193,7 @@ function getAllStudents_() {
   data.shift();
   var students = [];
   data.forEach(function getArrayOfStudents(studentData) {
-    students.push(makeStudentFromData_(studentData));
+    students.push(new Student_(studentData));
   });
   return students;
 }
@@ -265,22 +265,6 @@ function getSheetDataById_(value, sheetId, sheetName, idIndex) {
     );
   }
   return sheetData;
-}
-
-/* ********* MAKERS *********** */
-function makeStudentFromData_(studentData) {
-  var student = new Student_(studentData[index.students.ID]),
-      signature = false;
-
-  if (studentData[index.students.SIGNATURE]) {
-    signature = true;
-  }
-
-  student.setName(studentData[index.students.NAME])
-    .setNetId(studentData[index.students.NETID])
-    .setSignatureOnFile(signature)
-    .setContact(studentData[index.students.CONTACT]);
-  return student;
 }
 
 /* ********* WRITERS *********** */
