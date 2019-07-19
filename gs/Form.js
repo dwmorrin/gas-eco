@@ -1,4 +1,4 @@
-/* global ErrorFormDataInvalid_ Inventory_ utility */
+/* global ErrorFormDataInvalid_ ErrorFormInvalid_ Inventory_ utility */
 /* exported Form_ */
 function Form_(form) {
   var dataIndex = {
@@ -59,6 +59,7 @@ function Form_(form) {
     this.students = form.students || []; // []Student
   }
 }
+
 Form_.prototype.createId = function() {
   this.id = "" + Date.now();
   return this.id;
@@ -119,20 +120,6 @@ Form_.prototype.isCheckOutStudentOk = function() {
   return this.hasActiveStudent() || this.isAllGearReturned();
 };
 
-Form_.prototype.isReadyToClose = function() {
-  if (! this.isCheckOutStudentOk) {
-    return false;
-  }
-  var checkedIn = function(student) { return student.checkIn; };
-  var checkedOutOrLeft = function(student) {
-    if (student.checkIn) {
-      return student.checkOut || student.left;
-    }
-    return true;
-  }; 
-  return this.students.some(checkedIn) && this.students.every(checkedOutOrLeft);
-};
-
 Form_.prototype.isNoShow = function() {
   if (! this.id) {
     return false;
@@ -150,6 +137,20 @@ Form_.prototype.isNoShow = function() {
   return false;
 };
 
+Form_.prototype.isReadyToClose = function() {
+  if (! this.isCheckOutStudentOk) {
+    return false;
+  }
+  var checkedIn = function(student) { return student.checkIn; };
+  var checkedOutOrLeft = function(student) {
+    if (student.checkIn) {
+      return student.checkOut || student.left;
+    }
+    return true;
+  }; 
+  return this.students.some(checkedIn) && this.students.every(checkedOutOrLeft);
+};
+
 Form_.prototype.isThereAnActiveStudent = function() {
   var activeStudents = this.students.reduce(function(count, student) {
     if (student.checkIn && ! (student.checkOut || student.left)) {
@@ -158,4 +159,23 @@ Form_.prototype.isThereAnActiveStudent = function() {
     return count;
   }, 0);
   return activeStudents > 1;
+};
+
+Form_.prototype.validate = function() {
+  //if (form.items) {
+  //  use @param inventory to verify items
+  //
+  var required = [
+    {label: "start time", value: this.startTime},
+    {label: "end time", value: this.endTime},
+    {label: "location", value: this.location},
+    {label: "students", value: this.students}
+  ];
+  var test = function (field) {
+    if (field.value.length < 1) {
+      throw new ErrorFormInvalid_("Invalid " + field.label + ": " + field.value);
+    }
+    return true;
+  };
+  required.every(test);
 };

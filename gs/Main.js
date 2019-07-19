@@ -114,13 +114,13 @@ function doPost(request) {
     case 'updateForm':
       var form = new Form_(JSON.parse(request.form));
       try {
-        isValidForm_(form);
+        form.validate(); // throws ErrorFormInvalid_
         if (form.isReadyToClose() || form.isNoShow()) {
-          writeFormToSheet_(form, true);
+          writeFormToSheet_(form, true); // throws ErrorFormCollision_
           request.post = 'openForms';
           response.formList = getOpenForms_().stringify();
         } else {
-          response.form = writeFormToSheet_(form).stringify();
+          response.form = writeFormToSheet_(form).stringify(); // throws ErrorFormCollision_
         }
       } catch (error) {
         if (error instanceof ErrorFormCollision_) {
@@ -182,30 +182,6 @@ function handleUnload_() {
 /* exported include_ */
 function include_(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
-}
-
-/**
- * Form validation
- * @see doPost
- * TODO reactivate checkItems_
- */
-function isValidForm_(form) {
-  //if (form.items) {
-  //  checkItems_(form);
-  //}
-  var required = [
-    {label: "start time", value: form.startTime},
-    {label: "end time", value: form.endTime},
-    {label: "location", value: form.location},
-    {label: "students", value: form.students}
-  ];
-  var test = function (field) {
-    if (field.value.length < 1) {
-      throw new ErrorFormInvalid_("Invalid " + field.label + ": " + field.value);
-    }
-    return true;
-  };
-  required.every(test);
 }
 
 var utility = { date: {}, hash: {} };
