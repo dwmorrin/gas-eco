@@ -333,6 +333,16 @@ td.itemnotes > input {
   width: 100%;
 }
 
+th.sortedBy:after {
+  content: "\2193";
+  display: inline-block;
+  margin-left: 3px;
+}
+
+th.sortedBy.descending:after {
+  transform: scale(-1);
+}
+
 tr.inactive td:not(:first-child) {
   font-style: italic;
 }
