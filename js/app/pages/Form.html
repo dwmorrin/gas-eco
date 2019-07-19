@@ -125,6 +125,10 @@ app.pages.form = {
     if (form.isReadyToPost()) {
       // automatically try to save in 60 seconds
       app.pages.form.autosaveID = window.setTimeout(() => {
+        // recheck form is still valid
+        if (! app.pages.openForms.getCurrentForm().isReadyToPost()) {
+          return;
+        }
         app.doCommand("updateForm");
       }, 60000);
       // are we ready to close?

@@ -1,17 +1,18 @@
 /* global
+ErrorFormCollision_
+ErrorFormInvalid_
 Form_
-checkItemsGAS_
-clearSignatureValidationGAS_
-createDailyBookingFormsGAS_
-getAllItemsGAS_
-getAllStudentsGAS_
-getArchivedFormsGAS_
-getOpenFormsGAS_
+clearSignatureValidation_
+createDailyBookingForms_
+getAllItems_
+getAllStudents_
+getArchivedForms_
+getOpenForms_
 startSignature_
-writeCodabarGAS_
-writeFormToSheetGAS_
-writeRejectedFormToSheetGAS_
-writeSignatureToSheetGAS_
+writeCodabar_
+writeFormToSheet_
+writeRejectedFormToSheet_
+writeSignatureToSheet_
 */
 
 /**
@@ -21,16 +22,9 @@ writeSignatureToSheetGAS_
  */
 /* exported createDailyForms_ */
 function createDailyForms_() {
-  createDailyBookingFormsGAS_();
+  createDailyBookingForms_();
 }
 
-/**
- * @see doPost
- * @todo - I'd rather see this under postForm_ than parallel to it
- */
-function closeForm_(form) {
-  return writeFormToSheetGAS_(isValidForm_(form), true);
-}
 
 /**
  * Runs on HTTP GET request.
@@ -53,20 +47,20 @@ function doGet(request) {
 
   switch (request.get) {
     case 'archive':
-      response.formList = getArchive_(request.dateRangeJSON);
+      response.formList = getArchivedForms_(request.dateRangeJSON).stringify();
       break;
     case 'items':
-      response.items = getAllItems_();
+      response.items = getAllItems_().stringify();
       break;
     case 'students':
-      response.students = getAllStudents_();
+      response.students = JSON.stringify(getAllStudents_());
       break;
     case 'user':
       response.user = getUser_();
       break;
     case 'checkForms': // fallthrough
     case 'openForms':
-      response.formList = getOpenForms_();
+      response.formList = getOpenForms_().stringify();
       break;
   }
 
@@ -101,18 +95,18 @@ function doPost(request) {
   // to update wasn't already updated by someone else.
   switch (request.post) {
     case 'codabar':
-      postCodabar_(request);
-      response.students = getAllStudents_();
+      writeCodabar_(request.netId, request.codabar);
+      response.students = JSON.stringify(getAllStudents_());
       break;
     case 'rejected':
-      writeRejectedFormToSheetGAS_(new Form_(request.form));
+      writeRejectedFormToSheet_(new Form_(request.form));
       break;
     case 'signature':
-      postSignature_(request);
-      response.students = getAllStudents_();
+      writeSignatureToSheet_(request);
+      response.students = JSON.stringify(getAllStudents_());
       break;
     case 'signatureTimeout':
-      clearSignatureValidationGAS_();
+      clearSignatureValidation_();
       break;
     case 'startSignature':
       startSignature_(request.netid);
@@ -120,22 +114,31 @@ function doPost(request) {
     case 'updateForm':
       var form = new Form_(JSON.parse(request.form));
       try {
-        if (isFormReadyToClose_(form) || isNoShow_(form)) {
-          closeForm_(form);
+        form.validate(); // throws ErrorFormInvalid_
+        if (form.isReadyToClose() || form.isNoShow()) {
+          writeFormToSheet_(form, true); // throws ErrorFormCollision_
           request.post = 'openForms';
-          response.formList = getOpenForms_();
+          response.formList = getOpenForms_().stringify();
         } else {
-          response.form = postForm_(form).stringify();
+          response.form = writeFormToSheet_(form).stringify(); // throws ErrorFormCollision_
         }
       } catch (error) {
-        if (/^form collision/i.test(error.message)) {
-          writeRejectedFormToSheetGAS_(form);
+        if (error instanceof ErrorFormCollision_) {
+          writeRejectedFormToSheet_(form);
           lock.releaseLock();
           response.target = "collision";
-          response.storedForm = error.ECO_storedForm; // already JSON stringed
-          response.submittedForm = error.ECO_submittedForm;
+          response.storedForm = JSON.stringify(error.saved);
+          response.submittedForm = JSON.stringify(error.submitted);
+          return response;
+        } else if (error instanceof ErrorFormInvalid_) {
+          writeRejectedFormToSheet_(form);
+          lock.releaseLock();
+          response.target = "invalid";
+          response.form = form;
+          response.message = error.message;
           return response;
         } else {
+          lock.releaseLock();
           throw error;
         }
       }
@@ -157,25 +160,6 @@ function deleteForm_() {
 }
 
 /** @see doGet */
-function getAllItems_() {
-  return getAllItemsGAS_().stringify();
-}
-
-/** @see doGet */
-function getAllStudents_() {
-  return JSON.stringify(getAllStudentsGAS_());
-}
-
-function getArchive_(dateRangeJSON) {
-  return JSON.stringify(getArchivedFormsGAS_(dateRangeJSON));
-}
-
-/** @see doGet */
-function getOpenForms_() {
-  return JSON.stringify(getOpenFormsGAS_());
-}
-
-/** @see doGet */
 function getUser_() {
   return Session.getActiveUser().getEmail();
 }
@@ -187,7 +171,7 @@ function getUser_() {
  */
 function handleUnload_() {
   // clear signature validation
-  clearSignatureValidationGAS_();
+  clearSignatureValidation_();
   return;
 }
 
@@ -198,130 +182,6 @@ function handleUnload_() {
 /* exported include_ */
 function include_(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
-}
-
-function isAllGearReturned_(form) {
-  return form.items.every(function(item) {
-    if (item.checkOut) {
-      return item.checkIn || item.missing;
-    }
-    return true;
-  });
-}
-
-/**
- * Form validation
- * @see doPost
- */
-function isCheckOutStudentOk_(form) {
-  // is there another student still on the form? If not, is all gear returned?
-  return isThereAnActiveStudent_(form) || isAllGearReturned_(form);
-}
-
-/**
- * Form validation
- * @see doPost
- */
-function isFormReadyToClose_(form) {
-  if (! isCheckOutStudentOk_(form)) {
-    return false;
-  }
-  return form.students.some(
-    function(student) { return student.checkIn; }
-  ) && form.students.every(
-    function(student) {
-      if (student.checkIn) {
-        return student.checkOut || student.left;
-      }
-      return true;
-    }
-  );
-}
-
-/**
- * @see doPost
- * check if the form has no students checked-in after the grace period
- */
-function isNoShow_(form) {
-  if (! form.id) {
-    return false;
-  }
-  var gracePeriod = 30, // minutes
-      start = new Date(form.startTime),
-      now   = Date.now();
-
-  var checkedIn = function(student) { return student.checkIn; };
-
-  start.setMinutes(start.getMinutes() + gracePeriod);
-
-  if (now > start.getTime() && ! form.students.some(checkedIn)) {
-    return true;
-  } else {
-    return false;
-  }
-}
-
-/**
- * check if the end time has past but students have not checked out
- */
-/* exported isMissingStudentCheckout_ */
-function isMissingStudentCheckout_(form) {
-  var isCheckedOut = function(student) {
-    if (student.checkIn) {
-      return student.checkOut;
-    } else {
-      return true; // never checked-in
-    }
-  };
-  var end = new Date(form.endTime);
-  if (Date.now() > end.getTime() && ! form.students.every(isCheckedOut)) {
-    return true;
-  } else {
-    return false;
-  }
-}
-
-/**
- * counts number of students, returns true for 2 or more active students
- */
-function isThereAnActiveStudent_(form) {
-  var activeStudents = form.students.reduce(function(count, student) {
-    if (student.checkIn && !(student.checkOut || student.left)) {
-      return count + 0;
-    } else {
-      return count;
-    }
-  }, 0);
-  return activeStudents > 1;
-}
-
-/**
- * Form validation
- * @see doPost
- */
-function isValidForm_(form) {
-  if (form.items) {
-    form = checkItemsGAS_(form);
-  }
-  return form;
-}
-
-/**
- * @param {obj} request - .netId{string}, .codabar{string}
- */
-function postCodabar_(request) {
-  writeCodabarGAS_(request.netId, request.codabar);
-}
-
-/** @see doPost */
-function postForm_(form) {
-  form = isValidForm_(form);
-  return writeFormToSheetGAS_(form);
-}
-
-// //run.doPost({ post: 'signature', dataURL: dataURL, id: studentId });
-function postSignature_(request) {
-  return writeSignatureToSheetGAS_(request);
 }
 
 var utility = { date: {}, hash: {} };
