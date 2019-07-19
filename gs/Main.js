@@ -193,11 +193,15 @@ function isValidForm_(form) {
   //if (form.items) {
   //  checkItems_(form);
   //}
-  var labels = ["start time", "end time", "location", "students"];
-  var required = [form.startTime, form.endTime, form.location, form.students];
-  var test = function (field, index) {
-    if (field.length < 1) {
-      throw new ErrorFormInvalid_("Invalid " + labels[index] + ": " + field);
+  var required = [
+    {label: "start time", value: form.startTime},
+    {label: "end time", value: form.endTime},
+    {label: "location", value: form.location},
+    {label: "students", value: form.students}
+  ];
+  var test = function (field) {
+    if (field.value.length < 1) {
+      throw new ErrorFormInvalid_("Invalid " + field.label + ": " + field.value);
     }
     return true;
   };
