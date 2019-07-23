@@ -68,7 +68,8 @@ function Item({
   function isPositiveInteger(integer) {
     return ! isNaN(integer) &&
       Math.floor(integer) === integer &&
-      Math.abs(integer) === integer;
+      Math.abs(integer) === integer &&
+      integer > 0;
   }
 }
 /**
