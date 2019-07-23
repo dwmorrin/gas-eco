@@ -18,6 +18,9 @@ app.pages.openForms = {
     app.pages.openForms.stack.sortForms(click.target.dataset.sort);
     populateFormsTable(app.pages.openForms.stack);
   },
+  isShowing: function () {
+    return ! this.elements.container.classList.contains("hidden");
+  },
   show: function() {
     app.pages.openForms.elements.container.classList.remove("hidden");
     if (isNaN(app.pages.openForms.refreshId)) {

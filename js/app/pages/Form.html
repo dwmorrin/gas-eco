@@ -319,7 +319,7 @@ app.pages.form = {
    * @returns {bool}
    */
   isShowing: function () {
-    return ! app.pages.form.elements.container.classList.contains("hidden");
+    return ! this.elements.container.classList.contains("hidden");
   },
   lock: function() {
     app.pages.form.locked = true;

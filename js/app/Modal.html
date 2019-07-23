@@ -40,6 +40,11 @@ app.modal = {
                "has been saved.  To keep viewing your form, choose \"Close\".",
       ok:      "Switch to the saved form"
     },
+    error: {
+      heading: "Error",
+      body:    "an error has occured",
+      ok:      "ok",
+    },
     init: { // as defined in html/Modal.html
       heading: "Attention",
       body:    "choose an option to exit",
@@ -49,11 +54,6 @@ app.modal = {
       heading: "Change Quantity",
       body:    "Enter the new quantity:",
       ok:      "Set Quantity",
-    },
-    error: {
-      heading: "Error",
-      body:    "an error has occured",
-      ok:      "ok",
     },
     itemNote: {
       heading: "Add notes to item",
@@ -76,10 +76,9 @@ app.modal = {
       body:    "Describe the item: (provide as much detail as possible)",
       ok:      "Check Out",
     },
-    manualEntryAlert: {
-      heading: "Use scanner if you can",
-      body:    /* value */ " appears to have been something you typed at the " +
-               "keyboard. Use the barcode scanner for student IDs and items.",
+    query: {
+      heading: "Search results",
+      body:    "Are you looking for one of these?",
       ok:      "",
     },
     signatureReady: {
@@ -337,6 +336,22 @@ app.modal = {
     m.input.focus();
   },
 
+  handleQuery: function(queryResults) {
+    this.setStrings("query");
+    utility.DOM.empty(this.table);
+    for (const result of queryResults) {
+      const display = result.value.name || result.value.description;
+      const id = result.value.netId || result.value.id || result.value.barcode;
+      if (id === "") {
+        continue;
+      }
+      const row = utility.DOM.makeTableRow('td', display, id);
+      row.setAttribute("data-id", id);
+      this.table.appendChild(row);
+    }
+    this.show(this.container, this.table);
+  },
+
   /** using the table as a form container, along with the textarea for open ended input */
   handleStudentNote: function(student) {
     const m = app.modal,
@@ -407,20 +422,6 @@ app.modal = {
     if (app.pages.form.isShowing()) {
       app.omnibox.element.focus();
     }
-  },
-
-  manualEntryAlert: function(entry) {
-    app.pages.form.handleChange({
-      target: {
-        name: "manual",
-        value: entry
-      }
-    });
-    app.modal.blurAllTextInputs();
-    app.modal.setStrings("manualEntryAlert");
-    app.modal.body.textContent = "\"" + entry + "\"" +
-      app.modal.body.textContent;
-    app.modal.show(app.modal.container);
   },
   
   setStrings: function(key) {

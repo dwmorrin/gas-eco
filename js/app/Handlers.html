@@ -59,6 +59,12 @@ app.handlers = {
       }
     };
     const path = click.composedPath();
+    if (path.find(el => containsClass(el, "modal"))) {
+      app.modal.hide();
+      app.omnibox.element.value = click.target.parentNode.dataset.id;
+      app.omnibox.parse();
+      return;
+    }
     if (path.find(el => containsClass(el, "openFormsContainer"))) {
       if (click.target.tagName === 'TD') {
         app.pages.openForms.handleClickTable(click);

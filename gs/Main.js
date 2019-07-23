@@ -86,9 +86,12 @@ function doPost(request) {
   try {
     lock.waitLock(10000);
   } catch (lockError) {
-    // throwing will let whatever withErrorHandler is attached to handle this
-    // the user should get some kind of "please try again" message
-    throw lockError;
+    // eslint-disable-next-line no-console
+    console.error(lockError);
+    throw new Error(
+      "Whoops, the database is unavailable at the moment. " +
+      "You may have to refresh the browser."
+    );
   }
   // we have the lock
   // we must check that there is no collision first, i.e. that thing we are trying
