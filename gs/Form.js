@@ -162,9 +162,19 @@ Form_.prototype.isThereAnActiveStudent = function() {
 };
 
 Form_.prototype.validate = function() {
-  //if (form.items) {
-  //  use @param inventory to verify items
-  //
+  if (this.items) {
+    // TODO validate with the actual inventory
+    this.items.forEach(function(item) {
+      var requestingCheckout = item.checkOut && ! item.checkIn && ! item.checkedOut;
+      if (requestingCheckout) {
+        item.checkedOut = true;
+      }
+      var requestingCheckIn = item.checkIn && item.checkedOut;
+      if (requestingCheckIn) {
+        item.checkedOut = false;
+      }
+    });
+  } 
   var required = [
     {label: "start time", value: this.startTime},
     {label: "end time", value: this.endTime},
