@@ -88,7 +88,9 @@ Item.prototype.archive = function() {
  * @returns DOM node (either element node or text node)
  */
 Item.prototype.makeCheckInButton = function(isArchive) {
-  if (! this.checkOut) {
+  // this.checkedOutAgain is a special guard only applied
+  // by the app.doCommand case "checkOutAgain"
+  if (this.checkedOutAgain) {
     return document.createTextNode("");
   }
   if (this.missing) {
@@ -99,6 +101,15 @@ Item.prototype.makeCheckInButton = function(isArchive) {
   }
   if (isArchive || this.checkIn) {
     return document.createTextNode(this.checkIn);
+  }
+  if (! this.checkOut || ! this.checkedOut) {
+    const removeButton = document.createElement("button");
+    removeButton.classList.add("create");
+    removeButton.setAttribute("value", "removeItem");
+    removeButton.setAttribute("data-id", this.id);
+    removeButton.setAttribute("data-barcode", this.barcode);
+    removeButton.textContent = "Remove";
+    return removeButton;
   }
   if (! this.checkIn && this.isSerialized()) {
     const checkInHint = document.createElement("i");
@@ -143,7 +154,7 @@ Item.prototype.makeCheckInButton = function(isArchive) {
  * @returns DOM node (either element node or text node)
  */
 Item.prototype.makeQuantityButtons = function(isArchive) {
-  if (isArchive || this.isSerialized()) {
+  if (isArchive || this.checkIn || this.isSerialized()) {
     return document.createTextNode(this.getQuantity());
   }
   const qtyButton = document.createElement("button"),

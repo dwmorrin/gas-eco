@@ -104,6 +104,18 @@ function Inventory() {
     });
     return copy;
   };
+  this.removeByItem = function({barcode, id}) {
+    const index = items.findIndex(item => {
+      if (item.id && item.id == id) {
+        return true;
+      }
+      if (item.barcode && item.barcode == barcode) {
+        return true;
+      }
+      return false;
+    });
+    return items.splice(index, 1)[0];
+  };
   this.archive = function() {
     const copy = [];
     items.forEach(item => copy.push(item.archive()));
