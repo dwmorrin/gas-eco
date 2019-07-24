@@ -70,11 +70,15 @@ utility.DOM.makeRadio = function(name, ...values) {
   return radio;
 };
 
-utility.DOM.makeTableRow = function(tagName, ...strings) {
+utility.DOM.makeTableRow = function(tagName, ...contents) {
   const cells = [];
-  for (let i = 0, l = strings.length; i < l ; i++) {
+  for (let i = 0, l = contents.length; i < l ; i++) {
     cells.push(document.createElement(tagName));
-    cells[i].innerHTML = strings[i];
+    if (typeof contents[i] === "string") {
+      cells[i].innerHTML = contents[i];
+    } else if (typeof contents[i] === "object") {
+      cells[i].appendChild(contents[i]);
+    }
   }
   const row = document.createElement('tr');
   while(cells.length) {

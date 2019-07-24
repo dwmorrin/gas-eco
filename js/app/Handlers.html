@@ -104,14 +104,14 @@ app.handlers = {
     }
 
     if (click.target.value == "itemQuantityChange") {
-      const data = click.target.parentNode.parentNode.dataset;
+      const data = click.target.parentNode.dataset;
       app.modal.handleQuantityChange(app.pages.openForms.getCurrentForm()
         .items.getByItem(data));
       return;
     }
 
     if (click.target.value == "itemQuantityPlusOne") {
-      const data = click.target.parentNode.parentNode.dataset;
+      const data = click.target.parentNode.dataset;
       app.doCommand("itemQuantityPlusOne", data);
       return;
     }

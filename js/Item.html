@@ -81,4 +81,84 @@ Item.prototype.archive = function() {
   obj.quantity = this.getQuantity();
   return obj;
 };
+
+/**
+ * makeCheckInButton determines what to display in the "Checked In" column
+ * @param {bool} isArchive - get different results for open vs closed forms
+ * @returns DOM node (either element node or text node)
+ */
+Item.prototype.makeCheckInButton = function(isArchive) {
+  if (! this.checkOut) {
+    return document.createTextNode("");
+  }
+  if (this.missing) {
+    const missing = document.createElement("span");
+    missing.classList.add("alert");
+    missing.textContent = "ITEM IS MISSING";
+    return missing;
+  }
+  if (isArchive || this.checkIn) {
+    return document.createTextNode(this.checkIn);
+  }
+  if (! this.checkIn && this.isSerialized()) {
+    const checkInHint = document.createElement("i");
+    checkInHint.textContent = "Scan barcode to return";
+    return checkInHint;
+  }
+  const id = this.id || this.barcode;
+  const checkInButton = document.createElement("button");
+  checkInButton.classList.add("action");
+  checkInButton.setAttribute("value", "checkInButton");
+  checkInButton.setAttribute("data-itemid", id);
+  checkInButton.textContent = "Check In";
+  const quantity = this.getQuantity();
+  const quantitySelect = quantity > 1 ? document.createElement("select") : null;
+  if (quantitySelect !== null) {
+    quantitySelect.classList.add("selectQuantity");
+    quantitySelect.setAttribute("data-itemid", id);
+    const option = document.createElement("option");
+    option.setAttribute("value", "all");
+    option.textContent = "All";
+    quantitySelect.appendChild(option);
+    for (let i = 1; i < quantity; ++i) {
+      const option = document.createElement("option");
+      option.textContent = i;
+      quantitySelect.appendChild(option);
+    }
+  }
+  if (quantitySelect) {
+    const container = document.createElement("span");
+    container.appendChild(checkInButton);
+    container.appendChild(quantitySelect);
+    container.setAttribute("data-id", this.id);
+    container.setAttribute("data-barcode", this.barcode);
+    return container;
+  }
+  return checkInButton;
+};
+
+/**
+ * makeQuantityButtons determines what to display in the "Qty" column
+ * @param {bool} isArchive - get different results for open vs closed forms
+ * @returns DOM node (either element node or text node)
+ */
+Item.prototype.makeQuantityButtons = function(isArchive) {
+  if (isArchive || this.isSerialized()) {
+    return document.createTextNode(this.getQuantity());
+  }
+  const qtyButton = document.createElement("button"),
+        qtyPlus = document.createElement("button");
+  qtyButton.classList.add("quantity");
+  qtyPlus.classList.add("quantity");
+  qtyButton.setAttribute("value", "itemQuantityChange");
+  qtyPlus.setAttribute("value", "itemQuantityPlusOne");
+  qtyButton.textContent = this.getQuantity();
+  qtyPlus.textContent = "+";
+  const container = document.createElement("span");
+  container.appendChild(qtyButton);
+  container.appendChild(qtyPlus);
+  container.setAttribute("data-id", this.id);
+  container.setAttribute("data-barcode", this.barcode);
+  return container;
+};
 </script>
