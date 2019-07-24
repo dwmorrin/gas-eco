@@ -40,23 +40,19 @@ app.omnibox = {
       itemOnForm.changeQuantity(-quantityToReturn);
       change.target.value = `returned ${quantityToReturn} ${change.target.value}`;
     } else {
+      const savedItem = app.pages.form.savedForm.items.getByItem(item);
       if (itemOnForm.checkOut && itemOnForm.checkIn) { // checkout again?
-        app.modal.handleError(
-          new Error(itemOnForm.description + ' was already checked back in.')
-        );
-        // special case: delete manual item barcode; confusing to user otherwise
-        if (this.element.value == app.strings.manualItemBarcode) {
-          this.clear();
+        this.clear();
+        if (! savedItem.checkIn) {
+          app.modal.handleError(new Error(`${itemOnForm.description} ` +
+            `was just checked-in.  Update or revert to check-out again.`)
+          );
           return;
         }
-        this.element.classList.add('error');
-        window.setTimeout(
-          () => app.omnibox.element.classList.remove('error'), 2000
-        );
+        app.modal.handleCheckOutAgain(itemOnForm);
         return;
       } else if (itemOnForm.checkOut) { // Its a check-in
-        const savedItem = app.pages.form.savedForm.items.getByItem(item);
-        if (! savedItem || ! savedItem.checkOut) {
+        if (! savedItem || ! savedItem.checkOut || itemOnForm.checkedOutAgain) {
           this.clear();
           if (! item.isSerialized()) {
             app.modal.handleQuantityChange(item);

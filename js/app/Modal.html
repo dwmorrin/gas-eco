@@ -27,6 +27,11 @@ app.modal = {
       body:    "",
       ok:      "",
     },
+    checkOutAgain: {
+      heading: "Check out again?",
+      body:    " was already checked back in.",
+      ok:      "Check out again",
+    },
     codabar: {
       heading: "ID not recognized",
       body:    "If you scanned an ID, add it to the student's info by " +
@@ -226,6 +231,14 @@ app.modal = {
       )
     );
     this.show(this.container, this.table);
+  },
+
+  handleCheckOutAgain: function(item) {
+    this.setStrings("checkOutAgain");
+    this.body.textContent = item.description + this.body.textContent;
+    this.ok.setAttribute("value", "checkOutAgain");
+    this.tmp = item;
+    this.show(this.container, this.ok);
   },
 
   /**

@@ -53,6 +53,21 @@ app.doCommand = function(command,...options) {
       app.omnibox.handleItem(savedItem, quantityToReturn, false);
       break;
     }
+    case 'checkOutAgain': {
+      const item = app.modal.tmp;
+      item.checkIn = "";
+      item.checkedOutAgain = true;
+      app.pages.form.handleChange({
+        target: {
+          name: 'items',
+          value: `${item.description} checked out again`
+        }
+      });
+      utility.DOM.empty(app.pages.form.elements.itemList);
+      app.pages.openForms.getCurrentForm()
+        .items.reverse().forEach(populateItemList);
+      break;
+    }
     case 'codabar': {
       const codabar = app.modal.tmp,
             netId = app.modal.getInput();
@@ -140,10 +155,11 @@ app.doCommand = function(command,...options) {
       const savedItem = app.pages.form.savedForm.items.find(
         i => i.description == item.description
       );
-      if (savedItem && quantity < savedItem.getQuantity()) {
+      const savedQuantity = savedItem.getQuantity();
+      if (! item.checkedOutAgain && savedItem && quantity < savedQuantity) {
         app.modal.handleError(
           new Error(quantity + " is less than the previous quantity " +
-            savedItem.quantity + ". You can only enter a larger amount " +
+            savedQuantity + ". You can only enter a larger amount " +
             "or check in this item."
           )
         );
@@ -208,6 +224,21 @@ app.doCommand = function(command,...options) {
     case 'query':
       app.pages.archive.query();
       break;
+    case 'removeItem': {
+      const form = app.pages.openForms.getCurrentForm();
+      const item = form.items.removeByItem(options[0]);
+      // Update display
+      utility.DOM.empty(app.pages.form.elements.itemList);
+      form.items.reverse().forEach(populateItemList);
+      // Fake change event
+      app.pages.form.handleChange({
+        target: {
+          name: 'items',
+          value: item.description + ' removed',
+        }
+      });
+      break;
+    }
     case 'revert':
       if (! window.isNaN(app.pages.form.autosaveID)) {
         window.clearTimeout(app.pages.form.autosaveID);
@@ -230,7 +261,7 @@ app.doCommand = function(command,...options) {
           serialized: false,
           barcode: null,
           description,
-          checkedOut: true,
+          checkedOut: false,
           notes: '',
           missing: false
         });
