@@ -240,37 +240,14 @@ function populateEquipmentOutList(item) {
 }
 
 function populateItemList(item) {
-  let checkInButton, checkIn;
+  const isArchive = app.pages.form.currentStack === app.pages.archive.filteredStack;
   const noteRow = document.createElement('tr'),
         notes = document.createElement('td'),
-        quantity = item.getQuantity();
-  if (! item.checkIn && ! item.isSerialized()) {
-    const id = item.id ? item.id : item.barcode;
-    checkInButton = `<button class="action"
-                             value="checkInButton"
-                             data-itemid="${id}">Check In</button>`;
-    if (quantity > 1) {
-      checkInButton += `<select data-itemid="${id}" class="selectQuantity">
-        <option value="all">All</option>`;
-      for (let i = 1; i < quantity; ++i) {
-        checkInButton += `<option>${i}</option>`;
-      }
-      checkInButton += `</select>`;
-    }
-  } else if (! item.checkIn && item.isSerialized()) {
-    checkInButton = `<i>Scan barcode to return</i>`;
-  }
-  if (item.missing == true) {
-    checkIn = `<span class="alert">ITEM IS MISSING</span>`;
-  } else {
-    checkIn = checkInButton || item.checkIn;
-  }
-  const quantityCell = item.isSerialized() ? quantity :
-    `<button class="quantity" value="itemQuantityChange">${quantity}</button>
-     <button class="quantity" value="itemQuantityPlusOne">+</button>`;
+        quantity = item.makeQuantityButtons(isArchive),
+        checkIn = item.makeCheckInButton(isArchive),
+        checkOut = item.checkOut || `<i>Scan barcode to check out</i>`;
   const itemRow = utility.DOM.makeTableRow(
-    'td', quantityCell, item.description,
-    item.id, item.checkOut, checkIn
+    'td', quantity, item.description, item.id, checkOut, checkIn
   );
   itemRow.setAttribute('data-id', item.id);
   itemRow.setAttribute('data-barcode', item.barcode);
@@ -289,14 +266,15 @@ function populateItemList(item) {
 }
 
 function populateStudentList(student) {
-  let checkOut;
-  if (student.left){
-    checkOut = `<span class="alert">DID NOT CHECK OUT</span>`;
-  } else {
-    checkOut = student.checkOut || `<i>Scan ID to sign out</i>`;
-  }
+  const isArchive = app.pages.form.currentStack === app.pages.archive.filteredStack;
+  const checkIn = student.checkIn || (isArchive ? "" : `<i>Scan ID to sign in</i>`);
+  const checkOut = student.left ?
+    `<span class="alert">DID NOT CHECK OUT</span>` :
+    student.checkOut || (
+      ((isArchive || ! student.checkIn) ? "" : `<i>Scan ID to sign out</i>`)
+    );
   const studentRow = utility.DOM.makeTableRow(
-    'td', student.name, student.netId, student.checkIn, checkOut
+    'td', student.name, student.netId, checkIn, checkOut
   );
   studentRow.setAttribute('data-netid', student.netId);
   app.pages.form.elements.studentList.appendChild(studentRow);
@@ -328,7 +306,7 @@ function populateArchiveTable(formStack) {
 }
 
 function makeArchiveTableRows(form) {
-  let hasItems = (form.items.getLength() > 0) ? "YES" : "NO";
+  let hasItems = form.items.getLength() > 0 ? "YES" : "NO";
   let row = utility.DOM.makeTableRow(
     'td',
     app.strings.documentIcon,
