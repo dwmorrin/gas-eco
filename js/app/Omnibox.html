@@ -246,7 +246,7 @@ app.omnibox = {
       }
       // else it is a student
       return [obj.name.trim().toLowerCase()];
-    }, app.inventory.slice(), app.roster);
+    }, app.inventory.slice(), app.roster).filter(result => result.weight < 4);
 
     if (queryResults.length > 0) {
       app.modal.handleQuery(queryResults);
