@@ -386,11 +386,11 @@ app.pages.form = {
     if (window.isNaN(this.timeoutId)) {
       this.setTimeout();
     }
+    this.refreshUpdateButton();
+    this.elements.container.classList.remove("hidden");
     if (! app.modal.isShowing()) {
       app.omnibox.element.focus();
     }
-    this.refreshUpdateButton();
-    this.elements.container.classList.remove("hidden");
   },
   timeoutId: NaN,
   unlock: function() {
