@@ -8,33 +8,41 @@ app.pages.openForms = {
     formsTableHead:     document.querySelector('thead.open'),
   },
   getCurrentForm: function() {
-    return app.pages.openForms.stack.getCurrentForm();
+    return this.stack.getCurrentForm();
   },
   handleClickTable: function(click) {
     const id = click.target.parentNode.getAttribute('data-id');
-    app.doCommand('displayForm', app.pages.openForms.stack.getByID(id));
+    app.doCommand('displayForm', this.stack.getByID(id));
   },
   handleClickTableHead: function(click) {
-    app.pages.openForms.stack.sortForms(click.target.dataset.sort);
-    populateFormsTable(app.pages.openForms.stack);
+    this.stack.sortForms(click.target.dataset.sort);
+    populateFormsTable(this.stack);
   },
   show: function() {
-    app.pages.openForms.elements.container.classList.remove("hidden");
-    if (isNaN(app.pages.openForms.refreshId)) {
-      app.pages.openForms.setInterval();
+    this.elements.container.classList.remove("hidden");
+    if (this.refreshId === null) {
+      this.setInterval();
     }
   },
   hide: function() {
-    app.pages.openForms.elements.container.classList.add("hidden");
-    if (! isNaN(app.pages.openForms.refreshId)) {
-      window.clearInterval(app.pages.openForms.refreshId);
+    this.elements.container.classList.add("hidden");
+    if (this.refreshId !== null) {
+      window.clearInterval(this.refreshId);
     }
-    app.pages.openForms.refreshId = NaN;
+    this.refreshId = null;
   },
-  refreshId: NaN,
+  refreshId: null,
+  /**
+   * refreshOpenForms is a window.setTimeout callback function
+   *   to fetch the open forms from the server and silently update.
+   */
+  refreshOpenForms: function() {
+    app.run
+      .withUserObject({timeoutId: app.pages.openForms.refreshId})
+      .doGet({get: "openFormsQuiet"});
+  },
   setInterval: function() {
-    // this client-side only interval is just for getting the forms to change color
-    app.pages.openForms.refreshId = window.setInterval(populateFormsTable, 60000, app.pages.openForms.stack);
+    this.refreshId = window.setInterval(this.refreshOpenForms, 60000);
   },
   stack: new Stack(),
 };
