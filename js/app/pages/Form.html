@@ -1,7 +1,7 @@
 <script>
 /* global Form app displayForm utility toast */
 app.pages.form = {
-  autosaveID: NaN,
+  autosaveID: null,
   checkForms: function() {
     app.run
       .withUserObject({ timeoutId: app.pages.form.timeoutId })
@@ -118,9 +118,9 @@ app.pages.form = {
     app.pages.form.elements.updateFormButton.classList.add('create');
 
     // clear the old autosave, if it exists
-    if (! window.isNaN(app.pages.form.autosaveID)) {
+    if (app.pages.form.autosaveID !== null) {
       window.clearTimeout(app.pages.form.autosaveID);
-      app.pages.form.autosaveID = NaN;
+      app.pages.form.autosaveID = null;
     }
     if (form.isReadyToPost()) {
       // automatically try to save in 60 seconds
@@ -300,35 +300,35 @@ app.pages.form = {
     app.modal.handleStudentNote(student);
   },
   hide: function() {
-    app.pages.form.elements.container.classList.add("hidden");
-    if (! window.isNaN(app.pages.form.timeoutId)) {
-      window.clearTimeout(app.pages.form.timeoutId);
-      app.pages.form.timeoutId = NaN;
+    this.elements.container.classList.add("hidden");
+    if (this.timeoutId !== null) {
+      window.clearTimeout(this.timeoutId);
+      this.timeoutId = null;
     }
-    if (! window.isNaN(app.pages.form.autosaveID)) {
-      window.clearTimeout(app.pages.form.autosaveID);
-      app.pages.form.autosaveID = NaN;
+    if (this.autosaveID !== null) {
+      window.clearTimeout(this.autosaveID);
+      this.autosaveID = null;
     }
-    app.pages.form.unlock();
+    this.unlock();
   },
   isLocked: function() {
-    return app.pages.form.locked;
+    return this.locked;
   },
   /**
    * isShowing should verify if the user is currently on the single form view
    * @returns {bool}
    */
   isShowing: function () {
-    return ! app.pages.form.elements.container.classList.contains("hidden");
+    return ! this.elements.container.classList.contains("hidden");
   },
   lock: function() {
-    app.pages.form.locked = true;
+    this.locked = true;
   },
   locked: false,
   lockButtons: function() {
-    app.pages.form.elements.undoButton.setAttribute('disabled', true);
-    app.pages.form.elements.updateButtonHint.textContent = '';
-    app.pages.form.elements.updateFormButton.setAttribute('disabled', true);
+    this.elements.undoButton.setAttribute('disabled', true);
+    this.elements.updateButtonHint.textContent = '';
+    this.elements.updateFormButton.setAttribute('disabled', true);
   },
   refreshUpdateButton: function() {
     if (app.pages.openForms.getCurrentForm().isBlank()) {
@@ -339,7 +339,7 @@ app.pages.form = {
     }
   },
   resetLocation: function() {
-    const els = app.pages.form.elements;
+    const els = this.elements;
     els.locationSelect.value = "none";
     els.locationOtherOption.value = els.locationOtherOption.textContent = "Other";
   },
@@ -378,12 +378,12 @@ app.pages.form = {
   },
   setTimeout: function() {
     // do not set this when viewing the archive stack
-    if (app.pages.form.currentStack === app.pages.openForms.stack) {
-      app.pages.form.timeoutId = window.setTimeout(app.pages.form.checkForms, 60000);
+    if (this.currentStack === app.pages.openForms.stack) {
+      this.timeoutId = window.setTimeout(this.checkForms, 60000);
     }
   },
   show: function() {
-    if (window.isNaN(this.timeoutId)) {
+    if (this.timeoutId === null) {
       this.setTimeout();
     }
     this.refreshUpdateButton();
@@ -392,9 +392,9 @@ app.pages.form = {
       app.omnibox.element.focus();
     }
   },
-  timeoutId: NaN,
+  timeoutId: null,
   unlock: function() {
-    app.pages.form.locked = false;
+    this.locked = false;
   },
 };
 </script>

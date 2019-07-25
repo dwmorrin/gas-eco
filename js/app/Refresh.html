@@ -100,6 +100,14 @@ app.refresh = function(response, context) {
       app.spinner.off();
       app.showPage(app.pages.openForms);
       break;
+    case 'openFormsQuiet':
+      if (context.timeoutId != app.pages.openForms.refreshId) {
+        break; // we are in an undefined state, abort
+      }
+      app.pages.openForms.stack.importForms(JSON.parse(response.formList))
+        .sortForms();
+      populateFormsTable(app.pages.openForms.stack);
+      break;
     case 'rejected':
       toast("The form you were editing was saved on the server.");
       break;
