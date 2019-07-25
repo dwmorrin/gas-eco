@@ -155,15 +155,17 @@ app.doCommand = function(command,...options) {
       const savedItem = app.pages.form.savedForm.items.find(
         i => i.description == item.description
       );
-      const savedQuantity = savedItem.getQuantity();
-      if (! item.checkedOutAgain && savedItem && quantity < savedQuantity) {
-        app.modal.handleError(
-          new Error(quantity + " is less than the previous quantity " +
-            savedQuantity + ". You can only enter a larger amount " +
-            "or check in this item."
-          )
-        );
-        return;
+      if (! item.checkedOutAgain && savedItem) {
+        const savedQuantity = savedItem.getQuantity();
+        if (quantity < savedQuantity) {
+          app.modal.handleError(
+            new Error(quantity + " is less than the previous quantity " +
+              savedQuantity + ". You can only enter a larger amount " +
+              "or check in this item."
+            )
+          );
+          return;
+        }
       }
       try {
         item.setQuantity(quantity);
