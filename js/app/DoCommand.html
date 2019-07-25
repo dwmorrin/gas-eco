@@ -254,6 +254,9 @@ app.doCommand = function(command,...options) {
     }
     case 'saveManual': {
       const description = app.modal.getText();
+      if (description === "") {
+        break;
+      }
       utility.digestMessage(description).then(hash =>{
         app.omnibox.handleItem({
           id: "MANUAL-" + utility.hexString(hash).substring(0, 5),
