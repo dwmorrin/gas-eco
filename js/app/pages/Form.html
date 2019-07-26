@@ -83,6 +83,9 @@ app.pages.form = {
     switch (change.target.name) {
       case 'location':
         app.pages.form.handleChangeLocation(change);
+        if (change.target.value === "Other") {
+          return;
+        }
         break;
       case 'startDate':
       case 'startHour':
@@ -143,74 +146,75 @@ app.pages.form = {
     }
   },
   handleChangeLocation: function(change) {
-    if (change.target.value == 'Other') {
+    if (change.target.value === "none") {
+      change.target.value = app.pages.openForms.getCurrentForm().location || "none";
+      return;
+    }
+    if (change.target.value === "Other") {
       change.target.value = 'none'; // in case the modal is cancelled
       app.modal.getLocation();
       return;
     }
+    // update form
     app.pages.openForms.getCurrentForm().location = change.target.value;
-    // it's not other, make sure 'Other' label is reset, log the change
-    app.pages.form.elements.locationOtherOption.textContent = 'Other';
+    // update location select element
+    const other = this.elements.locationOtherOption;
+    if (app.strings.locations.has(change.target.value)) {
+      other.textContent = other.value = 'Other';
+    } else {
+      this.elements.locationSelect.value = other.textContent =
+        other.value = change.target.value;
+    }
     app.changes.add(change);
   },
   handleChangeTime: function(change) {
     let t = utility.date.parseDateAndTimeInputs();
+    const els = this.elements.form;
+    const startEls = [
+      els.startDate, els.startHour, els.startMinute, els.startAMPM,
+    ];
+    const endEls = [
+      els.endDate, els.endHour, els.endMinute, els.endAMPM,
+    ];
     // CHECK #0: Are t.start and t.end valid?
     if (window.isNaN(t.startTime.getTime())) {
-      app.pages.form.elements.form.startDate.classList.add('error');
-      app.pages.form.elements.form.startHour.classList.add('error');
-      app.pages.form.elements.form.startMinute.classList.add('error');
-      app.pages.form.elements.form.startAMPM.classList.add('error');
+      startEls.forEach(el => {el.classList.add("error");});
       app.modal.handleError(new Error('please enter a valid start time.'));
       return;
     } else if (window.isNaN(t.endTime.getTime())) {
-      app.pages.form.elements.form.endDate.classList.add('error');
-      app.pages.form.elements.form.endHour.classList.add('error');
-      app.pages.form.elements.form.endMinute.classList.add('error');
-      app.pages.form.elements.form.endAMPM.classList.add('error');
+      endEls.forEach(el => {el.classList.add("error");});
       app.modal.handleError(new Error('please enter a valid end time.'));
       return;
     }
-
     // CHECK #1: If start is after end, try flipping end AM -> PM first
     if (t.endTime.getTime() <= t.startTime.getTime()) {
-      if (app.pages.form.elements.form.endAMPM.value == 'AM') {
-        app.pages.form.elements.form.endAMPM.value = 'PM';
+      if (els.endAMPM.value == 'AM') {
+        els.endAMPM.value = 'PM';
         t = utility.date.parseDateAndTimeInputs();
       }
     }
-
     // CHECK #2: If start is still after end, display error to user
     if (t.endTime.getTime() <= t.startTime.getTime()) {
-      app.pages.form.elements.form.endDate.classList.add('error');
-      app.pages.form.elements.form.endHour.classList.add('error');
-      app.pages.form.elements.form.endMinute.classList.add('error');
-      app.pages.form.elements.form.endAMPM.classList.add('error');
+      endEls.forEach(el => {el.classList.add("error");});
       app.modal.handleError(new Error('Start time is after end time.'));
       return;
     } else { // In case there was an error before, reset the classLists
-      app.pages.form.elements.form.endDate.classList.remove('error');
-      app.pages.form.elements.form.endHour.classList.remove('error');
-      app.pages.form.elements.form.endMinute.classList.remove('error');
-      app.pages.form.elements.form.endAMPM.classList.remove('error');
-      app.pages.form.elements.form.startDate.classList.remove('error');
-      app.pages.form.elements.form.startHour.classList.remove('error');
-      app.pages.form.elements.form.startMinute.classList.remove('error');
-      app.pages.form.elements.form.startAMPM.classList.remove('error');
+      startEls.forEach(el => {el.classList.remove("error");});
+      endEls.forEach(el => {el.classList.remove("error");});
     }
     const form = app.pages.openForms.getCurrentForm();
     const startTime = utility.date.getFormattedDate(t.startTime);
-    app.pages.form.elements.form.startTime.value = form.startTime = startTime;
+    els.startTime.value = form.startTime = startTime;
     const endTime = utility.date.getFormattedDate(t.endTime);
-    app.pages.form.elements.form.endTime.value = form.endTime = endTime;
+    els.endTime.value = form.endTime = endTime;
     const type = change.target.name.slice(0,1),
           newChange = { target: {} };
     if (type == 's') {
       newChange.target.name = 'startTime';
-      newChange.target.value = app.pages.form.elements.form.startTime.value;
+      newChange.target.value = els.startTime.value;
     } else if (type == 'e') {
       newChange.target.name = 'endTime';
-      newChange.target.value = app.pages.form.elements.form.endTime.value;
+      newChange.target.value = els.endTime.value;
     }
     app.changes.add(newChange);
   },
@@ -355,14 +359,12 @@ app.pages.form = {
       author: app.elements.usernameDisplay.textContent,
       body: prefix + input,
     };
-    let shortNotes = note.body;
-    if (shortNotes.length > 10) {
-      shortNotes = shortNotes.slice(0, 10) + "...";
-    }
     const change = {
       target: {
         name: 'notes',
-        value: shortNotes
+        value: note.body.length > 10 ?
+          note.body.slice(0, 10) + "..." :
+          note.body,
       }
     };
     const p = document.createElement('p');

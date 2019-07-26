@@ -171,6 +171,7 @@ function populateFormsTable(forms) {
     let cell = document.createElement('td'),
         row = document.createElement('tr');
     cell.textContent = 'No open forms';
+    cell.setAttribute("colspan", "5");
     row.appendChild(cell);
     row.classList.add('hoveroff');
     app.pages.openForms.elements.formsTableBody.appendChild(row);
