@@ -18,6 +18,9 @@ app.pages.openForms = {
     this.stack.sortForms(click.target.dataset.sort);
     populateFormsTable(this.stack);
   },
+  isShowing: function () {
+    return ! this.elements.container.classList.contains("hidden");
+  },
   show: function() {
     this.elements.container.classList.remove("hidden");
     if (this.refreshId === null) {

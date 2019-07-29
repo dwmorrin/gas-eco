@@ -144,6 +144,7 @@ app.pages.form = {
       app.pages.form.elements.updateFormButton.setAttribute('disabled', true);
       app.pages.form.elements.updateButtonHint.textContent = app.strings.updateDisabledHint;
     }
+    app.omnibox.element.focus();
   },
   handleChangeLocation: function(change) {
     if (change.target.value === "none") {

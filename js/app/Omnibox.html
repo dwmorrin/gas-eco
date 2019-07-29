@@ -162,6 +162,9 @@ app.omnibox = {
     // Fake change event
     app.pages.form.handleChange(change);
   },
+  logManualEntry: function(value) {
+    app.pages.form.handleChange({target: {name: "manual", value}});
+  },
   /**
    * parse examines the current value of the omnibox text input element
    *   and passes the value to the correct handler or shows the user an error.
@@ -199,7 +202,7 @@ app.omnibox = {
       student => student[idType].toLowerCase() == value
     );
     if (parsed) {
-      app.modal.manualEntryAlert(this.element.value);
+      this.logManualEntry(this.element.value);
       this.handleStudent(parsed);
       return;
     }
@@ -213,7 +216,7 @@ app.omnibox = {
           item => item.id.toLowerCase().replace(/-0+/, '-') == value
         );
       } else {
-        app.modal.manualEntryAlert(this.element.value);
+        this.logManualEntry(this.element.value);
       }
     } else if (barcoderegex.test(value)) { // assume it's a barcode
       if (value == app.strings.manualItemBarcode) {
@@ -228,9 +231,28 @@ app.omnibox = {
       return;
     }
 
-    // end of checks; if still in the function then show the user an error
-    app.modal.handleError(new Error(value + ' ' + app.strings.parserError));
     this.clear();
+
+    const queryResults = utility.query(value, (obj) => {
+      if (obj instanceof Item) {
+        const keys = [];
+        if (obj.description !== "") {
+          keys.push(obj.description.trim().toLowerCase());
+        }
+        if (obj.id !== "") {
+          keys.push(obj.id.trim().toLowerCase());
+        }
+        return keys;
+      }
+      // else it is a student
+      return [obj.name.trim().toLowerCase()];
+    }, app.inventory.slice(), app.roster).filter(result => result.weight < 4);
+
+    if (queryResults.length > 0) {
+      app.modal.handleQuery(queryResults);
+      return;
+    }
+    app.modal.handleError(new Error(`"${value}" ${app.strings.parserError}`));
   },
 };
 </script>
