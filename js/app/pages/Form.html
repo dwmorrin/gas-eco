@@ -336,7 +336,8 @@ app.pages.form = {
     this.elements.updateFormButton.setAttribute('disabled', true);
   },
   refreshUpdateButton: function() {
-    if (app.pages.openForms.getCurrentForm().isBlank()) {
+    const currentForm = app.pages.openForms.getCurrentForm();
+    if (currentForm && currentForm.isBlank()) {
       this.elements.updateFormButton.textContent = app.strings.updateButton.enabled.CREATE;
     } else {
       this.elements.updateFormButton.textContent = app.strings.updateButton.disabled;
