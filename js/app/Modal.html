@@ -174,11 +174,12 @@ app.modal = {
   },
 
   getLocation: function() {
-    app.modal.blurAllTextInputs();
-    app.modal.setStrings('location');
-    app.modal.input.setAttribute('placeholder', 'enter location name');
-    app.modal.ok.setAttribute('value', 'setLocationOther');
-    app.modal.show(app.modal.container, app.modal.ok, app.modal.input);
+    this.blurAllTextInputs();
+    this.setStrings('location');
+    this.input.setAttribute('placeholder', 'enter location name');
+    this.ok.setAttribute('value', 'setLocationOther');
+    this.show(this.container, this.ok, this.input);
+    this.input.focus();
   },
 
   getNewCodabar: function(codabar /* string */) {

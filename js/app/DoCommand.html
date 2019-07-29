@@ -274,22 +274,17 @@ app.doCommand = function(command,...options) {
       break;
     }
     case 'setLocationOther': {
-      const otherLocation = app.modal.getInput(),
-            option = app.pages.form.elements.locationOtherOption,
-            select = app.pages.form.elements.form.location,
-            change = {
-              target: {
-                name  :'location',
-                value :otherLocation
-              }
-            };
+      const otherLocation = app.modal.getInput();
       if (otherLocation === "") {
         app.modal.getLocation();
         break;
       }
-      select.value = option.value = otherLocation;
-      app.pages.form.handleChange(change);
-      option.textContent = otherLocation; // must follow handleChange
+      app.pages.form.handleChange({
+        target: {
+          name: 'location',
+          value: otherLocation
+        }
+      });
       break;
     }
     case 'signatureRecheck':
