@@ -1,4 +1,26 @@
 <style>
+.grid {
+  display: grid;
+  grid-auto-flow: dense;
+}
+
+.gridCol1 {
+  grid-column-end: 2;
+  grid-column-start: 1;
+}
+
+.gridCol2 {
+  grid-column-end: 3;
+  grid-column-start: 2;
+}
+
+.linkAdmin {
+  /* sits below the .usernameContainer */
+  position: absolute;
+  right: 0;
+  top: 1.5em;
+}
+
 button.buttonSmall {
   border-radius: 3px;
   margin-left: 0;

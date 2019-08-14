@@ -9,6 +9,7 @@ Form
 Stack
 app
 displayForm
+displaySetup
 populateFormsTable
 toast
 */
@@ -20,6 +21,18 @@ toast
  */
 app.refresh = function(response, context) {
   switch (response.target) {
+    case 'admin': {
+      console.log(response.admin);
+      if (! response.admin) {
+        break;
+      }
+      if (typeof response.admin === "string") { // indicates a setup is needed
+        displaySetup(response.defaults);
+        break;
+      }
+      // else stash these somewhere where user can view them on demand
+      break;
+    }
     case 'archive':
       if (response.unlock) {
         app.elements.archiveButton.removeAttribute('disabled');

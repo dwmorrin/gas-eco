@@ -1,15 +1,6 @@
-/* exported  Item_ */
+/* global defaults */
+/* exported Item_ */
 function Item_(itemData) {
-  var dataIndex = {
-    MAKE        : 3,
-    MODEL       : 4,
-    DESCRIPTION : 5,
-    ID          : 7,
-    BARCODE     : 8,
-    HISTORY     : 11,
-    CHECKED_OUT : 13
-  };
-  
   if (! (this instanceof Item_)) {
     throw new Error("Item_() needs to be called with new");
   }
@@ -23,19 +14,19 @@ function Item_(itemData) {
 
   // Initially created from String[] from Google Sheets
   if (Array.isArray(itemData)) {
-    this.barcode = itemData[dataIndex.BARCODE];// {string}
-    this.id = itemData[dataIndex.ID];          // {string}
-    this.checkedOut = Boolean(itemData[dataIndex.CHECKED_OUT]);
+    this.barcode = itemData[this.dataIndex.BARCODE];// {string}
+    this.id = itemData[this.dataIndex.ID];          // {string}
+    this.checkedOut = Boolean(itemData[this.dataIndex.CHECKED_OUT]);
     this.checkIn = "";    // {string} formatted date
     this.checkOut = "";   // {string} formatted date
     this.description = "";// {string} make, model, etc
     this.notes = "";      // {string} saves the notes for the item
     this.missing = false; // {bool} true if item cannot be found when form is closed
 
-    if (itemData[dataIndex.MAKE] && itemData[dataIndex.MODEL]) {
-      this.description = itemData[dataIndex.MAKE] + ' ' + itemData[dataIndex.MODEL];
+    if (itemData[this.dataIndex.MAKE] && itemData[this.dataIndex.MODEL]) {
+      this.description = itemData[this.dataIndex.MAKE] + ' ' + itemData[this.dataIndex.MODEL];
     } else {
-      this.description = itemData[dataIndex.DESCRIPTION];
+      this.description = itemData[this.dataIndex.DESCRIPTION];
     }
   } else { // When creating from obj as parsed JSON from client:
     this.barcode = itemData.barcode ? "" + itemData.barcode : "";
@@ -89,6 +80,11 @@ function Item_(itemData) {
       Math.abs(integer) === integer;
   }
 }
+
+Item_.prototype.dataIndex = JSON.parse(
+  PropertiesService.getScriptProperties()
+    .getProperty(defaults.inventorySheet.index.key)
+);
 
 /**
  * archive returns a plain object with the quantity made public

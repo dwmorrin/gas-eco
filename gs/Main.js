@@ -1,4 +1,5 @@
 /* global
+defaults
 ErrorFormCollision_
 ErrorFormInvalid_
 Form_
@@ -35,17 +36,26 @@ function createDailyForms_() {
  */
 /* exported doGet */
 function doGet(request) {
-  var response = {};
-  var  webpage;
   if (! request.get) {
-    webpage = HtmlService.createTemplateFromFile('html/index');
-    webpage = webpage.evaluate();
-    webpage.setTitle('Equipment Check-Out')
+    return HtmlService.createTemplateFromFile('html/index')
+      .evaluate()
+      .setTitle('Equipment Check-Out')
       .addMetaTag("viewport", "width=device-width");
-    return webpage;
   }
 
+  var response = {};
   switch (request.get) {
+    case 'admin':
+      response.admin = getAdminProperties_();
+      if (! response.admin) { // most users
+        break;
+      }
+      if (Object.keys(response.admin).indexOf("locations") < 0) { // new app
+        response.admin = "setup"; // string content not important, just test for string
+        response.defaults = defaults;
+        break;
+      }
+      break;
     case 'archive':
       response.formList = getArchivedForms_(request.dateRangeJSON).stringify();
       break;
@@ -101,6 +111,13 @@ function doPost(request) {
     case 'codabar':
       writeCodabar_(request.netId, request.codabar);
       response.students = JSON.stringify(getAllStudents_());
+      break;
+    case 'property':
+      if (! getAdminSheet_()) {
+        break;
+      }
+      PropertiesService.getScriptProperties()
+        .setProperty(request.key, request.value);
       break;
     case 'rejected':
       writeRejectedFormToSheet_(new Form_(request.form));
@@ -163,6 +180,31 @@ function deleteForm_() {
   throw 'not implemented';
 }
 
+function getAdminProperties_() {
+  if (getAdminSheet_()) {
+    return PropertiesService.getScriptProperties().getProperties();
+  }
+  return null;
+}
+
+/**
+ * returns the admin sheet for anyone with access to that sheet.
+ * if the sheet ID is not registered, it is assumed this is the first time
+ * running the app, and a new spreadsheet is created and the ID is registered.
+ */
+function getAdminSheet_() {
+  var adminSheetID = PropertiesService.getScriptProperties()
+    .getProperty(defaults.adminSheet.id.key);
+  if (adminSheetID === null) { // => first person running the app
+    return newSpreadsheet_(defaults.adminSheet);
+  }
+  try { // => can open sheet === is admin
+    return SpreadsheetApp.openById(adminSheetID);
+  } catch (error) { // most users should exit here
+    return null;
+  }
+}
+
 /** @see doGet */
 function getUser_() {
   return Session.getActiveUser().getEmail();
@@ -186,6 +228,21 @@ function handleUnload_() {
 /* exported include_ */
 function include_(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
+
+// default key, e.g. defaults.adminSheet, contains .id, .name
+function newSpreadsheet_(defaultKey) {
+  var spreadsheet = SpreadsheetApp.create(defaultKey.name.value);
+  var properties = PropertiesService.getScriptProperties();
+  properties.setProperty(defaultKey.id.key, spreadsheet.getId());
+  properties.setProperty(defaultKey.url.key, spreadsheet.getUrl());
+  var sheet = spreadsheet.getSheets()[0];
+  sheet.setName(defaultKey.name.value);
+  if (defaultKey.headerRow) {
+    sheet.appendRow(defaultKey.headerRow.value);
+    sheet.setFrozenRows(1);
+  }
+  return spreadsheet;
 }
 
 var utility = { date: {}, hash: {} };

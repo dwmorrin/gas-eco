@@ -321,6 +321,12 @@ app.doCommand = function(command,...options) {
       });
       break;
     }
+    case 'updateSetup': {
+      const setupPage = document.querySelector("div.grid"); // TODO better selector!
+      const inputs = setupPage.querySelectorAll("input");
+      console.log(inputs);
+      break;
+    }
     case 'undo':
       app.modal.handleUndo();
       break;

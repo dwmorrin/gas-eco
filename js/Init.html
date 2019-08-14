@@ -44,13 +44,14 @@ app.run = app.withErrorHandler.withSuccessHandler(
 );
 
 /** Server calls - the initial server calls that happen automatically */
-app.run.doGet({get: 'openForms', init: true}); // displays open forms
-app.run.doGet({get: 'user'});                  // displays username
-app.run.doGet({get: 'students',  init: true}); // gets the student info cache
-app.run.doGet({get: 'items'});                 // gets the item info cache
-app.run.doGet({
-  get: 'archive',
-  dateRangeJSON: app.pages.archive.getDateRangeAsJSON(),
-  init: true,
-});
+app.run.doGet({get: 'admin'});
+//app.run.doGet({get: 'openForms', init: true}); // displays open forms
+//app.run.doGet({get: 'user'});                  // displays username
+//app.run.doGet({get: 'students',  init: true}); // gets the student info cache
+//app.run.doGet({get: 'items'});                 // gets the item info cache
+//app.run.doGet({
+//  get: 'archive',
+//  dateRangeJSON: app.pages.archive.getDateRangeAsJSON(),
+//  init: true,
+//});
 </script>

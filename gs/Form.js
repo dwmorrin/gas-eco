@@ -1,39 +1,24 @@
-/* global ErrorFormDataInvalid_ ErrorFormInvalid_ Inventory_ utility */
+/* global defaults ErrorFormDataInvalid_ ErrorFormInvalid_ Inventory_ utility */
 /* exported Form_ */
 function Form_(form) {
-  var dataIndex = {
-    ID              : 0,
-    START_TIME      : 1,
-    END_TIME        : 2,
-    LOCATION        : 3,
-    BOOKING_ID      : 4,
-    BOOKED_STUDENTS : 5,
-    CONTACT         : 6,
-    PROJECT         : 7,
-    TAPE            : 8,
-    OVERNIGHT       : 9,
-    STUDENTS        : 10,
-    ITEMS           : 11,
-    NOTES           : 12
-  };
   if (Array.isArray(form)) {
     try {
-      this.bookedStudents = form[dataIndex.BOOKED_STUDENTS] || "";
-      this.bookingId = form[dataIndex.BOOKING_ID] || "";
-      this.contact = form[dataIndex.CONTACT] || "";
-      this.endTime = utility.date.getFormattedDate(form[dataIndex.END_TIME]) || "";
-      this.id = form[dataIndex.ID] || "";
-      this.location = form[dataIndex.LOCATION] || "";
-      this.project = form[dataIndex.PROJECT] || "";
-      this.overnight = form[dataIndex.OVERNIGHT] || false;
-      this.startTime = utility.date.getFormattedDate(form[dataIndex.START_TIME]) || "";
-      this.tape = form[dataIndex.TAPE] || false;
+      this.bookedStudents = form[this.dataIndex.BOOKED_STUDENTS] || "";
+      this.bookingId = form[this.dataIndex.BOOKING_ID] || "";
+      this.contact = form[this.dataIndex.CONTACT] || "";
+      this.endTime = utility.date.getFormattedDate(form[this.dataIndex.END_TIME]) || "";
+      this.id = form[this.dataIndex.ID] || "";
+      this.location = form[this.dataIndex.LOCATION] || "";
+      this.project = form[this.dataIndex.PROJECT] || "";
+      this.overnight = form[this.dataIndex.OVERNIGHT] || false;
+      this.startTime = utility.date.getFormattedDate(form[this.dataIndex.START_TIME]) || "";
+      this.tape = form[this.dataIndex.TAPE] || false;
       this.hash = "";
       
       // Dynamic properties
-      this.items = new Inventory_(JSON.parse(form[dataIndex.ITEMS]));
-      this.notes = JSON.parse(form[dataIndex.NOTES]) || [];       // []Note
-      this.students = JSON.parse(form[dataIndex.STUDENTS]) || []; // []Student
+      this.items = new Inventory_(JSON.parse(form[this.dataIndex.ITEMS]));
+      this.notes = JSON.parse(form[this.dataIndex.NOTES]) || [];       // []Note
+      this.students = JSON.parse(form[this.dataIndex.STUDENTS]) || []; // []Student
     } catch (error) {
       throw new ErrorFormDataInvalid_(form);
     }
@@ -59,6 +44,11 @@ function Form_(form) {
     this.students = form.students || []; // []Student
   }
 }
+
+Form_.prototype.dataIndex = JSON.parse(
+  PropertiesService.getScriptProperties()
+    .getProperty(defaults.formsSheet.index.key)
+);
 
 Form_.prototype.createId = function() {
   this.id = "" + Date.now();

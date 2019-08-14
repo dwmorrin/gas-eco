@@ -8,6 +8,7 @@
 /* exported
      populateArchiveTable
      displayForm
+     displaySetup
      populateFormsTable
      toast
 */
@@ -141,6 +142,59 @@ function displayForm(form) {
   app.spinner.element.classList.add('hidden');
   app.showPage(formPage);
 
+}
+
+function displaySetup(defaults) {
+  const div = document.createElement("div");
+  div.classList.add("modal", "grid");
+  const keys = Object.keys(defaults);
+  const sheetKeys = keys.filter(key => /Sheet$/.test(key));
+  const notSheetKeys = keys.filter(key => ! /Sheet$/.test(key));
+  var column = 2;
+  const getColumn = toggle => {
+    if (toggle) {
+      column = column === 1 ? 2 : 1;
+    }
+    return "gridCol" + column;
+  };
+  const makeInput = (object, parentKey, key, toggle) => {
+    const type = object[key].type;
+    const label = document.createElement("label");
+    label.classList.add(getColumn(toggle));
+    label.textContent = `${utility.uncamelCase(key)} (${type})`;
+    const input = document.createElement(type === "string" ? "input" : "textarea");
+    input.style.width = "100%"; // note this overrides textarea.modal 500px width
+    input.style.margin = "0";
+    input.setAttribute("data-key", key);
+    input.setAttribute("data-parent", parentKey);
+    if (object[key].value) {
+      if (type === "string") {
+        input.value = object[key].value;
+      } else {
+        input.textContent = JSON.stringify(object[key].value);
+      }
+    }
+    label.appendChild(input);
+    div.appendChild(label);
+  };
+  notSheetKeys.forEach(key => {
+    makeInput(defaults, null, key, true);
+  });
+  sheetKeys.forEach(sheetKey => {
+    const h3 = document.createElement("h3");
+    h3.textContent = utility.uncamelCase(sheetKey);
+    h3.classList.add(getColumn(true));
+    div.appendChild(h3);
+    Object.keys(defaults[sheetKey]).forEach(key => {
+      makeInput(defaults[sheetKey], sheetKey, key, false);
+    });
+  });
+  const button = document.createElement("button");
+  button.setAttribute("value", "updateSetup");
+  button.textContent = "Update";
+  button.classList.add("create");
+  div.appendChild(button);
+  document.body.appendChild(div);
 }
 
 function displaySortedBy(stack, tableHead) {
