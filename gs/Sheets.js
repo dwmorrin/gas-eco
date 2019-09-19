@@ -103,6 +103,7 @@ function createDailyBookingForms_() {
     .getSheetByName(index.bookings.SHEET_NAME);
   var data = bookingSheet.getDataRange().getValues();
   data.shift();
+  data = Booking_.concatenateSessions(data);
   data.forEach(function getArrayOfBookingForms(bookingData) {
     createBookingForm_(new Booking_(bookingData));
   });

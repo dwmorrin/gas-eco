@@ -56,3 +56,71 @@ Booking_.prototype.getItems = function() {
 Booking_.prototype.getBookedStudents = function() {
   return this.bookedStudents.replace(/, /g, ',').split(',');
 };
+
+/**
+ * TODO this is a cut and paste from the booking form script
+ *      index could be moved to prototype (shared with constructor)
+ *      see TODO below regarding loops... it almost certainly could be improved
+ *      try sorting the forms first?
+ *      alternatively: get the MySQL query to concatenate the sessions
+ * @param {string[][]} data - sheet data, no header row
+ */
+Booking_.concatenateSessions = function(data) {
+  var START    = 1,
+      END      = 2,
+      STUDIO   = 3,
+      STUDENTS = 4,
+      GEAR     = 10;
+  // IF NO DATA, RETURN
+  if (! data[0] || typeof data[0][START] === "undefined") {
+    // eslint-disable-next-line no-console
+    console.log("No booking data was found");
+    return;
+  }
+
+  // CHECK FIRST DATE, if this is not today, then throw error
+  if (data[0][START].getDate() != new Date().getDate()) {
+    throw "booking data dates incorrect, aborting";
+  }
+
+  // TODO: These blocks are suspiciously nested.  Can this be rewritten?
+  for (var i = 0; i < data.length; i++) {
+    var studioA = data[i][STUDIO];
+    var studentsA = data[i][STUDENTS];
+    for (var j = 0; j < data.length; j++) {
+      var studioB = data[j][STUDIO];
+      var studentsB = data[j][STUDENTS];
+      if (i != j && studioA == studioB && studentsA == studentsB) {
+        if (isSameTime(data[i][END],data[j][START])) { // if stopA == startB
+          data[i][END] = data[j][END]; // change stopA to stopB
+          // Check for gear, move any non-duplicate gear from B to A
+          if (data[j][GEAR] != "NULL") {
+            if (data[i][GEAR] != "NULL") {
+              var gearA = Utilities.parseCsv(data[i][GEAR]);
+              var gearB = Utilities.parseCsv(data[j][GEAR]);
+              for (var b = 0; b < gearB[0].length; b++) {
+                for (var a = 0; a < gearA[0].length; a++) {
+                  if (gearA[0][a] == gearB[0][b]) {
+                    gearB[0].splice(b, 1); // delete duplicate item
+                  }
+                }
+              }
+              data[i][GEAR] += ',' + gearB[0].toString(); // append non-duplicate items
+            } else {
+              data[i][GEAR] = data[j][GEAR]; // replace NULL with gear
+            }
+          }
+          data.splice(j, 1); // delete row B
+        }
+      }
+    }
+  }
+  return data;
+
+  function isSameTime(a,b) {
+    if ((a.getHours() == b.getHours()) && (a.getMinutes == b.getMinutes)) {
+      return true;
+    }
+    return false;
+  }
+};
