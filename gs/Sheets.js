@@ -104,6 +104,9 @@ function createDailyBookingForms_() {
   var data = bookingSheet.getDataRange().getValues();
   data.shift();
   data = Booking_.concatenateSessions(data);
+  if (! data) {
+    return;
+  }
   data.forEach(function getArrayOfBookingForms(bookingData) {
     createBookingForm_(new Booking_(bookingData));
   });
@@ -149,7 +152,7 @@ function createBookingForm_(booking) {
   }
 
   var form = new Form_({
-    bookedStudents: bookedStudents,
+    bookedStudents: bookedStudents.join(", "),
     bookingId: booking.id,
     items: items,
     startTime: booking.startTime,
