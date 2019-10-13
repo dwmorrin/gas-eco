@@ -95,8 +95,8 @@ app.pages.archive.filters = {
   },
   byNoShow: form => {
     // check for some check-ins
-    if (form.students.some(s => s.checkIn)) { // not a no show
-      return false;
+    if (form.students.every(s => s.checkIn == null)) { // not a no show
+      return true;
     }
   },
   byTimeRange: form => {
