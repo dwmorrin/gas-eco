@@ -95,7 +95,7 @@ app.pages.archive.filters = {
   },
   byNoShow: form => {
     // check for some check-ins
-    if (form.students.every(s => s.checkIn == null)) { // not a no show
+    if (form.students.every(s => s.checkIn == null)) { //is a no show
       return true;
     }
   },
