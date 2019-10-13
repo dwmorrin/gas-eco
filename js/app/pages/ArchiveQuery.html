@@ -57,10 +57,12 @@ app.pages.archive.filters = {
     return false;
   },
   byLateStudents: form => {
-    const gracePeriod = 15, // minutes
+    const inGracePeriod = 15, // minutes
+          outGracePeriod = 10,
           start = utility.date.parseFormattedDate(form.startTime),
           end   = utility.date.parseFormattedDate(form.endTime);
-    start.setMinutes(start.getMinutes() + gracePeriod);
+    start.setMinutes(start.getMinutes() + inGracePeriod);
+    end.setMinutes(end.getMinutes() + outGracePeriod);
 
     const checkedInOnTime = function(student) {
       if (! student.checkIn) {
@@ -85,7 +87,7 @@ app.pages.archive.filters = {
       return false;
     };
 
-    if (! form.students.every(checkedInOnTime) ||
+    if (! form.students.some(checkedInOnTime) ||
           form.students.some(checkedOutLate)) {
       return true;
     }
