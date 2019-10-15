@@ -72,7 +72,7 @@ function Item_(itemData) {
     return this;
   };
   this.setQuantity = function(integer) {
-    if (serialized) {
+    if (serialized && integer !== 1) {
       throw new Error("Cannot change quantity of a serialized item");
     }
     if (! isPositiveInteger(integer)) {
