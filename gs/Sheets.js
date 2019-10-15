@@ -138,7 +138,7 @@ function createBookingForm_(booking) {
   if (bookedItems) {
     bookedItems.forEach(function (itemRecord) {
       var id = itemRecord[1],
-          qty = itemRecord[2];
+          qty = parseInt(itemRecord[2], 10);
       var itemData = getSheetDataById_(
         id,
         index.items.SHEET_ID,
