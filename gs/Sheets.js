@@ -101,6 +101,11 @@ function checkItems_(form) {
 function createDailyBookingForms_() {
   var bookingSheet = SpreadsheetApp.openById(index.bookings.SHEET_ID)
     .getSheetByName(index.bookings.SHEET_NAME);
+  // Locale/TimeZone settings are due to bug in the upload script that resets
+  // the sheet to the default California time.  These lines can be removed if
+  // that bug is fixed.
+  bookingSheet.setSpreadsheetLocale("en_US");
+  bookingSheet.setSpreadsheetTimeZone("America/New_York");
   var data = bookingSheet.getDataRange().getValues();
   data.shift();
   data = Booking_.concatenateSessions(data);
