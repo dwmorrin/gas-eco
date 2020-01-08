@@ -8,7 +8,9 @@
  */
 function Stack() {
   let forms = [],
-      currentIndex = 0;
+      currentIndex = 0,
+      initialized = false;
+  this.isInitialized = function() { return initialized; };
   this.setForms = function(formArray) {
     if (Array.isArray(formArray) &&
       ((formArray[0] instanceof Form) || formArray.length === 0)) {
@@ -27,10 +29,14 @@ function Stack() {
    *   and creates Form objects
    */
   this.importForms = function(array) {
+    if (! array) {
+      throw new Error("importForms expects array");
+    }
     forms = array;
     forms.forEach((form, index, array) => {
       array[index] = new Form(form);
     });
+    initialized = true;
     return this;
   };
   this.replace = function(form) {

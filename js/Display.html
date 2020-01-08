@@ -9,6 +9,7 @@
      populateArchiveTable
      displayForm
      populateFormsTable
+     modal
      toast
 */
 function displayForm(form) {
@@ -325,6 +326,24 @@ function makeArchiveTableRows(form) {
   );
   row.setAttribute('data-id', form.id);
   app.pages.archive.elements.tableBody.appendChild(row);
+}
+
+function modal(message) {
+  if (typeof message !== 'string') {
+    throw new Error("toast requires string argument, got " + message);
+  }
+  const container = document.createElement("div");
+  container.classList.add("modal");
+  const p = document.createElement("p");
+  p.textContent = message;
+  container.appendChild(p);
+  const button = document.createElement("button");
+  button.addEventListener("click", () => {
+    container.remove();
+  });
+  button.textContent = "OK";
+  container.appendChild(button);
+  document.body.appendChild(container);
 }
 
 function toast(message) {

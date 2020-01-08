@@ -18,7 +18,7 @@ app.spinner = {
   },
   /** Display only spinner and this function hides all other pages */
   on: function() {
-    app.showPage(); // no argument == hides all pages
+    app.showPage(app.pages.loading);
     app.spinner.element.classList.remove('hidden');
   },
 };
