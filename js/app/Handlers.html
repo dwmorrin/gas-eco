@@ -123,7 +123,7 @@ app.handlers = {
     }
 
     if (click.target.value == "removeItem") {
-      const data = click.target.parentNode.dataset;
+      const data = click.target.parentNode.parentNode.dataset;
       app.doCommand("removeItem", data);
       return;
     }
