@@ -21,12 +21,21 @@ toast
 app.refresh = function(response, context) {
   switch (response.target) {
     case 'archive':
+      try {
+        app.pages.archive.stack.importForms(JSON.parse(response.formList));
+      } catch (error) {
+        app.run.doGet({
+          get: 'archive',
+          datRangeJSON: app.pages.archive.getDateRangeAsJSON(),
+          init: response.unlock
+        });
+        break;
+      }
       if (response.unlock) {
         app.elements.archiveButton.removeAttribute('disabled');
       } else { // remove spinner from query button
         app.pages.archive.elements.queryButton.innerHTML = 'Update View';
       }
-      app.pages.archive.stack.importForms(JSON.parse(response.formList));
       app.pages.archive.query();
       break;
     case 'checkForms': {
@@ -84,28 +93,41 @@ app.refresh = function(response, context) {
       break;
     case 'items':
       app.inventory.setItems(JSON.parse(response.items));
+      if (app.inventory.getLength() < 1) {
+        app.run.doGet({get: 'items', init: response.unlock});
+        break;
+      }
+      if (response.unlock) {
+        app.tryUnlock();
+      }
       break;
     case 'invalid':
       app.modal.handleError(response);
       break;
     case 'openForms':
-      if (response.unlock) {
-        app.elements.openFormsButton.removeAttribute('disabled');
+      try {
+        app.pages.openForms.stack.importForms(JSON.parse(response.formList))
+          .sortForms();
+      } catch (error) {
+        app.run.doGet({get: 'openForms', init: response.unlock});
+        break;
       }
       app.pages.form.currentStack = app.pages.openForms.stack;
       app.changes.saved = true;
-      app.pages.openForms.stack.importForms(JSON.parse(response.formList))
-        .sortForms();
       populateFormsTable(app.pages.openForms.stack);
-      app.spinner.off();
-      app.showPage(app.pages.openForms);
+      app.tryUnlock();
       break;
     case 'openFormsQuiet':
       if (context.timeoutId != app.pages.openForms.refreshId) {
         break; // we are in an undefined state, abort
       }
-      app.pages.openForms.stack.importForms(JSON.parse(response.formList))
-        .sortForms();
+      try {
+        app.pages.openForms.stack.importForms(JSON.parse(response.formList))
+          .sortForms();
+      } catch (error) {
+        app.run.doGet({get: 'openFormsQuiet'});
+        break;
+      }
       populateFormsTable(app.pages.openForms.stack);
       break;
     case 'rejected':
@@ -120,8 +142,13 @@ app.refresh = function(response, context) {
       break;
     case 'students': // doCommand 'signatureRecheck' refreshes here
       app.roster = JSON.parse(response.students);
+      if (app.roster.length < 1) {
+        // TODO report bad roster
+        app.run.doGet({get: 'students', init: response.unlock});
+        break;
+      }
       if (response.unlock) {
-        app.elements.newFormButton.removeAttribute('disabled');
+        app.tryUnlock();
       } else {
         app.omnibox.parse();
       }

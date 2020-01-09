@@ -27,6 +27,7 @@ app.pages = { // must have show and hide functions
   archive:     {},
   form:        {},
   openForms:   {},
+  loading:     {},
 };
 
 app.showPage = function(page) {
@@ -86,5 +87,33 @@ app.strings = {
     disabled: 'please enter start time, end time, location, ' +
               'and at least one student',
   },
+};
+
+/**
+ * tryUnlock controls when the loading page switches to the open forms page
+ */
+app.tryUnlock = function() {
+  const rosterLength = app.roster.length,
+        inventoryLength = app.inventory.getLength(),
+        stackInit = app.pages.openForms.stack.isInitialized();
+  if (rosterLength > 1) {
+    app.pages.loading.elements.rosterStatus.textContent = "" +
+      rosterLength + " people downloaded";
+  }
+  if (inventoryLength > 1) {
+    app.pages.loading.elements.inventoryStatus.textContent = "" +
+      inventoryLength + " items downloaded";
+  }
+  if (stackInit) {
+    app.pages.loading.elements.openFormsStatus.textContent = "downloaded";
+  }
+  if (rosterLength < 1 || inventoryLength < 1 || ! stackInit) {
+    return false;
+  }
+  app.elements.openFormsButton.removeAttribute('disabled');
+  app.elements.newFormButton.removeAttribute('disabled');
+  app.spinner.off();
+  app.showPage(app.pages.openForms);
+  return true;
 };
 </script>
