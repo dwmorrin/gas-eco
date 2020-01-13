@@ -103,7 +103,7 @@ app.omnibox = {
     student = Object.assign({}, student);
     const form = app.pages.openForms.getCurrentForm();
     const students = form.students;
-    const studentOnForm = students.find(s => s.id == student.id);
+    const studentOnForm = students.find(s => s.netId == student.netId);
     const change = { // fake change event
       target: {
         name: 'students',
@@ -125,7 +125,7 @@ app.omnibox = {
         if (studentOnForm.checkIn && studentOnForm.checkOut) {
           throw new Error(studentOnForm.name + ' is already checked out.');
         } else if (studentOnForm.checkIn) {
-          const savedStudent = app.pages.form.savedForm.students.find(s => s.id == student.id);
+          const savedStudent = app.pages.form.savedForm.students.find(s => s.netId == student.netId);
           if (! savedStudent || ! savedStudent.checkIn) {
             throw new Error( `${student.name} was just checked-in. Update the form before checking out.`);
           }
