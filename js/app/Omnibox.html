@@ -233,7 +233,7 @@ app.omnibox = {
 
     this.clear();
 
-    const queryResults = utility.query(value, (obj) => {
+    const queryResults = utility.query(value.replace(/'/g, ""), (obj) => {
       if (obj instanceof Item) {
         const keys = [];
         if (obj.description !== "") {
@@ -245,7 +245,7 @@ app.omnibox = {
         return keys;
       }
       // else it is a student
-      return [obj.name.trim().toLowerCase()];
+      return [obj.name.trim().toLowerCase().replace(/'/g, "")];
     }, app.inventory.slice(), app.roster).filter(result => result.weight < 4);
 
     if (queryResults.length > 0) {
