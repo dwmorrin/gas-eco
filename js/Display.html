@@ -328,21 +328,25 @@ function makeArchiveTableRows(form) {
   app.pages.archive.elements.tableBody.appendChild(row);
 }
 
-function modal(message) {
+function modal(message, okValue = "modalOk", cancel = false) {
   if (typeof message !== 'string') {
-    throw new Error("toast requires string argument, got " + message);
+    throw new Error("modal requires string argument, got " + message);
   }
   const container = document.createElement("div");
   container.classList.add("modal");
   const p = document.createElement("p");
   p.textContent = message;
   container.appendChild(p);
-  const button = document.createElement("button");
-  button.addEventListener("click", () => {
-    container.remove();
-  });
-  button.textContent = "OK";
-  container.appendChild(button);
+  const removeModal = () => container.remove();
+  const makeButton = (name, value) => {
+    const button = document.createElement("button");
+    button.addEventListener("click", removeModal);
+    button.textContent = name;
+    button.value = value;
+    return button;
+  };
+  cancel && container.appendChild(makeButton("Cancel", "modalCancel"));
+  container.appendChild(makeButton("OK", okValue));
   document.body.appendChild(container);
 }
 
