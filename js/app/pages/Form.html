@@ -340,6 +340,7 @@ app.pages.form = {
   },
   refreshUpdateButton: function() {
     const currentForm = app.pages.openForms.getCurrentForm();
+    this.elements.updateFormButton.setAttribute('disabled', true);
     if (currentForm && currentForm.isBlank()) {
       this.elements.updateFormButton.textContent = app.strings.updateButton.enabled.CREATE;
     } else {
@@ -398,7 +399,8 @@ app.pages.form = {
     if (! app.modal.isShowing()) {
       app.omnibox.element.focus();
     }
-    if (this.currentStack.getCurrentForm().isNoShow()) {
+    if (this.currentStack == app.pages.openForms.stack &&
+        this.currentStack.getCurrentForm().isNoShow()) {
       this.handleChange({
         target: { name: "students", value: "no show" }
       });
