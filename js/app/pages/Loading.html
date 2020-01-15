@@ -11,6 +11,9 @@ app.pages.loading = {
     openFormsStatus: document.querySelector('#loadingOpenFormsStatus'),
   },
   handleTimeout: function() {
+    if (app.pages.loading.timeoutId == null) {
+      return;
+    }
     modal(app.pages.loading.timeoutMessage);
     app.pages.loading.timeoutId = null;
   },
