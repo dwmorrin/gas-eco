@@ -14,17 +14,6 @@
 */
 app.doCommand = function(command,...options) {
   switch (command) {
-    case 'advancedBooking': {
-      const message = "This is used to save this form for a later time. " +
-        "All sign-in and check-out info will be removed.  Add all people and items " +
-        "before selecting OK.  You can only do this once.";
-      const cancelable = true;
-      modal(message, "advancedBookingConfirm", cancelable);
-      break;
-    }
-    case 'advancedBookingConfirm':
-      app.pages.form.makeAdvancedBooking();
-      break;
     case 'ambiguousCheckIn': {
       app.modal.hide();
       app.omnibox.handleItem(app.modal.tmp, "all", false);

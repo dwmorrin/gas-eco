@@ -18,7 +18,6 @@ app.pages.form = {
     this.elements.copyButton.classList.remove('hidden');
   },
   elements: {
-    advancedBookingButton:   document.querySelector('button[value="advancedBooking"]'),
     container:               document.querySelector('div.formContainer'),
     currentFormstackDisplay: document.querySelector('span.currentFormstackDisplay'),
     focusGuardTop:           document.querySelector('.focusGuardTop'),
@@ -98,7 +97,6 @@ app.pages.form = {
       case 'endAMPM':
         app.pages.form.handleChangeTime(change);
         break;
-      case 'advancedBooking':
       case 'notes':
         app.changes.add(change);
         break;
@@ -117,10 +115,8 @@ app.pages.form = {
     const form = app.pages.openForms.getCurrentForm();
     if (form.isBlank()) {
       app.pages.form.elements.updateFormButton.textContent = app.strings.updateButton.enabled.CREATE;
-      app.pages.form.elements.advancedBookingButton.classList.remove("hidden");
     } else {
       app.pages.form.elements.updateFormButton.textContent = app.strings.updateButton.enabled.UPDATE;
-      app.pages.form.elements.advancedBookingButton.classList.add("hidden");
     }
     app.pages.form.elements.updateFormButton.classList.add('create');
 
@@ -150,7 +146,6 @@ app.pages.form = {
         app.strings.updateEnabledHint;
     } else { // Disable update button
       app.pages.form.elements.updateFormButton.setAttribute('disabled', true);
-      app.pages.form.elements.advancedBookingButton.setAttribute('disabled', true);
       app.pages.form.elements.updateButtonHint.textContent = app.strings.updateDisabledHint;
     }
     app.omnibox.element.focus();
@@ -344,24 +339,13 @@ app.pages.form = {
     this.elements.updateButtonHint.textContent = '';
     this.elements.updateFormButton.setAttribute('disabled', true);
   },
-  makeAdvancedBooking: function() {
-    app.pages.form.currentStack.getCurrentForm().makeAdvancedBooking();
-    this.handleChange({
-      target: {
-        name: 'advancedBooking',
-        value: '',
-      }
-    });
-  },
   refreshUpdateButton: function() {
     const currentForm = app.pages.openForms.getCurrentForm();
     if (currentForm && currentForm.isBlank()) {
       this.elements.updateFormButton.textContent = app.strings.updateButton.enabled.CREATE;
-      app.pages.form.elements.advancedBookingButton.classList.remove("hidden");
     } else {
       this.elements.updateFormButton.textContent = app.strings.updateButton.disabled;
       this.elements.updateFormButton.classList.remove('create');
-      app.pages.form.elements.advancedBookingButton.classList.add("hidden");
     }
   },
   resetLocation: function() {

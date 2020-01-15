@@ -121,15 +121,7 @@ Form.prototype.isReadyToPost = function() {
   }
   return true;
 };
-Form.prototype.makeAdvancedBooking = function() {
-  if (! this.isBlank()) {
-    throw new Error("advanced booking only allowed with new, unsaved forms");
-  }
-  // remove check-ins from students
-  this.students.forEach(student => {
-    student.checkIn = null;
-  });
-};
+
 Form.prototype.stringify = function() {
   const copy = Object.assign({}, this);
   copy.items = this.items.archive();
