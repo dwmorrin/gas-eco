@@ -137,11 +137,11 @@ app.pages.form = {
       // are we ready to close?
       const noShow = form.isNoShow();
       if (form.isReadyToClose() || noShow) {
-        app.pages.form.elements.updateFormButton.textContent = 'Update and Close';
+        app.pages.form.elements.updateFormButton.textContent = app.strings.updateButton.enabled.CLOSE;
       } // Enable update button
       app.pages.form.elements.updateFormButton.removeAttribute('disabled');
       app.pages.form.elements.updateButtonHint.textContent = noShow ?
-        "This session is past due. Updating will mark the students as \"no show\" and close the form." :
+        app.strings.updateNoShowHint :
         app.strings.updateEnabledHint;
     } else { // Disable update button
       app.pages.form.elements.updateFormButton.setAttribute('disabled', true);
