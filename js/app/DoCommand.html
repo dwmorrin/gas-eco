@@ -316,6 +316,13 @@ app.doCommand = function(command,...options) {
         });
         utility.DOM.empty(app.pages.form.elements.studentList);
         students.forEach(populateStudentList);
+      } else if (value == "no show") {
+        app.pages.form.handleChange({
+          target: {
+            name: "students",
+            value: student.name + ' did not show up'
+          }
+        });
       } else if (value == "other") {
         app.pages.form.saveNote(student.name + ": ");
       }
