@@ -16,9 +16,11 @@ app.pages.form = {
     this.elements.updateButtonHint.textContent = 'This is a closed form.  ' +
       'You cannot edit it.';
     this.elements.copyButton.classList.remove('hidden');
+    this.elements.advanceBookingButton.classList.add('hidden');
+    this.elements.advanceBookingButton.setAttribute('disabled', true);
   },
   elements: {
-    advancedBookingButton:   document.querySelector('button[value="advancedBooking"]'),
+    advanceBookingButton:   document.querySelector('button[value="advanceBooking"]'),
     container:               document.querySelector('div.formContainer'),
     currentFormstackDisplay: document.querySelector('span.currentFormstackDisplay'),
     focusGuardTop:           document.querySelector('.focusGuardTop'),
@@ -98,7 +100,7 @@ app.pages.form = {
       case 'endAMPM':
         app.pages.form.handleChangeTime(change);
         break;
-      case 'advancedBooking':
+      case 'advanceBooking':
       case 'notes':
         app.changes.add(change);
         break;
@@ -117,10 +119,10 @@ app.pages.form = {
     const form = app.pages.openForms.getCurrentForm();
     if (form.isBlank()) {
       app.pages.form.elements.updateFormButton.textContent = app.strings.updateButton.enabled.CREATE;
-      app.pages.form.elements.advancedBookingButton.classList.remove("hidden");
+      app.pages.form.elements.advanceBookingButton.classList.remove("hidden");
     } else {
       app.pages.form.elements.updateFormButton.textContent = app.strings.updateButton.enabled.UPDATE;
-      app.pages.form.elements.advancedBookingButton.classList.add("hidden");
+      app.pages.form.elements.advanceBookingButton.classList.add("hidden");
     }
     app.pages.form.elements.updateFormButton.classList.add('create');
 
@@ -143,11 +145,13 @@ app.pages.form = {
       if (form.isReadyToClose() || noShow) {
         app.pages.form.elements.updateFormButton.textContent = app.strings.updateButton.enabled.CLOSE;
       } // Enable update button
+      app.pages.form.elements.advanceBookingButton.removeAttribute('disabled');
       app.pages.form.elements.updateFormButton.removeAttribute('disabled');
       app.pages.form.elements.updateButtonHint.textContent = noShow ?
         app.strings.updateNoShowHint :
         app.strings.updateEnabledHint;
     } else { // Disable update button
+      app.pages.form.elements.advanceBookingButton.setAttribute('disabled', true);
       app.pages.form.elements.updateFormButton.setAttribute('disabled', true);
       app.pages.form.elements.updateButtonHint.textContent = app.strings.updateDisabledHint;
     }
@@ -342,14 +346,24 @@ app.pages.form = {
     this.elements.updateButtonHint.textContent = '';
     this.elements.updateFormButton.setAttribute('disabled', true);
   },
+  makeAdvanceBooking: function() {
+    app.pages.openForms.getCurrentForm().makeAdvanceBooking();
+    this.handleChange({
+      target: {name: "advanceBooking", value: "Make advance booking"},
+    });
+  },
   refreshUpdateButton: function() {
     const currentForm = app.pages.openForms.getCurrentForm();
     this.elements.updateFormButton.setAttribute('disabled', true);
     if (currentForm && currentForm.isBlank()) {
       this.elements.updateFormButton.textContent = app.strings.updateButton.enabled.CREATE;
+      this.elements.updateFormButton.classList.add('create');
+      this.elements.advanceBookingButton.classList.remove('hidden');
+      this.elements.advanceBookingButton.setAttribute('disabled', true);
     } else {
       this.elements.updateFormButton.textContent = app.strings.updateButton.disabled;
       this.elements.updateFormButton.classList.remove('create');
+      this.elements.advanceBookingButton.classList.add('hidden');
     }
   },
   resetLocation: function() {
