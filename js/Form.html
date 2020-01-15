@@ -73,6 +73,22 @@ Form.prototype.hasStudent = function(student) {
  * isBlank determines if a form is a new, blank form (could be called `isNew`)
  */
 Form.prototype.isBlank = function() { return this.id === null; };
+Form.prototype.isNoShow = function() {
+  if (! this.id) {
+    return false;
+  }
+  const gracePeriod = 30, // minutes
+        start = new Date(this.startTime),
+        now   = Date.now();
+
+  start.setMinutes(start.getMinutes() + gracePeriod);
+
+  const checkedIn = function(student) { return student.checkIn; };
+  if (now > start.getTime() && ! this.students.some(checkedIn)) {
+    return true;
+  }
+  return false;
+};
 Form.prototype.isReadyToClose = function() {
   // Need at least 1 check-in, and everyone checked-in must be checked-out
   return this.students.some(student => student.checkIn) && this.students.every(

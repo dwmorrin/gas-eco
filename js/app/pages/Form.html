@@ -135,11 +135,15 @@ app.pages.form = {
         app.doCommand("updateForm");
       }, 60000);
       // are we ready to close?
-      if (form.isReadyToClose()) {
+      const noShow = form.isNoShow();
+      if (form.isReadyToClose() || noShow) {
         app.pages.form.elements.updateFormButton.textContent = 'Update and Close';
       } // Enable update button
       app.pages.form.elements.updateFormButton.removeAttribute('disabled');
-      app.pages.form.elements.updateButtonHint.textContent = app.strings.updateEnabledHint;
+      app.pages.form.elements.advancedBookingButton.removeAttribute('disabled');
+      app.pages.form.elements.updateButtonHint.textContent = noShow ?
+        "This session is past due. Updating will mark the students as \"no show\" and close the form." :
+        app.strings.updateEnabledHint;
     } else { // Disable update button
       app.pages.form.elements.updateFormButton.setAttribute('disabled', true);
       app.pages.form.elements.updateButtonHint.textContent = app.strings.updateDisabledHint;
@@ -394,6 +398,11 @@ app.pages.form = {
     this.elements.container.classList.remove("hidden");
     if (! app.modal.isShowing()) {
       app.omnibox.element.focus();
+    }
+    if (this.currentStack.getCurrentForm().isNoShow()) {
+      this.handleChange({
+        target: { name: "students", value: "no show" }
+      });
     }
   },
   timeoutId: null,
