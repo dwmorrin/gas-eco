@@ -129,6 +129,10 @@ Form.prototype.makeAdvanceBooking = function() {
   this.students.forEach(student => {
     student.checkIn = null;
   });
+  this.items.forEach(item => {
+    item.checkOut = "";
+    item.checkedOut = false;
+  });
 };
 Form.prototype.stringify = function() {
   const copy = Object.assign({}, this);
