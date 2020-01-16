@@ -7,7 +7,6 @@
       Form
       app
       displayForm
-      modal
       populateStudentList
       populateItemList
       utility
@@ -15,11 +14,7 @@
 app.doCommand = function(command,...options) {
   switch (command) {
     case 'advanceBooking': {
-      const message = "This is used to save this form for a later time. " +
-        "All sign-in and check-out info will be removed.  Add all people and items " +
-        "before selecting OK.  You can only do this once.";
-      const cancelable = true;
-      modal(message, "advanceBookingConfirm", cancelable);
+      app.modal.handleAdvanceBooking();
       break;
     }
     case 'advanceBookingConfirm':

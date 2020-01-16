@@ -135,7 +135,8 @@ app.pages.form = {
       // automatically try to save in 60 seconds
       app.pages.form.autosaveID = window.setTimeout(() => {
         // recheck form is still valid
-        if (! app.pages.openForms.getCurrentForm().isReadyToPost()) {
+        if (! app.pages.openForms.getCurrentForm().isReadyToPost() ||
+            app.modal.isShowing()) {
           return;
         }
         app.doCommand("updateForm");

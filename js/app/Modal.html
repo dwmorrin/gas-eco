@@ -17,6 +17,13 @@ app.modal = {
   tmp: undefined, // stores strings (although not restricted to strings only, usually some key needed if user selects 'ok'
 
   strings: {
+    advanceBooking: {
+      heading: "Save for later?",
+      body:    "All sign-in and check-out info will be removed. " +
+               "Add all people and items before saving. " +
+               "You can only do this once.",
+      ok:      "Save as advance booking",
+    },
     ambiguous: {
       heading: "Check in or out?",
       body:    "",
@@ -212,6 +219,11 @@ app.modal = {
     return value;
   },
 
+  handleAdvanceBooking: function() {
+    this.setStrings("advanceBooking");
+    this.ok.setAttribute("value", "advanceBookingConfirm");
+    this.show(this.container, this.ok);
+  },
   handleAmbiguousItemAction: function(item) {
     this.tmp = item;
     this.setStrings("ambiguous");
