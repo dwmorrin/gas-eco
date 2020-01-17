@@ -7,7 +7,6 @@
       Form
       app
       displayForm
-      modal
       populateStudentList
       populateItemList
       utility
@@ -30,6 +29,10 @@ app.doCommand = function(command,...options) {
     case 'ambiguousCheckOut': {
       app.modal.hide();
       app.modal.handleQuantityChange(app.modal.tmp);
+      break;
+    }
+    case 'analyze': {
+      app.pages.archive.analyze();
       break;
     }
     case 'archivedForms': {
