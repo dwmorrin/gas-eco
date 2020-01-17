@@ -121,7 +121,19 @@ Form.prototype.isReadyToPost = function() {
   }
   return true;
 };
-
+Form.prototype.makeAdvanceBooking = function() {
+  if (! this.isBlank()) {
+    throw new Error("advance booking only allowed with new, unsaved forms");
+  }
+  // remove check-ins from students
+  this.students.forEach(student => {
+    student.checkIn = null;
+  });
+  this.items.forEach(item => {
+    item.checkOut = "";
+    item.checkedOut = false;
+  });
+};
 Form.prototype.stringify = function() {
   const copy = Object.assign({}, this);
   copy.items = this.items.archive();
