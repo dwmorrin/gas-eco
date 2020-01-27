@@ -33,15 +33,9 @@ app.omnibox = {
 
     if (! itemOnForm) { // new item
       item = new Item(item); // copy it
-      // if not an advance booking, immediate check out
-      if (form.students.length == 0 ||
-          form.students.every(student => student.checkIn)) {
-        item.checkOut = utility.date.getFormattedDate(new Date());
-        change.target.value += ' check-out';
-      } else { // advance booking reserving item
-        change.target.value += ' reserved';
-      }
+      item.checkOut = utility.date.getFormattedDate(new Date());
       form.items.push(item);
+      change.target.value += ' check-out';
     } else if (quantityToReturn && quantityToReturn != "all") {
       itemOnForm.changeQuantity(-quantityToReturn);
       change.target.value = `returned ${quantityToReturn} ${change.target.value}`;
