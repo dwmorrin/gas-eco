@@ -123,23 +123,21 @@ function createDailyBookingForms_() {
  * TODO move to separate GAS project
  */
 function createBookingForm_(booking) {
-  var bookedStudents = booking.getBookedStudents(),
-      bookedItems = booking.getItems(),
-      items = new Inventory_(),
-      students = [];
-
   // handle booking students -> form students
-  bookedStudents.forEach(function getArrayOfStudentsByName(studentName) {
+  var students = [];
+  booking.getStudentIDs.forEach(function(id) {
     var data = getSheetDataById_(
-      studentName,
+      id,
       index.students.SHEET_ID,
       index.students.SHEET_NAME,
-      index.students.NAME
+      index.students.NETID
     );
     students.push(new Student_(data));
   });
 
   // handle booking items -> form items
+  var bookedItems = booking.getItems(),
+      items = new Inventory_();
   if (bookedItems) {
     bookedItems.forEach(function (itemRecord) {
       var id = itemRecord[1],
@@ -157,7 +155,7 @@ function createBookingForm_(booking) {
   }
 
   var form = new Form_({
-    bookedStudents: bookedStudents.join(", "),
+    bookedStudents: booking.bookedStudents,
     bookingId: booking.id,
     items: items,
     startTime: booking.startTime,
