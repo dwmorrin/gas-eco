@@ -125,7 +125,7 @@ function createDailyBookingForms_() {
 function createBookingForm_(booking) {
   // handle booking students -> form students
   var students = [];
-  booking.getStudentIDs.forEach(function(id) {
+  booking.getStudentIDs().forEach(function(id) {
     var data = getSheetDataById_(
       id,
       index.students.SHEET_ID,
