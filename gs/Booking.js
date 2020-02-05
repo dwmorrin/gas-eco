@@ -7,35 +7,38 @@ function Booking_(bookingData) {
   if (! bookingData) {
     throw 'Booking cannot be generated without booking data';
   }
-  var dataIndex = {
-    ID         : 0,
-    START_TIME : 1,
-    END_TIME   : 2,
-    LOCATION   : 3,
-    STUDENTS   : 4,
-    CONTACT    : 5,
-    PROJECT    : 6,
-    TAPE       : 7,
-    DOLBY      : 8,
-    LIVE_ROOM  : 9,
-    ITEMS      : 10
-  };
 
   function handleSQLnull(input) {
     return input === 'NULL' ? null : input;
   }
 
-  this.id = bookingData[dataIndex.ID];
-  this.startTime = utility.date.getFormattedDate(bookingData[dataIndex.START_TIME]);
-  this.endTime = utility.date.getFormattedDate(bookingData[dataIndex.END_TIME]);
-  this.location = bookingData[dataIndex.LOCATION];
-  this.bookedStudents = bookingData[dataIndex.STUDENTS];
-  this.contact = handleSQLnull(bookingData[dataIndex.CONTACT]);
-  this.project = bookingData[dataIndex.PROJECT];
-  this.tape = Boolean(bookingData[dataIndex.TAPE]);
-  this.items = handleSQLnull(bookingData[dataIndex.ITEMS]);
-  
+  this.id = bookingData[this.dataIndex.ID];
+  this.startTime = utility.date.getFormattedDate(bookingData[this.dataIndex.START_TIME]);
+  this.endTime = utility.date.getFormattedDate(bookingData[this.dataIndex.END_TIME]);
+  this.location = bookingData[this.dataIndex.LOCATION];
+  this.studentIDs = bookingData[this.dataIndex.STUDENT_IDS];
+  this.bookedStudents = bookingData[this.dataIndex.STUDENTS];
+  this.contact = handleSQLnull(bookingData[this.dataIndex.CONTACT]);
+  this.project = bookingData[this.dataIndex.PROJECT];
+  this.tape = Boolean(bookingData[this.dataIndex.TAPE]);
+  this.items = handleSQLnull(bookingData[this.dataIndex.ITEMS]);
 }
+
+Booking_.prototype.dataIndex = {
+  ID         : 0,
+  START_TIME : 1,
+  END_TIME   : 2,
+  LOCATION   : 3,
+  STUDENT_IDS: 4,
+  STUDENTS   : 5,
+  CONTACT    : 6,
+  PROJECT    : 7,
+  TAPE       : 8,
+  DOLBY      : 9,
+  LIVE_ROOM  : 10,
+  ITEMS      : 11
+};
+
 // Getters
 /**
  * @returns {string[][]} - 2d array of item info, null if no items
@@ -55,6 +58,13 @@ Booking_.prototype.getItems = function() {
  */
 Booking_.prototype.getBookedStudents = function() {
   return this.bookedStudents.replace(/, /g, ',').split(',');
+};
+
+/**
+ * @returns {string[]} - array of student IDs (NetIDs)
+ */
+Booking_.prototype.getStudentIDs = function() {
+  return this.studentIDs.split(',');
 };
 
 /**
