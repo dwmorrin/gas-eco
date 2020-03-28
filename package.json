@@ -1,0 +1,30 @@
+{
+  "name": "gas-eco",
+  "version": "1.0.0",
+  "description": "google apps script equipment check out",
+  "private": true,
+  "dependencies": {},
+  "devDependencies": {
+    "eslint-plugin-googleappsscript": "^1.0.3",
+    "eslint": "^6.8.0",
+    "eslint-plugin-html": "^6.0.0"
+  },
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dwmorrin/gas-eco.git"
+  },
+  "keywords": [
+    "google",
+    "apps",
+    "script",
+    "point-of-sale"
+  ],
+  "author": "dwmorrin@gmail.com",
+  "bugs": {
+    "url": "https://github.com/dwmorrin/gas-eco/issues"
+  },
+  "homepage": "https://github.com/dwmorrin/gas-eco#readme"
+}
