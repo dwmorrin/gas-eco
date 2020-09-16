@@ -142,15 +142,19 @@ function createBookingForm_(booking) {
     bookedItems.forEach(function (itemRecord) {
       var id = itemRecord[1],
           qty = parseInt(itemRecord[2], 10);
-      var itemData = getSheetDataById_(
-        id,
-        index.items.SHEET_ID,
-        index.items.SHEET_NAME,
-        index.items.ID
-      );
-      var item = new Item_(itemData);
-      item.setQuantity(qty);
-      items.push(item);
+      try {
+        var itemData = getSheetDataById_(
+          id,
+          index.items.SHEET_ID,
+          index.items.SHEET_NAME,
+          index.items.ID
+        );
+        var item = new Item_(itemData);
+        item.setQuantity(qty);
+        items.push(item);
+      } catch (error) {
+        Logger.log("unable to create item for: " + itemRecord.toString());
+      }
     });
   }
 
