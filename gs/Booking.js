@@ -1,10 +1,11 @@
 /* global utility */
 /* exported Booking_ */
+
 /**
  * @param {array} bookingData
  */
 function Booking_(bookingData) {
-  if (! bookingData) {
+  if (!bookingData) {
     throw 'Booking cannot be generated without booking data';
   }
 
@@ -68,69 +69,95 @@ Booking_.prototype.getStudentIDs = function() {
 };
 
 /**
- * TODO this is a cut and paste from the booking form script
- *      index could be moved to prototype (shared with constructor)
- *      see TODO below regarding loops... it almost certainly could be improved
- *      try sorting the forms first?
- *      alternatively: get the MySQL query to concatenate the sessions
  * @param {string[][]} data - sheet data, no header row
  */
 Booking_.concatenateSessions = function(data) {
-  var START    = 1,
-      END      = 2,
-      STUDIO   = 3,
-      STUDENTS = 4,
-      GEAR     = 10;
-  // IF NO DATA, RETURN
-  if (! data[0] || typeof data[0][START] === "undefined") {
+  var START = 1;
+  if (!data[0] || typeof data[0][START] === "undefined") {
     // eslint-disable-next-line no-console
     console.log("No booking data was found");
-    return;
+    return [];
   }
-
   // CHECK FIRST DATE, if this is not today, then throw error
   if (data[0][START].getDate() != new Date().getDate()) {
-    throw "booking data dates incorrect, aborting";
+    console.log("booking data dates incorrect, aborting");
+    return [];
   }
 
-  // TODO: These blocks are suspiciously nested.  Can this be rewritten?
-  for (var i = 0; i < data.length; i++) {
-    var studioA = data[i][STUDIO];
-    var studentsA = data[i][STUDENTS];
-    for (var j = 0; j < data.length; j++) {
-      var studioB = data[j][STUDIO];
-      var studentsB = data[j][STUDENTS];
-      if (i != j && studioA == studioB && studentsA == studentsB) {
-        if (isSameTime(data[i][END],data[j][START])) { // if stopA == startB
-          data[i][END] = data[j][END]; // change stopA to stopB
-          // Check for gear, move any non-duplicate gear from B to A
-          if (data[j][GEAR] != "NULL") {
-            if (data[i][GEAR] != "NULL") {
-              var gearA = Utilities.parseCsv(data[i][GEAR]);
-              var gearB = Utilities.parseCsv(data[j][GEAR]);
-              for (var b = 0; b < gearB[0].length; b++) {
-                for (var a = 0; a < gearA[0].length; a++) {
-                  if (gearA[0][a] == gearB[0][b]) {
-                    gearB[0].splice(b, 1); // delete duplicate item
-                  }
-                }
-              }
-              data[i][GEAR] += ',' + gearB[0].toString(); // append non-duplicate items
-            } else {
-              data[i][GEAR] = data[j][GEAR]; // replace NULL with gear
-            }
-          }
-          data.splice(j, 1); // delete row B
-        }
+  data.sort(sortByStudioThenStart);
+  return data.reduce(concat, []);
+
+  function sortByStudioThenStart(a, b) {
+    var start = 1,
+        studio = 3;
+    if (a[studio] === b[studio]) {
+      return a[start].getTime() - b[start].getTime();
+    }
+    return a[studio] < b[studio] ? -1 : 1;
+  }
+
+  function isSameTime(a, b) {
+    return (
+      a.getHours() === b.getHours() &&
+      a.getMinutes() === b.getMinutes()
+    );
+  }
+
+  // assumes input sorted such that a is earlier than b
+  function isSameSession(a, b) {
+    var start = 1, end = 2, studio = 3, students = 4;
+    return (
+      a[studio] === b[studio] &&
+      a[students] === b[students] &&
+      isSameTime(a[end], b[start])
+    );
+  }
+
+  /**
+   * comma separated items, semicolon separated fields
+   * fields are: description, item ID or barcode, quantity
+   * Example: "Mic;SHU-1;1,Cable;10009;2"
+   * MySQL exports string "NULL" if no gear was reserved.
+   * Does not handle adding quantites!
+   * Will duplicate the item if quantities differ.
+   * @param {string} a 
+   * @param {string} b 
+   * @returns {string} merge of b into a
+   */
+  function mergeGear(a, b) {
+    if (!a || a === "NULL") {
+      return b;
+    }
+    if (!b || b === "NULL") {
+      return a;
+    }
+    // check if 'a' contains each item of 'b', append as needed
+    b.split(",").forEach(function(string) {
+      if (!a.match(string)) {
+        a += "," + string;
       }
-    }
+    });
+    return a;
   }
-  return data;
 
-  function isSameTime(a,b) {
-    if ((a.getHours() == b.getHours()) && (a.getMinutes == b.getMinutes)) {
-      return true;
+  /**
+   * Reducer function
+   * @param {string[][]} rows 
+   * @param {string[]} row 
+   */
+  function concat(rows, row) {
+    var end = 2, gear = 10;
+    if (!rows.length) {
+      return [row];
     }
-    return false;
+    var last = rows[rows.length - 1];
+    if (isSameSession(last, row)) {
+      // copy row to last and discard row
+      last[end] = row[end];
+      last[gear] = mergeGear(last[gear], row[gear]);
+      return rows;
+    }
+    rows.push(row);
+    return rows;
   }
 };

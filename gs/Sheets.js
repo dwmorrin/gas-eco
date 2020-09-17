@@ -108,52 +108,45 @@ function createDailyBookingForms_() {
   bookingSpreadsheet.setSpreadsheetTimeZone("America/New_York");
   var data = bookingSheet.getDataRange().getValues();
   data.shift();
-  data = Booking_.concatenateSessions(data);
-  if (! data) {
-    return;
-  }
-  data.forEach(function getArrayOfBookingForms(bookingData) {
-    createBookingForm_(new Booking_(bookingData));
-  });
+  Booking_.concatenateSessions(data).forEach(createBookingForm_);
 }
 
 /**
- * @param {Booking}
+ * @param {string[]} bookingData
  * @return {Form}
  * TODO move to separate GAS project
  */
-function createBookingForm_(booking) {
+function createBookingForm_(bookingData) {
+  var booking = new Booking_(bookingData);
   // handle booking students -> form students
-  var students = [];
-  booking.getStudentIDs().forEach(function(id) {
-    var data = getSheetDataById_(
+  var students = booking.getStudentIDs().map(function(id) {
+    return new Student_(getSheetDataById_(
       id,
       index.students.SHEET_ID,
       index.students.SHEET_NAME,
       index.students.NETID
-    );
-    students.push(new Student_(data));
+    ));
   });
 
   // handle booking items -> form items
   var bookedItems = booking.getItems(),
-      items = new Inventory_();
+      items = new Inventory_(),
+      notes = [];
   if (bookedItems) {
     bookedItems.forEach(function (itemRecord) {
       var id = itemRecord[1],
           qty = parseInt(itemRecord[2], 10);
       try {
-        var itemData = getSheetDataById_(
+        var item = new Item_(getSheetDataById_(
           id,
           index.items.SHEET_ID,
           index.items.SHEET_NAME,
           index.items.ID
-        );
-        var item = new Item_(itemData);
+        ));
         item.setQuantity(qty);
         items.push(item);
       } catch (error) {
-        Logger.log("unable to create item for: " + itemRecord.toString());
+        notes.push(makeNote("Please add: " + itemRecord.join(", ")));
       }
     });
   }
@@ -168,12 +161,21 @@ function createBookingForm_(booking) {
     contact: booking.contact,
     tape: booking.tape,
     project: booking.project,
-    students: students
+    students: students,
+    notes: notes
   }).setHash();
 
   writeFormToSheet_(form);
 
   return form;
+
+  function makeNote(/** @type {string} */ body) {
+    return {
+      timestamp: Date.now(),
+      author: "System",
+      body: body
+    };
+  }
 }
 
 /* ********* GETTERS *********** */
