@@ -141,7 +141,7 @@ function createBookingForm_(bookingData) {
           id,
           index.items.SHEET_ID,
           index.items.SHEET_NAME,
-          index.items.ID
+          /^\d+$/.test(id) ? index.items.BARCODE : index.items.ID
         ));
         item.setQuantity(qty);
         items.push(item);
