@@ -35,16 +35,15 @@ function createDailyForms_() {
  */
 /* exported doGet */
 function doGet(request) {
-  var response = {};
-  var  webpage;
-  if (! request.get) {
-    webpage = HtmlService.createTemplateFromFile('html/index');
+  if (!request.get) {
+    var webpage = HtmlService.createTemplateFromFile('html/index');
     webpage = webpage.evaluate();
     webpage.setTitle('Equipment Check-Out')
       .addMetaTag("viewport", "width=device-width");
     return webpage;
   }
 
+  var response = {};
   switch (request.get) {
     case 'archive':
       response.formList = getArchivedForms_(request.dateRangeJSON).stringify();
