@@ -4,7 +4,6 @@ ErrorFormDataInvalid_
 ErrorFormInvalid_
 getUser_
 Form_
-Booking_
 utility
 Inventory_
 Item_
@@ -91,93 +90,6 @@ function checkItems_(form) {
   });
 }
 
-/* ********* CREATORS *********** */
-
-/**
- * Loops createBookingForm for each daily booking
- * TODO move to separate GAS project
- */
-/* exported createDailyBookingForms_ */
-function createDailyBookingForms_() {
-  var bookingSpreadsheet = SpreadsheetApp.openById(index.bookings.SHEET_ID);
-  var bookingSheet = bookingSpreadsheet.getSheetByName(index.bookings.SHEET_NAME);
-  // Locale/TimeZone settings are due to bug in the upload script that resets
-  // the sheet to the default California time.  These lines can be removed if
-  // that bug is fixed.
-  bookingSpreadsheet.setSpreadsheetLocale("en_US");
-  bookingSpreadsheet.setSpreadsheetTimeZone("America/New_York");
-  var data = bookingSheet.getDataRange().getValues();
-  data.shift();
-  Booking_.concatenateSessions(data).forEach(createBookingForm_);
-}
-
-/**
- * @param {string[]} bookingData
- * @return {Form}
- * TODO move to separate GAS project
- */
-function createBookingForm_(bookingData) {
-  var booking = new Booking_(bookingData);
-  // handle booking students -> form students
-  var students = booking.getStudentIDs().map(function(id) {
-    return new Student_(getSheetDataById_(
-      id,
-      index.students.SHEET_ID,
-      index.students.SHEET_NAME,
-      index.students.NETID
-    ));
-  });
-
-  // handle booking items -> form items
-  var bookedItems = booking.getItems(),
-      items = new Inventory_(),
-      notes = [];
-  if (bookedItems) {
-    bookedItems.forEach(function (itemRecord) {
-      var id = itemRecord[1],
-          qty = parseInt(itemRecord[2], 10);
-      try {
-        var item = new Item_(getSheetDataById_(
-          id,
-          index.items.SHEET_ID,
-          index.items.SHEET_NAME,
-          /^\d+$/.test(id) ? index.items.BARCODE : index.items.ID
-        ));
-        item.setQuantity(qty);
-        items.push(item);
-      } catch (error) {
-        notes.push(makeNote("Please add: " + itemRecord.join(", ")));
-      }
-    });
-  }
-
-  var form = new Form_({
-    bookedStudents: booking.bookedStudents,
-    bookingId: booking.id,
-    items: items,
-    startTime: booking.startTime,
-    endTime: booking.endTime,
-    location: booking.location,
-    contact: booking.contact,
-    tape: booking.tape,
-    project: booking.project,
-    students: students,
-    notes: notes
-  }).setHash();
-
-  writeFormToSheet_(form);
-
-  return form;
-
-  function makeNote(/** @type {string} */ body) {
-    return {
-      timestamp: Date.now(),
-      author: "System",
-      body: body
-    };
-  }
-}
-
 /* ********* GETTERS *********** */
 
 /* exported getAllItems_ */
@@ -258,28 +170,6 @@ function getOpenForms_() {
   return forms;
 }
 
-/**
- * @param {string} value - search value to match
- * @param {string} sheetId - to lookup spreadsheet
- * @param {string} sheetName - to lookup which sheet within spreadsheet
- * @param {integer} idIndex - optional if index != 0
- * @return {[]} row - raw Sheet data
- * row will be returned as undefined if not found
- */
-function getSheetDataById_(value, sheetId, sheetName, idIndex) {
-  var sheet = SpreadsheetApp.openById(sheetId).getSheetByName(sheetName);
-  var data = sheet.getDataRange().getValues();
-  data.shift();
-  var sheetData = data.findRowContaining(value, idIndex);
-  if (typeof sheetData == "undefined") {
-    throw new Error("could not find data for" +
-      " Value: " + value + ", Sheet ID: " + sheetId +
-     ", Sheet Name: " + sheetName + ", IDINDEX: " + idIndex
-    );
-  }
-  return sheetData;
-}
-
 /* ********* WRITERS *********** */
 
 /* exported writeCodabar_ */
@@ -309,6 +199,7 @@ function writeRejectedFormToSheet_(form) {
   formSheet.appendRow(values);
 }
 
+/* exported writeFormToSheet_ */
 function writeFormToSheet_(form, closeAndArchive) {
   var ss = SpreadsheetApp.openById(index.forms.SHEET_ID);
   var formSheet = ss.getSheetByName(index.forms.SHEET_NAME);

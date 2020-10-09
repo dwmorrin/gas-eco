@@ -3,7 +3,6 @@ ErrorFormCollision_
 ErrorFormInvalid_
 Form_
 clearSignatureValidation_
-createDailyBookingForms_
 getAllItems_
 getAllStudents_
 getArchivedForms_
@@ -14,17 +13,6 @@ writeFormToSheet_
 writeRejectedFormToSheet_
 writeSignatureToSheet_
 */
-
-/**
- * This runs on a time driver trigger.
- * Replaces the printing of the physical forms.
- * @todo setup daily trigger
- */
-/* exported createDailyForms_ */
-function createDailyForms_() {
-  createDailyBookingForms_();
-}
-
 
 /**
  * Runs on HTTP GET request.
