@@ -181,6 +181,7 @@ app.pages.form = {
     app.changes.add(change);
   },
   handleChangeTime: function(change) {
+    this.touched.add(change.target);
     let t = utility.date.parseDateAndTimeInputs();
     const els = this.elements.form;
     const startEls = [
@@ -191,18 +192,21 @@ app.pages.form = {
     ];
     // CHECK #0: Are t.start and t.end valid?
     if (window.isNaN(t.startTime.getTime())) {
-      startEls.forEach(el => {el.classList.add("error");});
+      startEls.forEach(el => el.classList.add("error"));
       app.modal.handleError(new Error('please enter a valid start time.'));
       return;
     } else if (window.isNaN(t.endTime.getTime())) {
-      endEls.forEach(el => {el.classList.add("error");});
+      endEls.forEach(el => el.classList.add("error"));
       app.modal.handleError(new Error('please enter a valid end time.'));
       return;
     }
-    // CHECK #1: If start is after end, try flipping end AM -> PM first
+    // CHECK #1: If start is after end, if end is untouched, add 1 hour to end
+    const userTouchedEnd = endEls.some(el => this.touched.has(el));
     if (t.endTime.getTime() <= t.startTime.getTime()) {
-      if (els.endAMPM.value == 'AM') {
-        els.endAMPM.value = 'PM';
+      if (!userTouchedEnd) {
+        const newEnd = new Date(t.startTime);
+        newEnd.setHours(t.startTime.getHours() + 1);
+        this.dateToInput(newEnd, els.endDate);
         t = utility.date.parseDateAndTimeInputs();
       }
     }
@@ -268,7 +272,6 @@ app.pages.form = {
       if (!app.omnibox.element.disabled) {
         let inputCell = utility.DOM.getNextSibling(click.target);
         let input = utility.DOM.getFirstChild(inputCell);
-        let value, hour, minute, ampm;
         switch (input.name) {
           case 'location':
             app.pages.form.resetLocation(); // select loses custom "Other"
@@ -279,22 +282,33 @@ app.pages.form = {
             break;
           case 'startDate': // fallthrough
           case 'endDate':
-            value = utility.date.parseFormattedDate(click.target.textContent);
-            hour = utility.DOM.getNextSibling(input);
-            minute = utility.DOM.getNextSibling(hour);
-            ampm = utility.DOM.getNextSibling(minute);
-            input.value = value.getFullYear() +
-              '-' + utility.date.zeropad(value.getMonth() + 1) +
-              '-' + utility.date.zeropad(value.getDate());
-            minute.value = utility.date.roundMinutes(value.getMinutes());
-            hour.value = utility.date.parseHours(value.getHours());
-            ampm.value = utility.date.parseAMPM(value.getHours());
+            this.setTimeInputs();
             break;
         }
         click.target.classList.add('hidden');
         inputCell.classList.remove('hidden');
       }
     }
+  },
+  setTimeInputs: function (...names) {
+    (names || ["start", "end"]).forEach(name => {
+      const input = document.querySelector(`input[name="${name}Date"]`);
+      const date = utility.date.parseFormattedDate(
+        this.elements.form[`${name}Time`].value
+      );
+      this.dateToInput(date, input);
+    });
+  },
+  dateToInput: function (date, input) {
+      const hour = utility.DOM.getNextSibling(input);
+      const minute = utility.DOM.getNextSibling(hour);
+      const ampm = utility.DOM.getNextSibling(minute);
+      input.value = date.getFullYear() +
+        '-' + utility.date.zeropad(date.getMonth() + 1) +
+        '-' + utility.date.zeropad(date.getDate());
+      minute.value = utility.date.roundMinutes(date.getMinutes());
+      hour.value = utility.date.parseHours(date.getHours());
+      ampm.value = utility.date.parseAMPM(date.getHours());
   },
   handleClickStudent: function(click) {
     if (app.pages.form.currentStack === app.pages.archive.filteredStack) {
@@ -317,6 +331,7 @@ app.pages.form = {
     app.modal.handleStudentNote(student);
   },
   hide: function() {
+    this.touched = new Set();
     this.elements.container.classList.add("hidden");
     if (this.timeoutId !== null) {
       window.clearTimeout(this.timeoutId);
@@ -426,6 +441,7 @@ app.pages.form = {
     }
   },
   timeoutId: null,
+  touched: new Set(),
   unlock: function() {
     this.locked = false;
   },
