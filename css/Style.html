@@ -1,413 +1,455 @@
 <style>
-.buttonTight {
-  margin-left: 0;
-}
-
-button.buttonSmall {
-  border-radius: 3px;
-  margin-left: 0;
-  min-width: 10px;
-  vertical-align: bottom;
-}
-
-button.quantity {
-  border-radius: 0;
-  cursor: inherit;
-  float: left;
-  margin: 0;
-  min-width: 25px;
-  padding: 0;
-}
-
-button > svg {
-  pointer-events: none;
-}
-
-div.dropdown {
-  position: absolute;
-}
-
-div.dropdown button {
-  border: none;
-  display: block;
-  margin: 0;
-  text-align: left;
-  width: 100%;
-}
-
-div.dropdownContainer {
-  display: inline;
-}
-
-div.modal {
-  background-color: white;
-  border: solid 1px black;
-  font-size: larger;
-  left: 50%;
-  max-width: 100%;
-  max-height: 100%;
-  position: fixed;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 2; /* Should be highest */
-  -webkit-transform-style: preserve-3d; /* trying to fix blurry text bug */
-}
-
-div.modal div.buttonContainer {
-  bottom: 0;
-  position: absolute;
-  right: 0;
-}
-
-div.modal a {
-  display: block;
-  margin-left: 20px;
-  font-size: smaller;
-}
-
-div.modal h1 {
-  margin: 10px;
-  white-space: pre; /* forces single line, fixes wordwrap causing overlap */
-}
-
-div.modal input {
-  margin: 5px;
-  margin-left: 20px;
-}
-
-div.modal p {
-  height: 100%;
-  margin: 0;
-  min-width: 300px;
-  overflow: auto;
-  padding: 20px 20px 5px 20px;
-  width: 90%;
-}
-
-div.modal table {
-  display: block;
-  max-height: 300px;
-  overflow: auto;
-}
-
-div.modal textarea {
-  height: 50px;
-}
-
-div.modal td, div.modal th {
-  padding: 10px;
-}
-
-div.spinner {
-  border: 6px solid #f3f3f3;
-  border-radius: 50%;
-  border-top: 6px solid #3498db;
-  margin-left: 14px;
-  width: 10px;
-  height: 10px;
-  animation: spin 2s linear infinite;
-}
-
-div.openFormsContainer tbody tr:not(.hoveroff):hover,
-tbody.archive tr:not(.hoveroff):hover,
-div.modal table tr[data-id]:hover {
-  background-color: lightcyan;
-  cursor: pointer;
-}
-
-div.overlay {
-  background-color: black;
-  height: 100%;
-  left: 0;
-  opacity: 0.5;
-  position: fixed;
-  top: 0;
-  width: 100%;
-  z-index: 1; /* Must be second highest to modal */
-}
-
-div.toast {
-  animation-duration: 2s, 5s;
-  animation-name: slide-up, fade-out;
-  animation-timing-function: ease-out;
-  background-color: limegreen;
-  border: 1px solid black;
-  border-radius: 2px;
-  bottom: 25%;
-  left: 50%;
-  padding: 1em;
-  position: fixed;
-  opacity: 0;
-  z-index: 1;
-}
-
-header {
-  position: relative; /* required by .usernameContainer{right:0;} */
-}
-
-header h1 {
-  display: inline-block;
-}
-
-html {
-  max-width: 900px;
-}
-
-input.error {
-  background-color: pink !important; /* !important used because targets have higher specificity  */
-}
-
-input.omnibox {
-  margin-right: 0; /* bringing button close */
-}
-
-input.omnibox:focus {
-  background-color: lightcyan;
-}
-
-label {
-  float: left;
-  width: 200px;
-}
-
-section {
-  border: 1px solid black;
-  margin: 2px;
-}
-
-section h4 {
-  margin: 2px 0 7px 5px;
-}
-
-section.globalnotes p {
-  font-weight: bold;
-}
-
-span.updateButtonHint {
-  color: grey;
-  font-style: italic;
-}
-
-svg.buttonIcon {
-  width: 15px;
-  height: 15px;
-}
-
-table {
-  table-layout: fixed;
-  width: 99%;
-  margin-left: 5px;
-}
-
-td {
-  padding: 1px;
-}
-
-th {
-  font-weight: bold;
-}
-
-th > img, td > i {
-  pointer-events: none;
-}
-
-span.alert {
-  color: red;
-  font-weight: bold;
-}
-
-tr.inactive img {
-  background-color: gainsboro;
-}
-
-tr.active img {
-  background-color: forestgreen;
-}
-
-tr.late img {
-  background-color: red;
-}
-
-tr.endingSoon img {
-  background-color: yellow;
-}
-
-td.new {
-  background-color: yellow;
-}
-
-tbody.archive td,
-thead.archive th {
-  border: 1px solid #999;
-  padding: 0.5rem;
-  text-align: left;
-  overflow: hidden;
-  cursor: pointer;
-}
-
-tbody.archive tr > td:nth-Child(1),
-thead.archive tr > th:nth-Child(1) {
-  padding: 0;
-}
-
-thead.archive th:nth-Child(1) {
-  width: 20px;
-}
-
-thead.form th {
-  /*font: normal 14px Arial;*/
-  border-bottom: 1px solid grey;
-}
-
-thead.formItems th:nth-child(1) {
-  width: 10%;
-}
-
-thead.formItems th:nth-child(2) {
-  width: 30%;
-}
-
-thead.formItems th:nth-child(3) {
-  width: 20%;
-}
-
-thead.formItems th:nth-child(4) {
-  width: 20%;
-}
-
-thead.formItems th:nth-child(5) {
-  width: 20%;
-}
-
-thead.formStudents th:nth-child(1) {
-  width: 40%;
-}
-
-thead.formStudents th:nth-child(2) {
-  width: 20%;
-}
-
-thead.formStudents th:nth-child(3) {
-  width: 20%;
-}
-
-thead.formStudents th:nth-child(4) {
-  width: 20%;
-}
-
-tbody.open td {
-  padding: 0;
-}
-
-thead.open th:hover,
-tbody.studentList tr:hover,
-tbody.itemList td:hover {
-  color: blue;
-  cursor: pointer;
-}
-
-thead.open th:nth-child(1) {
-  width:20px;
-}
-
-tr.serialized td:first-child:hover {
-  cursor: default;
-  color: black;
-}
-
-table.staticFields td {
-  border: none;
-  padding-bottom: 0;
-  width: 70%;
-}
-
-table.staticFields th {
-  border: none;
-  font: bold 14px Arial;
-  padding-bottom: 0;
-  padding-top: 9px;
-  width: 20%;
-}
-
-td.itemnotes {
-  padding: 0;
-  /* cursor: pointer; */
-}
-
-td.itemnotes > input {
-  width: 100%;
-}
-
-th.sortedBy:after {
-  content: "\2193";
-  display: inline-block;
-  margin-left: 3px;
-}
-
-th.sortedBy.descending:after {
-  transform: scale(-1);
-}
-
-tr.inactive td:not(:first-child) {
-  font-style: italic;
-}
-
-@keyframes fade-out {
-    0% { opacity: 1; }
-   50% { opacity: 1; }
-  100% { opacity: 0; }
-}
-
-@keyframes slide-up {
-    0% { bottom: 0;   }
-  100% { bottom: 25%; }
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg  ); }
-  100% { transform: rotate(360deg); }
-}
-
-.hidden {
-  display: none !important; /* class selector is low specificity, doesn't apply to specific styles without !important */
-}
-
-/* desktop view only */
-@media screen and (min-width: 501px) {
-  div.modal textarea { width: 500px; }
-  input.omnibox, button { margin: 2px; }
-  label {
-    margin-right: 10px;
-    text-align: right;
+  .mergeSelection {
+    background-color: salmon !important;
   }
-  span.usernameContainer {
+
+  .buttonTight {
+    margin-left: 0;
+  }
+
+  button.buttonSmall {
+    border-radius: 3px;
+    margin-left: 0;
+    min-width: 10px;
+    vertical-align: bottom;
+  }
+
+  button.quantity {
+    border-radius: 0;
+    cursor: inherit;
+    float: left;
+    margin: 0;
+    min-width: 25px;
+    padding: 0;
+  }
+
+  button > svg {
+    pointer-events: none;
+  }
+
+  div.dropdown {
+    position: absolute;
+  }
+
+  div.dropdown button {
+    border: none;
+    display: block;
+    margin: 0;
+    text-align: left;
+    width: 100%;
+  }
+
+  div.dropdownContainer {
+    display: inline;
+  }
+
+  div.modal {
+    background-color: white;
+    border: solid 1px black;
+    font-size: larger;
+    left: 50%;
+    max-width: 100%;
+    max-height: 100%;
+    position: fixed;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2; /* Should be highest */
+    -webkit-transform-style: preserve-3d; /* trying to fix blurry text bug */
+  }
+
+  div.modal div.buttonContainer {
+    bottom: 0;
     position: absolute;
     right: 0;
   }
-}
 
-/* mobile view only */
-@media screen and (max-width: 500px) {
-  div.modal h1 { font-size: medium; }
-  div.modal textarea { width: 300px; }
-  input.omnibox, button { margin: 5px !important; }
-  button[value="changeLog"] { display: none; }
-  section.formControls { display: grid; }
-  span.currentFormstackDisplay { text-align: center; }
-  span.usernameContainer { display: block; }
-  table.staticFields tr,
-  table.staticFields td,
-  tbody.archive tr,
-  tbody.studentList tr,
-  tbody.itemList tr {
-    display: grid;
+  div.modal a {
+    display: block;
+    margin-left: 20px;
+    font-size: smaller;
   }
-  tbody.studentList tr,
+
+  div.modal h1 {
+    margin: 10px;
+    white-space: pre; /* forces single line, fixes wordwrap causing overlap */
+  }
+
+  div.modal input {
+    margin: 5px;
+    margin-left: 20px;
+  }
+
+  div.modal p {
+    height: 100%;
+    margin: 0;
+    min-width: 300px;
+    overflow: auto;
+    padding: 20px 20px 5px 20px;
+    width: 90%;
+  }
+
+  div.modal table {
+    display: block;
+    max-height: 300px;
+    overflow: auto;
+  }
+
+  div.modal textarea {
+    height: 50px;
+  }
+
+  div.modal td,
+  div.modal th {
+    padding: 10px;
+  }
+
+  div.spinner {
+    border: 6px solid #f3f3f3;
+    border-radius: 50%;
+    border-top: 6px solid #3498db;
+    margin-left: 14px;
+    width: 10px;
+    height: 10px;
+    animation: spin 2s linear infinite;
+  }
+
+  div.openFormsContainer tbody tr:not(.hoveroff):hover,
+  tbody.archive tr:not(.hoveroff):hover,
+  div.modal table tr[data-id]:hover {
+    background-color: lightcyan;
+    cursor: pointer;
+  }
+
+  div.overlay {
+    background-color: black;
+    height: 100%;
+    left: 0;
+    opacity: 0.5;
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 1; /* Must be second highest to modal */
+  }
+
+  div.toast {
+    animation-duration: 2s, 5s;
+    animation-name: slide-up, fade-out;
+    animation-timing-function: ease-out;
+    background-color: limegreen;
+    border: 1px solid black;
+    border-radius: 2px;
+    bottom: 25%;
+    left: 50%;
+    padding: 1em;
+    position: fixed;
+    opacity: 0;
+    z-index: 1;
+  }
+
+  header {
+    position: relative; /* required by .usernameContainer{right:0;} */
+  }
+
+  header h1 {
+    display: inline-block;
+  }
+
+  html {
+    max-width: 900px;
+  }
+
+  input.error {
+    background-color: pink !important; /* !important used because targets have higher specificity  */
+  }
+
+  input.omnibox {
+    margin-right: 0; /* bringing button close */
+  }
+
+  input.omnibox:focus {
+    background-color: lightcyan;
+  }
+
+  label {
+    float: left;
+    width: 200px;
+  }
+
+  section {
+    border: 1px solid black;
+    margin: 2px;
+  }
+
+  section h4 {
+    margin: 2px 0 7px 5px;
+  }
+
+  section.globalnotes p {
+    font-weight: bold;
+  }
+
+  span.updateButtonHint {
+    color: grey;
+    font-style: italic;
+  }
+
+  svg.buttonIcon {
+    width: 15px;
+    height: 15px;
+  }
+
+  table {
+    table-layout: fixed;
+    width: 99%;
+    margin-left: 5px;
+  }
+
+  td {
+    padding: 1px;
+  }
+
+  th {
+    font-weight: bold;
+  }
+
+  th > img,
+  td > i {
+    pointer-events: none;
+  }
+
+  span.alert {
+    color: red;
+    font-weight: bold;
+  }
+
+  tr.inactive img {
+    background-color: gainsboro;
+  }
+
+  tr.active img {
+    background-color: forestgreen;
+  }
+
+  tr.late img {
+    background-color: red;
+  }
+
+  tr.endingSoon img {
+    background-color: yellow;
+  }
+
+  td.new {
+    background-color: yellow;
+  }
+
+  tbody.archive td,
+  thead.archive th {
+    border: 1px solid #999;
+    padding: 0.5rem;
+    text-align: left;
+    overflow: hidden;
+    cursor: pointer;
+  }
+
+  tbody.archive tr > td:nth-child(1),
+  thead.archive tr > th:nth-child(1) {
+    padding: 0;
+  }
+
+  thead.archive th:nth-child(1) {
+    width: 20px;
+  }
+
+  thead.form th {
+    /*font: normal 14px Arial;*/
+    border-bottom: 1px solid grey;
+  }
+
+  thead.formItems th:nth-child(1) {
+    width: 10%;
+  }
+
+  thead.formItems th:nth-child(2) {
+    width: 30%;
+  }
+
+  thead.formItems th:nth-child(3) {
+    width: 20%;
+  }
+
+  thead.formItems th:nth-child(4) {
+    width: 20%;
+  }
+
+  thead.formItems th:nth-child(5) {
+    width: 20%;
+  }
+
+  thead.formStudents th:nth-child(1) {
+    width: 40%;
+  }
+
+  thead.formStudents th:nth-child(2) {
+    width: 20%;
+  }
+
+  thead.formStudents th:nth-child(3) {
+    width: 20%;
+  }
+
+  thead.formStudents th:nth-child(4) {
+    width: 20%;
+  }
+
+  tbody.open td {
+    padding: 0;
+  }
+
+  thead.open th:hover,
+  tbody.studentList tr:hover,
+  tbody.itemList td:hover {
+    color: blue;
+    cursor: pointer;
+  }
+
+  thead.open th:nth-child(1) {
+    width: 20px;
+  }
+
+  tr.serialized td:first-child:hover {
+    cursor: default;
+    color: black;
+  }
+
+  table.staticFields td {
+    border: none;
+    padding-bottom: 0;
+    width: 70%;
+  }
+
+  table.staticFields th {
+    border: none;
+    font: bold 14px Arial;
+    padding-bottom: 0;
+    padding-top: 9px;
+    width: 20%;
+  }
+
+  td.itemnotes {
+    padding: 0;
+    /* cursor: pointer; */
+  }
+
+  td.itemnotes > input {
+    width: 100%;
+  }
+
+  th.sortedBy:after {
+    content: "\2193";
+    display: inline-block;
+    margin-left: 3px;
+  }
+
+  th.sortedBy.descending:after {
+    transform: scale(-1);
+  }
+
+  tr.inactive td:not(:first-child) {
+    font-style: italic;
+  }
+
+  @keyframes fade-out {
+    0% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+
+  @keyframes slide-up {
+    0% {
+      bottom: 0;
+    }
+    100% {
+      bottom: 25%;
+    }
+  }
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  .hidden {
+    display: none !important; /* class selector is low specificity, doesn't apply to specific styles without !important */
+  }
+
+  /* desktop view only */
+  @media screen and (min-width: 501px) {
+    div.modal textarea {
+      width: 500px;
+    }
+    input.omnibox,
+    button {
+      margin: 2px;
+    }
+    label {
+      margin-right: 10px;
+      text-align: right;
+    }
+    span.usernameContainer {
+      position: absolute;
+      right: 0;
+    }
+  }
+
+  /* mobile view only */
+  @media screen and (max-width: 500px) {
+    div.modal h1 {
+      font-size: medium;
+    }
+    div.modal textarea {
+      width: 300px;
+    }
+    input.omnibox,
+    button {
+      margin: 5px !important;
+    }
+    button[value="changeLog"] {
+      display: none;
+    }
+    section.formControls {
+      display: grid;
+    }
+    span.currentFormstackDisplay {
+      text-align: center;
+    }
+    span.usernameContainer {
+      display: block;
+    }
+    table.staticFields tr,
+    table.staticFields td,
+    tbody.archive tr,
+    tbody.studentList tr,
+    tbody.itemList tr {
+      display: grid;
+    }
+    tbody.studentList tr,
   tbody.itemList tr[data-barcode], /* avoiding item notes row */
   tbody.itemList tr[data-id] {
-    border: 1px solid grey;
+      border: 1px solid grey;
+    }
+    thead.archive,
+    thead.form {
+      display: none;
+    }
   }
-  thead.archive,
-  thead.form { display: none; }
-}
 </style>
