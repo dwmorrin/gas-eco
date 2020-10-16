@@ -1,66 +1,71 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <base target="_top">
-    <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
+  <head>
+    <base target="_top" />
+    <link
+      rel="stylesheet"
+      href="https://ssl.gstatic.com/docs/script/css/add-ons1.css"
+    />
     <?!= include_('css/Style'); ?>
-</head>
+  </head>
 
-<body>
-<header>
-  <h1>Equipment Check Out</h1>
-  <span class="usernameContainer">signed in as 
-  <span class="usernameDisplay"><!-- populated by js --></span></span>
-</header>
+  <body>
+    <header>
+      <h1>Equipment Check Out</h1>
+      <span class="usernameContainer"
+        >signed in as
+        <span class="usernameDisplay"><!-- populated by js --></span></span
+      >
+    </header>
 
-<nav>
-  <button class="share"
-          value="displayNewForm"
-          disabled="true">New Form</button>
-  <button value="openForms"
-          disabled="true">View Open Forms</button>
-  <button value="archivedForms"
-          disabled="true">View Closed Forms</button>
-</nav>
+    <nav>
+      <button class="share" value="displayNewForm" disabled="true">
+        New Form
+      </button>
+      <button value="openForms" disabled="true">View Open Forms</button>
+      <button value="archivedForms" disabled="true">View Closed Forms</button>
+    </nav>
 
-<!-- page sections (only one can be visible at a time) -->
-<?!= include_('html/OpenForms'); ?>
-<?!= include_('html/Form'); ?>
-<?!= include_('html/Archive'); ?>
-<?!= include_('html/Loading'); ?>
+    <!-- page sections (only one can be visible at a time) -->
+    <?!= include_('html/OpenForms'); ?>
+    <?!= include_('html/Form'); ?>
+    <?!= include_('html/Archive'); ?>
+    <?!= include_('html/Loading'); ?>
+    <?!= include_('html/Merge'); ?>
 
-<!-- page fragments (can be visible at any time)-->
-<div class="spinner hidden"></div>
-<?!= include_('html/Modal'); ?>
+    <!-- page fragments (can be visible at any time)-->
+    <div class="spinner hidden"></div>
+    <?!= include_('html/Modal'); ?>
 
-<!-- javascript -->
+    <!-- javascript -->
 
-<!-- model definitions -->
-<?!= include_('js/Item'); ?>
-<?!= include_('js/Inventory'); ?>
-<?!= include_('js/Form'); ?>
-<?!= include_('js/Stack'); ?>
-<!-- utility function definitions -->
-<?!= include_('js/Utility'); ?>
-<?!= include_('js/Display'); ?>
+    <!-- model definitions -->
+    <?!= include_('js/Item'); ?>
+    <?!= include_('js/Inventory'); ?>
+    <?!= include_('js/Form'); ?>
+    <?!= include_('js/Stack'); ?>
+    <!-- utility function definitions -->
+    <?!= include_('js/Utility'); ?>
+    <?!= include_('js/Display'); ?>
 
-<!-- app object -->
-<?!= include_('js/app/main'); ?>
-<?!= include_('js/app/Changes'); ?>
-<?!= include_('js/app/DoCommand'); ?>
-<?!= include_('js/app/Elements'); ?>
-<?!= include_('js/app/Handlers'); ?>
-<?!= include_('js/app/Modal'); ?>
-<?!= include_('js/app/Omnibox'); ?>
-<?!= include_('js/app/pages/Archive'); ?>
-<?!= include_('js/app/pages/ArchiveQuery'); ?>
-<?!= include_('js/app/pages/Form'); ?>
-<?!= include_('js/app/pages/OpenForms'); ?>
-<?!= include_('js/app/pages/Loading'); ?>
-<?!= include_('js/app/Refresh'); ?>
-<?!= include_('js/app/Spinner'); ?>
+    <!-- app object -->
+    <?!= include_('js/app/main'); ?>
+    <?!= include_('js/app/Changes'); ?>
+    <?!= include_('js/app/DoCommand'); ?>
+    <?!= include_('js/app/Elements'); ?>
+    <?!= include_('js/app/Handlers'); ?>
+    <?!= include_('js/app/Modal'); ?>
+    <?!= include_('js/app/Omnibox'); ?>
+    <?!= include_('js/app/pages/Archive'); ?>
+    <?!= include_('js/app/pages/ArchiveQuery'); ?>
+    <?!= include_('js/app/pages/Form'); ?>
+    <?!= include_('js/app/pages/OpenForms'); ?>
+    <?!= include_('js/app/pages/Loading'); ?>
+    <?!= include_('js/app/pages/Merge'); ?>
+    <?!= include_('js/app/Refresh'); ?>
+    <?!= include_('js/app/Spinner'); ?>
 
-<!-- run commands -->
-<?!= include_('js/Init'); ?>
-</body>
+    <!-- run commands -->
+    <?!= include_('js/Init'); ?>
+  </body>
 </html>

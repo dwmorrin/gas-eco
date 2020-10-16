@@ -1,50 +1,54 @@
-
-<div class="hidden">
-  <form class="">
+<div class="mergeContainer hidden">
+  <form class="mergeTool">
     <section class="globalnotes hidden">
       <!-- Notes added with 'New Note' button show up here -->
     </section>
     <section>
-      <table class="staticFields"><!-- static as opposed to the dynamic tables above -->
-        <tr class="hidden">
+      <table class="staticFields">
+        <tr>
+          <th></th>
+          <th>Form A</th>
+          <th>Form B</th>
+        </tr>
+        <tr>
           <th>Booked Students</th>
-          <td class="mergeDisplay mergeA"></td>
-          <td class="mergeDisplay mergeB"></td>
+          <td class="bookedStudentsMergeDisplayA mergeFieldSelection"></td>
+          <td class="bookedStudentsMergeDisplayB"></td>
         </tr>
-        <tr class="hidden">
+        <tr>
           <th>Contact</th>
-          <td class="mergeDisplay mergeA"></td>
-          <td class="mergeDisplay mergeB"></td>
+          <td class="contactMergeDisplayA mergeFieldSelection"></td>
+          <td class="contactMergeDisplayB"></td>
         </tr>
-        <tr class="hidden">
+        <tr>
           <th>Project</th>
-          <td class="mergeDisplay mergeA"></td>
-          <td class="mergeDisplay mergeB"></td>
+          <td class="projectMergeDisplayA mergeFieldSelection"></td>
+          <td class="projectMergeDisplayB"></td>
         </tr>
-        <tr class="hidden">
+        <tr>
           <th>Analog Tape</th>
-          <td class="mergeDisplay mergeA"></td>
-          <td class="mergeDisplay mergeB"></td>
+          <td class="tapeMergeDisplayA mergeFieldSelection"></td>
+          <td class="tapeMergeDisplayB"></td>
         </tr>
-        <tr class="hidden">
+        <tr>
           <th>Overnight Setup</th>
-          <td class="mergeDisplay mergeA"></td>
-          <td class="mergeDisplay mergeB"></td>
+          <td class="overnightMergeDisplayA mergeFieldSelection"></td>
+          <td class="overnightMergeDisplayB"></td>
         </tr>
         <tr>
           <th>Location</th>
-          <td class="mergeDisplay mergeA"></td>
-          <td class="mergeDisplay mergeB"></td>
+          <td class="locationMergeDisplayA mergeFieldSelection"></td>
+          <td class="locationMergeDisplayB"></td>
         </tr>
         <tr>
           <th>Start Time</th>
-          <td class="mergeDisplay mergeA"></td>
-          <td class="mergeDisplay mergeB"></td>
+          <td class="startTimeMergeDisplayA mergeFieldSelection"></td>
+          <td class="startTimeMergeDisplayB"></td>
         </tr>
         <tr>
           <th>End Time</th>
-          <td class="mergeDisplay mergeA"></td>
-          <td class="mergeDisplay mergeB"></td>
+          <td class="endTimeMergeDisplayA mergeFieldSelection"></td>
+          <td class="endTimeMergeDisplayB"></td>
         </tr>
       </table>
       <div class="focusGuardBottom" tabindex="0"></div>
@@ -54,10 +58,14 @@
       <table>
         <thead class="form formStudents">
           <tr>
-            <th>Name</th><th>NetID</th><th>Signed In</th><th>Signed Out</th>
+            <th>Name</th>
+            <th>NetID</th>
+            <th>Signed In</th>
+            <th>Signed Out</th>
           </tr>
         </thead>
-        <tbody class="studentList"><!-- populated by script -->
+        <tbody class="studentList">
+          <!-- populated by script -->
           <tr>
             <td>Scan ID to sign in a student</td>
           </tr>
@@ -76,7 +84,8 @@
             <th>Checked In</th>
           </tr>
         </thead>
-        <tbody class="itemList"><!-- populated by script -->
+        <tbody class="itemList">
+          <!-- populated by script -->
           <tr>
             <td>Scan barcode to check out an item</td>
           </tr>

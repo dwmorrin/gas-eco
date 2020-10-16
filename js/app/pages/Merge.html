@@ -1,0 +1,31 @@
+<script>
+  app.pages.merge = {
+    elements: {
+      container: document.querySelector(".mergeContainer"),
+      form: document.querySelector(".mergeTool"),
+    },
+    show: function () {
+      this.elements.container.classList.remove("hidden");
+      modal({ message: "Use this page to merge two forms.", blocking: true });
+    },
+    hide: function () {
+      this.elements.container.classList.add("hidden");
+    },
+    display(a, b) {
+      console.log({ a, b });
+      [
+        "bookedStudents",
+        "contact",
+        "project",
+        "tape",
+        "overnight",
+        "location",
+        "startTime",
+        "endTime",
+      ].forEach((key) => {
+        document.querySelector(`.${key}MergeDisplayA`).textContent = a[key];
+        document.querySelector(`.${key}MergeDisplayB`).textContent = b[key];
+      });
+    },
+  };
+</script>

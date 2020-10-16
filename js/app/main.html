@@ -1,122 +1,149 @@
 <script>
-/* global Inventory */
-/**
- * signature of the app object
- */
-const app = {
-  cache:     {},                         // data container
-  changes:   {},                         // log user changes
-  doCommand: function(/* command, ...options */){},// command switch block
-  elements:  {},                         // top level elements e.g. global navigation
-  errors:    [],                         // error stack to ensure all errors get displayed to user
-  handlers:  {},                         // event methods
-  inventory: new Inventory(),
-  modal:     {},                         // the modal pop up window
-  omnibox:   {},                         // possibly should be under pages.form
-  pages:     {},                         // the different single page views
-  refresh:   function(/* response */){}, // server callback switch block
-  roster:    [],                         // Student[]
-  run:       null,                       // defined in jsInit, main server call
-  showPage:  function(/* page */){},     // shows a single view to the user
-  spinner:   {},                         // the spinner object
-  strings:   {},                         // top level strings
-  withErrorHandler: null,                // defined in jsInit, main server error handler
-};
+  /* global Inventory */
+  /**
+   * signature of the app object
+   */
+  const app = {
+    cache: {}, // data container
+    changes: {}, // log user changes
+    doCommand: function (/* command, ...options */) {}, // command switch block
+    elements: {}, // top level elements e.g. global navigation
+    errors: [], // error stack to ensure all errors get displayed to user
+    handlers: {}, // event methods
+    inventory: new Inventory(),
+    modal: {}, // the modal pop up window
+    omnibox: {}, // possibly should be under pages.form
+    pages: {}, // the different single page views
+    refresh: function (/* response */) {}, // server callback switch block
+    roster: [], // Student[]
+    run: null, // defined in jsInit, main server call
+    showPage: function (/* page */) {}, // shows a single view to the user
+    spinner: {}, // the spinner object
+    strings: {}, // top level strings
+    withErrorHandler: null, // defined in jsInit, main server error handler
+  };
 
-app.pages = { // must have show and hide functions
-  archive:     {},
-  form:        {},
-  openForms:   {},
-  loading:     {},
-};
+  app.pages = {
+    // must have show and hide functions
+    archive: {},
+    form: {},
+    openForms: {},
+    loading: {},
+    merge: {},
+  };
 
-app.showPage = function(page) {
-  for (let key in app.pages) {
-    if (page == app.pages[key]) {
-      page.show();
-    } else {
-      app.pages[key].hide();
+  app.showPage = function (page) {
+    for (let key in app.pages) {
+      if (page == app.pages[key]) {
+        page.show();
+      } else {
+        app.pages[key].hide();
+      }
     }
-  }
-};
+  };
 
-app.strings = {
-  // icon of a paper document
-  documentIcon: '<img src="' +
-    'data:image/png;base64,' +
-    'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABCElEQVR4XmNgoCbQ0tJiU5S' +
-    'Vb1aUl2+BYSU5hU5FWUU3dLVYgYKCgoCCnPxROTk5LSDbAITl5eUVFeXkPyjKyYWiq8cAIA' +
-    'OU5OXXo4sDDfgFxJ+U5OSc0eVQAMgARTmFVUCFPgpycnlKsvJFKioqfEDN/6H4L1DOBV0fH' +
-    'IC9ICu/VklJSQ7odENlOTljqLgGkK8J8hrQkNfo+uAA4gL5RUBX7ALS/9DwfwVZBX8g/QNd' +
-    'HxxADVijJCOjCww0V2QM1OwOlOcAyv9E1wcH1DKAMi8gByIaNgKpIcIFiGhExkqyCoVAeQk' +
-    'iDJBfjS6ODPAaoCUqygNU8BLogSfYMFDuKTCp30HXN7AAAKarYBD/VuTqAAAAAElFTkSuQm' +
-    'CC" width="16" height="16">',
-  formstack: {
-    archive: 'archive',
-    openForms: 'openForms'
-  },
-  locations: new Set([
-    'Critical Listening', 'Studio 1', 'Studio 2', 'Studio 3', 'Studio 4',
-    'Production Suite A', 'Production Suite B',
-    'Edit Suite 1', 'Edit Suite 2', 'Edit Suite 3', 'Edit Suite 4', 'Edit Suite 5',
-    'Practice Room 1', 'Practice Room 2', 'Practice Room 3', 'Practice Room 4', 'Practice Room 5',
-    'Rehearsal Room 1', 'Rehearsal Room 2', 'Lab 1 645', 'Lab 2 646', 'Lobby/Hallway'
-  ]),
-  manualItemBarcode: "10000", // reserved, magic number to trigger manual entry
-  parserError: 'not found.  You can type in item IDs like "NEU-1", or ' +
-               'names like "John Smith".',
-  omniboxManualEntry: /* value + */ ' appears to be a manual entry.  ' +
-                      'This will be recorded.',
-  signatureAppUrl: 'https://script.google.com/macros/s/' +
-               'AKfycbzoGVb3LFX-Sfxy3_EyMtRYv1TPylDitmuUc-3F7g9mppa_ihEc/exec',
-  studentCheckOutError: 'Cannot check out student.  If this is the last ' +
-      'student, all gear must be returned.  Otherwise try updating the form.',
-  studentIncompleteHTML: '<incomplete>DID NOT SIGN OUT</incomplete>',
-  updateEnabledHint: 'your changes are not saved yet',
-  updateDisabledHint: 'please enter start time, end time, location, ' +
-                      'and at least one student',
-  updateNoShowHint: "This session is past due. Updating will mark the " +
-                    "students as \"no show\" and close the form.",
-  updateButton: {
-    enabled: {
-      CLOSE: "Update and Close",
-      CREATE: "Submit",
-      UPDATE: "Update"
+  app.strings = {
+    // icon of a paper document
+    documentIcon:
+      '<img src="' +
+      "data:image/png;base64," +
+      "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABCElEQVR4XmNgoCbQ0tJiU5S" +
+      "Vb1aUl2+BYSU5hU5FWUU3dLVYgYKCgoCCnPxROTk5LSDbAITl5eUVFeXkPyjKyYWiq8cAIA" +
+      "OU5OXXo4sDDfgFxJ+U5OSc0eVQAMgARTmFVUCFPgpycnlKsvJFKioqfEDN/6H4L1DOBV0fH" +
+      "IC9ICu/VklJSQ7odENlOTljqLgGkK8J8hrQkNfo+uAA4gL5RUBX7ALS/9DwfwVZBX8g/QNd" +
+      "HxxADVijJCOjCww0V2QM1OwOlOcAyv9E1wcH1DKAMi8gByIaNgKpIcIFiGhExkqyCoVAeQk" +
+      "iDJBfjS6ODPAaoCUqygNU8BLogSfYMFDuKTCp30HXN7AAAKarYBD/VuTqAAAAAElFTkSuQm" +
+      'CC" width="16" height="16">',
+    formstack: {
+      archive: "archive",
+      openForms: "openForms",
     },
-    disabled: 'all changes saved',
-  },
-  updateHint: {
-    enabled: 'your changes are not saved yet',
-    disabled: 'please enter start time, end time, location, ' +
-              'and at least one student',
-  },
-};
+    locations: new Set([
+      "Critical Listening",
+      "Studio 1",
+      "Studio 2",
+      "Studio 3",
+      "Studio 4",
+      "Production Suite A",
+      "Production Suite B",
+      "Edit Suite 1",
+      "Edit Suite 2",
+      "Edit Suite 3",
+      "Edit Suite 4",
+      "Edit Suite 5",
+      "Practice Room 1",
+      "Practice Room 2",
+      "Practice Room 3",
+      "Practice Room 4",
+      "Practice Room 5",
+      "Rehearsal Room 1",
+      "Rehearsal Room 2",
+      "Lab 1 645",
+      "Lab 2 646",
+      "Lobby/Hallway",
+    ]),
+    manualItemBarcode: "10000", // reserved, magic number to trigger manual entry
+    parserError:
+      'not found.  You can type in item IDs like "NEU-1", or ' +
+      'names like "John Smith".',
+    omniboxManualEntry:
+      /* value + */ " appears to be a manual entry.  " +
+      "This will be recorded.",
+    signatureAppUrl:
+      "https://script.google.com/macros/s/" +
+      "AKfycbzoGVb3LFX-Sfxy3_EyMtRYv1TPylDitmuUc-3F7g9mppa_ihEc/exec",
+    studentCheckOutError:
+      "Cannot check out student.  If this is the last " +
+      "student, all gear must be returned.  Otherwise try updating the form.",
+    studentIncompleteHTML: "<incomplete>DID NOT SIGN OUT</incomplete>",
+    updateEnabledHint: "your changes are not saved yet",
+    updateDisabledHint:
+      "please enter start time, end time, location, " +
+      "and at least one student",
+    updateNoShowHint:
+      "This session is past due. Updating will mark the " +
+      'students as "no show" and close the form.',
+    updateButton: {
+      enabled: {
+        CLOSE: "Update and Close",
+        CREATE: "Submit",
+        UPDATE: "Update",
+      },
+      disabled: "all changes saved",
+    },
+    updateHint: {
+      enabled: "your changes are not saved yet",
+      disabled:
+        "please enter start time, end time, location, " +
+        "and at least one student",
+    },
+  };
 
-/**
- * tryUnlock controls when the loading page switches to the open forms page
- */
-app.tryUnlock = function() {
-  const rosterLength = app.roster.length,
-        inventoryLength = app.inventory.getLength(),
-        stackInit = app.pages.openForms.stack.isInitialized();
-  if (rosterLength > 1) {
-    app.pages.loading.elements.rosterStatus.textContent = "" +
-      rosterLength + " people downloaded";
-  }
-  if (inventoryLength > 1) {
-    app.pages.loading.elements.inventoryStatus.textContent = "" +
-      inventoryLength + " items downloaded";
-  }
-  if (stackInit) {
-    app.pages.loading.elements.openFormsStatus.textContent = "downloaded";
-  }
-  if (rosterLength < 1 || inventoryLength < 1 || ! stackInit) {
-    return false;
-  }
-  app.elements.openFormsButton.removeAttribute('disabled');
-  app.elements.newFormButton.removeAttribute('disabled');
-  app.spinner.off();
-  app.showPage(app.pages.openForms);
-  return true;
-};
+  /**
+   * tryUnlock controls when the loading page switches to the open forms page
+   */
+  app.tryUnlock = function () {
+    const rosterLength = app.roster.length,
+      inventoryLength = app.inventory.getLength(),
+      stackInit = app.pages.openForms.stack.isInitialized();
+    if (rosterLength > 1) {
+      app.pages.loading.elements.rosterStatus.textContent =
+        "" + rosterLength + " people downloaded";
+    }
+    if (inventoryLength > 1) {
+      app.pages.loading.elements.inventoryStatus.textContent =
+        "" + inventoryLength + " items downloaded";
+    }
+    if (stackInit) {
+      app.pages.loading.elements.openFormsStatus.textContent = "downloaded";
+    }
+    if (rosterLength < 1 || inventoryLength < 1 || !stackInit) {
+      return false;
+    }
+    app.elements.openFormsButton.removeAttribute("disabled");
+    app.elements.newFormButton.removeAttribute("disabled");
+    app.spinner.off();
+    app.showPage(app.pages.openForms);
+    return true;
+  };
 </script>

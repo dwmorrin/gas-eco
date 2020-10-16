@@ -35,7 +35,11 @@
           htmlRow.classList.add("mergeSelection");
           this.mergeSelection.push(htmlRow);
           if (this.mergeSelection.length === 2) {
-            this.mergeModeExit();
+            const forms = this.mergeSelection.map((el) =>
+              this.stack.getByID(el.dataset.id)
+            );
+            app.pages.merge.display(...forms);
+            app.showPage(app.pages.merge);
           }
         }
         return;

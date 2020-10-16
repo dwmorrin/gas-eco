@@ -1,142 +1,150 @@
 <script>
-/* global Inventory */
-/* exported Form */
-/**
- * @param {obj} - passing in an existing form makes a copy of that form
- */
-function Form({
-  bookedStudents = null,
-  bookingId = null,
-  contact = null,
-  endTime = null,
-  id = null,
-  location = null,
-  overnight = null,
-  project = null,
-  startTime = null,
-  tape = null,
-  hash = null,
-  items = null,
-  notes = [],
-  students = []
-}) {
-  this.items = new Inventory().setItems(items);
-  this.bookedStudents = bookedStudents;
-  this.bookingId = bookingId;
-  this.contact = contact;
-  this.endTime = endTime;
-  this.id = id;
-  this.location = location;
-  this.project = project;
-  this.overnight = overnight;
-  this.startTime = startTime;
-  this.tape = tape;
-  this.hash = hash;
-  this.notes = notes.slice();
-  if (this.notes.length > 0) { // copy
-    this.notes.forEach((value, index, array) => {
-      if (typeof value == "object") {
+  /* global Inventory */
+  /* exported Form */
+  /**
+   * @param {obj} - passing in an existing form makes a copy of that form
+   */
+  function Form({
+    bookedStudents = null,
+    bookingId = null,
+    contact = null,
+    endTime = null,
+    id = null,
+    location = null,
+    overnight = null,
+    project = null,
+    startTime = null,
+    tape = null,
+    hash = null,
+    items = null,
+    notes = [],
+    students = [],
+  }) {
+    this.items = new Inventory().setItems(items);
+    this.bookedStudents = bookedStudents;
+    this.bookingId = bookingId;
+    this.contact = contact;
+    this.endTime = endTime;
+    this.id = id;
+    this.location = location;
+    this.project = project;
+    this.overnight = overnight;
+    this.startTime = startTime;
+    this.tape = tape;
+    this.hash = hash;
+    this.notes = notes.slice();
+    if (this.notes.length > 0) {
+      // copy
+      this.notes.forEach((value, index, array) => {
+        if (typeof value == "object") {
+          array[index] = Object.assign({}, value);
+        }
+      });
+    }
+    this.students = students.slice();
+    if (this.students.length > 0) {
+      // copy
+      this.students.forEach((value, index, array) => {
         array[index] = Object.assign({}, value);
-      }
-    });
-  }
-  this.students = students.slice();
-  if (this.students.length > 0) { // copy
-    this.students.forEach((value, index, array) => {
-      array[index] = Object.assign({}, value);
-    });
-  }
-}
-Form.prototype.hasActiveStudent = function() {
-  const studentCounter = function(count, student) {
-    if (student.checkIn && !(student.checkOut || student.left)) {
-      return count + 1;
-    } else {
-      return count;
+      });
     }
+  }
+  Form.prototype.hasActiveStudent = function () {
+    const studentCounter = function (count, student) {
+      if (student.checkIn && !(student.checkOut || student.left)) {
+        return count + 1;
+      } else {
+        return count;
+      }
+    };
+    const activeStudents = this.students.reduce(studentCounter, 0);
+    return activeStudents > 1;
   };
-  const activeStudents = this.students.reduce(studentCounter, 0);
-  return activeStudents > 1;
-};
-Form.prototype.hasItemsOut = function() {
-  return this.items.every(item => {
-    if (item.checkOut) {
-      return ! item.checkIn || ! item.missing;
-    }
-    return false;
-  });
-};
-Form.prototype.hasStudent = function(student) {
-  return Boolean(this.students.find(s => s.id == student.id));
-};
-/**
- * isBlank determines if a form is a new, blank form (could be called `isNew`)
- */
-Form.prototype.isBlank = function() { return this.id === null; };
-Form.prototype.isNoShow = function() {
-  if (! this.id) {
-    return false;
-  }
-  const gracePeriod = 30, // minutes
-        start = new Date(this.startTime),
-        now   = Date.now();
-
-  start.setMinutes(start.getMinutes() + gracePeriod);
-
-  const checkedIn = function(student) { return student.checkIn; };
-  if (now > start.getTime() && ! this.students.some(checkedIn)) {
-    return true;
-  }
-  return false;
-};
-Form.prototype.isReadyToClose = function() {
-  // Need at least 1 check-in, and everyone checked-in must be checked-out
-  return this.students.some(student => student.checkIn) && this.students.every(
-    student => {
-      if (student.checkIn) {
-        return student.checkOut || student.left;
+  Form.prototype.hasItemsOut = function () {
+    return this.items.every((item) => {
+      if (item.checkOut) {
+        return !item.checkIn || !item.missing;
       }
+      return false;
+    });
+  };
+  Form.prototype.hasStudent = function (student) {
+    return Boolean(this.students.find((s) => s.id == student.id));
+  };
+  /**
+   * isBlank determines if a form is a new, blank form (could be called `isNew`)
+   */
+  Form.prototype.isBlank = function () {
+    return this.id === null;
+  };
+  Form.prototype.isNoShow = function () {
+    if (!this.id) {
+      return false;
+    }
+    const gracePeriod = 30, // minutes
+      start = new Date(this.startTime),
+      now = Date.now();
+
+    start.setMinutes(start.getMinutes() + gracePeriod);
+
+    const checkedIn = function (student) {
+      return student.checkIn;
+    };
+    if (now > start.getTime() && !this.students.some(checkedIn)) {
       return true;
     }
-  );
-};
-Form.prototype.isReadyToPost = function() {
-  if (! this.location) {
     return false;
-  }
-  if (this.startTime === this.endTime) {
-    return false;
-  }
-  const someStudentsAreActive = this.students.some(
-    s => (s.checkIn && ! (s.checkOut || s.left))
-  );
-  const someItemsAreOut = this.items.some(
-    i => (i.checkOut && ! (i.checkIn || i.missing))
-  );
-  if (someItemsAreOut && ! someStudentsAreActive) {
-    return false;
-  }
-  if (this.students.length == 0) { // finally, is anybody on the form?
-    return false;
-  }
-  return true;
-};
-Form.prototype.makeAdvanceBooking = function() {
-  if (! this.isBlank()) {
-    throw new Error("advance booking only allowed with new, unsaved forms");
-  }
-  // remove check-ins from students
-  this.students.forEach(student => {
-    student.checkIn = null;
-  });
-  this.items.forEach(item => {
-    item.checkOut = "";
-    item.checkedOut = false;
-  });
-};
-Form.prototype.stringify = function() {
-  const copy = Object.assign({}, this);
-  copy.items = this.items.archive();
-  return JSON.stringify(copy);
-};
+  };
+  Form.prototype.isReadyToClose = function () {
+    // Need at least 1 check-in, and everyone checked-in must be checked-out
+    return (
+      this.students.some((student) => student.checkIn) &&
+      this.students.every((student) => {
+        if (student.checkIn) {
+          return student.checkOut || student.left;
+        }
+        return true;
+      })
+    );
+  };
+  Form.prototype.isReadyToPost = function () {
+    if (!this.location) {
+      return false;
+    }
+    if (this.startTime === this.endTime) {
+      return false;
+    }
+    const someStudentsAreActive = this.students.some(
+      (s) => s.checkIn && !(s.checkOut || s.left)
+    );
+    const someItemsAreOut = this.items.some(
+      (i) => i.checkOut && !(i.checkIn || i.missing)
+    );
+    if (someItemsAreOut && !someStudentsAreActive) {
+      return false;
+    }
+    if (this.students.length == 0) {
+      // finally, is anybody on the form?
+      return false;
+    }
+    return true;
+  };
+  Form.prototype.makeAdvanceBooking = function () {
+    if (!this.isBlank()) {
+      throw new Error("advance booking only allowed with new, unsaved forms");
+    }
+    // remove check-ins from students
+    this.students.forEach((student) => {
+      student.checkIn = null;
+    });
+    this.items.forEach((item) => {
+      item.checkOut = "";
+      item.checkedOut = false;
+    });
+  };
+  Form.prototype.stringify = function () {
+    const copy = Object.assign({}, this);
+    copy.items = this.items.archive();
+    return JSON.stringify(copy);
+  };
 </script>
