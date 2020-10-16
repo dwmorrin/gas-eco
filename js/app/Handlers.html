@@ -75,6 +75,11 @@ app.handlers = {
         return;
       }
     }
+    if (path.find(el => containsClass(el, "mergeContainer"))) {
+      if (click.target.tagName === 'TD') {
+        return app.pages.merge.handleClickTable(click);
+      }
+    }
     if (path.find(el => containsClass(el, "itemList"))) {
       app.pages.form.handleClickItem(click);
       return;

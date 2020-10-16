@@ -1,4 +1,5 @@
 <script>
+  /* global app modal */
   app.pages.merge = {
     elements: {
       container: document.querySelector(".mergeContainer"),
@@ -27,5 +28,48 @@
         document.querySelector(`.${key}MergeDisplayB`).textContent = b[key];
       });
     },
+    /*
+        A   B   target shift  |  A   B  comment
+        1   0   A      0      |  1   0  ignore
+        1   0   B      0      |  0   1  toggle
+        1   0   A      1      |  1   0  ignore
+        1   0   B      1      |  1   1  both
+        0   1   A      0      |  1   0  toggle
+        0   1   B      0      |  0   1  ignore
+        0   1   A      1      |  1   1  both
+        0   1   B      1      |  0   1  ignore
+        1   1   A      0      |  1   0  deselect non-target
+        1   1   B      0      |  0   1  deselect non-target
+        1   1   A      1      |  0   1  deselect target
+        1   1   B      1      |  1   0  deselect target
+       (0) (0)  [not allowed]
+    */
+    handleClickTable(click) {
+      console.log(click);
+      document.getSelection().removeAllRanges(); // trying to avoid highlighting
+      const {target, shiftKey} = click;
+      const [, A, B] = Array.from(click.target.parentNode.children);
+      const [a, b] = state(A, B);
+      if ((a && !b && target === B) || !a && b && target === A) {
+        if (shiftKey) both(A, B);
+        else toggle(A, B);
+      }
+      else if (a && b) {
+        if (shiftKey) toggle(target);
+        else {
+          if (target === A) toggle(B);
+          else toggle(A);
+        }
+      }
+      function toggle(...els) {
+        els.forEach(el => el.classList.toggle("mergeFieldSelection"));
+      }
+      function both(...els) {
+        els.forEach(el => el.classList.add("mergeFieldSelection"));
+      }
+      function state(...els) {
+        return els.map(el => el.classList.contains("mergeFieldSelection"));
+      }
+    }
   };
 </script>
