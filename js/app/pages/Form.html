@@ -291,7 +291,7 @@ app.pages.form = {
     }
   },
   setTimeInputs: function (...names) {
-    (names || ["start", "end"]).forEach(name => {
+    (names.length && names || ["start", "end"]).forEach(name => {
       const input = document.querySelector(`input[name="${name}Date"]`);
       const date = utility.date.parseFormattedDate(
         this.elements.form[`${name}Time`].value
