@@ -55,6 +55,9 @@ function Inventory() {
   this.some = function(func) {
     return items.some(func);
   };
+  this.map = function(func) {
+    return items.map(func);
+  }
   
   // this section has custom methods for the Inventory array
   this.contains = function(query) {

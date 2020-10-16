@@ -27,6 +27,47 @@
         document.querySelector(`.${key}MergeDisplayA`).textContent = a[key];
         document.querySelector(`.${key}MergeDisplayB`).textContent = b[key];
       });
+      const studentTable = document.querySelector(".mergeStudents");
+      const itemTable = document.querySelector(".mergeItems");
+      const aStudents = a.students.map(studentCells);
+      const bStudents = b.students.map(studentCells);
+      const aItems = a.items.map(itemCells);
+      const bItems = b.items.map(itemCells);
+      aStudents.forEach(cells => studentTable.appendChild(row(cell("A"), ...cells)));
+      bStudents.forEach(cells => studentTable.appendChild(row(cell("B"), ...cells)));
+      aItems.forEach(cells => itemTable.appendChild(row(cell("A"), ...cells)));
+      bItems.forEach(cells => itemTable.appendChild(row(cell("B"), ...cells)));
+      function studentCells({name, netId, checkIn, checkOut}) {
+        return [
+          cell(name),
+          cell(netId),
+          cell(checkIn),
+          cell(checkOut)
+        ];
+      }
+      function itemCells(item) {
+        const {description, barcode, id, checkOut, checkIn} = item;
+        return [
+          cell(item.getQuantity()),
+          cell(description),
+          cell(id || barcode),
+          cell(checkOut),
+          cell(checkIn)
+        ];
+      }
+      function htmlEl(name) {
+        return document.createElement(name);
+      }
+      function cell(value) {
+        const td = htmlEl("td");
+        td.textContent = value;
+        return td;
+      }
+      function row(...tds) {
+        const tr = htmlEl("tr");
+        tds.forEach(cell => tr.appendChild(cell));
+        return tr;
+      }
     },
     /*
         A   B   target shift  |  A   B  comment
@@ -45,7 +86,6 @@
        (0) (0)  [not allowed]
     */
     handleClickTable(click) {
-      console.log(click);
       document.getSelection().removeAllRanges(); // trying to avoid highlighting
       const {target, shiftKey} = click;
       const [, A, B] = Array.from(click.target.parentNode.children);
