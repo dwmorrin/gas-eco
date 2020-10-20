@@ -12,47 +12,44 @@
     hide: function () {
       this.elements.container.classList.add("hidden");
     },
-    display(a, b) {
-      console.log({ a, b });
-      [
-        "bookedStudents",
-        "contact",
-        "project",
-        "tape",
-        "overnight",
-        "location",
-        "startTime",
-        "endTime",
-      ].forEach((key) => {
-        document.querySelector(`.${key}MergeDisplayA`).textContent = a[key];
-        document.querySelector(`.${key}MergeDisplayB`).textContent = b[key];
-      });
+    display(...forms) {
       const studentTable = document.querySelector(".mergeStudents");
       const itemTable = document.querySelector(".mergeItems");
-      const aStudents = a.students.map(studentCells);
-      const bStudents = b.students.map(studentCells);
-      const aItems = a.items.map(itemCells);
-      const bItems = b.items.map(itemCells);
-      aStudents.forEach(cells => studentTable.appendChild(row(cell("A"), ...cells)));
-      bStudents.forEach(cells => studentTable.appendChild(row(cell("B"), ...cells)));
-      aItems.forEach(cells => itemTable.appendChild(row(cell("A"), ...cells)));
-      bItems.forEach(cells => itemTable.appendChild(row(cell("B"), ...cells)));
-      function studentCells({name, netId, checkIn, checkOut}) {
-        return [
-          cell(name),
-          cell(netId),
-          cell(checkIn),
-          cell(checkOut)
-        ];
+      forms.forEach((form, i) => {
+        const id = indexToLetter(i);
+        [
+          "bookedStudents",
+          "contact",
+          "project",
+          "tape",
+          "overnight",
+          "location",
+          "startTime",
+          "endTime",
+        ].forEach((key) => {
+          document.querySelector(`.${key}MergeDisplay${id}`).textContent =
+            form[key];
+        });
+        form.students
+          .map(studentCells)
+          .forEach((cells) =>
+            studentTable.appendChild(row(cell(id), ...cells))
+          );
+        form.items
+          .map(itemCells)
+          .forEach((cells) => itemTable.appendChild(row(cell(id), ...cells)));
+      });
+      function studentCells({ name, netId, checkIn, checkOut }) {
+        return [cell(name), cell(netId), cell(checkIn), cell(checkOut)];
       }
       function itemCells(item) {
-        const {description, barcode, id, checkOut, checkIn} = item;
+        const { description, barcode, id, checkOut, checkIn } = item;
         return [
           cell(item.getQuantity()),
           cell(description),
           cell(id || barcode),
           cell(checkOut),
-          cell(checkIn)
+          cell(checkIn),
         ];
       }
       function htmlEl(name) {
@@ -65,8 +62,11 @@
       }
       function row(...tds) {
         const tr = htmlEl("tr");
-        tds.forEach(cell => tr.appendChild(cell));
+        tds.forEach((cell) => tr.appendChild(cell));
         return tr;
+      }
+      function indexToLetter(n) {
+        return String.fromCharCode("A".charCodeAt() + n);
       }
     },
     /*
@@ -83,33 +83,34 @@
         1   1   B      0      |  0   1  deselect non-target
         1   1   A      1      |  0   1  deselect target
         1   1   B      1      |  1   0  deselect target
-       (0) (0)  [not allowed]
+       (0) (0)  [not allowed] |  1   1  both
     */
     handleClickTable(click) {
       document.getSelection().removeAllRanges(); // trying to avoid highlighting
-      const {target, shiftKey} = click;
+      const { target, shiftKey } = click;
       const [, A, B] = Array.from(click.target.parentNode.children);
       const [a, b] = state(A, B);
-      if ((a && !b && target === B) || !a && b && target === A) {
+      if ((a && !b && target === B) || (!a && b && target === A)) {
         if (shiftKey) both(A, B);
         else toggle(A, B);
-      }
-      else if (a && b) {
+      } else if (a && b) {
         if (shiftKey) toggle(target);
         else {
           if (target === A) toggle(B);
           else toggle(A);
         }
+      } else if (!a && !b) {
+        both(A, B);
       }
       function toggle(...els) {
-        els.forEach(el => el.classList.toggle("mergeFieldSelection"));
+        els.forEach((el) => el.classList.toggle("mergeFieldSelection"));
       }
       function both(...els) {
-        els.forEach(el => el.classList.add("mergeFieldSelection"));
+        els.forEach((el) => el.classList.add("mergeFieldSelection"));
       }
       function state(...els) {
-        return els.map(el => el.classList.contains("mergeFieldSelection"));
+        return els.map((el) => el.classList.contains("mergeFieldSelection"));
       }
-    }
+    },
   };
 </script>
