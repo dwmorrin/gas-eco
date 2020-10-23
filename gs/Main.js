@@ -24,30 +24,31 @@ writeSignatureToSheet_
 /* exported doGet */
 function doGet(request) {
   if (!request.get) {
-    var webpage = HtmlService.createTemplateFromFile('html/index');
+    var webpage = HtmlService.createTemplateFromFile("html/index");
     webpage = webpage.evaluate();
-    webpage.setTitle('Equipment Check-Out')
+    webpage
+      .setTitle("Equipment Check-Out")
       .addMetaTag("viewport", "width=device-width");
     return webpage;
   }
 
   var response = {};
   switch (request.get) {
-    case 'archive':
+    case "archive":
       response.formList = getArchivedForms_(request.dateRangeJSON).stringify();
       break;
-    case 'items':
+    case "items":
       response.items = getAllItems_().stringify();
       break;
-    case 'students':
+    case "students":
       response.students = JSON.stringify(getAllStudents_());
       break;
-    case 'user':
+    case "user":
       response.user = getUser_();
       break;
-    case 'checkForms': // fallthrough
-    case 'openForms': // fallthrough
-    case 'openFormsQuiet':
+    case "checkForms": // fallthrough
+    case "openForms": // fallthrough
+    case "openFormsQuiet":
       response.formList = getOpenForms_().stringify();
       break;
   }
@@ -78,37 +79,56 @@ function doPost(request) {
     console.error(lockError);
     throw new Error(
       "Whoops, the database is unavailable at the moment. " +
-      "You may have to refresh the browser."
+        "You may have to refresh the browser."
     );
   }
   // we have the lock
   // we must check that there is no collision first, i.e. that thing we are trying
   // to update wasn't already updated by someone else.
   switch (request.post) {
-    case 'codabar':
+    case "codabar":
       writeCodabar_(request.netId, request.codabar);
       response.students = JSON.stringify(getAllStudents_());
       break;
-    case 'rejected':
+    case "deleteForm":
+      var form = new Form_(JSON.parse(request.form));
+      try {
+        writeFormToSheet_(form, true);
+        request.post = "openForms";
+        response.formList = getOpenForms_().stringify();
+      } catch (error) {
+        if (error instanceof ErrorFormCollision_) {
+          writeRejectedFormToSheet_(form);
+          lock.releaseLock();
+          response.target = "collision";
+          response.storedForm = JSON.stringify(error.saved);
+          response.submittedForm = JSON.stringify(error.submitted);
+          return response;
+        }
+        lock.releaseLock();
+        throw error;
+      }
+      break;
+    case "rejected":
       writeRejectedFormToSheet_(new Form_(request.form));
       break;
-    case 'signature':
+    case "signature":
       writeSignatureToSheet_(request);
       response.students = JSON.stringify(getAllStudents_());
       break;
-    case 'signatureTimeout':
+    case "signatureTimeout":
       clearSignatureValidation_();
       break;
-    case 'startSignature':
+    case "startSignature":
       startSignature_(request.netid);
       break;
-    case 'updateForm':
+    case "updateForm":
       var form = new Form_(JSON.parse(request.form));
       try {
         form.validate(); // throws ErrorFormInvalid_
         if (form.isReadyToClose() || form.isNoShow()) {
           writeFormToSheet_(form, true); // throws ErrorFormCollision_
-          request.post = 'openForms';
+          request.post = "openForms";
           response.formList = getOpenForms_().stringify();
         } else {
           response.form = writeFormToSheet_(form).stringify(); // throws ErrorFormCollision_
@@ -134,7 +154,7 @@ function doPost(request) {
         }
       }
       break;
-    case 'unload':
+    case "unload":
       handleUnload_();
       break;
   }
@@ -147,7 +167,7 @@ function doPost(request) {
 /** @todo - most likely will be called by doPost */
 /* exported deleteForm_ */
 function deleteForm_() {
-  throw 'not implemented';
+  throw "not implemented";
 }
 
 /** @see doGet */
@@ -182,63 +202,81 @@ var utility = { date: {}, hash: {} };
  * @param {Date} date
  * @return {string}
  */
-utility.date.getFormattedDate = function(date) {
+utility.date.getFormattedDate = function (date) {
   var year = date.getFullYear(),
-      month = (date.getMonth() + 1), // zero indexed
-      day = date.getDate(),
-      hour = date.getHours(),
-      minutes = date.getMinutes(),
-      ampm = 'am';
+    month = date.getMonth() + 1, // zero indexed
+    day = date.getDate(),
+    hour = date.getHours(),
+    minutes = date.getMinutes(),
+    ampm = "am";
 
   if (hour > 11) {
-    ampm = 'pm';
+    ampm = "pm";
     hour = hour % 12;
   }
   if (hour == 0) {
     hour = 12;
   }
-  return utility.date.zeropad(month) + '/' + utility.date.zeropad(day) + '/' +
-           year + ' ' + utility.date.zeropad(hour) + ':' +
-           utility.date.zeropad(minutes) + ' ' + ampm;
+  return (
+    utility.date.zeropad(month) +
+    "/" +
+    utility.date.zeropad(day) +
+    "/" +
+    year +
+    " " +
+    utility.date.zeropad(hour) +
+    ":" +
+    utility.date.zeropad(minutes) +
+    " " +
+    ampm
+  );
 };
 
 /**
  * @param {string} dateString
  * @return {Date}
  */
-utility.date.parseFormattedDate = function(dateString) {
+utility.date.parseFormattedDate = function (dateString) {
   // mm/dd/yyyy hh:mm am
-  var month   = dateString.slice(0,2),
-      day     = dateString.slice(3,5),
-      year    = dateString.slice(6,10),
-      hour    = dateString.slice(11,13),
-      minutes = dateString.slice(14,16),
-      ampm    = dateString.slice(17,19);
+  var month = dateString.slice(0, 2),
+    day = dateString.slice(3, 5),
+    year = dateString.slice(6, 10),
+    hour = dateString.slice(11, 13),
+    minutes = dateString.slice(14, 16),
+    ampm = dateString.slice(17, 19);
   // convert ampm to 24 hour
-  if (ampm == 'pm') {
+  if (ampm == "pm") {
     ampm = 12;
   } else {
     ampm = 0;
   }
-  hour = hour % 12 + ampm;
+  hour = (hour % 12) + ampm;
 
-  return new Date(year + '-' + utility.date.zeropad(month) + '-' +
-           utility.date.zeropad(day) + 'T' + utility.date.zeropad(hour) + ':' +
-           utility.date.zeropad(minutes) + ':00'
+  return new Date(
+    year +
+      "-" +
+      utility.date.zeropad(month) +
+      "-" +
+      utility.date.zeropad(day) +
+      "T" +
+      utility.date.zeropad(hour) +
+      ":" +
+      utility.date.zeropad(minutes) +
+      ":00"
   );
 };
 
 /** Helper function for handling date strings */
-utility.date.zeropad = function(x) {
+utility.date.zeropad = function (x) {
   x = +x;
   if (x < 10) {
-    return '0' + x;
+    return "0" + x;
   } else {
     return x;
   }
 };
 
-utility.hash.make = function(string) {
+utility.hash.make = function (string) {
   var digest = Utilities.computeDigest(Utilities.DigestAlgorithm.MD2, string);
   return Utilities.base64EncodeWebSafe(digest);
 };

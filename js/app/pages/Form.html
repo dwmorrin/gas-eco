@@ -1,449 +1,493 @@
 <script>
-/* global Form app displayForm utility toast */
-app.pages.form = {
-  autosaveID: null,
-  checkForms: function() {
-    app.run
-      .withUserObject({ timeoutId: app.pages.form.timeoutId })
-      .doGet({ get: "checkForms" });
-  },
-  currentStack: null,
-  disable: function() {
-    app.omnibox.element.setAttribute('disabled', true);
-    this.elements.newNoteButton.setAttribute('disabled', true);
-    this.elements.manualButton.setAttribute('disabled', true);
-    this.elements.omniboxButton.setAttribute('disabled', true);
-    this.elements.updateButtonHint.textContent = 'This is a closed form.  ' +
-      'You cannot edit it.';
-    this.elements.copyButton.classList.remove('hidden');
-    this.elements.advanceBookingButton.classList.add('hidden');
-    this.elements.advanceBookingButton.setAttribute('disabled', true);
-  },
-  elements: {
-    advanceBookingButton:   document.querySelector('button[value="advanceBooking"]'),
-    container:               document.querySelector('div.formContainer'),
-    currentFormstackDisplay: document.querySelector('span.currentFormstackDisplay'),
-    focusGuardTop:           document.querySelector('.focusGuardTop'),
-    focusGuardBottom:        document.querySelector('.focusGuardBottom'),
-    form:                    document.querySelector('form.model'),
-    itemList:                document.querySelector('tbody.itemList'),
-    locationSelect:          document.querySelector('form.model select[name="location"]'),
-    locationOtherOption:     document.querySelector('form.model option[value="Other"]'),
-    newNoteButton:           document.querySelector('button[value="newNote"]'),
-    manualButton:            document.querySelector('button[value="newManual"]'),
-    omniboxButton:           document.querySelector('button[value="parseOmnibox"]'),
-    noteSection:             document.querySelector('section.globalnotes'),
-    studentList:             document.querySelector('tbody.studentList'),
-    tableStaticFields:       document.querySelector('table.staticFields'),
-    updateButtonHint:        document.querySelector('span.updateButtonHint'),
-    updateFormButton:        document.querySelector('button[value="updateForm"]'),
-    undoButton:              document.querySelector('button[value="undo"]'),
-    copyButton:              document.querySelector('button[value="copyItems"]'),
-  },
-  enable: function() {
-    app.omnibox.element.removeAttribute('disabled');
-    this.elements.newNoteButton.removeAttribute('disabled');
-    this.elements.manualButton.removeAttribute('disabled');
-    this.elements.omniboxButton.removeAttribute('disabled');
-    this.elements.updateButtonHint.textContent = '';
-    this.elements.copyButton.classList.add('hidden');
-    this.refreshUpdateButton();
-  },
-  getNext: function() {
-    const form = app.pages.form.currentStack.getNext();
-    if (! form) { // we're already at the end
-      app.omnibox.element.focus();
-      return;
-    }
-    if (! app.changes.saved) {
-      app.pages.form.currentStack.getPrevious(); // fix currentIndex
-      app.modal.handleUnsavedForm('nextForm');
-      return;
-    }
-    displayForm(form);
-  },
-  getPrevious: function() {
-    const form = app.pages.form.currentStack.getPrevious();
-    if (! form) { // we're already at the beginning
-      app.omnibox.element.focus();
-      return;
-    }
-    if (! app.changes.saved) {
-      app.pages.form.currentStack.getNext(); // fix currentIndex
-      app.modal.handleUnsavedForm('previousForm');
-      return;
-    }
-    displayForm(form);
-  },
-  /** for form validation and attach beforeunload listener for unsaved changes */
-  handleChange: function(change) {
-    if ((change.target.classList &&
-         change.target.classList.contains("selectQuantity")) ||
-         change.target == app.omnibox.element) {
-      return;
-    }
-
-    switch (change.target.name) {
-      case 'location':
-        app.pages.form.handleChangeLocation(change);
-        if (change.target.value === "Other") {
-          return;
-        }
-        break;
-      case 'startDate':
-      case 'startHour':
-      case 'startMinute':
-      case 'startAMPM':
-      case 'endDate':
-      case 'endHour':
-      case 'endMinute':
-      case 'endAMPM':
-        app.pages.form.handleChangeTime(change);
-        break;
-      case 'advanceBooking':
-      case 'notes':
-        app.changes.add(change);
-        break;
-      case 'items':
-      case 'students':
-        toast(change.target.value + " OK");
-        app.changes.add(change);
-        break;
-      case 'manual': // SPECIAL CASE
-        app.changes.add(change);
-        return; // no change to buttons or "saved" state for manual entries
-    }
-
-    app.changes.saved = false;
-    app.pages.form.elements.undoButton.removeAttribute('disabled');
-    const form = app.pages.openForms.getCurrentForm();
-    if (form.isBlank()) {
-      app.pages.form.elements.updateFormButton.textContent = app.strings.updateButton.enabled.CREATE;
-      app.pages.form.elements.advanceBookingButton.classList.remove("hidden");
-    } else {
-      app.pages.form.elements.updateFormButton.textContent = app.strings.updateButton.enabled.UPDATE;
-      app.pages.form.elements.advanceBookingButton.classList.add("hidden");
-    }
-    app.pages.form.elements.updateFormButton.classList.add('create');
-
-    // clear the old autosave, if it exists
-    if (app.pages.form.autosaveID !== null) {
-      window.clearTimeout(app.pages.form.autosaveID);
-      app.pages.form.autosaveID = null;
-    }
-    if (form.isReadyToPost()) {
-      // automatically try to save in 60 seconds
-      app.pages.form.autosaveID = window.setTimeout(() => {
-        // recheck form is still valid
-        if (! app.pages.openForms.getCurrentForm().isReadyToPost() ||
-            app.modal.isShowing()) {
-          return;
-        }
-        app.doCommand("updateForm");
-      }, 60000);
-      // are we ready to close?
-      const noShow = form.isNoShow();
-      if (form.isReadyToClose() || noShow) {
-        app.pages.form.elements.updateFormButton.textContent = app.strings.updateButton.enabled.CLOSE;
-      } // Enable update button
-      app.pages.form.elements.advanceBookingButton.removeAttribute('disabled');
-      app.pages.form.elements.updateFormButton.removeAttribute('disabled');
-      app.pages.form.elements.updateButtonHint.textContent = noShow ?
-        app.strings.updateNoShowHint :
-        app.strings.updateEnabledHint;
-    } else { // Disable update button
-      app.pages.form.elements.advanceBookingButton.setAttribute('disabled', true);
-      app.pages.form.elements.updateFormButton.setAttribute('disabled', true);
-      app.pages.form.elements.updateButtonHint.textContent = app.strings.updateDisabledHint;
-    }
-    app.omnibox.element.focus();
-  },
-  handleChangeLocation: function(change) {
-    if (change.target.value === "none") {
-      change.target.value = app.pages.openForms.getCurrentForm().location || "none";
-      return;
-    }
-    if (change.target.value === "Other") {
-      change.target.value = 'none'; // in case the modal is cancelled
-      app.modal.getLocation();
-      return;
-    }
-    // update form
-    app.pages.openForms.getCurrentForm().location = change.target.value;
-    // update location select element
-    const other = this.elements.locationOtherOption;
-    if (app.strings.locations.has(change.target.value)) {
-      other.textContent = other.value = 'Other';
-    } else {
-      this.elements.locationSelect.value = other.textContent =
-        other.value = change.target.value;
-    }
-    app.changes.add(change);
-  },
-  handleChangeTime: function(change) {
-    this.touched.add(change.target);
-    let t = utility.date.parseDateAndTimeInputs();
-    const els = this.elements.form;
-    const startEls = [
-      els.startDate, els.startHour, els.startMinute, els.startAMPM,
-    ];
-    const endEls = [
-      els.endDate, els.endHour, els.endMinute, els.endAMPM,
-    ];
-    // CHECK #0: Are t.start and t.end valid?
-    if (window.isNaN(t.startTime.getTime())) {
-      startEls.forEach(el => el.classList.add("error"));
-      app.modal.handleError(new Error('please enter a valid start time.'));
-      return;
-    } else if (window.isNaN(t.endTime.getTime())) {
-      endEls.forEach(el => el.classList.add("error"));
-      app.modal.handleError(new Error('please enter a valid end time.'));
-      return;
-    }
-    // CHECK #1: If start is after end, if end is untouched, add 1 hour to end
-    const userTouchedEnd = endEls.some(el => this.touched.has(el));
-    if (t.endTime.getTime() <= t.startTime.getTime()) {
-      if (!userTouchedEnd) {
-        const newEnd = new Date(t.startTime);
-        newEnd.setHours(t.startTime.getHours() + 1);
-        this.dateToInput(newEnd, els.endDate);
-        t = utility.date.parseDateAndTimeInputs();
+  /* global Form app displayForm utility toast */
+  app.pages.form = {
+    autosaveID: null,
+    checkForms: function () {
+      app.run
+        .withUserObject({ timeoutId: app.pages.form.timeoutId })
+        .doGet({ get: "checkForms" });
+    },
+    currentStack: null,
+    disable: function () {
+      app.omnibox.element.setAttribute("disabled", true);
+      this.elements.newNoteButton.setAttribute("disabled", true);
+      this.elements.manualButton.setAttribute("disabled", true);
+      this.elements.omniboxButton.setAttribute("disabled", true);
+      this.elements.updateButtonHint.textContent =
+        "This is a closed form.  " + "You cannot edit it.";
+      this.elements.copyButton.classList.remove("hidden");
+      this.elements.advanceBookingButton.classList.add("hidden");
+      this.elements.advanceBookingButton.setAttribute("disabled", true);
+    },
+    elements: {
+      advanceBookingButton: document.querySelector(
+        'button[value="advanceBooking"]'
+      ),
+      container: document.querySelector("div.formContainer"),
+      currentFormstackDisplay: document.querySelector(
+        "span.currentFormstackDisplay"
+      ),
+      deleteFormButton: document.querySelector('button[value="deleteForm"]'),
+      focusGuardTop: document.querySelector(".focusGuardTop"),
+      focusGuardBottom: document.querySelector(".focusGuardBottom"),
+      form: document.querySelector("form.model"),
+      itemList: document.querySelector("tbody.itemList"),
+      locationSelect: document.querySelector(
+        'form.model select[name="location"]'
+      ),
+      locationOtherOption: document.querySelector(
+        'form.model option[value="Other"]'
+      ),
+      newNoteButton: document.querySelector('button[value="newNote"]'),
+      manualButton: document.querySelector('button[value="newManual"]'),
+      omniboxButton: document.querySelector('button[value="parseOmnibox"]'),
+      noteSection: document.querySelector("section.globalnotes"),
+      studentList: document.querySelector("tbody.studentList"),
+      tableStaticFields: document.querySelector("table.staticFields"),
+      updateButtonHint: document.querySelector("span.updateButtonHint"),
+      updateFormButton: document.querySelector('button[value="updateForm"]'),
+      undoButton: document.querySelector('button[value="undo"]'),
+      copyButton: document.querySelector('button[value="copyItems"]'),
+    },
+    enable: function () {
+      app.omnibox.element.removeAttribute("disabled");
+      this.elements.newNoteButton.removeAttribute("disabled");
+      this.elements.manualButton.removeAttribute("disabled");
+      this.elements.omniboxButton.removeAttribute("disabled");
+      this.elements.updateButtonHint.textContent = "";
+      this.elements.copyButton.classList.add("hidden");
+      this.refreshUpdateButton();
+    },
+    getNext: function () {
+      const form = app.pages.form.currentStack.getNext();
+      if (!form) {
+        // we're already at the end
+        app.omnibox.element.focus();
+        return;
       }
-    }
-    // CHECK #2: If start is still after end, display error to user
-    if (t.endTime.getTime() <= t.startTime.getTime()) {
-      endEls.forEach(el => {el.classList.add("error");});
-      app.modal.handleError(new Error('Start time is after end time.'));
-      return;
-    } else { // In case there was an error before, reset the classLists
-      startEls.forEach(el => {el.classList.remove("error");});
-      endEls.forEach(el => {el.classList.remove("error");});
-    }
-    const form = app.pages.openForms.getCurrentForm();
-    const startTime = utility.date.getFormattedDate(t.startTime);
-    els.startTime.value = form.startTime = startTime;
-    const endTime = utility.date.getFormattedDate(t.endTime);
-    els.endTime.value = form.endTime = endTime;
-    const type = change.target.name.slice(0,1),
-          newChange = { target: {} };
-    if (type == 's') {
-      newChange.target.name = 'startTime';
-      newChange.target.value = els.startTime.value;
-    } else if (type == 'e') {
-      newChange.target.name = 'endTime';
-      newChange.target.value = els.endTime.value;
-    }
-    app.changes.add(newChange);
-  },
-
-  handleClickItem: function(click) {
-    if (app.pages.form.currentStack === app.pages.archive.filteredStack) {
-      return;
-    }
-    const data = click.target.parentNode.dataset;
-    if (click.metaKey) {
-      app.omnibox.element.value = data.id || data.barcode;
-      app.omnibox.parse();
-      return;
-    }
-    const itemRow = (click.target.classList.contains('itemnotes'))
-      ? click.target.parentNode.previousSibling
-      : click.target.parentNode;
-    const form = app.pages.openForms.getCurrentForm();
-    const key = itemRow.dataset.id === '' ? "barcode" : "id";
-    const item = itemRow.dataset.id === '' ?
-      form.items.getByBarcode(itemRow.dataset.barcode) :
-      form.items.getById(itemRow.dataset.id);
-    if (! item) {
-      app.modal.handleError(
-        new Error('cannot take note for ' + itemRow.dataset[key])
-      );
-    }
-    app.modal.handleItemNote(item);
-  },
-  handleClickStaticTable: function(click) {
-    if (app.pages.form.currentStack === app.pages.archive.filteredStack) {
-      return;
-    }
-    if (click.target.tagName != 'TD') {
-      return;
-    }
-    if (click.target.classList.contains('editable')) {
-      if (!app.omnibox.element.disabled) {
-        let inputCell = utility.DOM.getNextSibling(click.target);
-        let input = utility.DOM.getFirstChild(inputCell);
-        switch (input.name) {
-          case 'location':
-            app.pages.form.resetLocation(); // select loses custom "Other"
-            input.value = click.target.textContent;
-            if (input.value == "") { // form is using custom "Other"
-              input.value = "none"; // this will discard custom value
-            }
-            break;
-          case 'startDate': // fallthrough
-          case 'endDate':
-            this.setTimeInputs();
-            break;
-        }
-        click.target.classList.add('hidden');
-        inputCell.classList.remove('hidden');
+      if (!app.changes.saved) {
+        app.pages.form.currentStack.getPrevious(); // fix currentIndex
+        app.modal.handleUnsavedForm("nextForm");
+        return;
       }
-    }
-  },
-  setTimeInputs: function (...names) {
-    (names.length && names || ["start", "end"]).forEach(name => {
-      const input = document.querySelector(`input[name="${name}Date"]`);
-      const date = utility.date.parseFormattedDate(
-        this.elements.form[`${name}Time`].value
-      );
-      this.dateToInput(date, input);
-    });
-  },
-  dateToInput: function (date, input) {
+      displayForm(form);
+    },
+    getPrevious: function () {
+      const form = app.pages.form.currentStack.getPrevious();
+      if (!form) {
+        // we're already at the beginning
+        app.omnibox.element.focus();
+        return;
+      }
+      if (!app.changes.saved) {
+        app.pages.form.currentStack.getNext(); // fix currentIndex
+        app.modal.handleUnsavedForm("previousForm");
+        return;
+      }
+      displayForm(form);
+    },
+    /** for form validation and attach beforeunload listener for unsaved changes */
+    handleChange: function (change) {
+      if (
+        (change.target.classList &&
+          change.target.classList.contains("selectQuantity")) ||
+        change.target == app.omnibox.element
+      ) {
+        return;
+      }
+
+      switch (change.target.name) {
+        case "location":
+          app.pages.form.handleChangeLocation(change);
+          if (change.target.value === "Other") {
+            return;
+          }
+          break;
+        case "startDate":
+        case "startHour":
+        case "startMinute":
+        case "startAMPM":
+        case "endDate":
+        case "endHour":
+        case "endMinute":
+        case "endAMPM":
+          app.pages.form.handleChangeTime(change);
+          break;
+        case "advanceBooking":
+        case "notes":
+          app.changes.add(change);
+          break;
+        case "items":
+        case "students":
+          toast(change.target.value + " OK");
+          app.changes.add(change);
+          break;
+        case "manual": // SPECIAL CASE
+          app.changes.add(change);
+          return; // no change to buttons or "saved" state for manual entries
+      }
+
+      app.changes.saved = false;
+      app.pages.form.elements.undoButton.removeAttribute("disabled");
+      const form = app.pages.openForms.getCurrentForm();
+      if (form.isBlank()) {
+        app.pages.form.elements.updateFormButton.textContent =
+          app.strings.updateButton.enabled.CREATE;
+        app.pages.form.elements.advanceBookingButton.classList.remove("hidden");
+      } else {
+        app.pages.form.elements.updateFormButton.textContent =
+          app.strings.updateButton.enabled.UPDATE;
+        app.pages.form.elements.advanceBookingButton.classList.add("hidden");
+      }
+      app.pages.form.elements.updateFormButton.classList.add("create");
+
+      // clear the old autosave, if it exists
+      if (app.pages.form.autosaveID !== null) {
+        window.clearTimeout(app.pages.form.autosaveID);
+        app.pages.form.autosaveID = null;
+      }
+      if (form.isReadyToPost()) {
+        // automatically try to save in 60 seconds
+        app.pages.form.autosaveID = window.setTimeout(() => {
+          // recheck form is still valid
+          if (
+            !app.pages.openForms.getCurrentForm().isReadyToPost() ||
+            app.modal.isShowing()
+          ) {
+            return;
+          }
+          app.doCommand("updateForm");
+        }, 60000);
+        // are we ready to close?
+        const noShow = form.isNoShow();
+        if (form.isReadyToClose() || noShow) {
+          app.pages.form.elements.updateFormButton.textContent =
+            app.strings.updateButton.enabled.CLOSE;
+        } // Enable update button
+        app.pages.form.elements.advanceBookingButton.removeAttribute(
+          "disabled"
+        );
+        app.pages.form.elements.updateFormButton.removeAttribute("disabled");
+        app.pages.form.elements.updateButtonHint.textContent = noShow
+          ? app.strings.updateNoShowHint
+          : app.strings.updateEnabledHint;
+      } else {
+        // Disable update button
+        app.pages.form.elements.advanceBookingButton.setAttribute(
+          "disabled",
+          true
+        );
+        app.pages.form.elements.updateFormButton.setAttribute("disabled", true);
+        app.pages.form.elements.updateButtonHint.textContent =
+          app.strings.updateDisabledHint;
+      }
+      app.omnibox.element.focus();
+    },
+    handleChangeLocation: function (change) {
+      if (change.target.value === "none") {
+        change.target.value =
+          app.pages.openForms.getCurrentForm().location || "none";
+        return;
+      }
+      if (change.target.value === "Other") {
+        change.target.value = "none"; // in case the modal is cancelled
+        app.modal.getLocation();
+        return;
+      }
+      // update form
+      app.pages.openForms.getCurrentForm().location = change.target.value;
+      // update location select element
+      const other = this.elements.locationOtherOption;
+      if (app.strings.locations.has(change.target.value)) {
+        other.textContent = other.value = "Other";
+      } else {
+        this.elements.locationSelect.value = other.textContent = other.value =
+          change.target.value;
+      }
+      app.changes.add(change);
+    },
+    handleChangeTime: function (change) {
+      this.touched.add(change.target);
+      let t = utility.date.parseDateAndTimeInputs();
+      const els = this.elements.form;
+      const startEls = [
+        els.startDate,
+        els.startHour,
+        els.startMinute,
+        els.startAMPM,
+      ];
+      const endEls = [els.endDate, els.endHour, els.endMinute, els.endAMPM];
+      // CHECK #0: Are t.start and t.end valid?
+      if (window.isNaN(t.startTime.getTime())) {
+        startEls.forEach((el) => el.classList.add("error"));
+        app.modal.handleError(new Error("please enter a valid start time."));
+        return;
+      } else if (window.isNaN(t.endTime.getTime())) {
+        endEls.forEach((el) => el.classList.add("error"));
+        app.modal.handleError(new Error("please enter a valid end time."));
+        return;
+      }
+      // CHECK #1: If start is after end, if end is untouched, add 1 hour to end
+      const userTouchedEnd = endEls.some((el) => this.touched.has(el));
+      if (t.endTime.getTime() <= t.startTime.getTime()) {
+        if (!userTouchedEnd) {
+          const newEnd = new Date(t.startTime);
+          newEnd.setHours(t.startTime.getHours() + 1);
+          this.dateToInput(newEnd, els.endDate);
+          t = utility.date.parseDateAndTimeInputs();
+        }
+      }
+      // CHECK #2: If start is still after end, display error to user
+      if (t.endTime.getTime() <= t.startTime.getTime()) {
+        endEls.forEach((el) => {
+          el.classList.add("error");
+        });
+        app.modal.handleError(new Error("Start time is after end time."));
+        return;
+      } else {
+        // In case there was an error before, reset the classLists
+        startEls.forEach((el) => {
+          el.classList.remove("error");
+        });
+        endEls.forEach((el) => {
+          el.classList.remove("error");
+        });
+      }
+      const form = app.pages.openForms.getCurrentForm();
+      const startTime = utility.date.getFormattedDate(t.startTime);
+      els.startTime.value = form.startTime = startTime;
+      const endTime = utility.date.getFormattedDate(t.endTime);
+      els.endTime.value = form.endTime = endTime;
+      const type = change.target.name.slice(0, 1),
+        newChange = { target: {} };
+      if (type == "s") {
+        newChange.target.name = "startTime";
+        newChange.target.value = els.startTime.value;
+      } else if (type == "e") {
+        newChange.target.name = "endTime";
+        newChange.target.value = els.endTime.value;
+      }
+      app.changes.add(newChange);
+    },
+
+    handleClickItem: function (click) {
+      if (app.pages.form.currentStack === app.pages.archive.filteredStack) {
+        return;
+      }
+      const data = click.target.parentNode.dataset;
+      if (click.metaKey) {
+        app.omnibox.element.value = data.id || data.barcode;
+        app.omnibox.parse();
+        return;
+      }
+      const itemRow = click.target.classList.contains("itemnotes")
+        ? click.target.parentNode.previousSibling
+        : click.target.parentNode;
+      const form = app.pages.openForms.getCurrentForm();
+      const key = itemRow.dataset.id === "" ? "barcode" : "id";
+      const item =
+        itemRow.dataset.id === ""
+          ? form.items.getByBarcode(itemRow.dataset.barcode)
+          : form.items.getById(itemRow.dataset.id);
+      if (!item) {
+        app.modal.handleError(
+          new Error("cannot take note for " + itemRow.dataset[key])
+        );
+      }
+      app.modal.handleItemNote(item);
+    },
+    handleClickStaticTable: function (click) {
+      if (app.pages.form.currentStack === app.pages.archive.filteredStack) {
+        return;
+      }
+      if (click.target.tagName != "TD") {
+        return;
+      }
+      if (click.target.classList.contains("editable")) {
+        if (!app.omnibox.element.disabled) {
+          let inputCell = utility.DOM.getNextSibling(click.target);
+          let input = utility.DOM.getFirstChild(inputCell);
+          switch (input.name) {
+            case "location":
+              app.pages.form.resetLocation(); // select loses custom "Other"
+              input.value = click.target.textContent;
+              if (input.value == "") {
+                // form is using custom "Other"
+                input.value = "none"; // this will discard custom value
+              }
+              break;
+            case "startDate": // fallthrough
+            case "endDate":
+              this.setTimeInputs();
+              break;
+          }
+          click.target.classList.add("hidden");
+          inputCell.classList.remove("hidden");
+        }
+      }
+    },
+    setTimeInputs: function (...names) {
+      ((names.length && names) || ["start", "end"]).forEach((name) => {
+        const input = document.querySelector(`input[name="${name}Date"]`);
+        const date = utility.date.parseFormattedDate(
+          this.elements.form[`${name}Time`].value
+        );
+        this.dateToInput(date, input);
+      });
+    },
+    dateToInput: function (date, input) {
       const hour = utility.DOM.getNextSibling(input);
       const minute = utility.DOM.getNextSibling(hour);
       const ampm = utility.DOM.getNextSibling(minute);
-      input.value = date.getFullYear() +
-        '-' + utility.date.zeropad(date.getMonth() + 1) +
-        '-' + utility.date.zeropad(date.getDate());
+      input.value =
+        date.getFullYear() +
+        "-" +
+        utility.date.zeropad(date.getMonth() + 1) +
+        "-" +
+        utility.date.zeropad(date.getDate());
       minute.value = utility.date.roundMinutes(date.getMinutes());
       hour.value = utility.date.parseHours(date.getHours());
       ampm.value = utility.date.parseAMPM(date.getHours());
-  },
-  handleClickStudent: function(click) {
-    if (app.pages.form.currentStack === app.pages.archive.filteredStack) {
-      return;
-    }
-    const netId = click.target.parentNode.dataset.netid;
-    if (click.metaKey) {
-      app.omnibox.element.value = netId;
-      app.omnibox.parse();
-      return;
-    }
-    const students = app.pages.openForms.getCurrentForm().students;
-    const student = students.find(s => s.netId == netId);
-    if (!student) {
-      app.modal.handleError(
-        new Error('could not find student with NetID ' + netId)
-      );
-      return;
-    }
-    app.modal.handleStudentNote(student);
-  },
-  hide: function() {
-    this.touched = new Set();
-    this.elements.container.classList.add("hidden");
-    if (this.timeoutId !== null) {
-      window.clearTimeout(this.timeoutId);
-      this.timeoutId = null;
-    }
-    if (this.autosaveID !== null) {
-      window.clearTimeout(this.autosaveID);
-      this.autosaveID = null;
-    }
-    this.unlock();
-  },
-  isLocked: function() {
-    return this.locked;
-  },
-  /**
-   * isShowing should verify if the user is currently on the single form view
-   * @returns {bool}
-   */
-  isShowing: function () {
-    return ! this.elements.container.classList.contains("hidden");
-  },
-  lock: function() {
-    this.locked = true;
-  },
-  locked: false,
-  lockButtons: function() {
-    this.elements.undoButton.setAttribute('disabled', true);
-    this.elements.updateButtonHint.textContent = '';
-    this.elements.updateFormButton.setAttribute('disabled', true);
-  },
-  makeAdvanceBooking: function() {
-    app.pages.openForms.getCurrentForm().makeAdvanceBooking();
-    this.handleChange({
-      target: {name: "advanceBooking", value: "Make advance booking"},
-    });
-  },
-  refreshUpdateButton: function() {
-    const currentForm = app.pages.openForms.getCurrentForm();
-    this.elements.updateFormButton.setAttribute('disabled', true);
-    if (currentForm && currentForm.isBlank()) {
-      this.elements.updateFormButton.textContent = app.strings.updateButton.enabled.CREATE;
-      this.elements.updateFormButton.classList.add('create');
-      this.elements.advanceBookingButton.classList.remove('hidden');
-      this.elements.advanceBookingButton.setAttribute('disabled', true);
-    } else {
-      this.elements.updateFormButton.textContent = app.strings.updateButton.disabled;
-      this.elements.updateFormButton.classList.remove('create');
-      this.elements.advanceBookingButton.classList.add('hidden');
-    }
-  },
-  resetLocation: function() {
-    const els = this.elements;
-    els.locationSelect.value = "none";
-    els.locationOtherOption.value = els.locationOtherOption.textContent = "Other";
-  },
-  savedForm: new Form({}),
-  saveNote: function(prefix = "") {
-    const input = app.modal.getText();
-    if (input.length < 1) {
-      return;
-    }
-    const form = app.pages.openForms.getCurrentForm();
-    const note = {
-      timestamp: Date.now(),
-      author: app.elements.usernameDisplay.textContent,
-      body: prefix + input,
-    };
-    const change = {
-      target: {
-        name: 'notes',
-        value: note.body.length > 10 ?
-          note.body.slice(0, 10) + "..." :
-          note.body,
+    },
+    handleClickStudent: function (click) {
+      if (app.pages.form.currentStack === app.pages.archive.filteredStack) {
+        return;
       }
-    };
-    const p = document.createElement('p');
-    p.textContent = 'Note: ' + '[' + note.author + '] ' + note.body;
-
-    form.notes.push(note);
-    this.handleChange(change);
-
-    this.elements.noteSection.appendChild(p);
-    if (this.elements.noteSection.classList.contains('hidden')) {
-      this.elements.noteSection.classList.remove('hidden');
-    }
-  },
-  setTimeout: function() {
-    // do not set this when viewing the archive stack
-    if (this.currentStack === app.pages.openForms.stack) {
-      this.timeoutId = window.setTimeout(this.checkForms, 60000);
-    }
-  },
-  show: function() {
-    if (this.timeoutId === null) {
-      this.setTimeout();
-    }
-    this.refreshUpdateButton();
-    this.elements.container.classList.remove("hidden");
-    if (! app.modal.isShowing()) {
-      app.omnibox.element.focus();
-    }
-    if (this.currentStack == app.pages.openForms.stack &&
-        this.currentStack.getCurrentForm().isNoShow()) {
+      const netId = click.target.parentNode.dataset.netid;
+      if (click.metaKey) {
+        app.omnibox.element.value = netId;
+        app.omnibox.parse();
+        return;
+      }
+      const students = app.pages.openForms.getCurrentForm().students;
+      const student = students.find((s) => s.netId == netId);
+      if (!student) {
+        app.modal.handleError(
+          new Error("could not find student with NetID " + netId)
+        );
+        return;
+      }
+      app.modal.handleStudentNote(student);
+    },
+    hide: function () {
+      this.touched = new Set();
+      this.elements.container.classList.add("hidden");
+      if (this.timeoutId !== null) {
+        window.clearTimeout(this.timeoutId);
+        this.timeoutId = null;
+      }
+      if (this.autosaveID !== null) {
+        window.clearTimeout(this.autosaveID);
+        this.autosaveID = null;
+      }
+      this.unlock();
+    },
+    isLocked: function () {
+      return this.locked;
+    },
+    /**
+     * isShowing should verify if the user is currently on the single form view
+     * @returns {bool}
+     */
+    isShowing: function () {
+      return !this.elements.container.classList.contains("hidden");
+    },
+    lock: function () {
+      this.locked = true;
+    },
+    locked: false,
+    lockButtons: function () {
+      this.elements.undoButton.setAttribute("disabled", true);
+      this.elements.updateButtonHint.textContent = "";
+      this.elements.updateFormButton.setAttribute("disabled", true);
+    },
+    makeAdvanceBooking: function () {
+      app.pages.openForms.getCurrentForm().makeAdvanceBooking();
       this.handleChange({
-        target: { name: "students", value: "no show" }
+        target: { name: "advanceBooking", value: "Make advance booking" },
       });
-    }
-  },
-  timeoutId: null,
-  touched: new Set(),
-  unlock: function() {
-    this.locked = false;
-  },
-};
+    },
+    refreshUpdateButton: function () {
+      const currentForm = app.pages.openForms.getCurrentForm();
+      this.elements.updateFormButton.setAttribute("disabled", true);
+      if (currentForm && currentForm.isBlank()) {
+        this.elements.updateFormButton.textContent =
+          app.strings.updateButton.enabled.CREATE;
+        this.elements.updateFormButton.classList.add("create");
+        this.elements.advanceBookingButton.classList.remove("hidden");
+        this.elements.advanceBookingButton.setAttribute("disabled", true);
+      } else {
+        this.elements.updateFormButton.textContent =
+          app.strings.updateButton.disabled;
+        this.elements.updateFormButton.classList.remove("create");
+        this.elements.advanceBookingButton.classList.add("hidden");
+      }
+    },
+    resetLocation: function () {
+      const els = this.elements;
+      els.locationSelect.value = "none";
+      els.locationOtherOption.value = els.locationOtherOption.textContent =
+        "Other";
+    },
+    savedForm: new Form({}),
+    saveNote: function (prefix = "") {
+      const input = app.modal.getText();
+      if (input.length < 1) {
+        return;
+      }
+      const form = app.pages.openForms.getCurrentForm();
+      const note = {
+        timestamp: Date.now(),
+        author: app.elements.usernameDisplay.textContent,
+        body: prefix + input,
+      };
+      const change = {
+        target: {
+          name: "notes",
+          value:
+            note.body.length > 10 ? note.body.slice(0, 10) + "..." : note.body,
+        },
+      };
+      const p = document.createElement("p");
+      p.textContent = "Note: " + "[" + note.author + "] " + note.body;
+
+      form.notes.push(note);
+      this.handleChange(change);
+
+      this.elements.noteSection.appendChild(p);
+      if (this.elements.noteSection.classList.contains("hidden")) {
+        this.elements.noteSection.classList.remove("hidden");
+      }
+    },
+    setTimeout: function () {
+      // do not set this when viewing the archive stack
+      if (this.currentStack === app.pages.openForms.stack) {
+        this.timeoutId = window.setTimeout(this.checkForms, 60000);
+      }
+    },
+    show: function () {
+      if (this.timeoutId === null) {
+        this.setTimeout();
+      }
+      this.refreshUpdateButton();
+      this.elements.deleteFormButton.innerHTML = "Delete this form";
+      this.elements.container.classList.remove("hidden");
+      if (!app.modal.isShowing()) {
+        app.omnibox.element.focus();
+      }
+      if (
+        this.currentStack == app.pages.openForms.stack &&
+        this.currentStack.getCurrentForm().isNoShow()
+      ) {
+        this.handleChange({
+          target: { name: "students", value: "no show" },
+        });
+      }
+    },
+    timeoutId: null,
+    touched: new Set(),
+    unlock: function () {
+      this.locked = false;
+    },
+  };
 </script>

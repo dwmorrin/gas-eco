@@ -1,14 +1,25 @@
 <div class="formContainer hidden">
   <form class="model">
-    <input type="hidden" name="notes"/><!-- JSON string -->
-    <input type="hidden" name="startTime"/>
-    <input type="hidden" name="endTime"/>
+    <input type="hidden" name="notes" /><!-- JSON string -->
+    <input type="hidden" name="startTime" />
+    <input type="hidden" name="endTime" />
     <section class="formControls">
       <div class="focusGuardTop" tabindex="0"></div>
-      <input class="omnibox" type="text" placeholder="Scan ID or barcode" autocomplete="new-password"/>
-      <button class="action buttonSmall" value="parseOmnibox" tabindex="-1">&#128269;</button>
-      <button class="action" value="newManual" tabindex="-1">Add item without barcode or ID</button>
-      <button class="action buttonNotes" value="newNote" tabindex="-1">New Note</button>
+      <input
+        class="omnibox"
+        type="text"
+        placeholder="Scan ID or barcode"
+        autocomplete="new-password"
+      />
+      <button class="action buttonSmall" value="parseOmnibox" tabindex="-1">
+        &#128269;
+      </button>
+      <button class="action" value="newManual" tabindex="-1">
+        Add item without barcode or ID
+      </button>
+      <button class="action buttonNotes" value="newNote" tabindex="-1">
+        New Note
+      </button>
       <button value="changeLog" tabindex="-1">Change Log</button>
       <button value="copyItems" class="hidden">Copy Items to Clipboard</button>
       <br />
@@ -17,17 +28,25 @@
       <span class="currentFormstackDisplay"><!-- populated by js --></span>
       <br />
       <button class="create" value="updateForm" disabled="true">Submit</button>
-      <button class="action buttonTight" value="advanceBooking" disabled="true">Save as advance booking</button>
+      <button class="action buttonTight" value="advanceBooking" disabled="true">
+        Save as advance booking
+      </button>
       <button class="buttonSmall" value="undo" disabled="true" tabindex="-1">
         <svg class="buttonIcon" xmlns="http://www.w3.org/2000/svg">
-          <path fill="none" stroke="black"
+          <path
+            fill="none"
+            stroke="black"
             d="M 20,20
-               A 5,5,270,0,0,0,20" />
-          <path fill="black" stroke="black"
+               A 5,5,270,0,0,0,20"
+          />
+          <path
+            fill="black"
+            stroke="black"
             d="M 0,20
                L 1,10
                L 7,15
-               L 0,20" />
+               L 0,20"
+          />
         </svg>
       </button>
       <span class="updateButtonHint"><!-- populated by js --></span>
@@ -36,26 +55,33 @@
       <!-- Notes added with 'New Note' button show up here -->
     </section>
     <section>
-      <table class="staticFields"><!-- static as opposed to the dynamic tables above -->
+      <table class="staticFields">
+        <!-- static as opposed to the dynamic tables above -->
         <tr class="hidden">
-          <th>Booked Students</th><td id="bookedStudentsDisplay"></td>
+          <th>Booked Students</th>
+          <td id="bookedStudentsDisplay"></td>
         </tr>
         <tr class="hidden">
-          <th>Contact</th><td id="contactDisplay"></td>
+          <th>Contact</th>
+          <td id="contactDisplay"></td>
         </tr>
         <tr class="hidden">
-          <th>Project</th><td id="projectDisplay"></td>
+          <th>Project</th>
+          <td id="projectDisplay"></td>
         </tr>
         <tr class="hidden">
-          <th>Analog Tape</th><td id="tapeDisplay"></td>
+          <th>Analog Tape</th>
+          <td id="tapeDisplay"></td>
         </tr>
         <tr class="hidden">
-          <th>Overnight Setup</th><td id="overnightDisplay"></td>
+          <th>Overnight Setup</th>
+          <td id="overnightDisplay"></td>
         </tr>
         <tr>
-          <th>Location</th><td id="locationDisplay" class="hidden editable"></td>
+          <th>Location</th>
+          <td id="locationDisplay" class="hidden editable"></td>
           <td class="hidden">
-            <select name="location" >
+            <select name="location">
               <option value="none">please select</option>
               <option value="Critical Listening">Critical Listening</option>
               <option value="Studio 1">Studio 1</option>
@@ -86,8 +112,12 @@
           <th>Start Time</th>
           <td id="startTimeDisplay" class="hidden editable"></td>
           <td class="hidden">
-            <input type="date" name="startDate" autocomplete="off"
-                   placeholder="mm/dd/yyyy"/>
+            <input
+              type="date"
+              name="startDate"
+              autocomplete="off"
+              placeholder="mm/dd/yyyy"
+            />
             <select name="startHour">
               <option value="1">1</option>
               <option value="2">2</option>
@@ -127,8 +157,12 @@
           <th>End Time</th>
           <td id="endTimeDisplay" class="hidden editable"></td>
           <td class="hidden">
-            <input type="date" name="endDate" autocomplete="off"
-                   placeholder="mm/dd/yyyy"/>
+            <input
+              type="date"
+              name="endDate"
+              autocomplete="off"
+              placeholder="mm/dd/yyyy"
+            />
             <select name="endHour">
               <option value="1">1</option>
               <option value="2">2</option>
@@ -172,10 +206,14 @@
       <table>
         <thead class="form formStudents">
           <tr>
-            <th>Name</th><th>NetID</th><th>Signed In</th><th>Signed Out</th>
+            <th>Name</th>
+            <th>NetID</th>
+            <th>Signed In</th>
+            <th>Signed Out</th>
           </tr>
         </thead>
-        <tbody class="studentList"><!-- populated by script -->
+        <tbody class="studentList">
+          <!-- populated by script -->
           <tr>
             <td>Scan ID to sign in a student</td>
           </tr>
@@ -194,7 +232,8 @@
             <th>Checked In</th>
           </tr>
         </thead>
-        <tbody class="itemList"><!-- populated by script -->
+        <tbody class="itemList">
+          <!-- populated by script -->
           <tr>
             <td>Scan barcode to check out an item</td>
           </tr>
@@ -202,4 +241,5 @@
       </table>
     </section>
   </form>
+  <button class="create" value="deleteForm">Delete this form</button>
 </div>
