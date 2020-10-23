@@ -1,5 +1,5 @@
 <script>
-  /* global Form app displayForm utility toast */
+  /* global Form app displayForm utility toast modal */
   app.pages.form = {
     autosaveID: null,
     checkForms: function () {
@@ -465,7 +465,7 @@
         this.timeoutId = window.setTimeout(this.checkForms, 60000);
       }
     },
-    show: function () {
+    show() {
       if (this.timeoutId === null) {
         this.setTimeout();
       }
@@ -479,8 +479,15 @@
         this.currentStack == app.pages.openForms.stack &&
         this.currentStack.getCurrentForm().isNoShow()
       ) {
-        this.handleChange({
-          target: { name: "students", value: "no show" },
+        modal({
+          message:
+            'The start time has passed and no one has checked in.  Do you want to close this form as a "no show?"',
+          onOk: () =>
+            this.handleChange({
+              target: { name: "students", value: "no show" },
+            }),
+          cancel: true,
+          blocking: true,
         });
       }
     },
