@@ -16,6 +16,7 @@
       this.elements.updateButtonHint.textContent =
         "This is a closed form.  " + "You cannot edit it.";
       this.elements.copyButton.classList.remove("hidden");
+      this.elements.duplicateButton.classList.remove("hidden");
       this.elements.advanceBookingButton.classList.add("hidden");
       this.elements.advanceBookingButton.setAttribute("disabled", true);
     },
@@ -24,10 +25,14 @@
         'button[value="advanceBooking"]'
       ),
       container: document.querySelector("div.formContainer"),
+      copyButton: document.querySelector('button[value="copyItems"]'),
       currentFormstackDisplay: document.querySelector(
         "span.currentFormstackDisplay"
       ),
       deleteFormButton: document.querySelector('button[value="deleteForm"]'),
+      duplicateButton: document.querySelector(
+        'button[value="displayDuplicatedForm"]'
+      ),
       focusGuardTop: document.querySelector(".focusGuardTop"),
       focusGuardBottom: document.querySelector(".focusGuardBottom"),
       form: document.querySelector("form.model"),
@@ -40,14 +45,13 @@
       ),
       newNoteButton: document.querySelector('button[value="newNote"]'),
       manualButton: document.querySelector('button[value="newManual"]'),
-      omniboxButton: document.querySelector('button[value="parseOmnibox"]'),
       noteSection: document.querySelector("section.globalnotes"),
+      omniboxButton: document.querySelector('button[value="parseOmnibox"]'),
       studentList: document.querySelector("tbody.studentList"),
       tableStaticFields: document.querySelector("table.staticFields"),
+      undoButton: document.querySelector('button[value="undo"]'),
       updateButtonHint: document.querySelector("span.updateButtonHint"),
       updateFormButton: document.querySelector('button[value="updateForm"]'),
-      undoButton: document.querySelector('button[value="undo"]'),
-      copyButton: document.querySelector('button[value="copyItems"]'),
     },
     enable: function () {
       app.omnibox.element.removeAttribute("disabled");
@@ -56,6 +60,7 @@
       this.elements.omniboxButton.removeAttribute("disabled");
       this.elements.updateButtonHint.textContent = "";
       this.elements.copyButton.classList.add("hidden");
+      this.elements.duplicateButton.classList.add("hidden");
       this.refreshUpdateButton();
     },
     getNext: function () {

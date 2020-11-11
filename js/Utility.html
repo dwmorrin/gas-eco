@@ -16,7 +16,7 @@
       textArea.value = data;
       document.body.appendChild(textArea);
       textArea.select();
-      document.execCommand("copy");
+      document.execCommand("copy"); //! execCommand is deprecated, migrate to ClipboardAPI
       toast("Items copied");
       // removes the text area after copying so that it is not seen
       document.body.removeChild(textArea);

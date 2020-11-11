@@ -1,56 +1,56 @@
 <script>
-/**
- * this is the bootstrap script for the client-side code
- * any initial server-side calls, registering event listeners, etc go here
- */
-/* global app google */
+  /**
+   * this is the bootstrap script for the client-side code
+   * any initial server-side calls, registering event listeners, etc go here
+   */
+  /* global app google */
 
-/** Event Listeners */
-// ARCHIVE (Closed Forms)
-app.pages.archive.elements.queryInputs.addEventListener(
-  'change', app.pages.archive.handleChange
-);
-// FORM (single view)
-app.pages.form.elements.container.addEventListener(
-  'change', app.pages.form.handleChange
-);
-app.pages.form.elements.container.addEventListener(
-  'submit', event => event.preventDefault()
-);
-// focus guards create a tab/shift-tab closed loop through the form inputs
-app.pages.form.elements.focusGuardTop.addEventListener(
-  'focus', () => app.pages.form.elements.locationSelect.focus()
-);
-app.pages.form.elements.focusGuardBottom.addEventListener(
-  'focus', () => app.omnibox.element.focus()
-);
-// GLOBAL
-window.addEventListener('beforeunload', app.handlers.beforeunload);
-window.addEventListener('click', app.handlers.click);
-window.addEventListener('keydown', app.handlers.keydown);
+  /** Event Listeners */
+  // ARCHIVE (Closed Forms)
+  app.pages.archive.elements.queryInputs.addEventListener(
+    "change",
+    app.pages.archive.handleChange
+  );
+  // FORM (single view)
+  app.pages.form.elements.container.addEventListener(
+    "change",
+    app.pages.form.handleChange
+  );
+  app.pages.form.elements.container.addEventListener("submit", (event) =>
+    event.preventDefault()
+  );
+  // focus guards create a tab/shift-tab closed loop through the form inputs
+  app.pages.form.elements.focusGuardTop.addEventListener("focus", () =>
+    app.pages.form.elements.locationSelect.focus()
+  );
+  app.pages.form.elements.focusGuardBottom.addEventListener("focus", () =>
+    app.omnibox.element.focus()
+  );
+  // GLOBAL
+  window.addEventListener("beforeunload", app.handlers.beforeunload);
+  window.addEventListener("click", app.handlers.click);
+  window.addEventListener("keydown", app.handlers.keydown);
 
-/** Display init - anything to do with what the user sees immediately */
-app.modal.hide(); // make sure everything is hidden that is supposed to be
-app.spinner.on(); // no pages displayed; only spinner
+  /** Display init - anything to do with what the user sees immediately */
+  app.modal.hide(); // make sure everything is hidden that is supposed to be
+  app.spinner.on(); // no pages displayed; only spinner
 
-app.pages.archive.init(); // Set date inputs to today
+  app.pages.archive.init(); // Set date inputs to today
 
-// Server runners
-app.withErrorHandler = google.script.run.withFailureHandler(
-  app.modal.handleError
-);
-app.run = app.withErrorHandler.withSuccessHandler(
-  app.refresh
-);
+  // Server runners
+  app.withErrorHandler = google.script.run.withFailureHandler(
+    app.modal.handleError
+  );
+  app.run = app.withErrorHandler.withSuccessHandler(app.refresh);
 
-/** Server calls - the initial server calls that happen automatically */
-app.run.doGet({get: 'openForms', init: true}); // displays open forms
-app.run.doGet({get: 'user'});                  // displays username
-app.run.doGet({get: 'students',  init: true}); // gets the student info cache
-app.run.doGet({get: 'items', init: true});     // gets the item info cache
-app.run.doGet({
-  get: 'archive',
-  dateRangeJSON: app.pages.archive.getDateRangeAsJSON(),
-  init: true,
-});
+  /** Server calls - the initial server calls that happen automatically */
+  app.run.doGet({ get: "openForms", init: true }); // displays open forms
+  app.run.doGet({ get: "user" }); // displays username
+  app.run.doGet({ get: "students", init: true }); // gets the student info cache
+  app.run.doGet({ get: "items", init: true }); // gets the item info cache
+  app.run.doGet({
+    get: "archive",
+    dateRangeJSON: app.pages.archive.getDateRangeAsJSON(),
+    init: true,
+  });
 </script>

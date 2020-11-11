@@ -1,173 +1,180 @@
 <script>
-/**
- * main server callback function
- * @see js/Init
- * this is attached to google.script.run.withSuccessHandler
- */
-/* global
-Form
-Stack
-app
-displayForm
-populateFormsTable
-toast
-*/
+  /**
+   * main server callback function
+   * @see js/Init
+   * this is attached to google.script.run.withSuccessHandler
+   */
+  /* global
+    Form
+    Stack
+    app
+    displayForm
+    populateFormsTable
+    toast
+  */
 
-/**
- * app.refresh is the main callback attached to google.script.run.withSuccessHandler
- * @param {Object} response - from server, see gs/Main
- * @param {Object} [context] - from client, see google.script.run.withUserObject
- */
-app.refresh = function(response, context) {
-  switch (response.target) {
-    case 'archive':
-      try {
-        app.pages.archive.stack.importForms(JSON.parse(response.formList));
-      } catch (error) {
-        app.run.doGet({
-          get: 'archive',
-          datRangeJSON: app.pages.archive.getDateRangeAsJSON(),
-          init: response.unlock
-        });
-        break;
-      }
-      if (response.unlock) {
-        app.elements.archiveButton.removeAttribute('disabled');
-      } else { // remove spinner from query button
-        app.pages.archive.elements.queryButton.innerHTML = 'Update View';
-      }
-      app.pages.archive.query();
-      break;
-    case 'checkForms': {
-      let newForms = JSON.parse(response.formList);
-      if (! newForms[0]) {
-        break;
-      }
-      newForms = new Stack(newForms);
-      // determine current context, see app.pages.form.{show,hide}
-      // for why timeoutId shows context
-      if (context.timeoutId != app.pages.form.timeoutId ||
-          app.pages.form.currentStack === app.pages.archive.filteredStack) {
-        break;
-      }
-      newForms.sortForms();
-      const staleForm = app.pages.form.currentStack.getCurrentForm();
-      const newForm = newForms.getByID(staleForm.id);
-      if (! newForm) { // must be a new form, nothing to do, abort
-        break;
-      }
-      // are changes saved?
-      if (app.changes.saved) {
-        app.pages.openForms.stack = newForms;
-        app.doCommand("displayForm", newForm);
-        app.pages.form.setTimeout();
-      } else {
-        if (newForm.hash != staleForm.hash) {
-          // another instance has already updated this form; do not set timeout
-          app.run.doPost({
-            post: "rejected",
-            form: staleForm.stringify(),
+  /**
+   * app.refresh is the main callback attached to google.script.run.withSuccessHandler
+   * @param {Object} response - from server, see gs/Main
+   * @param {Object} [context] - from client, see google.script.run.withUserObject
+   */
+  app.refresh = function (response, context) {
+    switch (response.target) {
+      case "archive":
+        try {
+          app.pages.archive.stack.importForms(JSON.parse(response.formList));
+        } catch (error) {
+          app.run.doGet({
+            get: "archive",
+            datRangeJSON: app.pages.archive.getDateRangeAsJSON(),
+            init: response.unlock,
           });
-          app.modal.handleError({
-            target: "collision",
-            storedForm: newForm,
-            submittedForm: staleForm
-          });
-        } else { // editing the current form; keep checking
-          app.pages.form.setTimeout();
+          break;
         }
-      }
-      break;
-    }
-    case 'codabar':
-      app.roster = JSON.parse(response.students);
-      app.modal.hide();
-      app.pages.form.elements.updateFormButton.textContent = "Update";
-      app.omnibox.parse();
-      break;
-    case 'collision':
-      response.storedForm = JSON.parse(response.storedForm);
-      response.submittedForm = JSON.parse(response.submittedForm);
-      app.modal.handleError(response);
-      app.pages.form.elements.updateFormButton.textContent = "Update";
-      break;
-    case 'items':
-      app.inventory.setItems(JSON.parse(response.items));
-      if (app.inventory.getLength() < 1) {
-        app.run.doGet({get: 'items', init: response.unlock});
+        if (response.unlock) {
+          app.elements.archiveButton.removeAttribute("disabled");
+        } else {
+          // remove spinner from query button
+          app.pages.archive.elements.queryButton.innerHTML = "Update View";
+        }
+        app.pages.archive.query();
+        break;
+      case "checkForms": {
+        let newForms = JSON.parse(response.formList);
+        if (!newForms[0]) {
+          break;
+        }
+        newForms = new Stack(newForms);
+        // determine current context, see app.pages.form.{show,hide}
+        // for why timeoutId shows context
+        if (
+          context.timeoutId != app.pages.form.timeoutId ||
+          app.pages.form.currentStack === app.pages.archive.filteredStack
+        ) {
+          break;
+        }
+        newForms.sortForms();
+        const staleForm = app.pages.form.currentStack.getCurrentForm();
+        const newForm = newForms.getByID(staleForm.id);
+        if (!newForm) {
+          // must be a new form, nothing to do, abort
+          break;
+        }
+        // are changes saved?
+        if (app.changes.saved) {
+          app.pages.openForms.stack = newForms;
+          app.doCommand("displayForm", newForm);
+          app.pages.form.setTimeout();
+        } else {
+          if (newForm.hash != staleForm.hash) {
+            // another instance has already updated this form; do not set timeout
+            app.run.doPost({
+              post: "rejected",
+              form: staleForm.stringify(),
+            });
+            app.modal.handleError({
+              target: "collision",
+              storedForm: newForm,
+              submittedForm: staleForm,
+            });
+          } else {
+            // editing the current form; keep checking
+            app.pages.form.setTimeout();
+          }
+        }
         break;
       }
-      if (response.unlock) {
-        app.tryUnlock();
-      }
-      break;
-    case 'invalid':
-      app.modal.handleError(response);
-      break;
-    case 'openForms':
-      try {
-        app.pages.openForms.stack.importForms(JSON.parse(response.formList))
-          .sortForms();
-      } catch (error) {
-        app.run.doGet({get: 'openForms', init: response.unlock});
-        break;
-      }
-      app.pages.form.currentStack = app.pages.openForms.stack;
-      app.changes.saved = true;
-      populateFormsTable(app.pages.openForms.stack);
-      app.tryUnlock();
-      break;
-    case 'openFormsQuiet':
-      if (context.timeoutId != app.pages.openForms.refreshId) {
-        break; // we are in an undefined state, abort
-      }
-      try {
-        app.pages.openForms.stack.importForms(JSON.parse(response.formList))
-          .sortForms();
-      } catch (error) {
-        app.run.doGet({get: 'openFormsQuiet'});
-        break;
-      }
-      populateFormsTable(app.pages.openForms.stack);
-      break;
-    case 'rejected':
-      toast("The form you were editing was saved on the server.");
-      break;
-    case 'signature':
-      app.roster = JSON.parse(response.students);
-      app.omnibox.parse();
-      break;
-    case 'startSignature':
-      app.modal.signatureReady();
-      break;
-    case 'students': // doCommand 'signatureRecheck' refreshes here
-      app.roster = JSON.parse(response.students);
-      if (app.roster.length < 1) {
-        // TODO report bad roster
-        app.run.doGet({get: 'students', init: response.unlock});
-        break;
-      }
-      if (response.unlock) {
-        app.tryUnlock();
-      } else {
+      case "codabar":
+        app.roster = JSON.parse(response.students);
+        app.modal.hide();
+        app.pages.form.elements.updateFormButton.textContent = "Update";
         app.omnibox.parse();
+        break;
+      case "collision":
+        response.storedForm = JSON.parse(response.storedForm);
+        response.submittedForm = JSON.parse(response.submittedForm);
+        app.modal.handleError(response);
+        app.pages.form.elements.updateFormButton.textContent = "Update";
+        break;
+      case "items":
+        app.inventory.setItems(JSON.parse(response.items));
+        if (app.inventory.getLength() < 1) {
+          app.run.doGet({ get: "items", init: response.unlock });
+          break;
+        }
+        if (response.unlock) {
+          app.tryUnlock();
+        }
+        break;
+      case "invalid":
+        app.modal.handleError(response);
+        break;
+      case "openForms":
+        try {
+          app.pages.openForms.stack
+            .importForms(JSON.parse(response.formList))
+            .sortForms();
+        } catch (error) {
+          //! TODO this needs to be re-evaluated, can get stuck in an endless loop
+          app.run.doGet({ get: "openForms", init: response.unlock });
+          break;
+        }
+        app.pages.form.currentStack = app.pages.openForms.stack;
+        app.changes.saved = true;
+        populateFormsTable(app.pages.openForms.stack);
+        app.tryUnlock();
+        break;
+      case "openFormsQuiet":
+        if (context.timeoutId != app.pages.openForms.refreshId) {
+          break; // we are in an undefined state, abort
+        }
+        try {
+          app.pages.openForms.stack
+            .importForms(JSON.parse(response.formList))
+            .sortForms();
+        } catch (error) {
+          app.run.doGet({ get: "openFormsQuiet" });
+          break;
+        }
+        populateFormsTable(app.pages.openForms.stack);
+        break;
+      case "rejected":
+        toast("The form you were editing was saved on the server.");
+        break;
+      case "signature":
+        app.roster = JSON.parse(response.students);
+        app.omnibox.parse();
+        break;
+      case "startSignature":
+        app.modal.signatureReady();
+        break;
+      case "students": // doCommand 'signatureRecheck' refreshes here
+        app.roster = JSON.parse(response.students);
+        if (app.roster.length < 1) {
+          // TODO report bad roster
+          app.run.doGet({ get: "students", init: response.unlock });
+          break;
+        }
+        if (response.unlock) {
+          app.tryUnlock();
+        } else {
+          app.omnibox.parse();
+        }
+        break;
+      case "updateForm": {
+        app.changes.saved = true;
+        app.pages.form.lockButtons(); // disables "update" until next change
+        app.pages.form.unlock(); // allows editing of form
+        const updatedForm = new Form(JSON.parse(response.form));
+        app.pages.openForms.stack.replace(updatedForm);
+        populateFormsTable(app.pages.openForms.stack); // this doesn't actually show the forms or change user's context
+        app.pages.openForms.stack.updateIndex(updatedForm);
+        displayForm(updatedForm);
+        break;
       }
-      break;
-    case 'updateForm': {
-      app.changes.saved = true;
-      app.pages.form.lockButtons(); // disables "update" until next change
-      app.pages.form.unlock(); // allows editing of form
-      const updatedForm = new Form(JSON.parse(response.form));
-      app.pages.openForms.stack.replace(updatedForm);
-      populateFormsTable(app.pages.openForms.stack); // this doesn't actually show the forms or change user's context
-      app.pages.openForms.stack.updateIndex(updatedForm);
-      displayForm(updatedForm);
-      break;
+      case "user":
+        app.elements.usernameDisplay.textContent = response.user;
+        break;
     }
-    case 'user':
-      app.elements.usernameDisplay.textContent = response.user;
-      break;
-  }
-
-};
+  };
 </script>

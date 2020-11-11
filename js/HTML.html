@@ -48,7 +48,7 @@
       const cells = [];
       for (let i = 0, l = contents.length; i < l; i++) {
         cells.push(document.createElement(tagName));
-        if (typeof contents[i] === "string") {
+        if (["string", "number"].includes(typeof contents[i])) {
           cells[i].innerHTML = contents[i];
         } else if (typeof contents[i] === "object") {
           cells[i].appendChild(contents[i]);

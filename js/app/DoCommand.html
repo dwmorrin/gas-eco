@@ -159,6 +159,14 @@
         displayForm(options[0]);
         break;
       }
+      case "displayDuplicatedForm": {
+        const newForm = new Form(app.pages.form.savedForm, true);
+        app.pages.form.currentStack = app.pages.openForms.stack;
+        app.pages.openForms.stack.push(newForm);
+        app.changes.saved = false;
+        displayForm(newForm);
+        break;
+      }
       case "displayNewForm": {
         if (!app.changes.saved) {
           app.modal.handleUnsavedForm(command);
