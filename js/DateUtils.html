@@ -1,0 +1,100 @@
+<script>
+  /* exported DateUtils */
+  const DateUtils = (function () {
+    return {
+      getFormattedDate,
+      parseFormattedDate,
+      roundMinutes,
+      parseAMPM,
+      parseHours,
+      zeropad,
+    };
+    function getFormattedDate(date) {
+      const year = date.getFullYear(),
+        month = date.getMonth() + 1, // zero indexed
+        day = date.getDate(),
+        minutes = date.getMinutes();
+      let ampm = "am",
+        hour = date.getHours();
+
+      if (hour > 11) {
+        ampm = "pm";
+        hour = hour % 12;
+      }
+      if (hour === 0) {
+        hour = 12;
+      }
+      return `${zeropad(month)}/${zeropad(day)}/${year} ${zeropad(
+        hour
+      )}:${zeropad(minutes)} ${ampm}`;
+    }
+
+    /**
+     * @param {string} dateString
+     * @return {Date}
+     */
+    function parseFormattedDate(dateString) {
+      // mm/dd/yyyy hh:mm am
+      let month = dateString.slice(0, 2),
+        day = dateString.slice(3, 5),
+        year = dateString.slice(6, 10),
+        hour = dateString.slice(11, 13),
+        minutes = dateString.slice(14, 16),
+        ampm = dateString.slice(17, 19);
+      // convert ampm to 24 hour
+      if (ampm == "pm") {
+        ampm = 12;
+      } else {
+        ampm = 0;
+      }
+      hour = (hour % 12) + ampm;
+
+      return new Date(
+        year +
+          "-" +
+          zeropad(month) +
+          "-" +
+          zeropad(day) +
+          "T" +
+          zeropad(hour) +
+          ":" +
+          zeropad(minutes) +
+          ":00"
+      );
+    }
+
+    function roundMinutes(minutes) {
+      let minute = minutes % 10;
+      if (minute < 5) {
+        // roll back to :00
+        minutes -= minute;
+      } else {
+        // roll back to :05
+        minutes -= minute - 5;
+      }
+      return minutes;
+    }
+
+    function parseHours(hours) {
+      if (hours > 12) {
+        return hours - 12;
+      } else if (hours == 0) {
+        return hours + 12;
+      } else {
+        return hours;
+      }
+    }
+
+    function parseAMPM(hours) {
+      if (hours >= 12) {
+        return "PM";
+      } else {
+        return "AM";
+      }
+    }
+
+    function zeropad(n) {
+      return String(n).padStart(2, "0");
+    }
+  })();
+</script>

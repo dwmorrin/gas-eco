@@ -123,7 +123,7 @@ function doPost(request) {
       startSignature_(request.netid);
       break;
     case "updateForm":
-      var form = new Form_(JSON.parse(request.form));
+      form = new Form_(JSON.parse(request.form));
       try {
         form.validate(); // throws ErrorFormInvalid_
         if (form.isReadyToClose() || form.isNoShow()) {
@@ -195,14 +195,14 @@ function include_(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
-var utility = { date: {}, hash: {} };
+var DateUtils = {};
 
 /**
  * Utility to get 'mm/dd/yyyy hh:mm am' format
  * @param {Date} date
  * @return {string}
  */
-utility.date.getFormattedDate = function (date) {
+DateUtils.getFormattedDate = function (date) {
   var year = date.getFullYear(),
     month = date.getMonth() + 1, // zero indexed
     day = date.getDate(),
@@ -218,15 +218,15 @@ utility.date.getFormattedDate = function (date) {
     hour = 12;
   }
   return (
-    utility.date.zeropad(month) +
+    DateUtils.zeropad(month) +
     "/" +
-    utility.date.zeropad(day) +
+    DateUtils.zeropad(day) +
     "/" +
     year +
     " " +
-    utility.date.zeropad(hour) +
+    DateUtils.zeropad(hour) +
     ":" +
-    utility.date.zeropad(minutes) +
+    DateUtils.zeropad(minutes) +
     " " +
     ampm
   );
@@ -236,7 +236,7 @@ utility.date.getFormattedDate = function (date) {
  * @param {string} dateString
  * @return {Date}
  */
-utility.date.parseFormattedDate = function (dateString) {
+DateUtils.parseFormattedDate = function (dateString) {
   // mm/dd/yyyy hh:mm am
   var month = dateString.slice(0, 2),
     day = dateString.slice(3, 5),
@@ -255,28 +255,23 @@ utility.date.parseFormattedDate = function (dateString) {
   return new Date(
     year +
       "-" +
-      utility.date.zeropad(month) +
+      DateUtils.zeropad(month) +
       "-" +
-      utility.date.zeropad(day) +
+      DateUtils.zeropad(day) +
       "T" +
-      utility.date.zeropad(hour) +
+      DateUtils.zeropad(hour) +
       ":" +
-      utility.date.zeropad(minutes) +
+      DateUtils.zeropad(minutes) +
       ":00"
   );
 };
 
 /** Helper function for handling date strings */
-utility.date.zeropad = function (x) {
+DateUtils.zeropad = function (x) {
   x = +x;
   if (x < 10) {
     return "0" + x;
   } else {
-    return x;
+    return String(x);
   }
-};
-
-utility.hash.make = function (string) {
-  var digest = Utilities.computeDigest(Utilities.DigestAlgorithm.MD2, string);
-  return Utilities.base64EncodeWebSafe(digest);
 };

@@ -1,5 +1,5 @@
 <script>
-  /* global Form app displayForm utility toast modal */
+  /* global Form app displayForm DateUtils HTML toast modal */
   app.pages.form = {
     autosaveID: null,
     checkForms: function () {
@@ -208,7 +208,7 @@
     },
     handleChangeTime: function (change) {
       this.touched.add(change.target);
-      let t = utility.date.parseDateAndTimeInputs();
+      let t = this.parseDateAndTimeInputs();
       const els = this.elements.form;
       const startEls = [
         els.startDate,
@@ -234,7 +234,7 @@
           const newEnd = new Date(t.startTime);
           newEnd.setHours(t.startTime.getHours() + 1);
           this.dateToInput(newEnd, els.endDate);
-          t = utility.date.parseDateAndTimeInputs();
+          t = this.parseDateAndTimeInputs();
         }
       }
       // CHECK #2: If start is still after end, display error to user
@@ -254,9 +254,9 @@
         });
       }
       const form = app.pages.openForms.getCurrentForm();
-      const startTime = utility.date.getFormattedDate(t.startTime);
+      const startTime = DateUtils.getFormattedDate(t.startTime);
       els.startTime.value = form.startTime = startTime;
-      const endTime = utility.date.getFormattedDate(t.endTime);
+      const endTime = DateUtils.getFormattedDate(t.endTime);
       els.endTime.value = form.endTime = endTime;
       const type = change.target.name.slice(0, 1),
         newChange = { target: {} };
@@ -305,8 +305,8 @@
       }
       if (click.target.classList.contains("editable")) {
         if (!app.omnibox.element.disabled) {
-          let inputCell = utility.DOM.getNextSibling(click.target);
-          let input = utility.DOM.getFirstChild(inputCell);
+          let inputCell = HTML.getNextSibling(click.target);
+          let input = HTML.getFirstChild(inputCell);
           switch (input.name) {
             case "location":
               app.pages.form.resetLocation(); // select loses custom "Other"
@@ -329,25 +329,25 @@
     setTimeInputs: function (...names) {
       ((names.length && names) || ["start", "end"]).forEach((name) => {
         const input = document.querySelector(`input[name="${name}Date"]`);
-        const date = utility.date.parseFormattedDate(
+        const date = DateUtils.parseFormattedDate(
           this.elements.form[`${name}Time`].value
         );
         this.dateToInput(date, input);
       });
     },
     dateToInput: function (date, input) {
-      const hour = utility.DOM.getNextSibling(input);
-      const minute = utility.DOM.getNextSibling(hour);
-      const ampm = utility.DOM.getNextSibling(minute);
+      const hour = HTML.getNextSibling(input);
+      const minute = HTML.getNextSibling(hour);
+      const ampm = HTML.getNextSibling(minute);
       input.value =
         date.getFullYear() +
         "-" +
-        utility.date.zeropad(date.getMonth() + 1) +
+        DateUtils.zeropad(date.getMonth() + 1) +
         "-" +
-        utility.date.zeropad(date.getDate());
-      minute.value = utility.date.roundMinutes(date.getMinutes());
-      hour.value = utility.date.parseHours(date.getHours());
-      ampm.value = utility.date.parseAMPM(date.getHours());
+        DateUtils.zeropad(date.getDate());
+      minute.value = DateUtils.roundMinutes(date.getMinutes());
+      hour.value = DateUtils.parseHours(date.getHours());
+      ampm.value = DateUtils.parseAMPM(date.getHours());
     },
     handleClickStudent: function (click) {
       if (app.pages.form.currentStack === app.pages.archive.filteredStack) {
@@ -406,6 +406,41 @@
       this.handleChange({
         target: { name: "advanceBooking", value: "Make advance booking" },
       });
+    },
+    parseDateAndTimeInputs() {
+      let startTime = new Date(
+          app.pages.form.elements.form.startDate.value + "T00:00:00"
+        ),
+        endTime = new Date(
+          app.pages.form.elements.form.endDate.value + "T00:00:00"
+        ),
+        startHour = +app.pages.form.elements.form.startHour.value,
+        endHour = +app.pages.form.elements.form.endHour.value,
+        startMinute = +app.pages.form.elements.form.startMinute.value,
+        endMinute = +app.pages.form.elements.form.endMinute.value;
+      const ampmConverter = (ampm, hour) => {
+        if (ampm == "PM" && hour != 12) {
+          hour += 12;
+        } else if (ampm == "AM" && hour == 12) {
+          // i.e. 12 AM
+          hour = 0;
+        }
+        return hour;
+      };
+      startHour = ampmConverter(
+        app.pages.form.elements.form.startAMPM.value,
+        startHour
+      );
+      endHour = ampmConverter(
+        app.pages.form.elements.form.endAMPM.value,
+        endHour
+      );
+      startTime.setHours(startHour);
+      startTime.setMinutes(startMinute);
+      endTime.setHours(endHour);
+      endTime.setMinutes(endMinute);
+
+      return { startTime, endTime };
     },
     refreshUpdateButton: function () {
       const currentForm = app.pages.openForms.getCurrentForm();

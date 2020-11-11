@@ -1,0 +1,74 @@
+<script>
+  /* exported HTML */
+  const HTML = (function () {
+    return {
+      empty,
+      getFirstChild,
+      getNextSibling,
+      makeRadio,
+      makeTableRow,
+      getRadioValue,
+    };
+
+    function empty(element) {
+      while (element && element.firstChild) {
+        element.removeChild(element.firstChild);
+      }
+    }
+
+    function getFirstChild(element) {
+      let firstChild = element.firstChild;
+      while (firstChild != null && firstChild.nodeType == 3) {
+        firstChild = firstChild.nextSibling;
+      }
+      return firstChild;
+    }
+
+    function getNextSibling(element) {
+      let nextSibling = element.nextSibling;
+      while (nextSibling != null && nextSibling.nodeType == 3) {
+        nextSibling = nextSibling.nextSibling;
+      }
+      return nextSibling;
+    }
+
+    function makeRadio(name, ...values) {
+      const radio = {};
+      for (let value of values) {
+        radio[value] = `<input type="radio" name="${name}" value="${value}" `;
+        if (value == "other") {
+          radio[value] += "checked";
+        }
+        radio[value] += "/>";
+      }
+      return radio;
+    }
+
+    function makeTableRow(tagName, ...contents) {
+      const cells = [];
+      for (let i = 0, l = contents.length; i < l; i++) {
+        cells.push(document.createElement(tagName));
+        if (typeof contents[i] === "string") {
+          cells[i].innerHTML = contents[i];
+        } else if (typeof contents[i] === "object") {
+          cells[i].appendChild(contents[i]);
+        }
+      }
+      const row = document.createElement("tr");
+      while (cells.length) {
+        row.appendChild(cells.shift());
+      }
+      return row;
+    }
+
+    function getRadioValue(container = document) {
+      const radio = container.querySelectorAll('input[type="radio"]');
+      for (let i = 0; i < radio.length; i++) {
+        if (radio[i].checked) {
+          return radio[i].value;
+        }
+      }
+      return null;
+    }
+  })();
+</script>

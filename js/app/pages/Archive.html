@@ -1,118 +1,131 @@
 <script>
-/* global app Stack utility populateArchiveTable */
-app.pages.archive = {
-  elements: {
-    container:   document.querySelector('div.archiveContainer'),
-    queryButton: document.querySelector('button[value="query"]'),
-    queryCount:  document.querySelector('span.querycount'),
-    queryInputs: document.querySelector('form.query'),
-    tableBody:   document.querySelector('tbody.archive'),
-    tableHead:   document.querySelector('thead.archive'),
-  },
-  filteredStack: new Stack(),
-  getDateRangeAsJSON: function() {
-    let inputs = app.pages.archive.elements.queryInputs;
-    let range = {};
-    range.start = utility.date.getFormattedDate(
-      new Date(inputs.start.value + 'T00:00:00')
-    );
-    range.end = utility.date.getFormattedDate(
-      new Date(inputs.end.value   + 'T23:59:59')
-    );
-    return JSON.stringify(range);
-  },
-  handleChange: function(change) {
-    if (change.target.getAttribute('type') == 'date') {
-      // see if new date range exceeds old date range
-      let range    = app.pages.archive.range,
-          inputs   = app.pages.archive.elements.queryInputs,
-          z = utility.date.zeropad;
-      let start    = new Date(inputs.start.value + 'T00:00:00'),
-          end      = new Date(inputs.end.value   + 'T23:59:59'),
-          oldStart = new Date(range.start + 'T00:00:00'),
-          oldEnd   = new Date(range.end   + 'T23:59:59');
-      // cancel change if start > end
-      if (start.getTime() > end.getTime()) {
-        inputs.start.value = range.start;
-        inputs.end.value = range.end;
-        app.modal.handleError(new Error('Range start can not be after end'));
-        change.preventDefault();
+  /* global app Stack DateUtils populateArchiveTable */
+  app.pages.archive = {
+    elements: {
+      container: document.querySelector("div.archiveContainer"),
+      queryButton: document.querySelector('button[value="query"]'),
+      queryCount: document.querySelector("span.querycount"),
+      queryInputs: document.querySelector("form.query"),
+      tableBody: document.querySelector("tbody.archive"),
+      tableHead: document.querySelector("thead.archive"),
+    },
+    filteredStack: new Stack(),
+    getDateRangeAsJSON: function () {
+      let inputs = app.pages.archive.elements.queryInputs;
+      let range = {};
+      range.start = DateUtils.getFormattedDate(
+        new Date(inputs.start.value + "T00:00:00")
+      );
+      range.end = DateUtils.getFormattedDate(
+        new Date(inputs.end.value + "T23:59:59")
+      );
+      return JSON.stringify(range);
+    },
+    handleChange: function (change) {
+      if (change.target.getAttribute("type") == "date") {
+        // see if new date range exceeds old date range
+        let range = app.pages.archive.range,
+          inputs = app.pages.archive.elements.queryInputs,
+          z = DateUtils.zeropad;
+        let start = new Date(inputs.start.value + "T00:00:00"),
+          end = new Date(inputs.end.value + "T23:59:59"),
+          oldStart = new Date(range.start + "T00:00:00"),
+          oldEnd = new Date(range.end + "T23:59:59");
+        // cancel change if start > end
+        if (start.getTime() > end.getTime()) {
+          inputs.start.value = range.start;
+          inputs.end.value = range.end;
+          app.modal.handleError(new Error("Range start can not be after end"));
+          change.preventDefault();
+          return;
+        }
+        if (
+          start.getTime() < oldStart.getTime() ||
+          end.getTime() > oldEnd.getTime()
+        ) {
+          app.pages.archive.update();
+        } else {
+          app.pages.archive.query();
+        }
+        // update range
+        range.start =
+          start.getFullYear() +
+          "-" +
+          z(start.getMonth() + 1) +
+          "-" +
+          z(start.getDate());
+        range.end =
+          end.getFullYear() +
+          "-" +
+          z(end.getMonth() + 1) +
+          "-" +
+          z(end.getDate());
+      }
+    },
+    handleClickTable: function (click) {
+      if (click.target.parentNode.classList.contains("hoveroff")) {
         return;
       }
-      if (start.getTime() < oldStart.getTime() ||
-            end.getTime() > oldEnd.getTime()) {
+      const id = click.target.parentNode.getAttribute("data-id");
+      app.doCommand("displayForm", app.pages.archive.filteredStack.getByID(id));
+    },
+    handleClickTableHead: function (click) {
+      app.pages.archive.stack.sortForms(click.target.dataset.sort);
+      populateArchiveTable(app.pages.archive.stack);
+    },
+    init: function () {
+      let inputs = app.pages.archive.elements.queryInputs,
+        today = new Date();
+      today =
+        today.getFullYear() +
+        "-" +
+        DateUtils.zeropad(today.getMonth() + 1) +
+        "-" +
+        DateUtils.zeropad(today.getDate());
+      inputs.start.value = today;
+      inputs.end.value = today;
+      app.pages.archive.range.start = today;
+      app.pages.archive.range.end = today;
+    },
+    /* query: see external file */
+    range: {
+      start: "", // 'yyyy-mm-dd'
+      end: "", // 'yyyy-mm-dd'
+    },
+    isTodaySelected: function () {
+      const today = new Date();
+      today.setHours(0);
+      today.setMinutes(0);
+      today.setSeconds(0);
+      today.setMilliseconds(0);
+      const selectedEndTime = new Date(
+        app.pages.archive.range.end + "T00:00:00"
+      ).getTime();
+      return selectedEndTime >= today.getTime();
+    },
+    show: function () {
+      if (app.pages.archive.isTodaySelected()) {
         app.pages.archive.update();
       } else {
         app.pages.archive.query();
       }
-      // update range
-      range.start = start.getFullYear() + '-'
-        + z(start.getMonth() + 1) + '-' + z(start.getDate());
-      range.end = end.getFullYear() + '-'
-        + z(end.getMonth() + 1) + '-' + z(end.getDate());
-    }
-  },
-  handleClickTable: function(click) {
-    if (click.target.parentNode.classList.contains("hoveroff")) {
-      return;
-    }
-    const id = click.target.parentNode.getAttribute('data-id');
-    app.doCommand('displayForm', app.pages.archive.filteredStack.getByID(id));
-  },
-  handleClickTableHead: function(click) {
-    app.pages.archive.stack.sortForms(click.target.dataset.sort);
-    populateArchiveTable(app.pages.archive.stack);
-  },
-  init: function() {
-    let inputs = app.pages.archive.elements.queryInputs,
-        today = new Date();
-    today = today.getFullYear() +
-      '-' + utility.date.zeropad(today.getMonth() + 1) +
-      '-' + utility.date.zeropad(today.getDate());
-    inputs.start.value = today;
-    inputs.end.value = today;
-    app.pages.archive.range.start = today;
-    app.pages.archive.range.end   = today;
-  },
-  /* query: see external file */
-  range: {
-    start: '', // 'yyyy-mm-dd'
-    end: '',   // 'yyyy-mm-dd'
-  },
-  isTodaySelected: function() {
-    const today = new Date();
-    today.setHours(0);
-    today.setMinutes(0);
-    today.setSeconds(0);
-    today.setMilliseconds(0);
-    const selectedEndTime = new Date(
-      app.pages.archive.range.end + 'T00:00:00'
-    ).getTime();
-    return selectedEndTime >= today.getTime();
-  },
-  show: function() {
-    if (app.pages.archive.isTodaySelected()) {
-      app.pages.archive.update();
-    } else {
-      app.pages.archive.query();
-    }
-    app.pages.form.currentStack = app.pages.archive.filteredStack;
-    app.pages.archive.elements.container.classList.remove("hidden");
-  },
-  hide: function() {
-    app.pages.archive.elements.container.classList.add("hidden");
-  },
-  refreshId: NaN,
-  setInterval: function() {},
-  sortBy: 'startTime',
-  sortDescending: false,
-  stack: new Stack(),
-  update: function() {
-    app.spinner.inside(app.pages.archive.elements.queryButton);
-    app.run.doGet({
-      get: 'archive',
-      dateRangeJSON: app.pages.archive.getDateRangeAsJSON(),
-    });
-  },
-};
+      app.pages.form.currentStack = app.pages.archive.filteredStack;
+      app.pages.archive.elements.container.classList.remove("hidden");
+    },
+    hide: function () {
+      app.pages.archive.elements.container.classList.add("hidden");
+    },
+    refreshId: NaN,
+    setInterval: function () {},
+    sortBy: "startTime",
+    sortDescending: false,
+    stack: new Stack(),
+    update: function () {
+      app.spinner.inside(app.pages.archive.elements.queryButton);
+      app.run.doGet({
+        get: "archive",
+        dateRangeJSON: app.pages.archive.getDateRangeAsJSON(),
+      });
+    },
+  };
 </script>

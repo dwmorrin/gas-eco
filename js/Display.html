@@ -4,7 +4,7 @@
    * @param {bool} archived - is this a closed form?
    * @return void
    */
-  /* global app utility Form */
+  /* global app DateUtils HTML Form */
   /* exported
      populateArchiveTable
      displayForm
@@ -20,7 +20,7 @@
       switch (key) {
         case "items": {
           const items = form[key];
-          utility.DOM.empty(els.itemList);
+          HTML.empty(els.itemList);
           if (items.getLength() > 0) {
             const slice = items.slice();
             slice.reverse().forEach(populateItemList);
@@ -28,7 +28,7 @@
           break;
         }
         case "notes": {
-          utility.DOM.empty(els.noteSection);
+          HTML.empty(els.noteSection);
           let notes = form[key];
           if (notes.length == 0) {
             els.form.notes.value = JSON.stringify([]);
@@ -57,7 +57,7 @@
         }
         case "students": {
           let students = form[key];
-          utility.DOM.empty(els.studentList);
+          HTML.empty(els.studentList);
           if (students.length > 0) {
             students.forEach(populateStudentList);
           }
@@ -106,16 +106,16 @@
                 var hour = today.getHours(),
                   minutes = today.getMinutes();
 
-                minuteInput.value = utility.date.roundMinutes(minutes);
-                hourInput.value = utility.date.parseHours(hour);
-                ampmInput.value = utility.date.parseAMPM(hour);
+                minuteInput.value = DateUtils.roundMinutes(minutes);
+                hourInput.value = DateUtils.parseHours(hour);
+                ampmInput.value = DateUtils.parseAMPM(hour);
                 dateInput.value =
                   "" +
                   today.getFullYear() +
                   "-" +
-                  utility.date.zeropad(today.getMonth() + 1) +
+                  DateUtils.zeropad(today.getMonth() + 1) +
                   "-" +
-                  utility.date.zeropad(today.getDate());
+                  DateUtils.zeropad(today.getDate());
 
                 break;
               case "location":
@@ -170,8 +170,8 @@
    * @return {undefined} - updates html display for user
    */
   function populateFormsTable(forms) {
-    utility.DOM.empty(app.pages.openForms.elements.formsTableBody);
-    utility.DOM.empty(app.pages.openForms.elements.equipmentTableBody);
+    HTML.empty(app.pages.openForms.elements.formsTableBody);
+    HTML.empty(app.pages.openForms.elements.equipmentTableBody);
 
     // highlight the column currently sorted by
     displaySortedBy(forms, app.pages.openForms.elements.formsTableHead);
@@ -218,7 +218,7 @@
       }
     });
 
-    let row = utility.DOM.makeTableRow(
+    let row = HTML.makeTableRow(
       "td",
       app.strings.documentIcon,
       form.startTime,
@@ -228,7 +228,7 @@
         form.students.map((student) => student.name).join(", ")
     );
     let type = "inactive", // assume inactive
-      endTime = utility.date.parseFormattedDate(form.endTime).getTime(),
+      endTime = DateUtils.parseFormattedDate(form.endTime).getTime(),
       fifteenMinutes = 15 * 60 * 1000, // milliseconds
       now = Date.now();
     row.setAttribute("data-id", form.id);
@@ -247,7 +247,7 @@
   }
 
   function populateEquipmentOutList(item) {
-    let row = utility.DOM.makeTableRow(
+    let row = HTML.makeTableRow(
       "td",
       item[0],
       item[1],
@@ -267,7 +267,7 @@
       quantity = item.makeQuantityButtons(isArchive),
       checkIn = item.makeCheckInButton(isArchive),
       checkOut = item.checkOut || `<i>Scan barcode to check out</i>`;
-    const itemRow = utility.DOM.makeTableRow(
+    const itemRow = HTML.makeTableRow(
       "td",
       quantity,
       item.description,
@@ -300,7 +300,7 @@
       ? `<span class="alert">DID NOT CHECK OUT</span>`
       : student.checkOut ||
         (isArchive || !student.checkIn ? "" : `<i>Scan ID to sign out</i>`);
-    const studentRow = utility.DOM.makeTableRow(
+    const studentRow = HTML.makeTableRow(
       "td",
       student.name,
       student.netId,
@@ -315,7 +315,7 @@
    * @param {Stack} formStack
    */
   function populateArchiveTable(formStack) {
-    utility.DOM.empty(app.pages.archive.elements.tableBody);
+    HTML.empty(app.pages.archive.elements.tableBody);
 
     displaySortedBy(formStack, app.pages.archive.elements.tableHead);
 
@@ -338,7 +338,7 @@
 
   function makeArchiveTableRows(form) {
     let hasItems = form.items.getLength() > 0 ? "YES" : "NO";
-    let row = utility.DOM.makeTableRow(
+    let row = HTML.makeTableRow(
       "td",
       app.strings.documentIcon,
       form.startTime,

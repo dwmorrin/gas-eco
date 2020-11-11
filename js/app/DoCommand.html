@@ -10,8 +10,9 @@
       modal
       populateStudentList
       populateItemList
-      utility
-*/
+      HTML
+      Utility
+  */
   app.doCommand = function (command, ...options) {
     switch (command) {
       case "advanceBooking": {
@@ -76,7 +77,7 @@
             value: `${item.description} checked out again`,
           },
         });
-        utility.DOM.empty(app.pages.form.elements.itemList);
+        HTML.empty(app.pages.form.elements.itemList);
         app.pages.openForms
           .getCurrentForm()
           .items.reverse()
@@ -118,7 +119,7 @@
         break;
       }
       case "copyItems": {
-        utility.copyToClipboard(
+        Utility.copyToClipboard(
           JSON.stringify(
             app.pages.form.currentStack.getCurrentForm().items.getStripped()
           )
@@ -174,7 +175,7 @@
         const form = app.pages.openForms.getCurrentForm(),
           item = app.modal.tmp;
         const change = { target: { name: "items" } };
-        const value = utility.DOM.getRadioValue();
+        const value = HTML.getRadioValue(app.modal.table);
         if (value == "other") {
           const note = app.modal.getText();
           if (note.length < 1) {
@@ -186,7 +187,7 @@
           item.missing = true;
           change.target.value = `${item.description} marked as missing`;
         }
-        utility.DOM.empty(app.pages.form.elements.itemList);
+        HTML.empty(app.pages.form.elements.itemList);
         form.items.reverse().forEach(populateItemList);
         app.pages.form.handleChange(change);
         break;
@@ -227,7 +228,7 @@
           return;
         }
         // Update display
-        utility.DOM.empty(app.pages.form.elements.itemList);
+        HTML.empty(app.pages.form.elements.itemList);
         items.reverse().forEach(populateItemList);
         // Fake change event
         itemchange.target.value += " to " + quantity;
@@ -246,7 +247,7 @@
         };
         item.changeQuantity(1);
         // Update display
-        utility.DOM.empty(app.pages.form.elements.itemList);
+        HTML.empty(app.pages.form.elements.itemList);
         form.items.reverse().forEach(populateItemList);
         // Fake change event
         itemchange.target.value += " to " + (quantity + 1);
@@ -283,7 +284,7 @@
         const form = app.pages.openForms.getCurrentForm();
         const item = form.items.removeByItem(options[0]);
         // Update display
-        utility.DOM.empty(app.pages.form.elements.itemList);
+        HTML.empty(app.pages.form.elements.itemList);
         form.items.reverse().forEach(populateItemList);
         // Fake change event
         app.pages.form.handleChange({
@@ -310,9 +311,9 @@
         if (description === "") {
           break;
         }
-        utility.digestMessage(description).then((hash) => {
+        Utility.digestMessage(description).then((hash) => {
           app.omnibox.handleItem({
-            id: "MANUAL-" + utility.hexString(hash).substring(0, 5),
+            id: "MANUAL-" + Utility.hexString(hash).substring(0, 5),
             checkIn: null,
             checkOut: null,
             quantity: 1,
@@ -344,7 +345,7 @@
         app.run.doGet({ get: "students", init: false });
         break;
       case "studentNote": {
-        const value = utility.DOM.getRadioValue();
+        const value = HTML.getRadioValue(app.modal.table);
         const students = app.pages.openForms.getCurrentForm().students;
         const student = app.modal.tmp;
         if (value == "left") {
@@ -355,7 +356,7 @@
               value: student.name + " left without checking out",
             },
           });
-          utility.DOM.empty(app.pages.form.elements.studentList);
+          HTML.empty(app.pages.form.elements.studentList);
           students.forEach(populateStudentList);
         } else if (value == "no show") {
           app.pages.form.handleChange({

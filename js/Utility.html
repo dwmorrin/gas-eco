@@ -1,337 +1,47 @@
 <script>
-  /** Utility */
-  /* global app toast */
-  const utility = { DOM: {}, date: {} };
-
-  utility.copyToClipboard = function (data) {
-    const textArea = document.createElement("textarea");
-    // ensures that copying the items will not cause the screen to scroll down
-    textArea.setAttribute("readonly", true);
-    textArea.value = data;
-    document.body.appendChild(textArea);
-    textArea.select();
-    document.execCommand("copy");
-    toast("Items copied");
-    // removes the text area after copying so that it is not seen
-    document.body.removeChild(textArea);
-  };
-
-  utility.digestMessage = function (message) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(message);
-    return window.crypto.subtle.digest("SHA-1", data);
-  };
-
-  utility.hexString = function (buffer) {
-    const byteArray = new Uint8Array(buffer);
-    const hexCodes = [...byteArray].map((value) => {
-      const hexCode = value.toString(16);
-      const paddedHexCode = hexCode.padStart(2, "0");
-      return paddedHexCode;
-    });
-    return hexCodes.join("");
-  };
-
-  /**
-   * query searches through the supplied arrays inspected keys, as found with
-   *   the supplied key making function, and returns a weighted result array.
-   * The preliminary search filters inventory and roster for anything that
-   *   seems to include the query expression.  As a simple misspelling aid,
-   *   the expression is tokenized and matching starts from truncated strings
-   *   and grows until a match might be found.
-   * The second search does the opposite: the full tokens are examined and
-   *   reduced if needed.  Each reduction (which could indicate a misspelling)
-   *   causes an increase in the weight.
-   *   The best results have a low weight, the worst results have a high weight.
-   * @param {string} q - query expression
-   * @param {function} keyMaker - ({}) => string[]
-   * @param {{}[]} arrays - arrays to query
-   * @returns {{value: {}, weight: number}[]}
-   */
-  utility.query = function (q, keyMaker, ...arrays) {
-    const expression = q.trim().toLowerCase();
-    const sep = /[\s\W]+/;
-    const terms = expression.split(sep);
-    // reduce the large set of possibilities to a narrow set of possibilities
-    const preliminary = function (obj) {
-      const keys = keyMaker(obj);
-      for (const term of terms) {
-        if (term.length < 3) {
-          continue;
-        }
-        for (let i = 3; i <= term.length; ++i) {
-          for (const key of keys) {
-            if (key.includes(term.slice(0, i))) {
-              return true;
-            }
-          }
-        }
-      }
+  /* global toast */
+  /* exported Utility */
+  const Utility = (function () {
+    return {
+      copyToClipboard,
+      digestMessage,
+      hexString,
+      uncamelCase,
     };
-    const results = arrays
-      .reduce((reduced, arr) => reduced.concat(arr), [])
-      .filter(preliminary);
 
-    // examine the subset and score how good the result appears to be
-    const score = { BEST: 0, GOOD: 1, BAD: 10 };
-    const weigh = (value) => {
-      const keys = keyMaker(value);
-      let minWeight = score.BAD;
-      for (
-        let str = expression;
-        str.length > 2;
-        str = str.slice(0, str.length - 1)
-      ) {
-        for (const key of keys) {
-          if (key.includes(str)) {
-            if (key === str || key.startsWith(str)) {
-              const weight = score.BEST + expression.length - str.length;
-              minWeight = weight < minWeight ? weight : minWeight;
-              str = "";
-              break;
-            }
-          }
-        }
-      }
-      // term by term matching: these results are averaged
-      // we want results that match all of the user's input to get the best scores
-      const termScores = [];
-      for (let i = 0; i < terms.length; ++i) {
-        for (
-          let str = terms[i];
-          str.length > 2;
-          str = str.slice(0, str.length - 1)
-        ) {
-          for (const key of keys) {
-            if (key.includes(str)) {
-              termScores.push(score.GOOD + terms[i].length - str.length);
-              str = "";
-              break;
-            }
-          }
-        }
-        if (termScores.length === i) {
-          // implies we didn't push a good score
-          termScores.push(score.BAD);
-        }
-      }
-      const average =
-        termScores.reduce((sum, val) => sum + val) / termScores.length;
-      minWeight = average < minWeight ? average : minWeight;
-      return { value, weight: minWeight };
-    };
-    const weightedResults = results.map(weigh);
-    weightedResults.sort((a, b) => a.weight - b.weight);
-    return weightedResults;
-  };
-
-  utility.uncamelCase = function (string) {
-    return string
-      .replace(/([A-Z])/g, " $1")
-      .replace(/^./, (str) => str.toUpperCase());
-  };
-
-  utility.DOM.empty = function (element) {
-    while (element.firstChild) {
-      element.removeChild(element.firstChild);
+    function copyToClipboard(data) {
+      const textArea = document.createElement("textarea");
+      // ensures that copying the items will not cause the screen to scroll down
+      textArea.setAttribute("readonly", true);
+      textArea.value = data;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      toast("Items copied");
+      // removes the text area after copying so that it is not seen
+      document.body.removeChild(textArea);
     }
-  };
 
-  utility.DOM.getFirstChild = function (element) {
-    let firstChild = element.firstChild;
-    while (firstChild != null && firstChild.nodeType == 3) {
-      firstChild = firstChild.nextSibling;
+    function digestMessage(message) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(message);
+      return window.crypto.subtle.digest("SHA-1", data);
     }
-    return firstChild;
-  };
 
-  utility.DOM.getNextSibling = function (element) {
-    let nextSibling = element.nextSibling;
-    while (nextSibling != null && nextSibling.nodeType == 3) {
-      nextSibling = nextSibling.nextSibling;
+    function hexString(buffer) {
+      const byteArray = new Uint8Array(buffer);
+      const hexCodes = [...byteArray].map((value) => {
+        const hexCode = value.toString(16);
+        const paddedHexCode = hexCode.padStart(2, "0");
+        return paddedHexCode;
+      });
+      return hexCodes.join("");
     }
-    return nextSibling;
-  };
 
-  utility.DOM.makeRadio = function (name, ...values) {
-    const radio = {};
-    for (let value of values) {
-      radio[value] = `<input type="radio" name="${name}" value="${value}" `;
-      if (value == "other") {
-        radio[value] += "checked";
-      }
-      radio[value] += "/>";
+    function uncamelCase(string) {
+      return string
+        .replace(/([A-Z])/g, " $1")
+        .replace(/^./, (str) => str.toUpperCase());
     }
-    return radio;
-  };
-
-  utility.DOM.makeTableRow = function (tagName, ...contents) {
-    const cells = [];
-    for (let i = 0, l = contents.length; i < l; i++) {
-      cells.push(document.createElement(tagName));
-      if (typeof contents[i] === "string") {
-        cells[i].innerHTML = contents[i];
-      } else if (typeof contents[i] === "object") {
-        cells[i].appendChild(contents[i]);
-      }
-    }
-    const row = document.createElement("tr");
-    while (cells.length) {
-      row.appendChild(cells.shift());
-    }
-    return row;
-  };
-
-  utility.DOM.getRadioValue = function () {
-    const radio = app.modal.table.querySelectorAll('input[type="radio"]');
-    for (let i = 0; i < radio.length; i++) {
-      if (radio[i].checked) {
-        return radio[i].value;
-      }
-    }
-    return null;
-  };
-
-  utility.date.getFormattedDate = function (date) {
-    const year = date.getFullYear(),
-      month = date.getMonth() + 1, // zero indexed
-      day = date.getDate(),
-      minutes = date.getMinutes();
-    let ampm = "am",
-      hour = date.getHours();
-
-    if (hour > 11) {
-      ampm = "pm";
-      hour = hour % 12;
-    }
-    if (hour == 0) {
-      hour = 12;
-    }
-    return (
-      utility.date.zeropad(month) +
-      "/" +
-      utility.date.zeropad(day) +
-      "/" +
-      year +
-      " " +
-      utility.date.zeropad(hour) +
-      ":" +
-      utility.date.zeropad(minutes) +
-      " " +
-      ampm
-    );
-  };
-
-  /**
-   * checks all date/time inputs and returns and object with two Date objects
-   * @return {object} - use .startTime and .endTime
-   */
-  utility.date.parseDateAndTimeInputs = function () {
-    let startTime = new Date(
-        app.pages.form.elements.form.startDate.value + "T00:00:00"
-      ),
-      endTime = new Date(
-        app.pages.form.elements.form.endDate.value + "T00:00:00"
-      ),
-      startHour = +app.pages.form.elements.form.startHour.value,
-      endHour = +app.pages.form.elements.form.endHour.value,
-      startMinute = +app.pages.form.elements.form.startMinute.value,
-      endMinute = +app.pages.form.elements.form.endMinute.value;
-    const ampmConverter = (ampm, hour) => {
-      if (ampm == "PM" && hour != 12) {
-        hour += 12;
-      } else if (ampm == "AM" && hour == 12) {
-        // i.e. 12 AM
-        hour = 0;
-      }
-      return hour;
-    };
-    startHour = ampmConverter(
-      app.pages.form.elements.form.startAMPM.value,
-      startHour
-    );
-    endHour = ampmConverter(
-      app.pages.form.elements.form.endAMPM.value,
-      endHour
-    );
-    startTime.setHours(startHour);
-    startTime.setMinutes(startMinute);
-    endTime.setHours(endHour);
-    endTime.setMinutes(endMinute);
-
-    return { startTime, endTime };
-  };
-
-  /**
-   * @param {string} dateString
-   * @return {Date}
-   */
-  utility.date.parseFormattedDate = function (dateString) {
-    // mm/dd/yyyy hh:mm am
-    let month = dateString.slice(0, 2),
-      day = dateString.slice(3, 5),
-      year = dateString.slice(6, 10),
-      hour = dateString.slice(11, 13),
-      minutes = dateString.slice(14, 16),
-      ampm = dateString.slice(17, 19);
-    // convert ampm to 24 hour
-    if (ampm == "pm") {
-      ampm = 12;
-    } else {
-      ampm = 0;
-    }
-    hour = (hour % 12) + ampm;
-
-    return new Date(
-      year +
-        "-" +
-        utility.date.zeropad(month) +
-        "-" +
-        utility.date.zeropad(day) +
-        "T" +
-        utility.date.zeropad(hour) +
-        ":" +
-        utility.date.zeropad(minutes) +
-        ":00"
-    );
-  };
-
-  utility.date.roundMinutes = function (minutes) {
-    let minute = minutes % 10;
-    if (minute < 5) {
-      // roll back to :00
-      minutes -= minute;
-    } else {
-      // roll back to :05
-      minutes -= minute - 5;
-    }
-    return minutes;
-  };
-
-  utility.date.parseHours = function (hours) {
-    if (hours > 12) {
-      return hours - 12;
-    } else if (hours == 0) {
-      return hours + 12;
-    } else {
-      return hours;
-    }
-  };
-
-  utility.date.parseAMPM = function (hours) {
-    if (hours >= 12) {
-      return "PM";
-    } else {
-      return "AM";
-    }
-  };
-
-  utility.date.zeropad = function (x) {
-    x = +x;
-    if (x < 10) {
-      return "0" + x;
-    } else {
-      return x;
-    }
-  };
+  })();
 </script>
