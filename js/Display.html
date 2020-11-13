@@ -4,19 +4,19 @@
    * @param {bool} archived - is this a closed form?
    * @return void
    */
-  /* global app DateUtils HTML Form */
+  /* global app DateUtils HTML Form Utility */
   /* exported
-     populateArchiveTable
-     displayForm
-     populateFormsTable
-     modal
-     toast
-*/
+       populateArchiveTable
+       displayForm
+       populateFormsTable
+       modal
+       toast
+  */
   function displayForm(form) {
     const formPage = app.pages.form;
     const els = formPage.elements;
     formPage.resetLocation();
-    for (let key in form) {
+    for (const key in form) {
       switch (key) {
         case "items": {
           const items = form[key];
@@ -34,15 +34,13 @@
             els.form.notes.value = JSON.stringify([]);
             els.noteSection.classList.add("hidden");
           } else {
-            for (let note of notes) {
-              try {
-                // Unintuitive use of try/catch: read carefully:
-                JSON.parse(note.body); // (success == change log ) => ignore it
-              } catch (e) {
-                // (  error == global note) => display it
-                let p = document.createElement("p");
-                p.textContent = "Note: " + "[" + note.author + "] " + note.body;
-                els.noteSection.appendChild(p);
+            for (const note of notes) {
+              if (!Utility.tryJsonParse(note.body)) {
+                els.noteSection.appendChild(
+                  HTML.createElement("p", {
+                    textContent: `Note: [${note.author}] ${note.body}`,
+                  })
+                );
               }
             }
             if (els.noteSection.firstChild) {
@@ -56,7 +54,7 @@
           break;
         }
         case "students": {
-          let students = form[key];
+          const students = form[key];
           HTML.empty(els.studentList);
           if (students.length > 0) {
             students.forEach(populateStudentList);
@@ -74,17 +72,19 @@
           var td = document.querySelector("#" + key + "Display");
           if (form[key]) {
             // There's data to display
-            td.textContent = form[key];
-            td.classList.remove("hidden");
+            HTML.attributes(td, {
+              textContent: form[key],
+              removeClass: "hidden",
+            });
             td.parentNode.classList.remove("hidden");
             if (td.nextElementSibling) {
               td.nextElementSibling.classList.add("hidden");
             }
-            if (key == "location" || key == "startTime" || key == "endTime") {
+            if (["location", "startTime", "endTime"].includes(key)) {
               els.form[key].value = form[key];
             }
             // if "Other" value, we need to put that value back into the select
-            if (key == "location" && els.form.location.value == "") {
+            if (key === "location" && els.form.location.value == "") {
               els.locationOtherOption.value = els.locationOtherOption.textContent =
                 form[key];
               els.form[key].value = form[key];
@@ -93,33 +93,32 @@
             // There's not data, so maybe show an input for the user, and clear old data
             switch (key) {
               case "startTime":
-              case "endTime":
-                td.textContent = "";
+              case "endTime": {
+                HTML.attributes(td, {
+                  textContent: "",
+                  class: "hidden",
+                });
                 els.form[key].value = "";
-                td.classList.add("hidden");
                 td.nextElementSibling.classList.remove("hidden");
-                var today = new Date(),
+                const today = new Date(),
                   dateInput = td.nextElementSibling.firstElementChild,
                   hourInput = dateInput.nextElementSibling,
                   minuteInput = hourInput.nextElementSibling,
                   ampmInput = minuteInput.nextElementSibling;
-                var hour = today.getHours(),
+                const hour = today.getHours(),
                   minutes = today.getMinutes();
 
                 minuteInput.value = DateUtils.roundMinutes(minutes);
                 hourInput.value = DateUtils.parseHours(hour);
                 ampmInput.value = DateUtils.parseAMPM(hour);
-                dateInput.value =
-                  "" +
-                  today.getFullYear() +
-                  "-" +
-                  DateUtils.zeropad(today.getMonth() + 1) +
-                  "-" +
-                  DateUtils.zeropad(today.getDate());
+                dateInput.value = DateUtils.formatDashed(today);
 
                 break;
+              }
               case "location":
-                td.classList.add("hidden");
+                HTML.attributes(td, {
+                  class: "hidden",
+                });
                 td.nextElementSibling.classList.remove("hidden");
                 els.locationSelect.value = "none";
                 break;
@@ -206,109 +205,127 @@
   function makeOpenFormTableRows(form) {
     form.items.forEach(function (item) {
       if (item.checkedOut) {
-        let itemInfo = [
+        populateEquipmentOutList([
           item.description,
           item.id,
           form.location,
           form.students,
           form.endTime,
           form.id,
-        ];
-        populateEquipmentOutList(itemInfo);
+        ]);
       }
     });
 
-    let row = HTML.makeTableRow(
-      "td",
-      app.strings.documentIcon,
-      form.startTime,
-      form.endTime,
-      form.location,
-      form.bookedStudents ||
-        form.students.map((student) => student.name).join(", ")
-    );
     let type = "inactive", // assume inactive
       endTime = DateUtils.parseFormattedDate(form.endTime).getTime(),
       fifteenMinutes = 15 * 60 * 1000, // milliseconds
       now = Date.now();
-    row.setAttribute("data-id", form.id);
     // determine if active, ending soon, or late (green, yellow, red)
     if (form.students.some((student) => student.checkIn)) {
       type = "active";
     }
-    if (type == "active" && now > endTime) {
+    if (type === "active" && now > endTime) {
       type = "late";
     }
-    if (type == "active" && now > endTime - fifteenMinutes) {
+    if (type === "active" && now > endTime - fifteenMinutes) {
       type = "endingSoon";
     }
-    row.classList.add(type);
-    app.pages.openForms.elements.formsTableBody.appendChild(row);
+    app.pages.openForms.elements.formsTableBody.appendChild(
+      HTML.createElement("tr", {
+        class: type,
+        "data-id": form.id,
+        children: [
+          HTML.createElement("td", { innerHTML: app.strings.documentIcon }),
+          ...[
+            form.startTime,
+            form.endTime,
+            form.location,
+            form.bookedStudents ||
+              form.students.map((student) => student.name).join(", "),
+          ].map((textContent) => HTML.createElement("td", { textContent })),
+        ],
+      })
+    );
   }
 
   function populateEquipmentOutList(item) {
-    let row = HTML.makeTableRow(
-      "td",
-      item[0],
-      item[1],
-      item[2],
-      item[3].map((student) => student.name).join(", "),
-      item[4]
+    app.pages.openForms.elements.equipmentTableBody.appendChild(
+      HTML.createElement("tr", {
+        "data-id": item[5],
+        children: [
+          item[0],
+          item[1],
+          item[2],
+          item[3].map((student) => student.name).join(", "),
+          item[4],
+        ].map((textContent) => HTML.createElement("td", { textContent })),
+      })
     );
-    row.setAttribute("data-id", item[5]);
-    app.pages.openForms.elements.equipmentTableBody.appendChild(row);
   }
 
   function populateItemList(item) {
     const isArchive =
       app.pages.form.currentStack === app.pages.archive.filteredStack;
-    const noteRow = document.createElement("tr"),
-      notes = document.createElement("td"),
-      quantity = item.makeQuantityButtons(isArchive),
-      checkIn = item.makeCheckInButton(isArchive),
-      checkOut = item.checkOut || `<i>Scan barcode to check out</i>`;
-    const itemRow = HTML.makeTableRow(
-      "td",
-      quantity,
-      item.description,
-      item.id,
-      checkOut,
-      checkIn
+    app.pages.form.elements.itemList.appendChild(
+      HTML.createElement("tr", {
+        class: item.isSerialized ? "serialized" : "nonserialized",
+        "data-id": item.id,
+        "data-barcode": item.barcode,
+        children: [
+          item.makeQuantityButtons(isArchive),
+          document.createTextNode(item.description),
+          document.createTextNode(item.id),
+          item.checkOut
+            ? document.createTextNode(item.checkOut)
+            : HTML.createElement("i", {
+                textContent: "Scan barcode to check out",
+              }),
+          item.makeCheckInButton(isArchive),
+        ].map((child) => HTML.createElement("td", { child })),
+      })
     );
-    itemRow.setAttribute("data-id", item.id);
-    itemRow.setAttribute("data-barcode", item.barcode);
-    if (!item.isSerialized()) {
-      itemRow.classList.add("nonserialized");
-    } else {
-      itemRow.classList.add("serialized");
-    }
-    app.pages.form.elements.itemList.appendChild(itemRow);
-
-    notes.setAttribute("colspan", 4);
-    notes.classList.add("itemnotes");
-    notes.textContent = "Notes: " + item.notes;
-    noteRow.appendChild(notes);
-    app.pages.form.elements.itemList.appendChild(noteRow);
+    app.pages.form.elements.itemList.appendChild(
+      HTML.createElement("tr", {
+        child: HTML.createElement("td", {
+          colspan: 4,
+          class: "itemnotes",
+          textContent: "Notes: " + item.notes,
+        }),
+      })
+    );
   }
 
   function populateStudentList(student) {
     const isArchive =
       app.pages.form.currentStack === app.pages.archive.filteredStack;
-    const checkIn =
-      student.checkIn || (isArchive ? "" : `<i>Scan ID to sign in</i>`);
-    const checkOut = student.left
-      ? `<span class="alert">DID NOT CHECK OUT</span>`
-      : student.checkOut ||
-        (isArchive || !student.checkIn ? "" : `<i>Scan ID to sign out</i>`);
-    const studentRow = HTML.makeTableRow(
-      "td",
-      student.name,
-      student.netId,
-      checkIn,
-      checkOut
+    app.pages.form.elements.studentList.appendChild(
+      HTML.createElement("tr", {
+        "data-netid": student.netId,
+        children: [
+          HTML.createElement("td", { textContent: student.name }),
+          HTML.createElement("td", { textContent: student.netId }),
+          HTML.createElement("td", {
+            child: student.checkIn
+              ? document.createTextNode(student.checkIn)
+              : isArchive
+              ? document.createTextNode("")
+              : HTML.createElement("i", { textContent: "Scan ID to sign in" }),
+          }),
+          HTML.createElement("td", {
+            child: student.left
+              ? HTML.createElement("span", {
+                  class: "alert",
+                  textContent: "DID NOT CHECK OUT",
+                })
+              : student.checkOut
+              ? document.createTextNode(student.checkOut)
+              : isArchive || !student.checkIn
+              ? document.createTextNode("")
+              : HTML.createElement("i", { textContent: "Scan ID to sign out" }),
+          }),
+        ],
+      })
     );
-    studentRow.setAttribute("data-netid", student.netId);
-    app.pages.form.elements.studentList.appendChild(studentRow);
   }
 
   /**
@@ -320,41 +337,41 @@
     displaySortedBy(formStack, app.pages.archive.elements.tableHead);
 
     // if there's no forms...
-    if (formStack.getLength() == 0) {
-      let cell = document.createElement("td"),
-        row = document.createElement("tr");
-      cell.textContent = "No forms matched your search.";
-      cell.setAttribute("colspan", 12); // fill entire row
-      row.appendChild(cell);
-      row.classList.add("hoveroff");
-      app.pages.archive.elements.tableBody.appendChild(row);
-
-      return;
+    if (formStack.getLength() === 0) {
+      return app.pages.archive.elements.tableBody.appendChild(
+        HTML.createElement("tr", {
+          class: "hoveroff",
+          child: HTML.createElement("td", {
+            textContent: "No forms matched your search.",
+            colspan: 12, // fill entire row
+          }),
+        })
+      );
     }
-
     // else populate
     formStack.forEach(makeArchiveTableRows);
   }
 
   function makeArchiveTableRows(form) {
-    let hasItems = form.items.getLength() > 0 ? "YES" : "NO";
-    let row = HTML.makeTableRow(
-      "td",
-      app.strings.documentIcon,
-      form.startTime,
-      form.endTime,
-      form.location,
-      form.students.map((student) => student.name).join(", "),
-      hasItems,
-      form.bookingId,
-      form.bookedStudents,
-      form.contact,
-      form.project,
-      form.tape ? "YES" : "",
-      form.overnight ? "YES" : ""
+    app.pages.archive.elements.tableBody.appendChild(
+      HTML.createElement("tr", {
+        "data-id": form.id,
+        children: [
+          app.strings.documentIcon,
+          form.startTime,
+          form.endTime,
+          form.location,
+          form.students.map((student) => student.name).join(", "),
+          form.items.getLength() > 0 ? "YES" : "NO", // "has items"
+          form.bookingId,
+          form.bookedStudents,
+          form.contact,
+          form.project,
+          form.tape ? "YES" : "",
+          form.overnight ? "YES" : "",
+        ].map((textContent) => HTML.createElement("td", { textContent })),
+      })
     );
-    row.setAttribute("data-id", form.id);
-    app.pages.archive.elements.tableBody.appendChild(row);
   }
 
   function modal({
@@ -397,13 +414,11 @@
     document.body.appendChild(container);
   }
 
-  function toast(message) {
-    if (typeof message !== "string") {
-      throw new Error("toast requires string argument, got " + message);
-    }
-    const container = document.createElement("div");
-    container.classList.add("toast");
-    container.textContent = message;
+  function toast(textContent) {
+    const container = HTML.createElement("div", {
+      class: "toast",
+      textContent,
+    });
     document.body.appendChild(container);
     window.setTimeout(() => container.remove(), 5000);
   }

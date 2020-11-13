@@ -11,23 +11,22 @@
     },
     filteredStack: new Stack(),
     getDateRangeAsJSON: function () {
-      let inputs = app.pages.archive.elements.queryInputs;
-      let range = {};
-      range.start = DateUtils.getFormattedDate(
-        new Date(inputs.start.value + "T00:00:00")
-      );
-      range.end = DateUtils.getFormattedDate(
-        new Date(inputs.end.value + "T23:59:59")
-      );
-      return JSON.stringify(range);
+      const inputs = app.pages.archive.elements.queryInputs;
+      return JSON.stringify({
+        start: DateUtils.getFormattedDate(
+          new Date(inputs.start.value + "T00:00:00")
+        ),
+        end: DateUtils.getFormattedDate(
+          new Date(inputs.end.value + "T23:59:59")
+        ),
+      });
     },
     handleChange: function (change) {
-      if (change.target.getAttribute("type") == "date") {
+      if (change.target.getAttribute("type") === "date") {
         // see if new date range exceeds old date range
-        let range = app.pages.archive.range,
-          inputs = app.pages.archive.elements.queryInputs,
-          z = DateUtils.zeropad;
-        let start = new Date(inputs.start.value + "T00:00:00"),
+        const range = app.pages.archive.range,
+          inputs = app.pages.archive.elements.queryInputs;
+        const start = new Date(inputs.start.value + "T00:00:00"),
           end = new Date(inputs.end.value + "T23:59:59"),
           oldStart = new Date(range.start + "T00:00:00"),
           oldEnd = new Date(range.end + "T23:59:59");
@@ -48,18 +47,8 @@
           app.pages.archive.query();
         }
         // update range
-        range.start =
-          start.getFullYear() +
-          "-" +
-          z(start.getMonth() + 1) +
-          "-" +
-          z(start.getDate());
-        range.end =
-          end.getFullYear() +
-          "-" +
-          z(end.getMonth() + 1) +
-          "-" +
-          z(end.getDate());
+        range.start = DateUtils.formatDashed(start);
+        range.end = DateUtils.formatDashed(end);
       }
     },
     handleClickTable: function (click) {
@@ -74,14 +63,8 @@
       populateArchiveTable(app.pages.archive.stack);
     },
     init: function () {
-      let inputs = app.pages.archive.elements.queryInputs,
-        today = new Date();
-      today =
-        today.getFullYear() +
-        "-" +
-        DateUtils.zeropad(today.getMonth() + 1) +
-        "-" +
-        DateUtils.zeropad(today.getDate());
+      const inputs = app.pages.archive.elements.queryInputs,
+        today = DateUtils.formatDashed(new Date());
       inputs.start.value = today;
       inputs.end.value = today;
       app.pages.archive.range.start = today;

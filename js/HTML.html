@@ -2,18 +2,39 @@
   /* exported HTML */
   const HTML = (function () {
     return {
+      attributes,
+      createElement,
       empty,
       getFirstChild,
       getNextSibling,
       makeRadio,
-      makeTableRow,
       getRadioValue,
     };
 
-    function empty(element) {
-      while (element && element.firstChild) {
-        element.removeChild(element.firstChild);
+    function attributes(el, attrs) {
+      for (const key in attrs) {
+        if (key === "class") el.classList.add(...attrs[key].split(/\s+/));
+        else if (key === "removeClass") el.classList.remove(attrs[key]);
+        else if (key === "child") el.appendChild(attrs[key]);
+        else if (key === "children")
+          attrs[key].forEach((child) => el.appendChild(child));
+        else if (key === "innerHTML") el.innerHTML = attrs[key];
+        else if (key === "textContent") el.textContent = attrs[key];
+        else if (key === "onClick") el.addEventListener("click", attrs[key]);
+        else if (["selected", "checked"].includes(key)) {
+          // only create attribute if true
+          attrs[key] && el.setAttribute(key, attrs[key]);
+        } else el.setAttribute(key, attrs[key]);
       }
+      return el;
+    }
+
+    function createElement(name, attrs) {
+      return attributes(document.createElement(name), attrs);
+    }
+
+    function empty(el) {
+      while (el && el.firstChild) el.removeChild(el.firstChild);
     }
 
     function getFirstChild(element) {
@@ -32,43 +53,26 @@
       return nextSibling;
     }
 
-    function makeRadio(name, ...values) {
-      const radio = {};
-      for (let value of values) {
-        radio[value] = `<input type="radio" name="${name}" value="${value}" `;
-        if (value == "other") {
-          radio[value] += "checked";
-        }
-        radio[value] += "/>";
-      }
-      return radio;
-    }
-
-    function makeTableRow(tagName, ...contents) {
-      const cells = [];
-      for (let i = 0, l = contents.length; i < l; i++) {
-        cells.push(document.createElement(tagName));
-        if (["string", "number"].includes(typeof contents[i])) {
-          cells[i].innerHTML = contents[i];
-        } else if (typeof contents[i] === "object") {
-          cells[i].appendChild(contents[i]);
-        }
-      }
-      const row = document.createElement("tr");
-      while (cells.length) {
-        row.appendChild(cells.shift());
-      }
-      return row;
+    function makeRadio({ name, values, checked }) {
+      return values.reduce(
+        (radio, value) => ({
+          ...radio,
+          [value]: createElement("input", {
+            type: "radio",
+            name,
+            value,
+            checked: value === checked,
+          }),
+        }),
+        {}
+      );
     }
 
     function getRadioValue(container = document) {
-      const radio = container.querySelectorAll('input[type="radio"]');
-      for (let i = 0; i < radio.length; i++) {
-        if (radio[i].checked) {
-          return radio[i].value;
-        }
-      }
-      return null;
+      const found = Array.from(
+        container.querySelectorAll('input[type="radio"]')
+      ).find((el) => el.checked);
+      return found ? found.value : null;
     }
   })();
 </script>

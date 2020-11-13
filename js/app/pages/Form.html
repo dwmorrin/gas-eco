@@ -344,12 +344,7 @@
       const hour = HTML.getNextSibling(input);
       const minute = HTML.getNextSibling(hour);
       const ampm = HTML.getNextSibling(minute);
-      input.value =
-        date.getFullYear() +
-        "-" +
-        DateUtils.zeropad(date.getMonth() + 1) +
-        "-" +
-        DateUtils.zeropad(date.getDate());
+      input.value = DateUtils.formatDashed(date);
       minute.value = DateUtils.roundMinutes(date.getMinutes());
       hour.value = DateUtils.parseHours(date.getHours());
       ampm.value = DateUtils.parseAMPM(date.getHours());
