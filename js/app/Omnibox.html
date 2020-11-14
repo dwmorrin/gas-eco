@@ -1,19 +1,74 @@
 <script>
   /* global
-Item
-app
-populateItemList
-populateStudentList
-DateUtils
-HTML
-*/
-  app.omnibox = {
-    clear: function () {
-      app.omnibox.element.value = "";
-    },
-    element: document.querySelector("input.omnibox"),
-    handleItem: function (item, quantityToReturn, ambiguous = true) {
-      const form = app.pages.openForms.getCurrentForm();
+     Item
+     Inventory
+     DateUtils
+     OpenFormsPage
+   */
+  /* exported Omnibox */
+  const Omnibox = (function () {
+    const element = document.querySelector("input.omnibox");
+    const noop = () => undefined;
+    const handlers = {
+      onManualEntryStart: noop,
+      onManualEntryEnd: noop,
+      onCheckOutAgain: noop,
+      onQuantityChange: noop,
+      onAmbiguousItemAction: noop,
+      onItemChange: noop,
+      onStudentChange: noop,
+      onNewCodabar: noop,
+      onNeedsSignature: noop,
+      onQueryResults: noop,
+    };
+    const connections = {};
+    const inventory = new Inventory();
+    let roster = [];
+
+    element.addEventListener("keydown", handleKeydown);
+
+    return {
+      handleItem,
+      setHandlers,
+      getInventory,
+      setConnections,
+      getRoster,
+      setRoster,
+      parse,
+      setInputAndParse,
+    };
+
+    function setInputAndParse(value) {
+      element.value = value;
+      parse();
+    }
+
+    function getInventory() {
+      return inventory;
+    }
+
+    function getRoster() {
+      return roster;
+    }
+
+    function setRoster(newRoster) {
+      roster = newRoster;
+    }
+
+    function setHandlers(newHandlers) {
+      Object.assign(handlers, newHandlers);
+    }
+
+    function setConnections(newConnections) {
+      Object.assign(connections, newConnections);
+    }
+
+    function clear() {
+      element.value = "";
+    }
+
+    function handleItem(item, quantityToReturn, ambiguous = true) {
+      const form = OpenFormsPage.getCurrentForm();
       const itemOnForm = form.items.find((i) => {
         if (item.id && i.id == item.id) {
           return true;
@@ -42,39 +97,34 @@ HTML
         itemOnForm.changeQuantity(-quantityToReturn);
         change.target.value = `returned ${quantityToReturn} ${change.target.value}`;
       } else {
-        const savedItem = app.pages.form.savedForm.items.getByItem(item);
+        const savedItem = connections.getSavedForm().items.getByItem(item);
         if (itemOnForm.checkOut && itemOnForm.checkIn) {
           // checkout again?
-          this.clear();
+          clear();
           if (!savedItem.checkIn) {
-            app.modal.handleError(
-              new Error(
-                `${itemOnForm.description} ` +
-                  `was just checked-in.  Update or revert to check-out again.`
-              )
+            window.alert(
+              `${itemOnForm.description} ` +
+                `was just checked-in.  Update or revert to check-out again.`
             );
             return;
           }
-          app.modal.handleCheckOutAgain(itemOnForm);
+          handlers.onCheckOutAgain(itemOnForm);
           return;
         } else if (itemOnForm.checkOut) {
           // Its a check-in
           if (!savedItem || !savedItem.checkOut || itemOnForm.checkedOutAgain) {
-            this.clear();
+            clear();
             if (!item.isSerialized()) {
-              app.modal.handleQuantityChange(item);
+              handlers.onQuantityChange(item);
               return;
             }
-            app.modal.handleError(
-              new Error(
-                `${item.description} was just checked-out. Update or revert the form to continue.`
-              )
+            return window.alert(
+              `${item.description} was just checked-out. Update or revert the form to continue.`
             );
-            return;
           }
           if (!item.isSerialized() && ambiguous) {
-            this.clear();
-            app.modal.handleAmbiguousItemAction(itemOnForm);
+            clear();
+            handlers.onAmbiguousItemAction(itemOnForm);
             return;
           }
           itemOnForm.checkIn = DateUtils.getFormattedDate(new Date());
@@ -87,30 +137,23 @@ HTML
           change.target.value += " check-out";
         }
       }
+      clear();
+      handlers.onItemChange(change);
+    }
 
-      // Update display
-      HTML.empty(app.pages.form.elements.itemList);
-      form.items.reverse().forEach(populateItemList);
-      app.omnibox.clear();
-      // Fake change event
-      app.pages.form.handleChange(change);
-    },
-    handleKeydown: function (keydown) {
-      if (keydown.key == "Enter") {
+    function handleKeydown(keydown) {
+      if (keydown.key === "Escape") keydown.target.blur();
+      if (keydown.key === "Enter") {
         keydown.preventDefault();
-        app.omnibox.parse();
+        parse();
         return;
       }
-    },
-    /** TODO */
-    handleNewCodabar: function (codabar /* string */) {
-      // use modal
-      app.modal.getNewCodabar(codabar);
-    },
+    }
+
     /** @param {Student} input */
-    handleStudent: function (student) {
+    function handleStudent(student) {
       student = Object.assign({}, student);
-      const form = app.pages.openForms.getCurrentForm();
+      const form = OpenFormsPage.getCurrentForm();
       const students = form.students;
       const studentOnForm = students.find((s) => s.netId == student.netId);
       const change = {
@@ -123,8 +166,7 @@ HTML
 
       if (!studentOnForm) {
         if (!student.signatureOnFile) {
-          app.modal.signatureWait();
-          app.run.doPost({ post: "startSignature", netid: student.netId });
+          handlers.onNeedsSignature(student.netId);
           return;
         }
         student.checkIn = DateUtils.getFormattedDate(new Date());
@@ -135,23 +177,26 @@ HTML
           if (studentOnForm.checkIn && studentOnForm.checkOut) {
             throw new Error(studentOnForm.name + " is already checked out.");
           } else if (studentOnForm.checkIn) {
-            const savedStudent = app.pages.form.savedForm.students.find(
-              (s) => s.netId == student.netId
-            );
+            const savedStudent = connections
+              .getSavedForm()
+              .students.find((s) => s.netId == student.netId);
             if (!savedStudent || !savedStudent.checkIn) {
               throw new Error(
                 `${student.name} was just checked-in. Update the form before checking out.`
               );
             }
             if (form.hasItemsOut()) {
-              throw new Error(app.strings.studentCheckOutError);
+              throw new Error(
+                "Cannot check out student. " +
+                  "If this is the last student, all gear must be returned. " +
+                  "Otherwise try updating the form."
+              );
             }
             studentOnForm.checkOut = DateUtils.getFormattedDate(new Date());
             change.target.value += " check-out";
           } else {
             if (!student.signatureOnFile) {
-              app.modal.signatureWait();
-              app.run.doPost({ post: "startSignature", netid: student.netId });
+              handlers.onNeedsSignature(student.netId);
               return;
             } else {
               studentOnForm.checkIn = DateUtils.getFormattedDate(new Date());
@@ -159,31 +204,22 @@ HTML
             }
           }
         } catch (error) {
-          app.modal.handleError(error);
-          app.omnibox.element.classList.add("error");
-          window.setTimeout(
-            () => app.omnibox.element.classList.remove("error"),
-            2000
-          );
+          element.classList.add("error");
+          window.alert(error.message);
+          window.setTimeout(() => element.classList.remove("error"), 2000);
           return;
         }
       }
-      // Update display
-      HTML.empty(app.pages.form.elements.studentList);
-      students.forEach(populateStudentList);
-      app.omnibox.clear();
-      // Fake change event
-      app.pages.form.handleChange(change);
-    },
-    logManualEntry: function (value) {
-      app.pages.form.handleChange({ target: { name: "manual", value } });
-    },
+      clear();
+      handlers.onStudentChange(change);
+    }
+
     /**
      * parse examines the current value of the omnibox text input element
      *   and passes the value to the correct handler or shows the user an error.
      */
-    parse: function () {
-      let value = this.element.value;
+    function parse() {
+      let value = element.value;
 
       if (!value) {
         // nothing was entered, abort
@@ -192,7 +228,7 @@ HTML
 
       if (/^\s*\[\s*{\s*"/.test(value)) {
         // JSON array of objects: "[{}]"
-        JSON.parse(value).forEach(this.handleItem);
+        JSON.parse(value).forEach(handleItem);
         return;
       }
 
@@ -202,57 +238,51 @@ HTML
       const codabarRegex = /^[a-d][0-9]{5,}[a-d]$/; // "a123...789b" pattern
       if (codabarRegex.test(value)) {
         // Check student id
-        parsed = app.roster.find(
-          (student) => student.id.toLowerCase() == value
-        );
+        parsed = roster.find((student) => student.id.toLowerCase() == value);
         if (parsed) {
-          this.handleStudent(parsed);
+          handleStudent(parsed);
           return;
         }
-        this.handleNewCodabar(value);
+        handlers.onNewCodabar(value);
         return;
       }
 
       const idType = /^[a-z]+[0-9]+/.test(value) ? "netId" : "name"; // Check student name and id
-      parsed = app.roster.find(
-        (student) => student[idType].toLowerCase() == value
-      );
+      parsed = roster.find((student) => student[idType].toLowerCase() == value);
       if (parsed) {
-        this.logManualEntry(this.element.value);
-        this.handleStudent(parsed);
+        handlers.onManualEntryEnd(element.value);
+        handleStudent(parsed);
         return;
       }
 
       const itemIdregex = /[A-Za-z]+-[A-Za-z0-9]+/, // letter(s), hyphen, digit(s) or letter(s)
         barcoderegex = /^[0-9]+$/; // only digits
       if (itemIdregex.test(value)) {
-        parsed = app.inventory.getById(value);
+        parsed = inventory.getById(value);
         if (!parsed && /^manual/.test(value)) {
-          parsed = app.pages.openForms
-            .getCurrentForm()
-            .items.find(
-              (item) => item.id.toLowerCase().replace(/-0+/, "-") == value
-            );
+          parsed = OpenFormsPage.getCurrentForm().items.find(
+            (item) => item.id.toLowerCase().replace(/-0+/, "-") == value
+          );
         } else {
-          this.logManualEntry(this.element.value);
+          handlers.onManualEntryEnd(element.value);
         }
       } else if (barcoderegex.test(value)) {
         // assume it's a barcode
-        if (value == app.strings.manualItemBarcode) {
-          this.clear();
-          app.doCommand("newManual");
+        if (value === "10000") {
+          clear();
+          handlers.onManualEntryStart();
           return;
         }
-        parsed = app.inventory.getByBarcode(value);
+        parsed = inventory.getByBarcode(value);
       }
       if (parsed) {
-        this.handleItem(new Item(parsed));
+        handleItem(new Item(parsed));
         return;
       }
 
-      this.clear();
+      clear();
 
-      const queryResults = this._query(
+      const queryResults = _query(
         value.replace(/'/g, ""),
         (obj) => {
           if (obj instanceof Item) {
@@ -268,16 +298,18 @@ HTML
           // else it is a student
           return [obj.name.trim().toLowerCase().replace(/'/g, "")];
         },
-        app.inventory.slice(),
-        app.roster
+        inventory.slice(),
+        roster
       ).filter((result) => result.weight < 4);
 
       if (queryResults.length > 0) {
-        app.modal.handleQuery(queryResults);
+        handlers.onQueryResults(queryResults);
         return;
       }
-      app.modal.handleError(new Error(`"${value}" ${app.strings.parserError}`));
-    },
+      window.alert(
+        `"${value}" not found.  You can type in item IDs like "NEU-1", or names like "John Smith".`
+      );
+    }
     /**
      * query searches through the supplied arrays inspected keys, as found with
      *   the supplied key making function, and returns a weighted result array.
@@ -294,7 +326,7 @@ HTML
      * @param {{}[]} arrays - arrays to query
      * @returns {{value: {}, weight: number}[]}
      */
-    _query(q, keyMaker, ...arrays) {
+    function _query(q, keyMaker, ...arrays) {
       const expression = q.trim().toLowerCase();
       const sep = /[\s\W]+/;
       const terms = expression.split(sep);
@@ -369,6 +401,6 @@ HTML
       const weightedResults = results.map(weigh);
       weightedResults.sort((a, b) => a.weight - b.weight);
       return weightedResults;
-    },
-  };
+    }
+  })();
 </script>

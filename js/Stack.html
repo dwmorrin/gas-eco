@@ -55,6 +55,7 @@
       }
       currentIndex = index;
       forms[index] = form;
+      return this;
     };
     /**
      * replaceCurrent is used by the collision resolve handler to overwrite
@@ -69,6 +70,7 @@
         throw new Error(`cannot find ${form.id} in local forms`);
       }
       currentIndex = index;
+      return this;
     };
     /**
      * @returns Form[] - NOT Stack

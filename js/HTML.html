@@ -4,11 +4,21 @@
     return {
       attributes,
       createElement,
+      documentIcon,
       empty,
       getFirstChild,
       getNextSibling,
-      makeRadio,
       getRadioValue,
+      makeRadio,
+      modal,
+      spinner,
+      heading1,
+      paragraph,
+      radio,
+      cell,
+      table,
+      row,
+      toast,
     };
 
     function attributes(el, attrs) {
@@ -33,6 +43,22 @@
       return attributes(document.createElement(name), attrs);
     }
 
+    function documentIcon() {
+      return createElement("img", {
+        src:
+          "data:image/png;base64," +
+          "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABCElEQVR4XmNgoCbQ0tJiU5S" +
+          "Vb1aUl2+BYSU5hU5FWUU3dLVYgYKCgoCCnPxROTk5LSDbAITl5eUVFeXkPyjKyYWiq8cAIA" +
+          "OU5OXXo4sDDfgFxJ+U5OSc0eVQAMgARTmFVUCFPgpycnlKsvJFKioqfEDN/6H4L1DOBV0fH" +
+          "IC9ICu/VklJSQ7odENlOTljqLgGkK8J8hrQkNfo+uAA4gL5RUBX7ALS/9DwfwVZBX8g/QNd" +
+          "HxxADVijJCOjCww0V2QM1OwOlOcAyv9E1wcH1DKAMi8gByIaNgKpIcIFiGhExkqyCoVAeQk" +
+          "iDJBfjS6ODPAaoCUqygNU8BLogSfYMFDuKTCp30HXN7AAAKarYBD/VuTqAAAAAElFTkSuQm" +
+          "CC",
+        width: "16",
+        height: "16",
+      });
+    }
+
     function empty(el) {
       while (el && el.firstChild) el.removeChild(el.firstChild);
     }
@@ -51,6 +77,16 @@
         nextSibling = nextSibling.nextSibling;
       }
       return nextSibling;
+    }
+
+    function radio(name) {
+      return (value, checked = false) =>
+        createElement("input", {
+          type: "radio",
+          name,
+          value,
+          checked,
+        });
     }
 
     function makeRadio({ name, values, checked }) {
@@ -73,6 +109,94 @@
         container.querySelectorAll('input[type="radio"]')
       ).find((el) => el.checked);
       return found ? found.value : null;
+    }
+
+    function spinner() {
+      return createElement("div", { class: "spinner" });
+    }
+
+    function table(...rows) {
+      return HTML.createElement("table", { children: rows });
+    }
+
+    function row(...cells) {
+      return HTML.createElement("tr", { children: cells });
+    }
+
+    function cell(attrs) {
+      if (typeof attrs === "string")
+        return HTML.createElement("td", { textContent: attrs });
+      else return HTML.createElement("td", attrs);
+    }
+
+    function modal({
+      child,
+      children,
+      innerHTML,
+      onClose = () => {
+        return;
+      },
+      closeText = "Close",
+      onOk = null,
+      okText = "Ok",
+      blocking = false,
+    }) {
+      const div = createElement("div", { class: "modal" });
+      if (innerHTML) div.innerHTML = innerHTML;
+      if (child) div.appendChild(child);
+      if (children) children.forEach((child) => div.appendChild(child));
+      if (blocking) div.classList.add("centered");
+      const blocker = blocking
+        ? createElement("div", { class: "overlay" })
+        : null;
+      const cleanup = () => {
+        div.remove();
+        blocker && blocker.remove();
+      };
+      const closeButton = createElement("button", {
+        textContent: closeText,
+        onClick: () => {
+          onClose();
+          cleanup();
+        },
+      });
+      if (typeof onOk === "function") {
+        const okButton = createElement("button", {
+          textContent: okText,
+          onClick: () => {
+            onOk();
+            cleanup();
+          },
+        });
+        div.appendChild(okButton);
+      }
+      div.addEventListener("keydown", ({ key }) => {
+        if (key === "Escape") cleanup();
+        if (key === "Enter") {
+          onOk();
+          cleanup();
+        }
+      });
+      div.appendChild(closeButton);
+      blocker && document.body.appendChild(blocker);
+      return div;
+    }
+
+    function heading1(textContent, attrs = {}) {
+      return createElement("h1", { ...attrs, textContent });
+    }
+
+    function paragraph(textContent, attrs = {}) {
+      return createElement("p", { ...attrs, textContent });
+    }
+
+    function toast(textContent) {
+      const container = createElement("div", {
+        class: "toast",
+        textContent,
+      });
+      document.body.appendChild(container);
+      window.setTimeout(() => container.remove(), 5000);
     }
   })();
 </script>

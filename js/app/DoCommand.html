@@ -5,27 +5,18 @@
    */
   /* global
       Form
+      FormPage
       app
-      displayForm
-      modal
-      populateStudentList
-      populateItemList
+      Omnibox
+      OpenFormsPage
       HTML
       Utility
   */
   app.doCommand = function (command, ...options) {
     switch (command) {
-      case "advanceBooking": {
-        app.modal.handleAdvanceBooking();
-        break;
-      }
-      case "advanceBookingConfirm":
-        app.pages.form.makeAdvanceBooking();
-        app.doCommand("updateForm");
-        break;
       case "ambiguousCheckIn": {
         app.modal.hide();
-        app.omnibox.handleItem(app.modal.tmp, "all", false);
+        Omnibox.handleItem(app.modal.tmp, "all", false);
         break;
       }
       case "ambiguousCheckOut": {
@@ -43,12 +34,12 @@
       }
       case "changeLog":
         app.modal.displayChangeLog(
-          app.pages.form.currentStack.getCurrentForm().notes
+          FormPage.getCurrentStack().getCurrentForm().notes
         );
         break;
       case "checkInButton": {
         const itemID = options[0];
-        const savedItem = app.pages.form.savedForm.items.find(
+        const savedItem = FormPage.getSavedForm().items.find(
           (item) => (item.barcode || item.id) == itemID
         );
         if (!savedItem) {
@@ -64,45 +55,38 @@
           savedItem.getQuantity() > 1
             ? document.querySelector(`select[data-itemid="${itemID}"]`).value
             : undefined;
-        app.omnibox.handleItem(savedItem, quantityToReturn, false);
+        Omnibox.handleItem(savedItem, quantityToReturn, false);
         break;
       }
       case "checkOutAgain": {
         const item = app.modal.tmp;
         item.checkIn = "";
         item.checkedOutAgain = true;
-        app.pages.form.handleChange({
+        FormPage.updateItems({
           target: {
             name: "items",
             value: `${item.description} checked out again`,
           },
         });
-        HTML.empty(app.pages.form.elements.itemList);
-        app.pages.openForms
-          .getCurrentForm()
-          .items.reverse()
-          .forEach(populateItemList);
         break;
       }
       case "codabar": {
         const codabar = app.modal.tmp,
           netId = app.modal.getInput();
-        const student = app.roster.find(
-          (student) => student.netId.toLowerCase() == netId
+        const student = Omnibox.getRoster().find(
+          (student) => student.netId.toLowerCase() === netId
         );
         if (!student) {
-          app.modal.handleError(
-            new Error(
-              "Hmmm, NetID " +
-                netId +
-                " does not match a current student. " +
-                "Check that it was entered correctly, try refreshing the browser, " +
-                "or submit a trouble report."
-            )
+          window.alert(
+            "Hmmm, NetID " +
+              netId +
+              " does not match a current student. " +
+              "Check that it was entered correctly, try refreshing the browser, " +
+              "or submit a trouble report."
           );
           break;
         }
-        app.spinner.inside(app.pages.form.elements.updateFormButton);
+        FormPage.setUpdateFormButtonToSpinner();
         app.run.doPost({
           post: "codabar",
           netId,
@@ -112,59 +96,63 @@
       }
       case "collisionResolve": {
         const form = app.modal.tmp.storedForm;
-        app.pages.form.currentStack.replaceCurrent(form);
+        FormPage.getCurrentStack().replaceCurrent(form);
         app.changes.saved = true;
-        app.pages.form.lockButtons();
-        displayForm(form);
+        FormPage.lockButtons();
+        FormPage.displayForm(form);
         break;
       }
       case "copyItems": {
         Utility.copyToClipboard(
           JSON.stringify(
-            app.pages.form.currentStack.getCurrentForm().items.getStripped()
+            FormPage.getCurrentStack().getCurrentForm().items.getStripped()
           )
         );
         break;
       }
       case "deleteForm": {
-        if (app.pages.form.savedForm.isBlank()) {
+        if (FormPage.getSavedForm().isBlank()) {
           app.doCommand("openForms");
           break;
         }
-        modal({
-          message:
-            "This will close out the form and mark it deleted. Are you sure?",
-          blocking: true,
-          cancel: true,
-          onOk: () => {
-            app.pages.form.lock();
-            app.spinner.inside(app.pages.form.elements.deleteFormButton);
-            const form = app.pages.openForms.getCurrentForm();
-            app.changes.add({
-              target: {
-                name: "delete",
-                value: "form deleted",
-              },
-            });
-            form.notes.push(app.changes.makeNote());
-            app.run.doPost({
-              post: "deleteForm",
-              form: form.stringify(),
-            });
-          },
-        });
+        document.appendChild(
+          HTML.modal({
+            blocking: true,
+            child: HTML.paragraph(
+              "This will close out the form and mark it deleted. Are you sure?"
+            ),
+            closeText: "Cancel",
+            onOk: () => {
+              FormPage.lock();
+              FormPage.setDeleteFormButtonToSpinner();
+              const form = OpenFormsPage.getCurrentForm();
+              app.changes.add({
+                target: {
+                  name: "delete",
+                  value: "form deleted",
+                },
+              });
+              form.notes.push(app.changes.makeNote());
+              app.run.doPost({
+                post: "deleteForm",
+                form: form.stringify(),
+              });
+            },
+          })
+        );
         break;
       }
       case "displayForm": {
-        displayForm(options[0]);
+        FormPage.displayForm(options[0]);
         break;
       }
       case "displayDuplicatedForm": {
-        const newForm = new Form(app.pages.form.savedForm, true);
-        app.pages.form.currentStack = app.pages.openForms.stack;
-        app.pages.openForms.stack.push(newForm);
+        const newForm = new Form(FormPage.getSavedForm(), true);
+        const stack = OpenFormsPage.getStack();
+        FormPage.setCurrentStack(stack);
+        stack.push(newForm);
         app.changes.saved = false;
-        displayForm(newForm);
+        FormPage.displayForm(newForm);
         break;
       }
       case "displayNewForm": {
@@ -173,15 +161,15 @@
           return;
         }
         const newForm = new Form({});
-        app.pages.form.currentStack = app.pages.openForms.stack;
-        app.pages.openForms.stack.push(newForm);
+        const stack = OpenFormsPage.getStack();
+        FormPage.setCurrentStack(stack);
+        stack.push(newForm);
         app.changes.saved = false;
-        displayForm(newForm);
+        FormPage.displayForm(newForm);
         break;
       }
       case "itemNote": {
-        const form = app.pages.openForms.getCurrentForm(),
-          item = app.modal.tmp;
+        const item = app.modal.tmp;
         const change = { target: { name: "items" } };
         const value = HTML.getRadioValue(app.modal.table);
         if (value == "other") {
@@ -195,36 +183,25 @@
           item.missing = true;
           change.target.value = `${item.description} marked as missing`;
         }
-        HTML.empty(app.pages.form.elements.itemList);
-        form.items.reverse().forEach(populateItemList);
-        app.pages.form.handleChange(change);
+        FormPage.updateItems(change);
         break;
       }
       case "itemQuantity": {
         const quantity = +app.modal.getInput();
-        const items = app.pages.openForms.getCurrentForm().items;
         const item = app.modal.tmp;
-        const itemchange = {
-          target: {
-            name: "items",
-            value: item.description + " qty " + item.getQuantity(),
-          },
-        };
         // is the item on the saved form? Quantity cannot be decreased.
-        const savedItem = app.pages.form.savedForm.items.find(
-          (i) => i.description == item.description
+        const savedItem = FormPage.getSavedForm().items.find(
+          ({ description }) => description === item.description
         );
         if (!item.checkedOutAgain && savedItem) {
           const savedQuantity = savedItem.getQuantity();
           if (quantity < savedQuantity) {
-            app.modal.handleError(
-              new Error(
-                quantity +
-                  " is less than the previous quantity " +
-                  savedQuantity +
-                  ". You can only enter a larger amount " +
-                  "or check in this item."
-              )
+            window.alert(
+              quantity +
+                " is less than the previous quantity " +
+                savedQuantity +
+                ". You can only enter a larger amount " +
+                "or check in this item."
             );
             return;
           }
@@ -232,70 +209,52 @@
         try {
           item.setQuantity(quantity);
         } catch (error) {
-          app.modal.handleError(error);
+          window.alert(error);
           return;
         }
-        // Update display
-        HTML.empty(app.pages.form.elements.itemList);
-        items.reverse().forEach(populateItemList);
-        // Fake change event
-        itemchange.target.value += " to " + quantity;
-        app.pages.form.handleChange(itemchange);
+        FormPage.updateItems({
+          target: {
+            name: "items",
+            value: `${
+              item.description
+            } qty ${item.getQuantity()} to ${quantity}`,
+          },
+        });
         break;
       }
       case "itemQuantityPlusOne": {
-        const form = app.pages.openForms.getCurrentForm();
+        const form = OpenFormsPage.getCurrentForm();
         const item = form.items.getByItem(options[0]);
         const quantity = item.getQuantity();
-        const itemchange = {
+        item.changeQuantity(1);
+        FormPage.updateItems({
           target: {
             name: "items",
-            value: item.description + " qty " + quantity,
+            value: `${item.description} qty ${quantity} to ${quantity + 1}`,
           },
-        };
-        item.changeQuantity(1);
-        // Update display
-        HTML.empty(app.pages.form.elements.itemList);
-        form.items.reverse().forEach(populateItemList);
-        // Fake change event
-        itemchange.target.value += " to " + (quantity + 1);
-        app.pages.form.handleChange(itemchange);
+        });
         break;
       }
-      case "newNote":
-        app.modal.getNote();
-        break;
       case "newManual":
         app.modal.getManual();
-        break;
-      case "nextForm":
-        app.pages.form.getNext();
         break;
       case "openForms":
         if (!app.changes.saved) {
           app.modal.handleUnsavedForm(command);
           return;
         }
-        app.spinner.on();
         app.run.doGet({ get: "openForms" });
         break;
       case "parseOmnibox":
-        app.omnibox.parse();
-        break;
-      case "previousForm":
-        app.pages.form.getPrevious();
+        Omnibox.parse();
         break;
       case "query":
         app.pages.archive.query();
         break;
       case "removeItem": {
-        const form = app.pages.openForms.getCurrentForm();
+        const form = OpenFormsPage.getCurrentForm();
         const item = form.items.removeByItem(options[0]);
-        // Update display
-        HTML.empty(app.pages.form.elements.itemList);
-        form.items.reverse().forEach(populateItemList);
-        // Fake change event
-        app.pages.form.handleChange({
+        FormPage.updateItems({
           target: {
             name: "items",
             value: item.description + " removed",
@@ -304,23 +263,19 @@
         break;
       }
       case "revert":
-        if (!window.isNaN(app.pages.form.autosaveID)) {
-          window.clearTimeout(app.pages.form.autosaveID);
-          app.pages.form.autosaveID = NaN;
-        }
-        displayForm(app.pages.openForms.getCurrentForm());
+        // if (!window.isNaN(app.pages.form.autosaveID)) {
+        //   window.clearTimeout(app.pages.form.autosaveID);
+        //   app.pages.form.autosaveID = NaN;
+        // }
+        FormPage.displayForm(OpenFormsPage.getCurrentForm());
         break;
-      case "saveNote": {
-        app.pages.form.saveNote();
-        break;
-      }
       case "saveManual": {
         const description = app.modal.getText();
         if (description === "") {
           break;
         }
         Utility.digestMessage(description).then((hash) => {
-          app.omnibox.handleItem({
+          Omnibox.handleItem({
             id: "MANUAL-" + Utility.hexString(hash).substring(0, 5),
             checkIn: null,
             checkOut: null,
@@ -341,7 +296,7 @@
           app.modal.getLocation();
           break;
         }
-        app.pages.form.handleChange({
+        FormPage.handleChange({
           target: {
             name: "location",
             value: otherLocation,
@@ -352,37 +307,11 @@
       case "signatureRecheck":
         app.run.doGet({ get: "students", init: false });
         break;
-      case "studentNote": {
-        const value = HTML.getRadioValue(app.modal.table);
-        const students = app.pages.openForms.getCurrentForm().students;
-        const student = app.modal.tmp;
-        if (value == "left") {
-          student.left = true;
-          app.pages.form.handleChange({
-            target: {
-              name: "students",
-              value: student.name + " left without checking out",
-            },
-          });
-          HTML.empty(app.pages.form.elements.studentList);
-          students.forEach(populateStudentList);
-        } else if (value == "no show") {
-          app.pages.form.handleChange({
-            target: {
-              name: "students",
-              value: student.name + " did not show up",
-            },
-          });
-        } else if (value == "other") {
-          app.pages.form.saveNote(student.name + ": ");
-        }
-        break;
-      }
       case "updateForm": {
-        app.omnibox.parse();
-        app.pages.form.lock();
-        app.spinner.inside(app.pages.form.elements.updateFormButton);
-        const form = app.pages.openForms.getCurrentForm();
+        Omnibox.parse();
+        FormPage.lock();
+        FormPage.setUpdateFormButtonToSpinner();
+        const form = OpenFormsPage.getCurrentForm();
         form.notes.push(app.changes.makeNote());
         app.run.doPost({
           post: "updateForm",

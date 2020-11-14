@@ -1,0 +1,201 @@
+<script>
+  /* global HTML Stack DateUtils */
+  /* exported ClosedFormsPage */
+  const ClosedFormsPage = (function () {
+    const noop = () => undefined;
+    const handlers = {
+      onFormSelect: noop,
+    };
+    const connections = {
+      setCurrentStack: noop,
+    };
+    const elements = {
+      container: document.querySelector("div.archiveContainer"),
+      queryButton: document.querySelector('button[value="query"]'),
+      queryCount: document.querySelector("span.querycount"),
+      queryInputs: document.querySelector("form.query"),
+      tableBody: document.querySelector("tbody.archive"),
+      tableHead: document.querySelector("thead.archive"),
+    };
+    const filteredStack = new Stack();
+    function getDateRangeAsJSON() {
+      const inputs = elements.queryInputs;
+      return JSON.stringify({
+        start: DateUtils.getFormattedDate(
+          new Date(inputs.start.value + "T00:00:00")
+        ),
+        end: DateUtils.getFormattedDate(
+          new Date(inputs.end.value + "T23:59:59")
+        ),
+      });
+    }
+    let refreshId = NaN;
+    let sortBy = "startTime";
+    let sortDescending = false;
+    let stack = new Stack();
+    const range = {
+      start: "", // 'yyyy-mm-dd'
+      end: "", // 'yyyy-mm-dd'
+    };
+
+    elements.tableBody.addEventListener("click", handleClickTable);
+    elements.tableHead.addEventListener("click", handleClickTableHead);
+    elements.queryInputs.addEventListener("change", handleChange);
+
+    init();
+
+    return { setHandlers, setConnections };
+
+    function setConnections(newConnections) {
+      Object.assign(connections, newConnections);
+    }
+
+    function setHandlers(newHandlers) {
+      Object.assign(handlers, newHandlers);
+    }
+
+    function handleChange(change) {
+      if (change.target.getAttribute("type") === "date") {
+        // see if new date range exceeds old date range
+        const range = range,
+          inputs = elements.queryInputs;
+        const start = new Date(inputs.start.value + "T00:00:00"),
+          end = new Date(inputs.end.value + "T23:59:59"),
+          oldStart = new Date(range.start + "T00:00:00"),
+          oldEnd = new Date(range.end + "T23:59:59");
+        // cancel change if start > end
+        if (start.getTime() > end.getTime()) {
+          inputs.start.value = range.start;
+          inputs.end.value = range.end;
+          window.alert("Range start can not be after end");
+          change.preventDefault();
+          return;
+        }
+        if (
+          start.getTime() < oldStart.getTime() ||
+          end.getTime() > oldEnd.getTime()
+        ) {
+          update();
+        } else {
+          query();
+        }
+        // update range
+        range.start = DateUtils.formatDashed(start);
+        range.end = DateUtils.formatDashed(end);
+      }
+    }
+    function handleClickTable(click) {
+      if (click.target.parentNode.classList.contains("hoveroff")) {
+        return;
+      }
+      handlers.onFormSelect(
+        filteredStack.getByID(click.target.parentNode.getAttribute("data-id"))
+      );
+    }
+    function handleClickTableHead(click) {
+      stack.sortForms(click.target.dataset.sort);
+      populateArchiveTable(stack);
+    }
+
+    function displaySortedBy(stack, tableHead) {
+      Array.from(tableHead.querySelectorAll("th")).forEach((header) => {
+        header.classList.remove("sortedBy", "ascending", "descending");
+        if (header.dataset.sort === stack.sortBy) {
+          header.classList.add(
+            "sortedBy",
+            stack.sortDescending ? "descending" : "ascending"
+          );
+        }
+      });
+    }
+
+    function makeArchiveTableRows(form) {
+      elements.tableBody.appendChild(
+        HTML.createElement("tr", {
+          "data-id": form.id,
+          children: [
+            HTML.createElement("td", { child: HTML.documentIcon() }),
+            ...[
+              form.startTime,
+              form.endTime,
+              form.location,
+              form.students.map((student) => student.name).join(", "),
+              form.items.getLength() > 0 ? "YES" : "NO", // "has items"
+              form.bookingId,
+              form.bookedStudents,
+              form.contact,
+              form.project,
+              form.tape ? "YES" : "",
+              form.overnight ? "YES" : "",
+            ].map((textContent) => HTML.createElement("td", { textContent })),
+          ],
+        })
+      );
+    }
+
+    function init() {
+      const inputs = elements.queryInputs,
+        today = DateUtils.formatDashed(new Date());
+      inputs.start.value = today;
+      inputs.end.value = today;
+      range.start = today;
+      range.end = today;
+    }
+
+    function isTodaySelected() {
+      const today = new Date();
+      today.setHours(0);
+      today.setMinutes(0);
+      today.setSeconds(0);
+      today.setMilliseconds(0);
+      const selectedEndTime = new Date(range.end + "T00:00:00").getTime();
+      return selectedEndTime >= today.getTime();
+    }
+    /**
+     * @param {Stack} formStack
+     */
+    function populateArchiveTable(formStack) {
+      HTML.empty(elements.tableBody);
+
+      displaySortedBy(formStack, elements.tableHead);
+
+      // if there's no forms...
+      if (formStack.getLength() === 0) {
+        return elements.tableBody.appendChild(
+          HTML.createElement("tr", {
+            class: "hoveroff",
+            child: HTML.createElement("td", {
+              textContent: "No forms matched your search.",
+              colspan: 12, // fill entire row
+            }),
+          })
+        );
+      }
+      // else populate
+      formStack.forEach(makeArchiveTableRows);
+    }
+
+    function show() {
+      if (isTodaySelected()) {
+        update();
+      } else {
+        query();
+      }
+      connections.setCurrentStack(filteredStack);
+      elements.container.classList.remove("hidden");
+    }
+
+    function hide() {
+      elements.container.classList.add("hidden");
+    }
+
+    function setInterval() {}
+
+    function update() {
+      app.run.doGet({
+        get: "archive",
+        dateRangeJSON: getDateRangeAsJSON(),
+      });
+    }
+  })();
+</script>

@@ -1,5 +1,5 @@
 <script>
-  /* global app DateUtils populateArchiveTable */
+  /* global app Config DateUtils populateArchiveTable */
   app.pages.archive.filters = {
     isBooked: (form) => form.bookingId,
     isNotBooked: (form) => !form.bookingId,
@@ -66,49 +66,26 @@
       start.setMinutes(start.getMinutes() + inGracePeriod);
       end.setMinutes(end.getMinutes() + outGracePeriod);
 
-      const checkedInOnTime = function (student) {
-        if (!student.checkIn) {
-          return true; // ignore students that did not check in
-        }
-        const checkIn = DateUtils.parseFormattedDate(student.checkIn).getTime();
-        return checkIn <= start.getTime();
-      };
+      const checkedInOnTime = (student) =>
+        !student.checkIn ||
+        DateUtils.parseFormattedDate(student.checkIn).getTime() <=
+          start.getTime();
 
-      const checkedOutLate = function (student) {
-        if (
-          student.checkIn &&
-          (!student.checkOut ||
-            student.checkOut == app.strings.studentIncompleteHTML)
-        ) {
-          return true; // checked-in student never checked-out
-        }
-        if (
-          student.checkOut &&
-          student.checkOut != app.strings.studentIncompleteHTML
-        ) {
-          const checkOut = DateUtils.parseFormattedDate(
-            student.checkOut
-          ).getTime();
-          return checkOut > end.getTime();
-        }
-        return false;
-      };
+      const studentIncompleteHTML = "DID NOT CHECK OUT";
+      const checkedOutLate = (student) =>
+        (student.checkIn &&
+          (!student.checkOut || student.checkOut === studentIncompleteHTML)) ||
+        (student.checkOut &&
+          student.checkOut !== studentIncompleteHTML &&
+          DateUtils.parseFormattedDate(student.checkOut).getTime() >
+            end.getTime());
 
-      if (
+      return (
         !form.students.some(checkedInOnTime) ||
         form.students.some(checkedOutLate)
-      ) {
-        return true;
-      }
-      return false;
+      );
     },
-    byNoShow: (form) => {
-      // check for some check-ins
-      if (form.students.every((s) => s.checkIn == null)) {
-        //is a no show
-        return true;
-      }
-    },
+    byNoShow: (form) => form.students.every((s) => s.checkIn == null),
     byTimeRange: (form) => {
       const inputs = app.pages.archive.elements.queryInputs;
       const startRange = new Date(inputs.start.value + "T00:00:00"),
@@ -129,7 +106,7 @@
           return false;
         }
       } else {
-        if (app.strings.locations.has(form.location)) {
+        if (Config.locations.has(form.location)) {
           return false;
         }
       }

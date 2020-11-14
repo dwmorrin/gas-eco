@@ -1,0 +1,199 @@
+<script>
+  /* global DateUtils HTML Stack */
+  /* exported OpenFormsPage */
+  const OpenFormsPage = (function () {
+    const elements = {
+      container: document.querySelector("div.openFormsContainer"),
+      equipmentTableBody: document.querySelector("tbody.equipmentOut"),
+      formsTableBody: document.querySelector("tbody.open"),
+      formsTableHead: document.querySelector("thead.open"),
+    };
+
+    let stack = new Stack();
+
+    let refreshId = null;
+
+    const handlers = {
+      clickTable: () => undefined,
+    };
+
+    elements.formsTableHead.addEventListener("click", (event) => {
+      stack.sortForms(event.target.dataset.sort);
+      populateFormsTable(stack);
+    });
+
+    elements.formsTableBody.addEventListener("click", (event) =>
+      handlers.clickTable({
+        event,
+        form: stack.getByID(event.target.parentNode.getAttribute("data-id")),
+      })
+    );
+
+    return {
+      getCurrentForm,
+      getRefreshId,
+      getStack,
+      hide,
+      isShowing,
+      setHandlers,
+      setStack,
+      show,
+    };
+
+    function getRefreshId() {
+      return refreshId;
+    }
+
+    function setHandlers(newHandlers) {
+      Object.assign(handlers, newHandlers);
+    }
+
+    //! TODO why?
+    function getStack() {
+      return stack;
+    }
+
+    function setStack(newStack) {
+      stack = newStack;
+    }
+
+    function getCurrentForm() {
+      return stack.getCurrentForm();
+    }
+
+    function isShowing() {
+      return !elements.container.classList.contains("hidden");
+    }
+
+    function show() {
+      elements.container.classList.remove("hidden");
+      // if (refreshId === null) {
+      //   setInterval();
+      // }
+      populateFormsTable(stack);
+    }
+
+    function hide() {
+      elements.container.classList.add("hidden");
+      // if (refreshId !== null) {
+      //   window.clearInterval(refreshId);
+      // }
+      // refreshId = null;
+    }
+    /**
+     * refreshOpenForms is a window.setTimeout callback function
+     *   to fetch the open forms from the server and silently update.
+     */
+    // function refreshOpenForms() {
+    //   app.run
+    //     .withUserObject({ timeoutId: refreshId })
+    //     .doGet({ get: "openFormsQuiet" });
+    // }
+    // function setInterval() {
+    //   refreshId = window.setInterval(refreshOpenForms, 60000);
+    // }
+
+    function populateFormsTable(forms) {
+      HTML.empty(elements.formsTableBody);
+      HTML.empty(elements.equipmentTableBody);
+
+      // highlight the column currently sorted by
+      displaySortedBy(forms, elements.formsTableHead);
+
+      // if there's no forms...
+      if (!forms.getLength()) {
+        return elements.formsTableBody.appendChild(
+          HTML.createElement("tr", {
+            class: "hoveroff",
+            child: HTML.createElement("td", {
+              textContent: "No open forms",
+              colspan: 5,
+            }),
+          })
+        );
+      }
+
+      // else populate
+      forms.forEach(makeOpenFormTableRows);
+
+      // if makeOpenFormTableRows found no equipment out...
+      if (!elements.equipmentTableBody.firstChild) {
+        elements.equipmentTableBody.appendChild(
+          HTML.createElement("tr", {
+            child: HTML.createElement("td", {
+              class: "noPointerEvents",
+              textContent: "No equipment checked-out.",
+            }),
+          })
+        );
+      }
+    }
+
+    function displaySortedBy(stack, tableHead) {
+      Array.from(tableHead.querySelectorAll("th")).forEach((header) => {
+        header.classList.remove("sortedBy", "ascending", "descending");
+        if (header.dataset.sort === stack.sortBy) {
+          header.classList.add(
+            "sortedBy",
+            stack.sortDescending ? "descending" : "ascending"
+          );
+        }
+      });
+    }
+
+    function makeOpenFormTableRows(form) {
+      form.items
+        .filter((item) => item.checkedOut)
+        .forEach((item) => populateEquipmentOutList(form, item));
+
+      let type = "inactive", // assume inactive
+        endTime = DateUtils.parseFormattedDate(form.endTime).getTime(),
+        fifteenMinutes = 15 * 60 * 1000, // milliseconds
+        now = Date.now();
+      // determine if active, ending soon, or late (green, yellow, red)
+      if (form.students.some((student) => student.checkIn)) {
+        type = "active";
+      }
+      if (type === "active" && now > endTime) {
+        type = "late";
+      }
+      if (type === "active" && now > endTime - fifteenMinutes) {
+        type = "endingSoon";
+      }
+      elements.formsTableBody.appendChild(
+        HTML.createElement("tr", {
+          class: type,
+          "data-id": form.id,
+          children: [
+            HTML.createElement("td", { child: HTML.documentIcon() }),
+            ...[
+              form.startTime,
+              form.endTime,
+              form.location,
+              form.bookedStudents ||
+                form.students.map((student) => student.name).join(", "),
+            ].map((textContent) => HTML.createElement("td", { textContent })),
+          ],
+        })
+      );
+    }
+
+    function populateEquipmentOutList(
+      { location, students, endTime, id: formId },
+      { description, id: itemId }
+    ) {
+      elements.equipmentTableBody.appendChild(
+        HTML.createElement("tr", {
+          "data-id": formId,
+          children: [
+            description,
+            itemId,
+            location,
+            students.map((student) => student.name).join(", "),
+            endTime,
+          ].map((textContent) => HTML.createElement("td", { textContent })),
+        })
+      );
+    }
+  })();
+</script>

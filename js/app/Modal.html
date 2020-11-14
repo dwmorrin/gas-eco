@@ -1,6 +1,7 @@
 <script>
   /* global
         app
+        FormPage
         HTML
         DateUtils
         Utility
@@ -19,14 +20,6 @@
     tmp: undefined, // stores strings (although not restricted to strings only, usually some key needed if user selects 'ok'
 
     strings: {
-      advanceBooking: {
-        heading: "Save for later?",
-        body:
-          "All sign-in and check-out info will be removed. " +
-          "Add all people and items before saving. " +
-          "You can only do this once.",
-        ok: "Save as advance booking",
-      },
       ambiguous: {
         heading: "Check in or out?",
         body: "",
@@ -83,11 +76,6 @@
         body: "Location must be on 5th or 6th floor of 370 Jay Street.",
         ok: "Set location",
       },
-      note: {
-        heading: "New note",
-        body: "Enter a note",
-        ok: "Save note",
-      },
       manual: {
         heading: "Check out item without barcode",
         body:
@@ -114,11 +102,6 @@
         heading: "Add signature",
         body: "Please wait...",
         ok: "",
-      },
-      studentNote: {
-        heading: "Add notes to student",
-        body: "",
-        ok: "Submit",
       },
       undo: {
         heading: "Undo all changes",
@@ -211,12 +194,6 @@
       app.modal.tmp = codabar;
     },
 
-    getNote: function () {
-      app.modal.setStrings("note");
-      app.modal.show(app.modal.container, app.modal.ok, app.modal.textarea);
-      app.modal.ok.setAttribute("value", "saveNote");
-      app.modal.textarea.focus();
-    },
     getManual: function () {
       app.modal.setStrings("manual");
       app.modal.show(app.modal.container, app.modal.ok, app.modal.textarea);
@@ -234,11 +211,6 @@
       return value;
     },
 
-    handleAdvanceBooking: function () {
-      this.setStrings("advanceBooking");
-      this.ok.setAttribute("value", "advanceBookingConfirm");
-      this.show(this.container, this.ok);
-    },
     handleAmbiguousItemAction: function (item) {
       this.tmp = item;
       this.setStrings("ambiguous");
@@ -426,57 +398,6 @@
       this.show(this.container, this.table);
     },
 
-    /** using the table as a form container, along with the textarea for open ended input */
-    handleStudentNote: function (student) {
-      const m = app.modal,
-        radio = HTML.makeRadio({
-          name: "studentOptions",
-          values: ["no show", "left", "other"],
-          checked: "other",
-        });
-      m.blurAllTextInputs();
-      m.setStrings("studentNote");
-      m.body.textContent = "Name: " + student.name;
-      HTML.empty(m.table);
-      if (!student.checkIn) {
-        m.table.appendChild(
-          HTML.createElement("tr", {
-            children: [
-              HTML.createElement("td", {
-                textContent: "Student never showed up",
-              }),
-              HTML.createElement("td", { child: radio["no show"] }),
-            ],
-          })
-        );
-      } else if (!student.checkOut && !student.left) {
-        m.table.appendChild(
-          HTML.createElement("tr", {
-            children: [
-              HTML.createElement("td", {
-                textContent: "Student left without checking out",
-              }),
-              HTML.createElement("td", { child: radio["left"] }),
-            ],
-          })
-        );
-      }
-      m.table.appendChild(
-        HTML.createElement("tr", {
-          children: [
-            HTML.createElement("td", {
-              textContent: "Other (please specify below)",
-            }),
-            HTML.createElement("td", { child: radio["other"] }),
-          ],
-        })
-      );
-      m.ok.setAttribute("value", "studentNote");
-      m.tmp = student;
-      m.show(m.container, m.table, m.textarea, m.ok);
-      m.textarea.focus();
-    },
-
     handleUndo: function () {
       app.modal.blurAllTextInputs();
       app.modal.setStrings("undo");
@@ -501,7 +422,7 @@
       if (
         app.modal.heading.textContent == app.modal.strings.collision.heading
       ) {
-        app.pages.form.unlock();
+        FormPage.unlock();
       }
       // hide whatever is hidden by default
       let elements = [
@@ -519,8 +440,8 @@
       // use default heading so we can check heading for state
       app.modal.heading.textContent = app.modal.strings.init.heading;
       // focus omnibox if viewing single form
-      if (app.pages.form.isShowing()) {
-        app.omnibox.element.focus();
+      if (FormPage.isShowing()) {
+        document.querySelector("input.omnibox").focus();
       }
     },
 

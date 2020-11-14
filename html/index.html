@@ -26,6 +26,34 @@
       <button value="archivedForms" disabled="true">View Closed Forms</button>
     </nav>
 
+    <script>
+      const Config = (function () {
+        locations = new Set([
+          "Critical Listening",
+          "Studio 1",
+          "Studio 2",
+          "Studio 3",
+          "Studio 4",
+          "Production Suite A",
+          "Production Suite B",
+          "Edit Suite 1",
+          "Edit Suite 2",
+          "Edit Suite 3",
+          "Edit Suite 4",
+          "Edit Suite 5",
+          "Practice Room 1",
+          "Practice Room 2",
+          "Practice Room 3",
+          "Practice Room 4",
+          "Practice Room 5",
+          "Rehearsal Room 1",
+          "Rehearsal Room 2",
+          "Lab 1 645",
+          "Lab 2 646",
+          "Lobby/Hallway",
+        ]);
+      })();
+    </script>
     <!-- page sections (only one can be visible at a time) -->
     <?!= include_('html/OpenForms'); ?>
     <?!= include_('html/Form'); ?>
@@ -33,7 +61,6 @@
     <?!= include_('html/Loading'); ?>
 
     <!-- page fragments (can be visible at any time)-->
-    <div class="spinner hidden"></div>
     <?!= include_('html/Modal'); ?>
 
     <!-- javascript -->
@@ -47,23 +74,22 @@
     <?!= include_('js/HTML'); ?>
     <?!= include_('js/DateUtils'); ?>
     <?!= include_('js/Utility'); ?>
-    <?!= include_('js/Display'); ?>
+
+    <!-- new pages -->
+    <?!= include_('js/OpenFormsPage') ?>
+    <?!= include_('js/Omnibox') ?>
+    <?!= include_('js/FormPage') ?>
+    <?!= include_('js/ClosedFormsPage') ?>
 
     <!-- app object -->
     <?!= include_('js/app/main'); ?>
-    <?!= include_('js/app/Changes'); ?>
     <?!= include_('js/app/DoCommand'); ?>
     <?!= include_('js/app/Elements'); ?>
     <?!= include_('js/app/Handlers'); ?>
     <?!= include_('js/app/Modal'); ?>
-    <?!= include_('js/app/Omnibox'); ?>
-    <?!= include_('js/app/pages/Archive'); ?>
     <?!= include_('js/app/pages/ArchiveQuery'); ?>
-    <?!= include_('js/app/pages/Form'); ?>
-    <?!= include_('js/app/pages/OpenForms'); ?>
     <?!= include_('js/app/pages/Loading'); ?>
     <?!= include_('js/app/Refresh'); ?>
-    <?!= include_('js/app/Spinner'); ?>
 
     <!-- run commands -->
     <?!= include_('js/Init'); ?>
