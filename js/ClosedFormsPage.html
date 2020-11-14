@@ -1,10 +1,11 @@
 <script>
-  /* global HTML Stack DateUtils */
+  /* global Config HTML Stack DateUtils */
   /* exported ClosedFormsPage */
   const ClosedFormsPage = (function () {
     const noop = () => undefined;
     const handlers = {
       onFormSelect: noop,
+      onUpdate: noop,
     };
     const connections = {
       setCurrentStack: noop,
@@ -17,7 +18,153 @@
       tableBody: document.querySelector("tbody.archive"),
       tableHead: document.querySelector("thead.archive"),
     };
+    elements.queryButton.addEventListener("click", () => query());
     const filteredStack = new Stack();
+    let stack = new Stack();
+    const range = {
+      start: "", // 'yyyy-mm-dd'
+      end: "", // 'yyyy-mm-dd'
+    };
+
+    elements.tableBody.addEventListener("click", handleClickTable);
+    elements.tableHead.addEventListener("click", handleClickTableHead);
+    elements.queryInputs.addEventListener("change", handleChange);
+
+    const filters = {
+      isBooked: (form) => form.bookingId,
+      isNotBooked: (form) => !form.bookingId,
+      isTape: (form) => form.tape,
+      byStudentName: (form) => {
+        const inputs = elements.queryInputs;
+        const studentQuery = inputs.students.value.toLowerCase().split(",");
+        return studentQuery.every((nameLookingFor) => {
+          nameLookingFor = nameLookingFor.toLowerCase().replace(/\s/g, "");
+          return form.students.find((student) => {
+            const name = student.name.toLowerCase().replace(/\s/g, "");
+            return name.includes(nameLookingFor);
+          });
+        });
+      },
+      byMatchAllItemID: (form) => {
+        const inputs = elements.queryInputs;
+        const itemQuery = inputs.items.value.toUpperCase().split(",");
+        return itemQuery.every(form.items.contains);
+      },
+      byMatchAnyItemID: (form) => {
+        const inputs = elements.queryInputs;
+        const itemQuery = inputs.items.value.toUpperCase().split(",");
+        return itemQuery.some(form.items.contains);
+      },
+      byMissingItem: (form) => {
+        return form.items.some((item) => item.missing);
+      },
+      byStudentLeft: (form) => {
+        return form.students.some((student) => student.left);
+      },
+      byHasManual: (form) => {
+        for (let note of form.notes) {
+          try {
+            let changes = JSON.parse(note.body);
+            for (let change of changes) {
+              if (change.name == "manual") {
+                return true;
+              }
+            }
+          } catch (e) {
+            // not changes, ignore
+          }
+        }
+        return false;
+      },
+      byHasNotes: (form) => {
+        for (let note of form.notes) {
+          try {
+            // Unintuitive use of try/catch:
+            JSON.parse(note.body); // (success == change log )
+          } catch (e) {
+            // (  error == global note)
+            return true;
+          }
+        }
+        return false;
+      },
+      byLateStudents: (form) => {
+        const inGracePeriod = 15, // minutes
+          outGracePeriod = 10,
+          start = DateUtils.parseFormattedDate(form.startTime),
+          end = DateUtils.parseFormattedDate(form.endTime);
+        start.setMinutes(start.getMinutes() + inGracePeriod);
+        end.setMinutes(end.getMinutes() + outGracePeriod);
+
+        const checkedInOnTime = (student) =>
+          !student.checkIn ||
+          DateUtils.parseFormattedDate(student.checkIn).getTime() <=
+            start.getTime();
+
+        const studentIncompleteHTML = "DID NOT CHECK OUT";
+        const checkedOutLate = (student) =>
+          (student.checkIn &&
+            (!student.checkOut ||
+              student.checkOut === studentIncompleteHTML)) ||
+          (student.checkOut &&
+            student.checkOut !== studentIncompleteHTML &&
+            DateUtils.parseFormattedDate(student.checkOut).getTime() >
+              end.getTime());
+
+        return (
+          !form.students.some(checkedInOnTime) ||
+          form.students.some(checkedOutLate)
+        );
+      },
+      byNoShow: (form) => form.students.every((s) => s.checkIn == null),
+      byTimeRange: (form) => {
+        const inputs = elements.queryInputs;
+        const startRange = new Date(inputs.start.value + "T00:00:00"),
+          endRange = new Date(inputs.end.value + "T23:59:59"),
+          start = DateUtils.parseFormattedDate(form.startTime);
+        if (
+          start.getTime() <= startRange.getTime() ||
+          start.getTime() >= endRange.getTime()
+        ) {
+          return false;
+        }
+        return true;
+      },
+      byLocation: (form) => {
+        const inputs = elements.queryInputs;
+        if (inputs.location.value != "Other") {
+          if (form.location != inputs.location.value) {
+            return false;
+          }
+        } else {
+          if (Config.locations.has(form.location)) {
+            return false;
+          }
+        }
+        return true;
+      },
+    };
+    init();
+
+    return {
+      getDateRangeAsJSON,
+      getStack,
+      hide,
+      query,
+      setConnections,
+      setForms,
+      setHandlers,
+      show,
+    };
+
+    function getStack() {
+      return stack;
+    }
+
+    function setForms(forms) {
+      stack.importForms(forms);
+    }
+
     function getDateRangeAsJSON() {
       const inputs = elements.queryInputs;
       return JSON.stringify({
@@ -29,22 +176,6 @@
         ),
       });
     }
-    let refreshId = NaN;
-    let sortBy = "startTime";
-    let sortDescending = false;
-    let stack = new Stack();
-    const range = {
-      start: "", // 'yyyy-mm-dd'
-      end: "", // 'yyyy-mm-dd'
-    };
-
-    elements.tableBody.addEventListener("click", handleClickTable);
-    elements.tableHead.addEventListener("click", handleClickTableHead);
-    elements.queryInputs.addEventListener("change", handleChange);
-
-    init();
-
-    return { setHandlers, setConnections };
 
     function setConnections(newConnections) {
       Object.assign(connections, newConnections);
@@ -189,13 +320,56 @@
       elements.container.classList.add("hidden");
     }
 
-    function setInterval() {}
-
     function update() {
-      app.run.doGet({
-        get: "archive",
-        dateRangeJSON: getDateRangeAsJSON(),
-      });
+      handlers.onUpdate();
+    }
+
+    function query() {
+      const archiveElements = elements.container,
+        inputs = elements.queryInputs,
+        appliedFilters = [];
+
+      const dateInputs = archiveElements.querySelectorAll('input[type="date"]');
+      if (!dateInputs[0].value) {
+        // initialize date range inputs
+        init();
+      }
+
+      appliedFilters.push(filters.byTimeRange); // always run
+
+      if (inputs.location.value != "All") {
+        appliedFilters.push(filters.byLocation);
+      }
+
+      if (inputs.students.value) {
+        appliedFilters.push(filters.byStudentName);
+      }
+
+      if (inputs.items.value && inputs.matchItems.value == "all") {
+        appliedFilters.push(filters.byMatchAllItemID);
+      }
+
+      if (inputs.items.value && inputs.matchItems.value == "any") {
+        appliedFilters.push(filters.byMatchAnyItemID);
+      }
+
+      const checkboxes = archiveElements.querySelectorAll(
+        'input[type="checkbox"]'
+      );
+      for (let i = 0; i < checkboxes.length; ++i) {
+        if (checkboxes[i].checked) {
+          appliedFilters.push(filters[checkboxes[i].name]);
+        }
+      }
+      filteredStack.setForms(
+        appliedFilters.reduce((forms, func) => forms.filter(func), stack)
+      );
+
+      const length = filteredStack.getLength();
+      elements.queryCount.textContent =
+        length == 1 ? `${length} form` : `${length} forms`;
+      filteredStack.sortForms();
+      populateArchiveTable(filteredStack);
     }
   })();
 </script>

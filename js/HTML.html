@@ -3,21 +3,21 @@
   const HTML = (function () {
     return {
       attributes,
+      cell,
       createElement,
       documentIcon,
       empty,
       getFirstChild,
       getNextSibling,
       getRadioValue,
+      heading1,
       makeRadio,
       modal,
-      spinner,
-      heading1,
       paragraph,
       radio,
-      cell,
-      table,
       row,
+      spinner,
+      table,
       toast,
     };
 
@@ -164,7 +164,7 @@
         const okButton = createElement("button", {
           textContent: okText,
           onClick: () => {
-            onOk();
+            onOk({ modal: div });
             cleanup();
           },
         });
@@ -173,7 +173,7 @@
       div.addEventListener("keydown", ({ key }) => {
         if (key === "Escape") cleanup();
         if (key === "Enter") {
-          onOk();
+          onOk({ modal: div });
           cleanup();
         }
       });

@@ -1,41 +1,40 @@
 <script>
   /* global
-     Item
-     Inventory
-     DateUtils
-     OpenFormsPage
+    HTML
+    Item
+    Inventory
+    DateUtils
+    Utility
    */
   /* exported Omnibox */
   const Omnibox = (function () {
     const element = document.querySelector("input.omnibox");
     const noop = () => undefined;
     const handlers = {
-      onManualEntryStart: noop,
-      onManualEntryEnd: noop,
-      onCheckOutAgain: noop,
-      onQuantityChange: noop,
-      onAmbiguousItemAction: noop,
+      onLogManualEntry: noop,
       onItemChange: noop,
       onStudentChange: noop,
       onNewCodabar: noop,
       onNeedsSignature: noop,
-      onQueryResults: noop,
     };
-    const connections = {};
+    const connections = {
+      getCurrentForm: noop,
+    };
     const inventory = new Inventory();
     let roster = [];
 
     element.addEventListener("keydown", handleKeydown);
 
     return {
-      handleItem,
-      setHandlers,
       getInventory,
-      setConnections,
       getRoster,
-      setRoster,
+      handleItem,
+      makeQuantityChangeDialog,
       parse,
+      setConnections,
+      setHandlers,
       setInputAndParse,
+      setRoster,
     };
 
     function setInputAndParse(value) {
@@ -68,7 +67,7 @@
     }
 
     function handleItem(item, quantityToReturn, ambiguous = true) {
-      const form = OpenFormsPage.getCurrentForm();
+      const form = connections.getCurrentForm();
       const itemOnForm = form.items.find((i) => {
         if (item.id && i.id == item.id) {
           return true;
@@ -108,7 +107,28 @@
             );
             return;
           }
-          handlers.onCheckOutAgain(itemOnForm);
+          document.appendChild(
+            HTML.modal({
+              blocking: true,
+              children: [
+                HTML.heading1("Check out again?"),
+                HTML.paragraph(
+                  `${itemOnForm.description} was already checked back in.`
+                ),
+              ],
+              okText: "Check out again",
+              onOk: () => {
+                itemOnForm.checkIn = "";
+                itemOnForm.checkedOutAgain = true;
+                handlers.onItemChange({
+                  target: {
+                    name: "items",
+                    value: `${itemOnForm.description} checked out again`,
+                  },
+                });
+              },
+            })
+          );
           return;
         } else if (itemOnForm.checkOut) {
           // Its a check-in
@@ -124,8 +144,7 @@
           }
           if (!item.isSerialized() && ambiguous) {
             clear();
-            handlers.onAmbiguousItemAction(itemOnForm);
-            return;
+            return getItemAction(itemOnForm);
           }
           itemOnForm.checkIn = DateUtils.getFormattedDate(new Date());
           // clears the missing property if it was set.
@@ -141,6 +160,100 @@
       handlers.onItemChange(change);
     }
 
+    /**
+     * creates a dialog to determine if the user meant to check in an item
+     * or check out more of the same item
+     */
+    function getItemAction(item) {
+      document.appendChild(
+        HTML.modal({
+          blocking: true,
+          children: [
+            HTML.heading1("Check in or out?"),
+            HTML.table(
+              HTML.row(
+                HTML.cell("Check the item back in?"),
+                HTML.cell({
+                  child: HTML.createElement("button", {
+                    textContent: "Check In",
+                    onClick: () => handleItem(item, "all", false),
+                  }),
+                })
+              ),
+              HTML.row(
+                HTML.cell("Check out more of these?"),
+                HTML.cell({
+                  child: HTML.createElement("button", {
+                    textContent: "Check Out",
+                    onClick: makeQuantityChangeDialog(item),
+                  }),
+                })
+              )
+            ),
+          ],
+        })
+      );
+    }
+
+    function makeQuantityChangeDialog(item) {
+      const newQuantityInput = HTML.createElement("input", {
+        class: "newQuantity",
+      });
+      return () =>
+        document.appendChild(
+          HTML.modal({
+            blocking: true,
+            children: [
+              HTML.heading1("Change quantity"),
+              HTML.paragraph(
+                `Enter the new quantity: (current quantity: ${item.getQuantity()})`
+              ),
+              newQuantityInput,
+            ],
+            okText: "Ok",
+            onOk: makeQuantityHandler(item, newQuantityInput),
+          })
+        );
+    }
+
+    function makeQuantityHandler(item, newQuantityInput) {
+      return () => {
+        const quantity = +newQuantityInput.value;
+        const savedItem = connections
+          .getSavedForm()
+          .items.find(
+            ({ description }) => description === item.description
+          );
+        if (!item.checkedOutAgain && savedItem) {
+          const savedQuantity = savedItem.getQuantity();
+          if (quantity < savedQuantity) {
+            window.alert(
+              quantity +
+                " is less than the previous quantity " +
+                savedQuantity +
+                ". You can only enter a larger amount " +
+                "or check in this item."
+            );
+            return;
+          }
+        }
+        try {
+          item.setQuantity(quantity);
+        } catch (error) {
+          window.alert(error);
+          return;
+        }
+        handlers.onItemChange({
+          target: {
+            name: "items",
+            value: `${
+              item.description
+            } qty ${item.getQuantity()} to ${quantity}`,
+          },
+        });
+      };
+    }
+
     function handleKeydown(keydown) {
       if (keydown.key === "Escape") keydown.target.blur();
       if (keydown.key === "Enter") {
@@ -153,7 +266,7 @@
     /** @param {Student} input */
     function handleStudent(student) {
       student = Object.assign({}, student);
-      const form = OpenFormsPage.getCurrentForm();
+      const form = connections.getCurrentForm();
       const students = form.students;
       const studentOnForm = students.find((s) => s.netId == student.netId);
       const change = {
@@ -243,14 +356,50 @@
           handleStudent(parsed);
           return;
         }
-        handlers.onNewCodabar(value);
+        // handlers.onNewCodabar(value);
+        const input = HTML.createElement("input", {
+          value: "codabar",
+          placeholder: "enter student's NetID",
+        });
+        document.appendChild(
+          HTML.modal({
+            blocking: true,
+            children: [
+              HTML.heading1("ID not recognized"),
+              HTML.paragraph(
+                "If you scanned an ID, add it to the student's info by " +
+                  "submitting their NetID.  If you think you are seeing this " +
+                  'message in error, choose "close".'
+              ),
+              input,
+            ],
+            okText: "Submit",
+            onOk: () => {
+              const netId = input.value;
+              const student = Omnibox.getRoster().find(
+                (student) => student.netId.toLowerCase() === netId
+              );
+              if (!student) {
+                return window.alert(
+                  "Hmmm, NetID " +
+                    netId +
+                    " does not match a current student. " +
+                    "Check that it was entered correctly, try refreshing the browser, " +
+                    "or submit a trouble report."
+                );
+              }
+              handlers.onNewCodabar({ netId, codabar: value });
+            },
+          })
+        );
+        input.focus();
         return;
       }
 
       const idType = /^[a-z]+[0-9]+/.test(value) ? "netId" : "name"; // Check student name and id
       parsed = roster.find((student) => student[idType].toLowerCase() == value);
       if (parsed) {
-        handlers.onManualEntryEnd(element.value);
+        handlers.onLogManualEntry(element.value);
         handleStudent(parsed);
         return;
       }
@@ -260,17 +409,53 @@
       if (itemIdregex.test(value)) {
         parsed = inventory.getById(value);
         if (!parsed && /^manual/.test(value)) {
-          parsed = OpenFormsPage.getCurrentForm().items.find(
-            (item) => item.id.toLowerCase().replace(/-0+/, "-") == value
-          );
+          parsed = connections
+            .getCurrentForm()
+            .items.find(
+              (item) => item.id.toLowerCase().replace(/-0+/, "-") == value
+            );
         } else {
-          handlers.onManualEntryEnd(element.value);
+          handlers.onLogManualEntry(element.value);
         }
       } else if (barcoderegex.test(value)) {
         // assume it's a barcode
         if (value === "10000") {
           clear();
-          handlers.onManualEntryStart();
+          // handlers.onManualEntryStart();
+          const input = HTML.createElement("textarea");
+          document.appendChild(
+            HTML.modal({
+              children: [
+                HTML.heading1("Check out item without barcode"),
+                HTML.paragraph(
+                  "Describe the item: (required, provide as much detail as possible)"
+                ),
+                input,
+              ],
+              okText: "Check out",
+              onOk: () => {
+                const description = input.value;
+                if (description === "") {
+                  return;
+                }
+                Utility.digestMessage(description).then((hash) => {
+                  Omnibox.handleItem({
+                    id: "MANUAL-" + Utility.hexString(hash).substring(0, 5),
+                    checkIn: null,
+                    checkOut: null,
+                    quantity: 1,
+                    serialized: false,
+                    barcode: null,
+                    description,
+                    checkedOut: false,
+                    notes: "",
+                    missing: false,
+                  });
+                });
+              },
+            })
+          );
+          input.focus();
           return;
         }
         parsed = inventory.getByBarcode(value);
@@ -303,7 +488,31 @@
       ).filter((result) => result.weight < 4);
 
       if (queryResults.length > 0) {
-        handlers.onQueryResults(queryResults);
+        document.appendChild(
+          HTML.modal({
+            blocking: true,
+            children: [
+              HTML.heading1("Search results"),
+              HTML.paragraph("Are you looking for one of these?"),
+              HTML.table(
+                ...queryResults.reduce((rows, { value }) => {
+                  const id = value.netId || value.id || value.barcode;
+                  if (!id) return rows;
+                  return [
+                    ...rows,
+                    HTML.createElement("tr", {
+                      children: [
+                        HTML.cell(value.name || value.description),
+                        HTML.cell(id),
+                      ],
+                      onClick: () => setInputAndParse(id),
+                    }),
+                  ];
+                }, [])
+              ),
+            ],
+          })
+        );
         return;
       }
       window.alert(

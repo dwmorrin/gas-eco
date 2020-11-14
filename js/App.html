@@ -1,0 +1,408 @@
+<script>
+  /* global
+  ClosedFormsPage
+  Form
+  FormPage
+  HTML
+  LoadingPage
+  Omnibox
+  OpenFormsPage
+  Stack
+  google
+  */
+  /* exported App */
+  const App = (function () {
+    const elements = {
+      newFormButton: document.querySelector('button[value="displayNewForm"]'),
+      openFormsButton: document.querySelector('button[value="openForms"]'),
+      closedFormsButton: document.querySelector('button[value="closedForms"]'),
+      usernameDisplay: document.querySelector("span.usernameDisplay"),
+    };
+
+    const pages = {
+      ClosedFormsPage,
+      FormPage,
+      LoadingPage,
+      OpenFormsPage,
+    };
+
+    for (const page in pages) {
+      if (!["show", "hide"].every((fn) => fn in pages[page]))
+        window.alert(`${page} doesn't have required show/hide functions`);
+    }
+
+    // Server runners
+    const withErrorHandler = google.script.run.withFailureHandler((error) =>
+      document.appendChild(
+        HTML.modal({
+          children: [HTML.heading1("Error"), HTML.paragraph(error.message)],
+        })
+      )
+    );
+    // const run = withErrorHandler.withSuccessHandler(app.refresh);
+
+    OpenFormsPage.setHandlers({
+      clickTable: ({ form }) => FormPage.displayForm(form),
+    });
+    Omnibox.setHandlers({
+      onLogManualEntry: (value) =>
+        FormPage.handleChange({ target: { name: "manual", value } }),
+      onItemChange: FormPage.updateItems,
+      onStudentChange: FormPage.updateStudents,
+      onNewCodabar: ({ netId, codabar }) => {
+        FormPage.setUpdateFormButtonToSpinner();
+        withErrorHandler
+          .withSuccessHandler((response) => {
+            Omnibox.setRoster(JSON.parse(response.students));
+            Omnibox.parse();
+          })
+          .doPost({
+            post: "codabar",
+            netId,
+            codabar,
+          });
+      },
+      onNeedsSignature: (netid) => {
+        const modal = HTML.modal({
+          blocking: true,
+          children: [
+            HTML.heading1("Add signature"),
+            HTML.paragraph("Please wait..."),
+          ],
+          closeText: "Cancel",
+        });
+        document.appendChild(modal);
+        withErrorHandler
+          .withSuccessHandler((_, context) => {
+            if (!context.modal) {
+              // user aborted by hitting "cancel"
+              return;
+            }
+            context.modal.remove();
+            document.appendChild(
+              HTML.modal({
+                blocking: true,
+                children: [
+                  HTML.heading1("Add signature"),
+                  HTML.paragraph(
+                    "Production area policy acknowledgment signature not found " +
+                      "for this person. All persons must read the policy and have " +
+                      "a signature on file. Please use the tablet to show the " +
+                      "person the policy and capture their signature. " +
+                      "Click the 'Signature Done/Recheck' when they are finished " +
+                      "using the tablet."
+                  ),
+                ],
+                okText: "Signature Done/Recheck",
+                onOk: () =>
+                  withErrorHandler
+                    .withSuccessHandler(onRoster)
+                    .doGet({ get: "students", init: false }),
+              })
+            );
+          })
+          .withUserObject({ modal })
+          .doPost({ post: "startSignature", netid });
+      },
+    });
+    Omnibox.setConnections({
+      getSavedForm: FormPage.getSavedForm,
+      getCurrentForm: OpenFormsPage.getCurrentForm,
+    });
+    FormPage.setHandlers({
+      onDelete: (form) => {
+        if (form)
+          withErrorHandler
+            .withSuccessHandler((response) => {
+              if (response.post === "openForms") return onOpenForms(response);
+              if (response.post === "collision") return onCollision(response);
+            })
+            .doPost({ post: "deleteForm", form });
+        else
+          withErrorHandler
+            .withSuccessHandler(() => {
+              return; // TODO insert openForms response handler here
+            })
+            .doGet({ get: "openForms" });
+      },
+      onItemMetaClick: Omnibox.setInputAndParse,
+      onItemQuantityChange: Omnibox.handleItem,
+      onModalQuantityChange: (item) => Omnibox.makeQuantityChangeDialog(item)(),
+      onParseInput: Omnibox.parse,
+      onStudentMetaClick: Omnibox.setInputAndParse,
+      onSubmit: (form) => {
+        withErrorHandler
+          .withSuccessHandler((response) => {
+            if (response.post === "updateForm") return onUpdateForm(response);
+            if (response.post === "openForms") return onOpenForms(response);
+            if (response.post === "collision") return onCollision(response);
+            if (response.post === "invalid")
+              return window.alert("Form is invalid");
+          })
+          .doPost({
+            post: "updateForm",
+            form,
+          });
+      },
+      onUnload: () => withErrorHandler.doPost({ post: "unload" }),
+    });
+    FormPage.setConnections({
+      getCurrentForm: OpenFormsPage.getCurrentForm,
+      getStack: OpenFormsPage.getStack,
+    });
+    ClosedFormsPage.setHandlers({
+      onFormSelect: FormPage.displayForm,
+      onUpdate: (dateRangeJSON) =>
+        withErrorHandler
+          .withSuccessHandler(onClosedForms)
+          .doGet({ get: "archive", dateRangeJSON }),
+    });
+    ClosedFormsPage.setConnections({
+      setCurrentStack: FormPage.setCurrentStack,
+    });
+
+    elements.openFormsButton.addEventListener("click", () => {
+      // check for unsaved changes, TBD,
+      withErrorHandler
+        .withSuccessHandler(onOpenForms)
+        .doGet({ get: "openForms" });
+    });
+    elements.closedFormsButton.addEventListener("click", () => {
+      const onOk = () => showPage(ClosedFormsPage);
+      if (!FormPage.isSaved()) FormPage.loseDataWarning(onOk);
+      else onOk();
+    });
+    elements.newFormButton.addEventListener("click", () => {
+      const onOk = () => {
+        const newForm = new Form({});
+        const stack = OpenFormsPage.getStack();
+        FormPage.setCurrentStack(stack);
+        stack.push(newForm);
+        // app.changes.saved = false; //! TODO ensure that FormPage is internally handling this
+        FormPage.displayForm(newForm);
+      };
+      if (!FormPage.isSaved()) FormPage.loseDataWarning(onOk);
+      else onOk();
+    });
+
+    // initial server calls
+    withErrorHandler
+      .withSuccessHandler()
+      .doGet({ get: "openForms", init: true });
+    withErrorHandler
+      .withSuccessHandler(
+        (response) => (elements.usernameDisplay.textContent = response.user)
+      )
+      .doGet({ get: "user" });
+    withErrorHandler
+      .withSuccessHandler(onRoster)
+      .doGet({ get: "students", init: true });
+    withErrorHandler
+      .withSuccessHandler((response) => {
+        const inventory = Omnibox.getInventory();
+        inventory.setItems(JSON.parse(response.items));
+        if (inventory.getLength() < 1) {
+          return window.alert("Error: Server found no items!");
+        }
+        if (response.unlock) {
+          tryUnlock();
+        }
+      })
+      .doGet({ get: "items", init: true }); // gets the item info cache
+    withErrorHandler.withSuccessHandler(onClosedForms).doGet({
+      get: "archive",
+      dateRangeJSON: ClosedFormsPage.getDateRangeAsJSON(),
+      init: true,
+    });
+
+    function showPage(page) {
+      for (const key in pages) {
+        pages[key][page === pages[key] ? "show" : "hide"]();
+      }
+    }
+
+    // function checkLock() {
+    //   return (
+    //     FormPage.isShowing() &&
+    //     FormPage.isLocked() &&
+    //     !document.querySelector(".modal")
+    //   );
+    // }
+
+    /**
+     * tryUnlock controls when the loading page switches to the open forms page
+     */
+    function tryUnlock() {
+      const rosterLength = Omnibox.getRoster().length,
+        inventoryLength = Omnibox.getInventory().getLength(),
+        stack = OpenFormsPage.getStack(),
+        stackInit = stack.isInitialized();
+      if (rosterLength > 1) {
+        LoadingPage.updateStatus(
+          "rosterStatus",
+          `${rosterLength} people downloaded`
+        );
+      }
+      if (inventoryLength > 1) {
+        LoadingPage.updateStatus(
+          "inventoryStatus",
+          `${inventoryLength} items downloaded`
+        );
+      }
+      if (stackInit) {
+        LoadingPage.updateStatus(
+          "openFormsStatus",
+          `${stack.getLength()} forms downloaded`
+        );
+      }
+      if (rosterLength < 1 || inventoryLength < 1 || !stackInit) {
+        return false;
+      }
+      elements.openFormsButton.removeAttribute("disabled");
+      elements.newFormButton.removeAttribute("disabled");
+      showPage(OpenFormsPage);
+      return true;
+    }
+
+    function onClosedForms(response) {
+      try {
+        ClosedFormsPage.importForms(JSON.parse(response.formList));
+      } catch (error) {
+        return window.alert("Server was unable to retrieve the closed forms.");
+      }
+      if (response.unlock) {
+        elements.closedFormsButton.removeAttribute("disabled");
+      } else {
+        // TODO remove spinner from query button
+      }
+      ClosedFormsPage.query();
+    }
+
+    function onCollision(response) {
+      response.storedForm = JSON.parse(response.storedForm);
+      response.submittedForm = JSON.parse(response.submittedForm);
+      document.appendChild(
+        HTML.modal({
+          blocking: true,
+          children: [
+            HTML.heading1("Uh-oh, your form conflicts with another form"),
+            HTML.paragraph(
+              "Unfortunately a newer version of the form has been found on the server.  In a future update you can save your work, but for now we have to destroy it.  Sorry!!"
+            ),
+          ],
+          onClose: () => FormPage.displayForm(JSON.parse(response.storedForm)),
+        })
+      );
+    }
+
+    function onOpenForms(response) {
+      const stack = OpenFormsPage.getStack();
+      try {
+        stack.importForms(JSON.parse(response.formList)).sortForms();
+      } catch (error) {
+        return window.alert("Error: server failed to get the open forms.");
+      }
+      FormPage.setCurrentStack(stack);
+      //! TODO check that the "saved" prop is updated by something else, should be Changes.clear()
+      // app.changes.saved = true;
+      tryUnlock();
+    }
+
+    function onOpenFormsQuiet(response, context) {
+      const stack = OpenFormsPage.getStack();
+      if (context.timeoutId != OpenFormsPage.getRefreshId()) {
+        return; // we are in an undefined state, abort
+      }
+      try {
+        stack.importForms(JSON.parse(response.formList)).sortForms();
+      } catch (error) {
+        // TODO - try something else, set timeout to try later ?
+      }
+    }
+
+    function onCheckForms(response) {
+      //case "checkForms"
+      let newForms = JSON.parse(response.formList);
+      if (!newForms[0]) return;
+      newForms = new Stack(newForms);
+      // determine current context, see FormPage.{show,hide}
+      // for why timeoutId shows context
+      if (
+        //! Removing this "timeoutId" tracking. Rethink
+        // context.timeoutId != app.pages.form.timeoutId ||
+        FormPage.getCurrentStack() === ClosedFormsPage.getStack()
+      ) {
+        return;
+      }
+      newForms.sortForms();
+      const staleForm = FormPage.getCurrentStack().getCurrentForm();
+      const newForm = newForms.getByID(staleForm.id);
+      if (!newForm) {
+        // must be a new form, nothing to do, abort
+        return;
+      }
+      // are changes saved?
+      if (FormPage.isSaved()) {
+        OpenFormsPage.setStack(newForms);
+        FormPage.displayForm(newForm);
+        // app.pages.form.setTimeout(); //! TODO rethink
+      } else {
+        if (newForm.hash !== staleForm.hash) {
+          // another instance has already updated this form; do not set timeout
+          withErrorHandler
+            .withSuccessHandler(() =>
+              HTML.toast("The form you were editing was saved on the server.")
+            )
+            .doPost({
+              post: "rejected",
+              form: staleForm.stringify(),
+            });
+          document.appendChild(
+            HTML.modal({
+              blocking: true,
+              children: [
+                HTML.heading1("Uh-oh, your form conflicts with another form"),
+                HTML.paragraph(
+                  "Unfortunately, no automatic fix is available, but your form " +
+                    'has been saved.  To keep viewing your form, choose "Close".'
+                ),
+              ],
+              okText: "Switch to the saved form",
+              onOk: () => {
+                FormPage.getCurrentStack().replaceCurrent(newForm);
+                // app.changes.saved = true;
+                FormPage.lockButtons();
+                FormPage.displayForm(newForm);
+              },
+            })
+          );
+        } else {
+          // editing the current form; keep checking
+          // app.pages.form.setTimeout(); //! TODO rethink
+        }
+      }
+    }
+
+    function onRoster(response) {
+      const roster = JSON.parse(response.students);
+      Omnibox.setRoster(roster);
+      if (roster.length < 1) {
+        return window.alert("No students found");
+      }
+      if (response.unlock) {
+        tryUnlock();
+      } else {
+        Omnibox.parse();
+      }
+    }
+
+    function onUpdateForm(response) {
+      //app.changes.saved = true; //! Should be Changes.clear();
+      FormPage.lockButtons(); // disables "update" until next change
+      FormPage.unlock(); // allows editing of form
+      const updatedForm = new Form(JSON.parse(response.form));
+      OpenFormsPage.getStack().replace(updatedForm).updateIndex(updatedForm);
+      FormPage.displayForm(updatedForm);
+    }
+  })();
+</script>

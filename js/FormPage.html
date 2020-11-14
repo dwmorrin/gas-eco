@@ -20,6 +20,9 @@
           stack = [];
           saved = true;
         },
+        getStack() {
+          return stack.slice();
+        },
         isSaved() {
           return saved;
         },
@@ -44,6 +47,7 @@
       advanceBookingButton: document.querySelector(
         'button[value="advanceBooking"]'
       ),
+      changeLogButton: document.querySelector('button[value="changeLog"]'),
       container: document.querySelector("div.formContainer"),
       copyButton: document.querySelector('button[value="copyItems"]'),
       currentFormstackDisplay: document.querySelector(
@@ -81,12 +85,13 @@
 
     const noop = () => undefined;
     const handlers = {
-      onUnsavedForm: noop,
-      onSubmit: noop,
-      onLocationOther: noop,
-      onItemNote: noop,
+      onDelete: noop,
       onItemMetaClick: noop,
+      onItemQuantityChange: noop,
+      onModalQuantityChange: noop,
+      onParseInput: noop,
       onStudentMetaClick: noop,
+      onSubmit: noop,
       onUnload: noop,
     };
     const connections = {}; // getCurrentForm, getStack
@@ -115,6 +120,76 @@
           onOk: makeAdvanceBooking,
         })
       );
+    });
+    elements.changeLogButton.addEventListener("click", () => {
+      const changes = [
+        ...getCurrentStack()
+          .getCurrentForm()
+          .notes.reduce((areChanges, note) => {
+            const change = Utility.tryJsonParse(note.body);
+            if (!Array.isArray(change)) return areChanges;
+            change.forEach((entry) => (entry.author = note.author));
+            return [...areChanges, ...change];
+          }, []),
+        ...Changes.getStack(),
+      ];
+      document.appendChild(
+        HTML.modal({
+          children: [
+            HTML.table(
+              HTML.row(...["Time", "User", "Field", "Value"].map(HTML.cell))
+            ),
+            ...changes.map(({ timestamp, author, name, value }) =>
+              HTML.row(
+                HTML.cell(DateUtils.getFormattedDate(new Date(timestamp))),
+                HTML.cell(author),
+                HTML.cell(Utility.uncamelCase(name)),
+                HTML.cell(value)
+              )
+            ),
+          ],
+        })
+      );
+    });
+    elements.copyButton.addEventListener("click", () =>
+      Utility.copyToClipboard(
+        JSON.stringify(getCurrentStack().getCurrentForm().items.getStripped())
+      )
+    );
+    elements.deleteFormButton.addEventListener("click", () => {
+      if (FormPage.getSavedForm().isBlank()) {
+        return handlers.onDelete();
+      }
+      document.appendChild(
+        HTML.modal({
+          blocking: true,
+          child: HTML.paragraph(
+            "This will close out the form and mark it deleted. Are you sure?"
+          ),
+          closeText: "Cancel",
+          onOk: () => {
+            FormPage.lock();
+            FormPage.setDeleteFormButtonToSpinner();
+            const form = connections.getCurrentForm();
+            Changes.add({
+              target: {
+                name: "delete",
+                value: "form deleted",
+              },
+            });
+            form.notes.push(Changes.makeNote());
+            handlers.onDelete(form.stringify());
+          },
+        })
+      );
+    });
+    elements.duplicateButton.addEventListener("click", () => {
+      const newForm = new Form(FormPage.getSavedForm(), true);
+      const stack = connections.getStack();
+      FormPage.setCurrentStack(stack);
+      stack.push(newForm);
+      // app.changes.saved = false; //! TODO - do we need this?
+      FormPage.displayForm(newForm);
     });
     elements.nextFormButton.addEventListener("click", getNext);
     elements.previousFormButton.addEventListener("click", getPrevious);
@@ -151,9 +226,31 @@
       );
       input.focus();
     });
+    elements.omniboxButton.addEventListener("click", handlers.onParseInput);
+    elements.undoButton.addEventListener("click", () =>
+      document.appendChild(
+        HTML.modal({
+          blocking: true,
+          children: [
+            HTML.heading1("Undo all changes"),
+            HTML.paragraph(
+              "Do you want to undo all changes since the last save?"
+            ),
+          ],
+          okText: "Revert to saved form",
+          onOk: () => {
+            // if (!window.isNaN(app.pages.form.autosaveID)) {
+            //   window.clearTimeout(app.pages.form.autosaveID);
+            //   app.pages.form.autosaveID = NaN;
+            // }
+            displayForm(connections.getCurrentForm());
+          },
+        })
+      )
+    );
     elements.container.addEventListener("keydown", (event) => {
       if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
-        handlers.onSubmit();
+        submit();
       }
     });
     /**
@@ -178,10 +275,12 @@
       handleChange,
       hide,
       isLocked,
+      isSaved,
       isShowing,
       lock,
       lockButtons,
       loseData,
+      loseDataWarning,
       saveNote,
       setConnections,
       setCurrentStack,
@@ -201,6 +300,15 @@
     //     .withUserObject({ timeoutId: timeoutId })
     //     .doGet({ get: "checkForms" });
     // }
+
+    function submit() {
+      handlers.onParseInput();
+      lock();
+      setUpdateFormButtonToSpinner();
+      const form = connections.getCurrentForm();
+      form.notes.push(Changes.makeNote());
+      handlers.onSubmit(form.stringify());
+    }
 
     function getCurrentStack() {
       return currentStack;
@@ -267,8 +375,11 @@
       }
       if (!Changes.isSaved()) {
         currentStack.getPrevious(); // fix currentIndex
-        handlers.onUnsavedForm("nextForm");
-        return;
+        // handlers.onUnsavedForm("nextForm");
+        return loseDataWarning(() => {
+          Changes.loseData();
+          displayForm(currentStack.getNext());
+        });
       }
       displayForm(form);
     }
@@ -282,8 +393,11 @@
       }
       if (!Changes.isSaved()) {
         currentStack.getNext(); // fix currentIndex
-        handlers.onUnsavedForm("previousForm");
-        return;
+        // handlers.onUnsavedForm("previousForm");
+        return loseDataWarning(() => {
+          Changes.loseData();
+          displayForm(currentStack.getPrevious());
+        });
       }
       displayForm(form);
     }
@@ -356,7 +470,7 @@
           ) {
             return;
           }
-          handlers.onSubmit();
+          submit();
         }, 60000);
         // are we ready to close?
         const noShow = form.isNoShow();
@@ -386,8 +500,30 @@
         return;
       }
       if (change.target.value === "Other") {
-        change.target.value = "none"; // in case the modal is cancelled
-        handlers.onLocationOther();
+        const input = HTML.createElement("input", { type: "text" });
+        document.appendChild(
+          HTML.modal({
+            blocking: true,
+            children: [
+              HTML.heading1("Location: Other"),
+              HTML.paragraph(
+                "Location must be on the 5th or 6th floor of 370 Jay Street."
+              ),
+              input,
+            ],
+            okText: "Set location",
+            onOk: () =>
+              handleChange({
+                target: {
+                  name: "location",
+                  value: input.value || "none",
+                },
+              }),
+            onClose: () =>
+              handleChange({ target: { name: "location", value: "none" } }),
+          })
+        );
+        input.focus();
         return;
       }
       // update form
@@ -456,10 +592,10 @@
       els.endTime.value = form.endTime = endTime;
       const type = change.target.name.slice(0, 1),
         newChange = { target: {} };
-      if (type == "s") {
+      if (type === "s") {
         newChange.target.name = "startTime";
         newChange.target.value = els.startTime.value;
-      } else if (type == "e") {
+      } else if (type === "e") {
         newChange.target.name = "endTime";
         newChange.target.value = els.endTime.value;
       }
@@ -487,7 +623,47 @@
       if (!item) {
         window.alert("cannot take note for " + itemRow.dataset[key]);
       }
-      handlers.onItemNote(item);
+      const radio = HTML.radio("itemOptions");
+      const input = HTML.createElement("textarea");
+      document.appendChild(
+        HTML.modal({
+          blocking: true,
+          children: [
+            HTML.heading1("Add notes to item"),
+            HTML.table(
+              HTML.row(
+                HTML.cell("Item cannot be found"),
+                HTML.cell({ child: radio("missing") })
+              ),
+              HTML.row(
+                HTML.cell("Other (please specifiy below"),
+                HTML.cell({ child: radio("other") })
+              )
+            ),
+            input,
+          ],
+          okText: "Add note",
+          onOk: ({ modal }) => {
+            const choice = HTML.getRadioValue(modal);
+            let value = "";
+            if (choice === "missing") {
+              item.missing = true;
+              value = `${item.description} marked as missing`;
+            } else if (choice === "other") {
+              item.notes = [item.notes, input.value]
+                .filter((s) => s)
+                .join(", ");
+            }
+            FormPage.updateItems({
+              target: {
+                name: "items",
+                value,
+              },
+            });
+          },
+        })
+      );
+      input.focus();
     }
 
     function handleClickStaticTable(click) {
@@ -627,6 +803,10 @@
       return locked;
     }
 
+    function isSaved() {
+      return Changes.isSaved();
+    }
+
     /**
      * isShowing should verify if the user is currently on the single form view
      * @returns {bool}
@@ -763,6 +943,21 @@
     }
     function unlock() {
       locked = false;
+    }
+
+    function loseDataWarning(onOk) {
+      document.appendChild(
+        HTML.modal({
+          blocking: true,
+          children: [
+            HTML.heading1("Warning, your changes are not saved"),
+            HTML.paragraph("Are you sure?"),
+          ],
+          closeText: "Cancel",
+          okText: "Lose changes",
+          onOk,
+        })
+      );
     }
 
     /**
@@ -906,6 +1101,37 @@
       // app.showPage(formPage);
     }
 
+    function makeQuantityButtons(item, isArchive) {
+      if (isArchive || item.checkIn || item.isSerialized()) {
+        return document.createTextNode(item.getQuantity());
+      }
+      return HTML.createElement("span", {
+        children: [
+          HTML.createElement("button", {
+            class: "quantity",
+            onClick: () => handlers.onModalQuantityChange(item),
+            textContent: item.getQuantity(),
+          }),
+          HTML.createElement("button", {
+            class: "quantity",
+            onClick: () => {
+              const quantity = item.getQuantity();
+              item.changeQuantity(1);
+              updateItems({
+                target: {
+                  name: "items",
+                  value: `${item.description} qty ${quantity} to ${
+                    quantity + 1
+                  }`,
+                },
+              });
+            },
+            textContent: "+",
+          }),
+        ],
+      });
+    }
+
     function makeItemRow(item) {
       const isArchive = currentStack !== connections.getStack();
       elements.itemList.appendChild(
@@ -914,7 +1140,7 @@
           "data-id": item.id,
           "data-barcode": item.barcode,
           children: [
-            HTML.cell({ child: item.makeQuantityButtons(isArchive) }),
+            HTML.cell({ child: makeQuantityButtons(item, isArchive) }),
             HTML.cell(item.description),
             HTML.cell(item.id),
             HTML.cell(
@@ -926,7 +1152,7 @@
                     }),
                   }
             ),
-            HTML.cell({ child: item.makeCheckInButton(isArchive) }),
+            HTML.cell({ child: makeCheckInButton(item, isArchive) }),
           ],
         })
       );
@@ -939,6 +1165,88 @@
           }),
         })
       );
+    }
+
+    function makeCheckInButton(item, isArchive) {
+      if (item.checkedOutAgain) {
+        return document.createTextNode("");
+      }
+      if (item.missing) {
+        return HTML.createElement("span", {
+          class: "alert",
+          textContent: "ITEM IS MISSING",
+        });
+      }
+      if (isArchive || item.checkIn) {
+        return document.createTextNode(item.checkIn);
+      }
+      if (!item.checkOut || !item.checkedOut) {
+        return HTML.createElement("button", {
+          class: "create",
+          textContent: "Remove",
+          onClick: () => {
+            const form = connections.getCurrentForm();
+            const item = form.items.removeByItem(item);
+            updateItems({
+              target: {
+                name: "items",
+                value: item.description + " removed",
+              },
+            });
+          },
+        });
+      }
+      if (!item.checkIn && item.isSerialized()) {
+        return HTML.createElement("i", {
+          textContent: "Scan barcode to return",
+        });
+      }
+      const id = item.id || item.barcode;
+      const checkInButton = HTML.createElement("button", {
+        class: "action",
+        textContent: "Check In",
+        onClick: () => {
+          const savedItem = FormPage.getSavedForm().items.find(
+            (item) => (item.barcode || item.id) == id
+          );
+          if (!savedItem) {
+            return window.alert(
+              "This item was just checked-out. Update or revert the form to continue."
+            );
+          }
+          const quantityToReturn =
+            savedItem.getQuantity() > 1
+              ? document.querySelector(`select[data-itemid="${id}"]`).value
+              : undefined;
+          handlers.onItemQuantityChange(savedItem, quantityToReturn, false);
+        },
+      });
+      const quantity = item.getQuantity();
+      if (quantity > 1) {
+        return HTML.createElement("span", {
+          "data-id": item.id,
+          "data-barcode": item.barcode,
+          children: [
+            checkInButton,
+            HTML.createElement("select", {
+              class: "selectQuantity",
+              "data-itemid": id,
+              children: [
+                HTML.createElement("option", {
+                  value: "all",
+                  textContent: "All",
+                }),
+                ...Array.from({ length: quantity - 1 }).map((_, i) =>
+                  HTML.createElement("option", {
+                    textContent: String(i + 1),
+                  })
+                ),
+              ],
+            }),
+          ],
+        });
+      }
+      return checkInButton;
     }
 
     function makeStudentRow(student) {

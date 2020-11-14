@@ -164,12 +164,6 @@ function doPost(request) {
   return response;
 }
 
-/** @todo - most likely will be called by doPost */
-/* exported deleteForm_ */
-function deleteForm_() {
-  throw "not implemented";
-}
-
 /** @see doGet */
 function getUser_() {
   return Session.getActiveUser().getEmail();
