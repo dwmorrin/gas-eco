@@ -12,12 +12,8 @@ Student_
 */
 /* ********* GLOBAL VARIABLES *********** */
 var index = {
-  bookings: {
-    SHEET_ID: "1zl4FBglYgCdR_FMdfbIQOOpnt9b8TwgnjxzRwcekPrY",
-    SHEET_NAME: "Daily Booking Data",
-  },
   forms: {
-    SHEET_ID: "1yMDg9w-vjZxeOYgES-XsicoWp9VvjV3xqCmdZhAyNI4",
+    SHEET_ID: "1q8i1VjR8DdBTSl5KGbxVJByCcqQIaRhJXBq89L8h29I",
     SHEET_NAME: "Forms",
     REJECTED_NAME: "Rejected",
     ARCHIVE_NAME: "Archive",
@@ -34,7 +30,7 @@ var index = {
     CHECKED_OUT: 13,
   },
   students: {
-    SHEET_ID: "126XmGFPuNPJpJPF7aKNFSeaOAgvFNerMYdnFg2F7YAA",
+    SHEET_ID: "1q5AW6L1Cya7PhSe1o4UmTjHw4qCE6e0LArVLycv8xKE",
     SHEET_NAME: "Students",
     SIGNATURE_SHEET_NAME: "Validation",
     ID: 0,

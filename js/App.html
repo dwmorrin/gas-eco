@@ -187,7 +187,7 @@
 
     // initial server calls
     withErrorHandler
-      .withSuccessHandler()
+      .withSuccessHandler(onOpenForms)
       .doGet({ get: "openForms", init: true });
     withErrorHandler
       .withSuccessHandler(
@@ -233,6 +233,7 @@
      * tryUnlock controls when the loading page switches to the open forms page
      */
     function tryUnlock() {
+      console.log("trying to unlock");
       const rosterLength = Omnibox.getRoster().length,
         inventoryLength = Omnibox.getInventory().getLength(),
         stack = OpenFormsPage.getStack(),
