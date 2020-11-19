@@ -23,15 +23,13 @@
       if (timeoutId == null) {
         return;
       }
-      document.appendChild(
-        HTML.modal({
-          child: HTML.paragraph(
-            "Looks like the server is taking a long time. " +
-              "Paper forms are available either in the filing cabinet at the desk " +
-              'or look for "Equipment Checkout Form.pdf" on your computer.'
-          ),
-        })
-      );
+      HTML.modal({
+        child: HTML.paragraph(
+          "Looks like the server is taking a long time. " +
+            "Paper forms are available either in the filing cabinet at the desk " +
+            'or look for "Equipment Checkout Form.pdf" on your computer.'
+        ),
+      });
       timeoutId = null;
     }
     function hide() {

@@ -33,11 +33,9 @@
 
     // Server runners
     const withErrorHandler = google.script.run.withFailureHandler((error) =>
-      document.appendChild(
-        HTML.modal({
-          children: [HTML.heading1("Error"), HTML.paragraph(error.message)],
-        })
-      )
+      HTML.modal({
+        children: [HTML.heading1("Error"), HTML.paragraph(error.message)],
+      })
     );
     // const run = withErrorHandler.withSuccessHandler(app.refresh);
 
@@ -64,14 +62,12 @@
       },
       onNeedsSignature: (netid) => {
         const modal = HTML.modal({
-          blocking: true,
           children: [
             HTML.heading1("Add signature"),
             HTML.paragraph("Please wait..."),
           ],
           closeText: "Cancel",
         });
-        document.appendChild(modal);
         withErrorHandler
           .withSuccessHandler((_, context) => {
             if (!context.modal) {
@@ -79,27 +75,24 @@
               return;
             }
             context.modal.remove();
-            document.appendChild(
-              HTML.modal({
-                blocking: true,
-                children: [
-                  HTML.heading1("Add signature"),
-                  HTML.paragraph(
-                    "Production area policy acknowledgment signature not found " +
-                      "for this person. All persons must read the policy and have " +
-                      "a signature on file. Please use the tablet to show the " +
-                      "person the policy and capture their signature. " +
-                      "Click the 'Signature Done/Recheck' when they are finished " +
-                      "using the tablet."
-                  ),
-                ],
-                okText: "Signature Done/Recheck",
-                onOk: () =>
-                  withErrorHandler
-                    .withSuccessHandler(onRoster)
-                    .doGet({ get: "students", init: false }),
-              })
-            );
+            HTML.modal({
+              children: [
+                HTML.heading1("Add signature"),
+                HTML.paragraph(
+                  "Production area policy acknowledgment signature not found " +
+                    "for this person. All persons must read the policy and have " +
+                    "a signature on file. Please use the tablet to show the " +
+                    "person the policy and capture their signature. " +
+                    "Click the 'Signature Done/Recheck' when they are finished " +
+                    "using the tablet."
+                ),
+              ],
+              okText: "Signature Done/Recheck",
+              onOk: () =>
+                withErrorHandler
+                  .withSuccessHandler(onRoster)
+                  .doGet({ get: "students", init: false }),
+            });
           })
           .withUserObject({ modal })
           .doPost({ post: "startSignature", netid });
@@ -125,8 +118,10 @@
             })
             .doGet({ get: "openForms" });
       },
+      onDisplayForm: () => showPage(FormPage),
       onItemMetaClick: Omnibox.setInputAndParse,
       onItemQuantityChange: Omnibox.handleItem,
+      onManualEntry: Omnibox.manualEntry,
       onModalQuantityChange: (item) => Omnibox.makeQuantityChangeDialog(item)(),
       onParseInput: Omnibox.parse,
       onStudentMetaClick: Omnibox.setInputAndParse,
@@ -233,7 +228,6 @@
      * tryUnlock controls when the loading page switches to the open forms page
      */
     function tryUnlock() {
-      console.log("trying to unlock");
       const rosterLength = Omnibox.getRoster().length,
         inventoryLength = Omnibox.getInventory().getLength(),
         stack = OpenFormsPage.getStack(),
@@ -282,18 +276,15 @@
     function onCollision(response) {
       response.storedForm = JSON.parse(response.storedForm);
       response.submittedForm = JSON.parse(response.submittedForm);
-      document.appendChild(
-        HTML.modal({
-          blocking: true,
-          children: [
-            HTML.heading1("Uh-oh, your form conflicts with another form"),
-            HTML.paragraph(
-              "Unfortunately a newer version of the form has been found on the server.  In a future update you can save your work, but for now we have to destroy it.  Sorry!!"
-            ),
-          ],
-          onClose: () => FormPage.displayForm(JSON.parse(response.storedForm)),
-        })
-      );
+      HTML.modal({
+        children: [
+          HTML.heading1("Uh-oh, your form conflicts with another form"),
+          HTML.paragraph(
+            "Unfortunately a newer version of the form has been found on the server.  In a future update you can save your work, but for now we have to destroy it.  Sorry!!"
+          ),
+        ],
+        onClose: () => FormPage.displayForm(JSON.parse(response.storedForm)),
+      });
     }
 
     function onOpenForms(response) {
@@ -358,25 +349,22 @@
               post: "rejected",
               form: staleForm.stringify(),
             });
-          document.appendChild(
-            HTML.modal({
-              blocking: true,
-              children: [
-                HTML.heading1("Uh-oh, your form conflicts with another form"),
-                HTML.paragraph(
-                  "Unfortunately, no automatic fix is available, but your form " +
-                    'has been saved.  To keep viewing your form, choose "Close".'
-                ),
-              ],
-              okText: "Switch to the saved form",
-              onOk: () => {
-                FormPage.getCurrentStack().replaceCurrent(newForm);
-                // app.changes.saved = true;
-                FormPage.lockButtons();
-                FormPage.displayForm(newForm);
-              },
-            })
-          );
+          HTML.modal({
+            children: [
+              HTML.heading1("Uh-oh, your form conflicts with another form"),
+              HTML.paragraph(
+                "Unfortunately, no automatic fix is available, but your form " +
+                  'has been saved.  To keep viewing your form, choose "Close".'
+              ),
+            ],
+            okText: "Switch to the saved form",
+            onOk: () => {
+              FormPage.getCurrentStack().replaceCurrent(newForm);
+              // app.changes.saved = true;
+              FormPage.lockButtons();
+              FormPage.displayForm(newForm);
+            },
+          });
         } else {
           // editing the current form; keep checking
           // app.pages.form.setTimeout(); //! TODO rethink

@@ -30,6 +30,7 @@
       getRoster,
       handleItem,
       makeQuantityChangeDialog,
+      manualEntry,
       parse,
       setConnections,
       setHandlers,
@@ -107,29 +108,25 @@
             );
             return;
           }
-          document.appendChild(
-            HTML.modal({
-              blocking: true,
-              children: [
-                HTML.heading1("Check out again?"),
-                HTML.paragraph(
-                  `${itemOnForm.description} was already checked back in.`
-                ),
-              ],
-              okText: "Check out again",
-              onOk: () => {
-                itemOnForm.checkIn = "";
-                itemOnForm.checkedOutAgain = true;
-                handlers.onItemChange({
-                  target: {
-                    name: "items",
-                    value: `${itemOnForm.description} checked out again`,
-                  },
-                });
-              },
-            })
-          );
-          return;
+          return HTML.modal({
+            children: [
+              HTML.heading1("Check out again?"),
+              HTML.paragraph(
+                `${itemOnForm.description} was already checked back in.`
+              ),
+            ],
+            okText: "Check out again",
+            onOk: () => {
+              itemOnForm.checkIn = "";
+              itemOnForm.checkedOutAgain = true;
+              handlers.onItemChange({
+                target: {
+                  name: "items",
+                  value: `${itemOnForm.description} checked out again`,
+                },
+              });
+            },
+          });
         } else if (itemOnForm.checkOut) {
           // Its a check-in
           if (!savedItem || !savedItem.checkOut || itemOnForm.checkedOutAgain) {
@@ -165,34 +162,31 @@
      * or check out more of the same item
      */
     function getItemAction(item) {
-      document.appendChild(
-        HTML.modal({
-          blocking: true,
-          children: [
-            HTML.heading1("Check in or out?"),
-            HTML.table(
-              HTML.row(
-                HTML.cell("Check the item back in?"),
-                HTML.cell({
-                  child: HTML.createElement("button", {
-                    textContent: "Check In",
-                    onClick: () => handleItem(item, "all", false),
-                  }),
-                })
-              ),
-              HTML.row(
-                HTML.cell("Check out more of these?"),
-                HTML.cell({
-                  child: HTML.createElement("button", {
-                    textContent: "Check Out",
-                    onClick: makeQuantityChangeDialog(item),
-                  }),
-                })
-              )
+      HTML.modal({
+        children: [
+          HTML.heading1("Check in or out?"),
+          HTML.table(
+            HTML.row(
+              HTML.cell("Check the item back in?"),
+              HTML.cell({
+                child: HTML.createElement("button", {
+                  textContent: "Check In",
+                  onClick: () => handleItem(item, "all", false),
+                }),
+              })
             ),
-          ],
-        })
-      );
+            HTML.row(
+              HTML.cell("Check out more of these?"),
+              HTML.cell({
+                child: HTML.createElement("button", {
+                  textContent: "Check Out",
+                  onClick: makeQuantityChangeDialog(item),
+                }),
+              })
+            )
+          ),
+        ],
+      });
     }
 
     function makeQuantityChangeDialog(item) {
@@ -200,20 +194,17 @@
         class: "newQuantity",
       });
       return () =>
-        document.appendChild(
-          HTML.modal({
-            blocking: true,
-            children: [
-              HTML.heading1("Change quantity"),
-              HTML.paragraph(
-                `Enter the new quantity: (current quantity: ${item.getQuantity()})`
-              ),
-              newQuantityInput,
-            ],
-            okText: "Ok",
-            onOk: makeQuantityHandler(item, newQuantityInput),
-          })
-        );
+        HTML.modal({
+          children: [
+            HTML.heading1("Change quantity"),
+            HTML.paragraph(
+              `Enter the new quantity: (current quantity: ${item.getQuantity()})`
+            ),
+            newQuantityInput,
+          ],
+          okText: "Ok",
+          onOk: makeQuantityHandler(item, newQuantityInput),
+        });
     }
 
     function makeQuantityHandler(item, newQuantityInput) {
@@ -221,9 +212,7 @@
         const quantity = +newQuantityInput.value;
         const savedItem = connections
           .getSavedForm()
-          .items.find(
-            ({ description }) => description === item.description
-          );
+          .items.find(({ description }) => description === item.description);
         if (!item.checkedOutAgain && savedItem) {
           const savedQuantity = savedItem.getQuantity();
           if (quantity < savedQuantity) {
@@ -361,37 +350,34 @@
           value: "codabar",
           placeholder: "enter student's NetID",
         });
-        document.appendChild(
-          HTML.modal({
-            blocking: true,
-            children: [
-              HTML.heading1("ID not recognized"),
-              HTML.paragraph(
-                "If you scanned an ID, add it to the student's info by " +
-                  "submitting their NetID.  If you think you are seeing this " +
-                  'message in error, choose "close".'
-              ),
-              input,
-            ],
-            okText: "Submit",
-            onOk: () => {
-              const netId = input.value;
-              const student = Omnibox.getRoster().find(
-                (student) => student.netId.toLowerCase() === netId
+        HTML.modal({
+          children: [
+            HTML.heading1("ID not recognized"),
+            HTML.paragraph(
+              "If you scanned an ID, add it to the student's info by " +
+                "submitting their NetID.  If you think you are seeing this " +
+                'message in error, choose "close".'
+            ),
+            input,
+          ],
+          okText: "Submit",
+          onOk: () => {
+            const netId = input.value;
+            const student = getRoster().find(
+              (student) => student.netId.toLowerCase() === netId
+            );
+            if (!student) {
+              return window.alert(
+                "Hmmm, NetID " +
+                  netId +
+                  " does not match a current student. " +
+                  "Check that it was entered correctly, try refreshing the browser, " +
+                  "or submit a trouble report."
               );
-              if (!student) {
-                return window.alert(
-                  "Hmmm, NetID " +
-                    netId +
-                    " does not match a current student. " +
-                    "Check that it was entered correctly, try refreshing the browser, " +
-                    "or submit a trouble report."
-                );
-              }
-              handlers.onNewCodabar({ netId, codabar: value });
-            },
-          })
-        );
+            }
+            handlers.onNewCodabar({ netId, codabar: value });
+          },
+        });
         input.focus();
         return;
       }
@@ -421,42 +407,7 @@
         // assume it's a barcode
         if (value === "10000") {
           clear();
-          // handlers.onManualEntryStart();
-          const input = HTML.createElement("textarea");
-          document.appendChild(
-            HTML.modal({
-              children: [
-                HTML.heading1("Check out item without barcode"),
-                HTML.paragraph(
-                  "Describe the item: (required, provide as much detail as possible)"
-                ),
-                input,
-              ],
-              okText: "Check out",
-              onOk: () => {
-                const description = input.value;
-                if (description === "") {
-                  return;
-                }
-                Utility.digestMessage(description).then((hash) => {
-                  Omnibox.handleItem({
-                    id: "MANUAL-" + Utility.hexString(hash).substring(0, 5),
-                    checkIn: null,
-                    checkOut: null,
-                    quantity: 1,
-                    serialized: false,
-                    barcode: null,
-                    description,
-                    checkedOut: false,
-                    notes: "",
-                    missing: false,
-                  });
-                });
-              },
-            })
-          );
-          input.focus();
-          return;
+          return manualEntry();
         }
         parsed = inventory.getByBarcode(value);
       }
@@ -488,37 +439,71 @@
       ).filter((result) => result.weight < 4);
 
       if (queryResults.length > 0) {
-        document.appendChild(
-          HTML.modal({
-            blocking: true,
-            children: [
-              HTML.heading1("Search results"),
-              HTML.paragraph("Are you looking for one of these?"),
-              HTML.table(
-                ...queryResults.reduce((rows, { value }) => {
-                  const id = value.netId || value.id || value.barcode;
-                  if (!id) return rows;
-                  return [
-                    ...rows,
-                    HTML.createElement("tr", {
-                      children: [
-                        HTML.cell(value.name || value.description),
-                        HTML.cell(id),
-                      ],
-                      onClick: () => setInputAndParse(id),
-                    }),
-                  ];
-                }, [])
-              ),
-            ],
-          })
-        );
-        return;
+        return HTML.modal({
+          children: [
+            HTML.heading1("Search results"),
+            HTML.paragraph("Are you looking for one of these?"),
+            HTML.table(
+              ...queryResults.reduce((rows, { value }) => {
+                const id = value.netId || value.id || value.barcode;
+                if (!id) return rows;
+                return [
+                  ...rows,
+                  HTML.createElement("tr", {
+                    children: [
+                      HTML.cell(value.name || value.description),
+                      HTML.cell(id),
+                    ],
+                    onClick: () => setInputAndParse(id),
+                  }),
+                ];
+              }, [])
+            ),
+          ],
+        });
       }
-      window.alert(
-        `"${value}" not found.  You can type in item IDs like "NEU-1", or names like "John Smith".`
-      );
+      HTML.modal({
+        child: HTML.paragraph(
+          `"${value}" not found.  You can type in item IDs like "NEU-1", or names like "John Smith".`
+        ),
+      });
     }
+
+    function manualEntry() {
+      const input = HTML.createElement("textarea");
+      HTML.modal({
+        children: [
+          HTML.heading1("Check out item without barcode"),
+          HTML.paragraph(
+            "Describe the item: (required, provide as much detail as possible)"
+          ),
+          input,
+        ],
+        okText: "Check out",
+        onOk: () => {
+          const description = input.value;
+          if (description === "") {
+            return;
+          }
+          Utility.digestMessage(description).then((hash) => {
+            handleItem({
+              id: "MANUAL-" + Utility.hexString(hash).substring(0, 5),
+              checkIn: null,
+              checkOut: null,
+              quantity: 1,
+              serialized: false,
+              barcode: null,
+              description,
+              checkedOut: false,
+              notes: "",
+              missing: false,
+            });
+          });
+        },
+      });
+      input.focus();
+    }
+
     /**
      * query searches through the supplied arrays inspected keys, as found with
      *   the supplied key making function, and returns a weighted result array.

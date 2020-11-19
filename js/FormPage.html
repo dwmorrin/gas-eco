@@ -86,8 +86,10 @@
     const noop = () => undefined;
     const handlers = {
       onDelete: noop,
+      onDisplayForm: noop,
       onItemMetaClick: noop,
       onItemQuantityChange: noop,
+      onManualEntry: noop,
       onModalQuantityChange: noop,
       onParseInput: noop,
       onStudentMetaClick: noop,
@@ -104,22 +106,19 @@
     let touched = new Set();
 
     elements.advanceBookingButton.addEventListener("click", () => {
-      document.appendChild(
-        HTML.modal({
-          blocking: true,
-          children: [
-            HTML.heading1("Save for later?"),
-            HTML.paragraph(
-              "All sign-in and check-out info will be removed. " +
-                "Add all people and items before saving. " +
-                "You can only do this once."
-            ),
-          ],
-          closeText: "Cancel",
-          okText: "Save as advance booking",
-          onOk: makeAdvanceBooking,
-        })
-      );
+      HTML.modal({
+        children: [
+          HTML.heading1("Save for later?"),
+          HTML.paragraph(
+            "All sign-in and check-out info will be removed. " +
+              "Add all people and items before saving. " +
+              "You can only do this once."
+          ),
+        ],
+        closeText: "Cancel",
+        okText: "Save as advance booking",
+        onOk: makeAdvanceBooking,
+      });
     });
     elements.changeLogButton.addEventListener("click", () => {
       const changes = [
@@ -133,23 +132,21 @@
           }, []),
         ...Changes.getStack(),
       ];
-      document.appendChild(
-        HTML.modal({
-          children: [
-            HTML.table(
-              HTML.row(...["Time", "User", "Field", "Value"].map(HTML.cell))
-            ),
-            ...changes.map(({ timestamp, author, name, value }) =>
-              HTML.row(
-                HTML.cell(DateUtils.getFormattedDate(new Date(timestamp))),
-                HTML.cell(author),
-                HTML.cell(Utility.uncamelCase(name)),
-                HTML.cell(value)
-              )
-            ),
-          ],
-        })
-      );
+      HTML.modal({
+        children: [
+          HTML.table(
+            HTML.row(...["Time", "User", "Field", "Value"].map(HTML.cell))
+          ),
+          ...changes.map(({ timestamp, author, name, value }) =>
+            HTML.row(
+              HTML.cell(DateUtils.getFormattedDate(new Date(timestamp))),
+              HTML.cell(author),
+              HTML.cell(Utility.uncamelCase(name)),
+              HTML.cell(value)
+            )
+          ),
+        ],
+      });
     });
     elements.copyButton.addEventListener("click", () =>
       Utility.copyToClipboard(
@@ -160,28 +157,25 @@
       if (FormPage.getSavedForm().isBlank()) {
         return handlers.onDelete();
       }
-      document.appendChild(
-        HTML.modal({
-          blocking: true,
-          child: HTML.paragraph(
-            "This will close out the form and mark it deleted. Are you sure?"
-          ),
-          closeText: "Cancel",
-          onOk: () => {
-            FormPage.lock();
-            FormPage.setDeleteFormButtonToSpinner();
-            const form = connections.getCurrentForm();
-            Changes.add({
-              target: {
-                name: "delete",
-                value: "form deleted",
-              },
-            });
-            form.notes.push(Changes.makeNote());
-            handlers.onDelete(form.stringify());
-          },
-        })
-      );
+      HTML.modal({
+        child: HTML.paragraph(
+          "This will close out the form and mark it deleted. Are you sure?"
+        ),
+        closeText: "Cancel",
+        onOk: () => {
+          FormPage.lock();
+          FormPage.setDeleteFormButtonToSpinner();
+          const form = connections.getCurrentForm();
+          Changes.add({
+            target: {
+              name: "delete",
+              value: "form deleted",
+            },
+          });
+          form.notes.push(Changes.makeNote());
+          handlers.onDelete(form.stringify());
+        },
+      });
     });
     elements.duplicateButton.addEventListener("click", () => {
       const newForm = new Form(FormPage.getSavedForm(), true);
@@ -191,6 +185,9 @@
       // app.changes.saved = false; //! TODO - do we need this?
       FormPage.displayForm(newForm);
     });
+    elements.manualButton.addEventListener("click", () =>
+      handlers.onManualEntry()
+    );
     elements.nextFormButton.addEventListener("click", getNext);
     elements.previousFormButton.addEventListener("click", getPrevious);
     elements.itemList.addEventListener("click", handleClickItem);
@@ -212,41 +209,35 @@
     );
     elements.newNoteButton.addEventListener("click", () => {
       const input = HTML.createElement("textarea");
-      document.body.appendChild(
-        HTML.modal({
-          blocking: true,
-          children: [
-            HTML.heading1("New note"),
-            HTML.paragraph("Enter a note"),
-            input,
-          ],
-          okText: "Save note",
-          onOk: () => saveNote(input.value),
-        })
-      );
+      HTML.modal({
+        children: [
+          HTML.heading1("New note"),
+          HTML.paragraph("Enter a note"),
+          input,
+        ],
+        okText: "Save note",
+        onOk: () => saveNote(input.value),
+      });
       input.focus();
     });
     elements.omniboxButton.addEventListener("click", handlers.onParseInput);
     elements.undoButton.addEventListener("click", () =>
-      document.appendChild(
-        HTML.modal({
-          blocking: true,
-          children: [
-            HTML.heading1("Undo all changes"),
-            HTML.paragraph(
-              "Do you want to undo all changes since the last save?"
-            ),
-          ],
-          okText: "Revert to saved form",
-          onOk: () => {
-            // if (!window.isNaN(app.pages.form.autosaveID)) {
-            //   window.clearTimeout(app.pages.form.autosaveID);
-            //   app.pages.form.autosaveID = NaN;
-            // }
-            displayForm(connections.getCurrentForm());
-          },
-        })
-      )
+      HTML.modal({
+        children: [
+          HTML.heading1("Undo all changes"),
+          HTML.paragraph(
+            "Do you want to undo all changes since the last save?"
+          ),
+        ],
+        okText: "Revert to saved form",
+        onOk: () => {
+          // if (!window.isNaN(app.pages.form.autosaveID)) {
+          //   window.clearTimeout(app.pages.form.autosaveID);
+          //   app.pages.form.autosaveID = NaN;
+          // }
+          displayForm(connections.getCurrentForm());
+        },
+      })
     );
     elements.container.addEventListener("keydown", (event) => {
       if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
@@ -501,28 +492,25 @@
       }
       if (change.target.value === "Other") {
         const input = HTML.createElement("input", { type: "text" });
-        document.appendChild(
-          HTML.modal({
-            blocking: true,
-            children: [
-              HTML.heading1("Location: Other"),
-              HTML.paragraph(
-                "Location must be on the 5th or 6th floor of 370 Jay Street."
-              ),
-              input,
-            ],
-            okText: "Set location",
-            onOk: () =>
-              handleChange({
-                target: {
-                  name: "location",
-                  value: input.value || "none",
-                },
-              }),
-            onClose: () =>
-              handleChange({ target: { name: "location", value: "none" } }),
-          })
-        );
+        HTML.modal({
+          children: [
+            HTML.heading1("Location: Other"),
+            HTML.paragraph(
+              "Location must be on the 5th or 6th floor of 370 Jay Street."
+            ),
+            input,
+          ],
+          okText: "Set location",
+          onOk: () =>
+            handleChange({
+              target: {
+                name: "location",
+                value: input.value || "none",
+              },
+            }),
+          onClose: () =>
+            handleChange({ target: { name: "location", value: "none" } }),
+        });
         input.focus();
         return;
       }
@@ -625,44 +613,39 @@
       }
       const radio = HTML.radio("itemOptions");
       const input = HTML.createElement("textarea");
-      document.appendChild(
-        HTML.modal({
-          blocking: true,
-          children: [
-            HTML.heading1("Add notes to item"),
-            HTML.table(
-              HTML.row(
-                HTML.cell("Item cannot be found"),
-                HTML.cell({ child: radio("missing") })
-              ),
-              HTML.row(
-                HTML.cell("Other (please specifiy below"),
-                HTML.cell({ child: radio("other") })
-              )
+      HTML.modal({
+        children: [
+          HTML.heading1("Add notes to item"),
+          HTML.table(
+            HTML.row(
+              HTML.cell("Item cannot be found"),
+              HTML.cell({ child: radio("missing") })
             ),
-            input,
-          ],
-          okText: "Add note",
-          onOk: ({ modal }) => {
-            const choice = HTML.getRadioValue(modal);
-            let value = "";
-            if (choice === "missing") {
-              item.missing = true;
-              value = `${item.description} marked as missing`;
-            } else if (choice === "other") {
-              item.notes = [item.notes, input.value]
-                .filter((s) => s)
-                .join(", ");
-            }
-            FormPage.updateItems({
-              target: {
-                name: "items",
-                value,
-              },
-            });
-          },
-        })
-      );
+            HTML.row(
+              HTML.cell("Other (please specifiy below"),
+              HTML.cell({ child: radio("other") })
+            )
+          ),
+          input,
+        ],
+        okText: "Add note",
+        onOk: ({ modal }) => {
+          const choice = HTML.getRadioValue(modal);
+          let value = "";
+          if (choice === "missing") {
+            item.missing = true;
+            value = `${item.description} marked as missing`;
+          } else if (choice === "other") {
+            item.notes = [item.notes, input.value].filter((s) => s).join(", ");
+          }
+          FormPage.updateItems({
+            target: {
+              name: "items",
+              value,
+            },
+          });
+        },
+      });
       input.focus();
     }
 
@@ -736,8 +719,7 @@
     function handleStudentNote(student) {
       const radio = HTML.radio("studentOptions");
       const input = HTML.createElement("textarea");
-      const modal = HTML.modal({
-        blocking: true,
+      HTML.modal({
         children: [
           HTML.heading1("Add notes to student"),
           HTML.table(
@@ -757,7 +739,7 @@
           input,
         ],
         okText: "Submit",
-        onOk: () => {
+        onOk: ({ modal }) => {
           const choice = HTML.getRadioValue(modal);
           const textValue = input.value;
 
@@ -781,7 +763,6 @@
           }
         },
       });
-      document.body.appendChild(modal);
       input.focus();
     }
 
@@ -926,19 +907,16 @@
         currentStack === connections.getStack() &&
         currentStack.getCurrentForm().isNoShow()
       ) {
-        document.body.appendChild(
-          HTML.modal({
-            blocking: true,
-            child: HTML.paragraph(
-              'The start time has passed and no one has checked in.  Do you want to close this form as a "no show?"'
-            ),
-            closeText: "Cancel",
-            onOk: () =>
-              handleChange({
-                target: { name: "students", value: "no show" },
-              }),
-          })
-        );
+        HTML.modal({
+          child: HTML.paragraph(
+            'The start time has passed and no one has checked in.  Do you want to close this form as a "no show?"'
+          ),
+          closeText: "Cancel",
+          onOk: () =>
+            handleChange({
+              target: { name: "students", value: "no show" },
+            }),
+        });
       }
     }
     function unlock() {
@@ -946,18 +924,15 @@
     }
 
     function loseDataWarning(onOk) {
-      document.appendChild(
-        HTML.modal({
-          blocking: true,
-          children: [
-            HTML.heading1("Warning, your changes are not saved"),
-            HTML.paragraph("Are you sure?"),
-          ],
-          closeText: "Cancel",
-          okText: "Lose changes",
-          onOk,
-        })
-      );
+      HTML.modal({
+        children: [
+          HTML.heading1("Warning, your changes are not saved"),
+          HTML.paragraph("Are you sure?"),
+        ],
+        closeText: "Cancel",
+        okText: "Lose changes",
+        onOk,
+      });
     }
 
     /**
@@ -1096,9 +1071,7 @@
         disable();
       }
 
-      //! TODO rethink this
-      // app.spinner.element.classList.add("hidden");
-      // app.showPage(formPage);
+      handlers.onDisplayForm();
     }
 
     function makeQuantityButtons(item, isArchive) {
