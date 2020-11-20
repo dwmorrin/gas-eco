@@ -10,33 +10,48 @@
       getFirstChild,
       getNextSibling,
       getRadioValue,
+      headerCell,
       heading1,
-      makeRadio,
+      labeledCheckbox,
+      labeledDateInput,
+      labeledInput,
+      labeledRadio,
       modal,
+      page,
       paragraph,
       radio,
       row,
       spinner,
       table,
+      tableBody,
+      tableHead,
       toast,
     };
 
     function attributes(el, attrs) {
-      for (const key in attrs) {
-        if (key === "class") el.classList.add(...attrs[key].split(/\s+/));
-        else if (key === "removeClass") el.classList.remove(attrs[key]);
-        else if (key === "child") el.appendChild(attrs[key]);
-        else if (key === "children")
-          attrs[key].forEach((child) => el.appendChild(child));
-        else if (key === "innerHTML") el.innerHTML = attrs[key];
-        else if (key === "textContent") el.textContent = attrs[key];
-        else if (key === "onClick") el.addEventListener("click", attrs[key]);
-        else if (["selected", "checked"].includes(key)) {
-          // only create attribute if true
-          attrs[key] && el.setAttribute(key, attrs[key]);
-        } else el.setAttribute(key, attrs[key]);
+      try {
+        for (const key in attrs) {
+          if (key === "class") el.classList.add(...attrs[key].split(/\s+/));
+          else if (key === "removeClass") el.classList.remove(attrs[key]);
+          else if (key === "child") el.appendChild(attrs[key]);
+          else if (key === "children")
+            attrs[key].forEach((child) => el.appendChild(child));
+          else if (key === "innerHTML") el.innerHTML = attrs[key];
+          else if (key === "textContent") el.textContent = attrs[key];
+          else if (key === "onClick") el.addEventListener("click", attrs[key]);
+          else if (["selected", "checked"].includes(key)) {
+            // only create attribute if true
+            attrs[key] && el.setAttribute(key, attrs[key]);
+          } else el.setAttribute(key, attrs[key]);
+        }
+        return el;
+      } catch (error) {
+        console.group();
+        console.log("attributes failed");
+        console.log({ el, attrs });
+        console.groupEnd();
+        return document.createElement("div");
       }
-      return el;
     }
 
     function createElement(name, attrs) {
@@ -79,6 +94,19 @@
       return nextSibling;
     }
 
+    function labeledRadio(name) {
+      return (textContent, value, checked = false) =>
+        createElement("label", {
+          textContent,
+          child: createElement("input", {
+            type: radio,
+            name,
+            value,
+            checked,
+          }),
+        });
+    }
+
     function radio(name) {
       return (value, checked = false) =>
         createElement("input", {
@@ -87,21 +115,6 @@
           value,
           checked,
         });
-    }
-
-    function makeRadio({ name, values, checked }) {
-      return values.reduce(
-        (radio, value) => ({
-          ...radio,
-          [value]: createElement("input", {
-            type: "radio",
-            name,
-            value,
-            checked: value === checked,
-          }),
-        }),
-        {}
-      );
     }
 
     function getRadioValue(container = document) {
@@ -115,18 +128,34 @@
       return createElement("div", { class: "spinner" });
     }
 
-    function table(...rows) {
-      return HTML.createElement("table", { children: rows });
+    function table(...children) {
+      return HTML.createElement("table", { children });
+    }
+
+    function tableBody(...children) {
+      return HTML.createElement("tbody", { children });
+    }
+
+    function tableHead(...children) {
+      return HTML.createElement("thead", { children });
     }
 
     function row(...cells) {
       return HTML.createElement("tr", { children: cells });
     }
 
+    function headerCell(attrs) {
+      return stringShorthand("th", attrs);
+    }
+
     function cell(attrs) {
+      return stringShorthand("td", attrs);
+    }
+
+    function stringShorthand(tagName, attrs) {
       if (typeof attrs === "string")
-        return HTML.createElement("td", { textContent: attrs });
-      else return HTML.createElement("td", attrs);
+        return HTML.createElement(tagName, { textContent: attrs });
+      else return HTML.createElement(tagName, attrs);
     }
 
     function modal({
@@ -202,6 +231,41 @@
       });
       document.body.appendChild(container);
       window.setTimeout(() => container.remove(), 5000);
+    }
+
+    function page({
+      name,
+      children,
+      appendToBody = true,
+      hidden = true,
+      insert,
+    }) {
+      const div = createElement("div", {
+        class: `${name}Container${hidden ? " hidden" : ""}`,
+        children,
+      });
+      if (insert !== undefined) document.insertBefore(div, insert);
+      else appendToBody && document.body.appendChild(div);
+      return div;
+    }
+
+    function labeledInput(textContent, inputAttrs = {}) {
+      return createElement("label", {
+        textContent,
+        child: createElement("input", inputAttrs),
+      });
+    }
+
+    function labeledDateInput(textContent, name) {
+      return labeledInput(textContent, {
+        name,
+        type: "date",
+        placeholder: "yyyy-mm-dd",
+      });
+    }
+
+    function labeledCheckbox(textContent, name, checked = false) {
+      return labeledInput(textContent, { name, type: "checkbox", checked });
     }
   })();
 </script>

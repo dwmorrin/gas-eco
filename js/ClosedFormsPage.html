@@ -1,5 +1,5 @@
 <script>
-  /* global Config HTML Stack DateUtils */
+  /* global Config HTML Stack DateUtils Utility */
   /* exported ClosedFormsPage */
   const ClosedFormsPage = (function () {
     const noop = () => undefined;
@@ -10,14 +10,91 @@
     const connections = {
       setCurrentStack: noop,
     };
+    const matchItemsRadio = HTML.labeledRadio("matchItems");
     const elements = {
-      container: document.querySelector("div.archiveContainer"),
-      queryButton: document.querySelector('button[value="query"]'),
-      queryCount: document.querySelector("span.querycount"),
-      queryInputs: document.querySelector("form.query"),
-      tableBody: document.querySelector("tbody.archive"),
-      tableHead: document.querySelector("thead.archive"),
+      // container: HTML.createElement("div", { class: "archiveContainer" }),
+      queryButton: HTML.createElement("button", {
+        class: "action",
+        textContent: "Update View",
+      }),
+      queryCount: HTML.createElement("span", { class: "querycount" }),
+      queryInputs: HTML.createElement("form", {
+        class: "query",
+        children: [
+          document.createTextNode("Start Time Range (Required):"),
+          HTML.labeledDateInput("Range Start", "start"),
+          HTML.labeledDateInput("Range End", "end"),
+          HTML.createElement("label", {
+            textContent: "Location",
+            child: HTML.createElement("select", {
+              name: "location",
+              children: ["All", ...Config.locations, "Other"].map((name) =>
+                HTML.createElement("option", {
+                  value: name,
+                  textContent: name,
+                })
+              ),
+            }),
+          }),
+          HTML.labeledInput("Students", { name: "students", type: "text" }),
+          HTML.labeledInput("Items", { name: "items", type: "text" }),
+          matchItemsRadio("Form has all of the items", "all", true),
+          matchItemsRadio("Form has any of the items", "any"),
+          ...[
+            ["Booked session", "isBooked"],
+            ["Not booked session", "isNoteBooked"],
+            ["Tape session", "isTape"],
+            ["Missing an item", "byMissingItem"],
+            ["Late check in or out", "byLateStudents"],
+            ["No student checked in", "byNoShow"],
+            ["Student did not check out", "byStudentLeft"],
+            ["Has notes", "byHasNotes"],
+            ["Has manual entries", "byHasManual"],
+          ].map(([textContent, name]) =>
+            HTML.labeledCheckbox(textContent, name)
+          ),
+        ],
+      }),
+      tableBody: HTML.createElement("tbody", { class: "archive" }),
+      tableHead: HTML.createElement("thead", {
+        class: "archive",
+        children: [
+          HTML.row(
+            HTML.headerCell({ child: HTML.documentIcon() }),
+            ...[
+              "startTime",
+              "endTime",
+              "location",
+              "students",
+              "items",
+              "bookingId",
+              "bookedStudents",
+              "contact",
+              "project",
+              "tape",
+              "overnight",
+            ].map((text) =>
+              HTML.headerCell({
+                "data-sort": text,
+                textContent: Utility.uncamelCase(text),
+              })
+            )
+          ),
+        ],
+      }),
     };
+    elements.container = HTML.page({
+      appendToBody: false,
+      name: "archive",
+      children: [
+        HTML.createElement("h2", { textContent: "Closed Forms" }),
+        elements.queryInputs,
+        HTML.createElement("table", {
+          children: [elements.tableHead, elements.tableBody],
+        }),
+      ],
+    });
+
     elements.queryButton.addEventListener("click", () => query());
     const filteredStack = new Stack();
     let stack = new Stack();
@@ -148,6 +225,7 @@
 
     return {
       getDateRangeAsJSON,
+      getHtmlNode,
       getStack,
       hide,
       query,
@@ -156,6 +234,10 @@
       setHandlers,
       show,
     };
+
+    function getHtmlNode() {
+      return elements.container;
+    }
 
     function getStack() {
       return stack;
@@ -188,8 +270,7 @@
     function handleChange(change) {
       if (change.target.getAttribute("type") === "date") {
         // see if new date range exceeds old date range
-        const range = range,
-          inputs = elements.queryInputs;
+        const inputs = elements.queryInputs;
         const start = new Date(inputs.start.value + "T00:00:00"),
           end = new Date(inputs.end.value + "T23:59:59"),
           oldStart = new Date(range.start + "T00:00:00"),
@@ -245,7 +326,7 @@
         HTML.createElement("tr", {
           "data-id": form.id,
           children: [
-            HTML.createElement("td", { child: HTML.documentIcon() }),
+            HTML.cell({ child: HTML.documentIcon() }),
             ...[
               form.startTime,
               form.endTime,
@@ -258,7 +339,7 @@
               form.project,
               form.tape ? "YES" : "",
               form.overnight ? "YES" : "",
-            ].map((textContent) => HTML.createElement("td", { textContent })),
+            ].map((text) => HTML.cell(text)),
           ],
         })
       );
@@ -321,7 +402,7 @@
     }
 
     function update() {
-      handlers.onUpdate();
+      handlers.onUpdate(getDateRangeAsJSON());
     }
 
     function query() {

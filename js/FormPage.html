@@ -485,6 +485,7 @@
       }
       elements.omnibox.focus();
     }
+
     function handleChangeLocation(change) {
       if (change.target.value === "none") {
         change.target.value = connections.getCurrentForm().location || "none";
@@ -526,6 +527,7 @@
       }
       Changes.add(change);
     }
+
     function handleChangeTime(change) {
       touched.add(change.target);
       let t = parseDateAndTimeInputs();

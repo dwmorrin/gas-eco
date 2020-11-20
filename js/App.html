@@ -13,11 +13,46 @@
   /* exported App */
   const App = (function () {
     const elements = {
-      newFormButton: document.querySelector('button[value="displayNewForm"]'),
-      openFormsButton: document.querySelector('button[value="openForms"]'),
-      closedFormsButton: document.querySelector('button[value="closedForms"]'),
-      usernameDisplay: document.querySelector("span.usernameDisplay"),
+      newFormButton: HTML.createElement("button", {
+        textContent: "New Form",
+        class: "share",
+        disabled: true,
+      }),
+      openFormsButton: HTML.createElement("button", {
+        textContent: "View Open Forms",
+        disabled: true,
+      }),
+      closedFormsButton: HTML.createElement("button", {
+        textContent: "View Closed Forms",
+        disabled: true,
+      }),
+      usernameDisplay: HTML.createElement("span", { class: "usernameDisplay" }),
     };
+    const page = HTML.page({
+      hidden: false,
+      name: "app",
+      children: [
+        HTML.createElement("header", {
+          children: [
+            HTML.heading1("Equipment Check Out"),
+            HTML.createElement("span", {
+              class: "usernameContainer",
+              textContent: "signed in as ",
+              child: elements.usernameDisplay,
+            }),
+          ],
+        }),
+        HTML.createElement("nav", {
+          children: [
+            elements.newFormButton,
+            elements.openFormsButton,
+            elements.closedFormsButton,
+          ],
+        }),
+        ClosedFormsPage.getHtmlNode(),
+        OpenFormsPage.getHtmlNode(),
+      ],
+    });
 
     const pages = {
       ClosedFormsPage,
@@ -28,16 +63,15 @@
 
     for (const page in pages) {
       if (!["show", "hide"].every((fn) => fn in pages[page]))
-        window.alert(`${page} doesn't have required show/hide functions`);
+        displayErrorMessage(
+          `${page} doesn't have required show/hide functions`
+        );
     }
 
-    // Server runners
-    const withErrorHandler = google.script.run.withFailureHandler((error) =>
-      HTML.modal({
-        children: [HTML.heading1("Error"), HTML.paragraph(error.message)],
-      })
-    );
-    // const run = withErrorHandler.withSuccessHandler(app.refresh);
+    const withErrorHandler = google.script.run.withFailureHandler((error) => {
+      console.error(error);
+      displayErrorMessage(error.message);
+    });
 
     OpenFormsPage.setHandlers({
       clickTable: ({ form }) => FormPage.displayForm(form),
@@ -47,77 +81,15 @@
         FormPage.handleChange({ target: { name: "manual", value } }),
       onItemChange: FormPage.updateItems,
       onStudentChange: FormPage.updateStudents,
-      onNewCodabar: ({ netId, codabar }) => {
-        FormPage.setUpdateFormButtonToSpinner();
-        withErrorHandler
-          .withSuccessHandler((response) => {
-            Omnibox.setRoster(JSON.parse(response.students));
-            Omnibox.parse();
-          })
-          .doPost({
-            post: "codabar",
-            netId,
-            codabar,
-          });
-      },
-      onNeedsSignature: (netid) => {
-        const modal = HTML.modal({
-          children: [
-            HTML.heading1("Add signature"),
-            HTML.paragraph("Please wait..."),
-          ],
-          closeText: "Cancel",
-        });
-        withErrorHandler
-          .withSuccessHandler((_, context) => {
-            if (!context.modal) {
-              // user aborted by hitting "cancel"
-              return;
-            }
-            context.modal.remove();
-            HTML.modal({
-              children: [
-                HTML.heading1("Add signature"),
-                HTML.paragraph(
-                  "Production area policy acknowledgment signature not found " +
-                    "for this person. All persons must read the policy and have " +
-                    "a signature on file. Please use the tablet to show the " +
-                    "person the policy and capture their signature. " +
-                    "Click the 'Signature Done/Recheck' when they are finished " +
-                    "using the tablet."
-                ),
-              ],
-              okText: "Signature Done/Recheck",
-              onOk: () =>
-                withErrorHandler
-                  .withSuccessHandler(onRoster)
-                  .doGet({ get: "students", init: false }),
-            });
-          })
-          .withUserObject({ modal })
-          .doPost({ post: "startSignature", netid });
-      },
+      onNewCodabar,
+      onNeedsSignature,
     });
     Omnibox.setConnections({
       getSavedForm: FormPage.getSavedForm,
       getCurrentForm: OpenFormsPage.getCurrentForm,
     });
     FormPage.setHandlers({
-      onDelete: (form) => {
-        if (form)
-          withErrorHandler
-            .withSuccessHandler((response) => {
-              if (response.post === "openForms") return onOpenForms(response);
-              if (response.post === "collision") return onCollision(response);
-            })
-            .doPost({ post: "deleteForm", form });
-        else
-          withErrorHandler
-            .withSuccessHandler(() => {
-              return; // TODO insert openForms response handler here
-            })
-            .doGet({ get: "openForms" });
-      },
+      onDelete,
       onDisplayForm: () => showPage(FormPage),
       onItemMetaClick: Omnibox.setInputAndParse,
       onItemQuantityChange: Omnibox.handleItem,
@@ -125,20 +97,7 @@
       onModalQuantityChange: (item) => Omnibox.makeQuantityChangeDialog(item)(),
       onParseInput: Omnibox.parse,
       onStudentMetaClick: Omnibox.setInputAndParse,
-      onSubmit: (form) => {
-        withErrorHandler
-          .withSuccessHandler((response) => {
-            if (response.post === "updateForm") return onUpdateForm(response);
-            if (response.post === "openForms") return onOpenForms(response);
-            if (response.post === "collision") return onCollision(response);
-            if (response.post === "invalid")
-              return window.alert("Form is invalid");
-          })
-          .doPost({
-            post: "updateForm",
-            form,
-          });
-      },
+      onSubmit,
       onUnload: () => withErrorHandler.doPost({ post: "unload" }),
     });
     FormPage.setConnections({
@@ -197,23 +156,108 @@
         const inventory = Omnibox.getInventory();
         inventory.setItems(JSON.parse(response.items));
         if (inventory.getLength() < 1) {
-          return window.alert("Error: Server found no items!");
+          return displayErrorMessage("Error: Server found no items!");
         }
         if (response.unlock) {
           tryUnlock();
         }
       })
-      .doGet({ get: "items", init: true }); // gets the item info cache
+      .doGet({ get: "items", init: true });
     withErrorHandler.withSuccessHandler(onClosedForms).doGet({
       get: "archive",
       dateRangeJSON: ClosedFormsPage.getDateRangeAsJSON(),
       init: true,
     });
 
+    //---- function definitions
+
     function showPage(page) {
       for (const key in pages) {
         pages[key][page === pages[key] ? "show" : "hide"]();
       }
+    }
+
+    function onSubmit(form) {
+      withErrorHandler
+        .withSuccessHandler((response) => {
+          if (response.post === "updateForm") return onUpdateForm(response);
+          if (response.post === "openForms") return onOpenForms(response);
+          if (response.post === "collision") return onCollision(response);
+          if (response.post === "invalid")
+            return displayErrorMessage("Form is invalid");
+        })
+        .doPost({
+          post: "updateForm",
+          form,
+        });
+    }
+
+    function onDelete(form) {
+      if (form)
+        withErrorHandler
+          .withSuccessHandler((response) => {
+            if (response.post === "openForms") return onOpenForms(response);
+            if (response.post === "collision") return onCollision(response);
+          })
+          .doPost({ post: "deleteForm", form });
+      else
+        withErrorHandler
+          .withSuccessHandler((response) => {
+            onOpenForms(response);
+          })
+          .doGet({ get: "openForms" });
+    }
+
+    function onNeedsSignature(netid) {
+      const modal = HTML.modal({
+        children: [
+          HTML.heading1("Add signature"),
+          HTML.paragraph("Please wait..."),
+        ],
+        closeText: "Cancel",
+      });
+      withErrorHandler
+        .withSuccessHandler((_, context) => {
+          if (!context.modal) {
+            // user aborted by hitting "cancel"
+            return;
+          }
+          context.modal.remove();
+          HTML.modal({
+            children: [
+              HTML.heading1("Add signature"),
+              HTML.paragraph(
+                "Production area policy acknowledgment signature not found " +
+                  "for this person. All persons must read the policy and have " +
+                  "a signature on file. Please use the tablet to show the " +
+                  "person the policy and capture their signature. " +
+                  "Click the 'Signature Done/Recheck' when they are finished " +
+                  "using the tablet."
+              ),
+            ],
+            okText: "Signature Done/Recheck",
+            onOk: () =>
+              withErrorHandler
+                .withSuccessHandler(onRoster)
+                .doGet({ get: "students", init: false }),
+          });
+        })
+        .withUserObject({ modal })
+        .doPost({ post: "startSignature", netid });
+    }
+
+    function onNewCodabar({ netId, codabar }) {
+      FormPage.setUpdateFormButtonToSpinner();
+      withErrorHandler
+        .withSuccessHandler((response) => {
+          Omnibox.setRoster(JSON.parse(response.students));
+          Omnibox.parse();
+        })
+        .doPost({
+          post: "codabar",
+          netId,
+          codabar,
+        });
     }
 
     // function checkLock() {
@@ -261,14 +305,14 @@
 
     function onClosedForms(response) {
       try {
-        ClosedFormsPage.importForms(JSON.parse(response.formList));
+        ClosedFormsPage.setForms(JSON.parse(response.formList));
       } catch (error) {
-        return window.alert("Server was unable to retrieve the closed forms.");
+        return displayErrorMessage(
+          "Server was unable to retrieve the closed forms."
+        );
       }
       if (response.unlock) {
         elements.closedFormsButton.removeAttribute("disabled");
-      } else {
-        // TODO remove spinner from query button
       }
       ClosedFormsPage.query();
     }
@@ -292,7 +336,9 @@
       try {
         stack.importForms(JSON.parse(response.formList)).sortForms();
       } catch (error) {
-        return window.alert("Error: server failed to get the open forms.");
+        return displayErrorMessage(
+          "Error: server failed to get the open forms."
+        );
       }
       FormPage.setCurrentStack(stack);
       //! TODO check that the "saved" prop is updated by something else, should be Changes.clear()
@@ -376,7 +422,7 @@
       const roster = JSON.parse(response.students);
       Omnibox.setRoster(roster);
       if (roster.length < 1) {
-        return window.alert("No students found");
+        return displayErrorMessage("No students found");
       }
       if (response.unlock) {
         tryUnlock();
@@ -392,6 +438,12 @@
       const updatedForm = new Form(JSON.parse(response.form));
       OpenFormsPage.getStack().replace(updatedForm).updateIndex(updatedForm);
       FormPage.displayForm(updatedForm);
+    }
+
+    function displayErrorMessage(message) {
+      HTML.modal({
+        children: [HTML.heading1("Error"), HTML.paragraph(message)],
+      });
     }
   })();
 </script>

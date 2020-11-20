@@ -1,14 +1,50 @@
 <script>
-  /* global DateUtils HTML Stack */
+  /* global DateUtils HTML Stack Utility */
   /* exported OpenFormsPage */
   const OpenFormsPage = (function () {
     const elements = {
       container: document.querySelector("div.openFormsContainer"),
-      equipmentTableBody: document.querySelector("tbody.equipmentOut"),
-      formsTableBody: document.querySelector("tbody.open"),
-      formsTableHead: document.querySelector("thead.open"),
+      equipmentTableBody: HTML.createElement("tbody", {
+        class: "equipmentOut",
+      }),
+      formsTableBody: HTML.createElement("tbody", { class: "open" }),
+      formsTableHead: HTML.createElement("thead", {
+        class: "open",
+        children: [
+          HTML.headerCell({ child: HTML.documentIcon() }),
+          ...["startTime", "endTime", "location", "students"].map((text) =>
+            HTML.createElement("th", {
+              "data-sort": text,
+              textContent: Utility.uncamelCase(text),
+            })
+          ),
+        ],
+      }),
     };
 
+    elements.container = HTML.page({
+      appendToBody: false,
+      name: "openForms",
+      children: [
+        HTML.createElement("h2", { textContent: "Open Forms" }),
+        HTML.createElement("h3", {
+          textContent: "click on a form to view and edit",
+        }),
+        HTML.table(elements.formsTableHead, elements.formsTableBody),
+        HTML.createElement("h2", { textContent: "Equipment Checked Out" }),
+        HTML.table(
+          HTML.createElement("thead", {
+            class: "equipmentOut",
+            child: HTML.row(
+              ...["Item", "Id", "Location", "Students", "End Time"].map(
+                HTML.headerCell
+              )
+            ),
+          }),
+          elements.equipmentTableBody
+        ),
+      ],
+    });
     let stack = new Stack();
 
     let refreshId = null;
@@ -31,6 +67,7 @@
 
     return {
       getCurrentForm,
+      getHtmlNode,
       getRefreshId,
       getStack,
       hide,
@@ -39,6 +76,10 @@
       setStack,
       show,
     };
+
+    function getHtmlNode() {
+      return elements.container;
+    }
 
     function getRefreshId() {
       return refreshId;
