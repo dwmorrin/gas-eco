@@ -3,17 +3,48 @@
   /* exported LoadingPage */
   const LoadingPage = (function () {
     const elements = {
-      container: document.querySelector("div.loadingContainer"),
-      roster: document.querySelector("#loadingRoster"),
-      inventory: document.querySelector("#loadingInventory"),
-      openForms: document.querySelector("#loadingOpenForms"),
-      rosterStatus: document.querySelector("#loadingRosterStatus"),
-      inventoryStatus: document.querySelector("#loadingInventoryStatus"),
-      openFormsStatus: document.querySelector("#loadingOpenFormsStatus"),
+      rosterStatus: HTML.createElement("span", { id: "loadingRosterStatus" }),
+      inventoryStatus: HTML.createElement("span", {
+        id: "loadingInventoryStatus",
+      }),
+      openFormsStatus: HTML.createElement("span", {
+        id: "loadingOpenFormsStatus",
+      }),
     };
+    elements.container = HTML.page({
+      hidden: false,
+      name: "loading",
+      children: [
+        HTML.createElement("h2", { textContent: "Loading app data..." }),
+        HTML.createElement("ul", {
+          class: "loadingList",
+          children: [
+            HTML.createElement("li", {
+              id: "loadingRoster",
+              textContent: "Student roster...",
+              child: elements.rosterStatus,
+            }),
+            HTML.createElement("li", {
+              id: "loadingInventory",
+              textContent: "Item inventory...",
+              child: elements.inventoryStatus,
+            }),
+            HTML.createElement("li", {
+              id: "loadingOpenForms",
+              textContent: "Open forms...",
+              child: elements.openFormsStatus,
+            }),
+          ],
+        }),
+      ],
+    });
     let timeoutId = null;
 
-    return { show, hide, isShowing, updateStatus };
+    return { getHtmlNode, show, hide, isShowing, updateStatus };
+
+    function getHtmlNode() {
+      return elements.container;
+    }
 
     function updateStatus(key, value) {
       if (key in elements) elements[key].textContent = value;
@@ -38,9 +69,8 @@
       }
       timeoutId = null;
       elements.container.classList.add("hidden");
-      ["roster", "inventory", "openForms"].forEach((key) => {
-        const el = elements[key];
-        el.textContent = el.textContent.replace(" downloaded", "");
+      ["rosterStatus", "inventoryStatus", "openFormsStatus"].forEach((key) => {
+        elements[key].textContent = "";
       });
     }
     function isShowing() {

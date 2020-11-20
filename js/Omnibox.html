@@ -8,7 +8,8 @@
    */
   /* exported Omnibox */
   const Omnibox = (function () {
-    const element = document.querySelector("input.omnibox");
+    // const element = document.querySelector("input.omnibox");
+    let element = null;
     const noop = () => undefined;
     const handlers = {
       onLogManualEntry: noop,
@@ -23,8 +24,6 @@
     const inventory = new Inventory();
     let roster = [];
 
-    element.addEventListener("keydown", handleKeydown);
-
     return {
       getInventory,
       getRoster,
@@ -33,10 +32,16 @@
       manualEntry,
       parse,
       setConnections,
+      setElement,
       setHandlers,
       setInputAndParse,
       setRoster,
     };
+
+    function setElement(htmlNode) {
+      element = htmlNode;
+      element.addEventListener("keydown", handleKeydown);
+    }
 
     function setInputAndParse(value) {
       element.value = value;

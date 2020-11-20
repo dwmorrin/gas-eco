@@ -28,12 +28,7 @@
             textContent: "Location",
             child: HTML.createElement("select", {
               name: "location",
-              children: ["All", ...Config.locations, "Other"].map((name) =>
-                HTML.createElement("option", {
-                  value: name,
-                  textContent: name,
-                })
-              ),
+              children: ["All", ...Config.locations, "Other"].map(HTML.option),
             }),
           }),
           HTML.labeledInput("Students", { name: "students", type: "text" }),
@@ -84,7 +79,6 @@
       }),
     };
     elements.container = HTML.page({
-      appendToBody: false,
       name: "archive",
       children: [
         HTML.createElement("h2", { textContent: "Closed Forms" }),

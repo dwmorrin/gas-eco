@@ -6,6 +6,7 @@
       copyToClipboard,
       digestMessage,
       hexString,
+      range,
       tryJsonParse,
       uncamelCase,
     };
@@ -37,6 +38,10 @@
         return paddedHexCode;
       });
       return hexCodes.join("");
+    }
+
+    function range(length, start = 0, step = 1) {
+      return Array.from({ length }).map((_, i) => i * step + start);
     }
 
     function tryJsonParse(string) {

@@ -1,8 +1,27 @@
 <script>
   /* global Config Form DateUtils HTML toast Utility */
   /* exported FormPage */
+
+  /**
+   * TODO clarify the disable/enable controls vs lock/unlock controls
+   *   disable/enable seems to be open vs closed
+   *   lock/unlock seems to be form submission
+   */
   const FormPage = (function () {
-    const usernameDisplay = document.querySelector("span.usernameDisplay");
+    const noop = () => undefined;
+    const handlers = {
+      onDelete: noop,
+      onDisplayForm: noop,
+      onItemMetaClick: noop,
+      onItemQuantityChange: noop,
+      onManualEntry: noop,
+      onModalQuantityChange: noop,
+      onParseInput: noop,
+      onStudentMetaClick: noop,
+      onSubmit: noop,
+      onUnload: noop,
+    };
+    const connections = {}; // getCurrentForm, getStack
     const Changes = (function () {
       let saved = true;
       let stack = [];
@@ -29,7 +48,7 @@
         makeNote() {
           return {
             timestamp: Date.now(),
-            author: usernameDisplay.textContent,
+            author: getUsername(),
             body: JSON.stringify(this.stack),
           };
         },
@@ -43,60 +62,313 @@
       },
       disabled: "all changes saved",
     };
+    const locationOtherOption = HTML.option("Other");
+    const omnibox = HTML.createElement("input", {
+      class: "omnibox enableGroup",
+      type: "text",
+    });
+    const copyButton = HTML.button("Copy items to clipboard", {
+      class: "hidden",
+      tabindex: -1,
+      onClick: () =>
+        Utility.copyToClipboard(
+          JSON.stringify(getCurrentStack().getCurrentForm().items.getStripped())
+        ),
+    });
+    const duplicateButton = HTML.button("Duplicate this form", {
+      class: "hidden",
+      tabindex: -1,
+      onClick: () => {
+        const newForm = new Form(getSavedForm(), true);
+        const stack = connections.getStack();
+        setCurrentStack(stack);
+        stack.push(newForm);
+        // app.changes.saved = false; //! TODO - do we need this?
+        displayForm(newForm);
+      },
+    });
+    const currentFormstackDisplay = HTML.createElement("span", {
+      class: "currentFormstackDisplay",
+    });
+    const updateFormButton = HTML.button("Submit", {
+      disabled: true,
+      class: "action buttonTight",
+      onClick: submit,
+    });
+    const advanceBookingButton = HTML.button("Save as advance booking", {
+      class: "action buttonTight hidden",
+      disabled: true,
+      tabindex: -1,
+      onClick: () => {
+        HTML.modal({
+          children: [
+            HTML.heading1("Save for later?"),
+            HTML.paragraph(
+              "All sign-in and check-out info will be removed. " +
+                "Add all people and items before saving. " +
+                "You can only do this once."
+            ),
+          ],
+          closeText: "Cancel",
+          okText: "Save as advance booking",
+          onOk: makeAdvanceBooking,
+        });
+      },
+    });
+    const undoButton = HTML.button("Revert to saved form", {
+      onClick: () =>
+        HTML.modal({
+          children: [
+            HTML.heading1("Undo all changes"),
+            HTML.paragraph(
+              "Do you want to undo all changes since the last save?"
+            ),
+          ],
+          okText: "Revert to saved form",
+          onOk: () => {
+            // if (!window.isNaN(app.pages.form.autosaveID)) {
+            //   window.clearTimeout(app.pages.form.autosaveID);
+            //   app.pages.form.autosaveID = NaN;
+            // }
+            displayForm(connections.getCurrentForm());
+          },
+        }),
+    });
+    const updateButtonHint = HTML.createElement("span", {
+      class: "updateButtonHint",
+    });
+    const noteSection = HTML.createElement("section", {
+      class: "globalnotes hidden",
+    });
+    const locationSelect = HTML.createElement("select", {
+      name: "location",
+      children: [
+        HTML.option("please select", "none"),
+        ...Array.from(Config.locations).map(HTML.option),
+        locationOtherOption,
+      ],
+    });
+    const tableStaticFields = HTML.createElement("table", {
+      class: "staticFields",
+      onClick: handleClickStaticTable,
+      children: [
+        ...[
+          ["Booked Students", "bookedStudentsDisplay"],
+          ["Contact", "contactDisplay"],
+          ["Project", "projectDisplay"],
+          ["Analog Tape", "tapeDisplay"],
+          ["Overnight Setup", "overnightDisplay"],
+        ].map(([textContent, id]) =>
+          HTML.createElement("tr", {
+            class: "hidden",
+            children: [HTML.headerCell(textContent), HTML.cell({ id })],
+          })
+        ),
+        HTML.row(
+          HTML.headerCell("Location"),
+          HTML.cell({ id: "locationDisplay", class: "editable hidden" }),
+          HTML.cell({ class: "hidden", child: locationSelect })
+        ),
+        HTML.row(
+          HTML.headerCell("Start Time"),
+          HTML.cell({ id: "startTimeDisplay", class: "editable hidden" }),
+          HTML.cell({
+            class: "hidden",
+            children: HTML.dateTimeInputs("start"),
+          })
+        ),
+        HTML.row(
+          HTML.headerCell("End Time"),
+          HTML.cell({ id: "endTimeDisplay", class: "editable hidden" }),
+          HTML.cell({
+            class: "hidden",
+            children: HTML.dateTimeInputs("end"),
+          })
+        ),
+      ],
+    });
+    const studentList = HTML.createElement("tbody", {
+      class: "studentList",
+      child: HTML.row(HTML.cell("Scan ID to sign in a student")),
+      onClick: handleClickStudent,
+    });
+    const itemList = HTML.createElement("tbody", {
+      class: "itemList",
+      onClick: handleClickItem,
+      child: HTML.row(HTML.cell("Scan barcode to check out an item")),
+    });
+    const modelForm = HTML.createElement("form", {
+      class: "model",
+      onChange: handleChange,
+      onSubmit: (e) => e.preventDefault(),
+      children: [
+        HTML.createElement("input", { type: "hidden", name: "notes" }),
+        HTML.createElement("input", { type: "hidden", name: "startTime" }),
+        HTML.createElement("input", { type: "hidden", name: "endTime" }),
+        HTML.createElement("section", {
+          class: "formControls",
+          children: [
+            HTML.createElement("div", {
+              tabindex: 0,
+              onFocus: () => locationSelect.focus(),
+            }),
+            omnibox,
+            HTML.button("🔎", {
+              class: "buttonSmall enableGroup",
+              tabindex: -1,
+              onClick: () => handlers.onParseInput(),
+            }),
+            HTML.button("Add item without barcode or ID", {
+              class: "enableGroup",
+              tabindex: -1,
+              onClick: () => handlers.onManualEntry(),
+            }),
+            HTML.button("New note", {
+              class: "action enableGroup",
+              tabindex: -1,
+              onClick: () => {
+                const input = HTML.createElement("textarea");
+                HTML.modal({
+                  children: [
+                    HTML.heading1("New note"),
+                    HTML.paragraph("Enter a note"),
+                    input,
+                  ],
+                  okText: "Save note",
+                  onOk: () => saveNote(input.value),
+                });
+                input.focus();
+              },
+            }),
+            HTML.button("Change log", {
+              tabindex: -1,
+              onClick: onChangeLog,
+            }),
+            copyButton,
+            duplicateButton,
+            HTML.br(),
+            HTML.button("Previous form", {
+              tabindex: -1,
+              onClick: getPrevious,
+            }),
+            HTML.button("Next form", {
+              tabindex: -1,
+              onClick: getNext,
+            }),
+            currentFormstackDisplay,
+            HTML.br(),
+            updateFormButton,
+            advanceBookingButton,
+            undoButton,
+            updateButtonHint,
+          ],
+        }),
+        noteSection,
+        HTML.createElement("section", {
+          children: [
+            tableStaticFields,
+            HTML.createElement("div", {
+              tabindex: 0,
+              onFocus: () => omnibox.focus(),
+            }),
+          ],
+        }),
+        HTML.createElement("section", {
+          children: [
+            HTML.createElement("h4", { textContent: "Students" }),
+            HTML.table(
+              HTML.createElement("thead", {
+                class: "form formStudents",
+                children: [
+                  HTML.row(
+                    ...["Name", "NetID", "Signed In", "Signed Out"].map(
+                      HTML.headerCell
+                    )
+                  ),
+                ],
+              }),
+              studentList
+            ),
+          ],
+        }),
+        HTML.createElement("section", {
+          children: [
+            HTML.createElement("h4", { textContent: "Equipment Checked Out" }),
+            HTML.table(
+              HTML.createElement("thead", {
+                class: "form formItems",
+                children: [
+                  HTML.row(
+                    ...[
+                      "Qty",
+                      "Items",
+                      "Item ID",
+                      "Checked Out",
+                      "Checked In",
+                    ].map(HTML.headerCell)
+                  ),
+                ],
+              }),
+              itemList
+            ),
+          ],
+        }),
+      ],
+    });
     const elements = {
-      advanceBookingButton: document.querySelector(
-        'button[value="advanceBooking"]'
-      ),
-      changeLogButton: document.querySelector('button[value="changeLog"]'),
-      container: document.querySelector("div.formContainer"),
-      copyButton: document.querySelector('button[value="copyItems"]'),
-      currentFormstackDisplay: document.querySelector(
-        "span.currentFormstackDisplay"
-      ),
-      deleteFormButton: document.querySelector('button[value="deleteForm"]'),
-      duplicateButton: document.querySelector(
-        'button[value="displayDuplicatedForm"]'
-      ),
-      focusGuardTop: document.querySelector(".focusGuardTop"),
-      focusGuardBottom: document.querySelector(".focusGuardBottom"),
-      form: document.querySelector("form.model"),
-      itemList: document.querySelector("tbody.itemList"),
-      locationSelect: document.querySelector(
-        'form.model select[name="location"]'
-      ),
-      locationOtherOption: document.querySelector(
-        'form.model option[value="Other"]'
-      ),
-      newNoteButton: document.querySelector('button[value="newNote"]'),
-      manualButton: document.querySelector('button[value="newManual"]'),
-      nextFormButton: document.querySelector('button[value="nextForm"]'),
-      noteSection: document.querySelector("section.globalnotes"),
-      omnibox: document.querySelector("input.omnibox"),
-      omniboxButton: document.querySelector('button[value="parseOmnibox"]'),
-      previousFormButton: document.querySelector(
-        'button[value="previousForm"]'
-      ),
-      studentList: document.querySelector("tbody.studentList"),
-      tableStaticFields: document.querySelector("table.staticFields"),
-      undoButton: document.querySelector('button[value="undo"]'),
-      updateButtonHint: document.querySelector("span.updateButtonHint"),
-      updateFormButton: document.querySelector('button[value="updateForm"]'),
+      locationOtherOption,
+      advanceBookingButton,
+      copyButton,
+      currentFormstackDisplay,
+      deleteFormButton: HTML.createElement("button", {
+        textContent: "Delete this form",
+        class: "create",
+        onClick: () => {
+          if (getSavedForm().isBlank()) {
+            return handlers.onDelete();
+          }
+          HTML.modal({
+            child: HTML.paragraph(
+              "This will close out the form and mark it deleted. Are you sure?"
+            ),
+            closeText: "Cancel",
+            onOk: () => {
+              lock();
+              setDeleteFormButtonToSpinner();
+              const form = connections.getCurrentForm();
+              Changes.add({
+                target: {
+                  name: "delete",
+                  value: "form deleted",
+                },
+              });
+              form.notes.push(Changes.makeNote());
+              handlers.onDelete(form.stringify());
+            },
+          });
+        },
+      }),
+      duplicateButton,
+      form: modelForm,
+      itemList,
+      locationSelect,
+      noteSection,
+      omnibox,
+      studentList,
+      tableStaticFields,
+      undoButton,
+      updateButtonHint,
+      updateFormButton,
     };
-
-    const noop = () => undefined;
-    const handlers = {
-      onDelete: noop,
-      onDisplayForm: noop,
-      onItemMetaClick: noop,
-      onItemQuantityChange: noop,
-      onManualEntry: noop,
-      onModalQuantityChange: noop,
-      onParseInput: noop,
-      onStudentMetaClick: noop,
-      onSubmit: noop,
-      onUnload: noop,
-    };
-    const connections = {}; // getCurrentForm, getStack
+    elements.container = HTML.page({
+      name: "form",
+      children: [modelForm, elements.deleteFormButton],
+      onKeydown: (event) => {
+        if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+          submit();
+        }
+      },
+    });
 
     let autosaveID = null;
     let savedForm = new Form({});
@@ -105,145 +377,6 @@
     let timeoutId = null;
     let touched = new Set();
 
-    elements.advanceBookingButton.addEventListener("click", () => {
-      HTML.modal({
-        children: [
-          HTML.heading1("Save for later?"),
-          HTML.paragraph(
-            "All sign-in and check-out info will be removed. " +
-              "Add all people and items before saving. " +
-              "You can only do this once."
-          ),
-        ],
-        closeText: "Cancel",
-        okText: "Save as advance booking",
-        onOk: makeAdvanceBooking,
-      });
-    });
-    elements.changeLogButton.addEventListener("click", () => {
-      const changes = [
-        ...getCurrentStack()
-          .getCurrentForm()
-          .notes.reduce((areChanges, note) => {
-            const change = Utility.tryJsonParse(note.body);
-            if (!Array.isArray(change)) return areChanges;
-            change.forEach((entry) => (entry.author = note.author));
-            return [...areChanges, ...change];
-          }, []),
-        ...Changes.getStack(),
-      ];
-      HTML.modal({
-        children: [
-          HTML.table(
-            HTML.row(...["Time", "User", "Field", "Value"].map(HTML.cell))
-          ),
-          ...changes.map(({ timestamp, author, name, value }) =>
-            HTML.row(
-              HTML.cell(DateUtils.getFormattedDate(new Date(timestamp))),
-              HTML.cell(author),
-              HTML.cell(Utility.uncamelCase(name)),
-              HTML.cell(value)
-            )
-          ),
-        ],
-      });
-    });
-    elements.copyButton.addEventListener("click", () =>
-      Utility.copyToClipboard(
-        JSON.stringify(getCurrentStack().getCurrentForm().items.getStripped())
-      )
-    );
-    elements.deleteFormButton.addEventListener("click", () => {
-      if (FormPage.getSavedForm().isBlank()) {
-        return handlers.onDelete();
-      }
-      HTML.modal({
-        child: HTML.paragraph(
-          "This will close out the form and mark it deleted. Are you sure?"
-        ),
-        closeText: "Cancel",
-        onOk: () => {
-          FormPage.lock();
-          FormPage.setDeleteFormButtonToSpinner();
-          const form = connections.getCurrentForm();
-          Changes.add({
-            target: {
-              name: "delete",
-              value: "form deleted",
-            },
-          });
-          form.notes.push(Changes.makeNote());
-          handlers.onDelete(form.stringify());
-        },
-      });
-    });
-    elements.duplicateButton.addEventListener("click", () => {
-      const newForm = new Form(FormPage.getSavedForm(), true);
-      const stack = connections.getStack();
-      FormPage.setCurrentStack(stack);
-      stack.push(newForm);
-      // app.changes.saved = false; //! TODO - do we need this?
-      FormPage.displayForm(newForm);
-    });
-    elements.manualButton.addEventListener("click", () =>
-      handlers.onManualEntry()
-    );
-    elements.nextFormButton.addEventListener("click", getNext);
-    elements.previousFormButton.addEventListener("click", getPrevious);
-    elements.itemList.addEventListener("click", handleClickItem);
-    elements.tableStaticFields.addEventListener(
-      "click",
-      handleClickStaticTable
-    );
-    elements.studentList.addEventListener("click", handleClickStudent);
-    elements.container.addEventListener("change", handleChange);
-    elements.container.addEventListener("submit", (event) =>
-      event.preventDefault()
-    );
-    // focus guards create a tab/shift-tab closed loop through the form inputs
-    elements.focusGuardTop.addEventListener("focus", () =>
-      elements.locationSelect.focus()
-    );
-    elements.focusGuardBottom.addEventListener("focus", () =>
-      elements.omnibox.focus()
-    );
-    elements.newNoteButton.addEventListener("click", () => {
-      const input = HTML.createElement("textarea");
-      HTML.modal({
-        children: [
-          HTML.heading1("New note"),
-          HTML.paragraph("Enter a note"),
-          input,
-        ],
-        okText: "Save note",
-        onOk: () => saveNote(input.value),
-      });
-      input.focus();
-    });
-    elements.omniboxButton.addEventListener("click", handlers.onParseInput);
-    elements.undoButton.addEventListener("click", () =>
-      HTML.modal({
-        children: [
-          HTML.heading1("Undo all changes"),
-          HTML.paragraph(
-            "Do you want to undo all changes since the last save?"
-          ),
-        ],
-        okText: "Revert to saved form",
-        onOk: () => {
-          // if (!window.isNaN(app.pages.form.autosaveID)) {
-          //   window.clearTimeout(app.pages.form.autosaveID);
-          //   app.pages.form.autosaveID = NaN;
-          // }
-          displayForm(connections.getCurrentForm());
-        },
-      })
-    );
-    elements.container.addEventListener("keydown", (event) => {
-      if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
-        submit();
-      }
-    });
     /**
      * @see {@link https://developer.mozilla.org/en-US/docs/Web/Events/beforeunload}
      */
@@ -262,6 +395,11 @@
       displayForm,
       enable,
       getCurrentStack,
+      getHtmlNode,
+      getOmnibox() {
+        // TODO this is a temporary solution to communicate with Omnibox module
+        return omnibox;
+      },
       getSavedForm,
       handleChange,
       hide,
@@ -286,6 +424,10 @@
 
     return exported;
 
+    function getHtmlNode() {
+      return elements.container;
+    }
+
     // function checkForms() {
     //   app.run
     //     .withUserObject({ timeoutId: timeoutId })
@@ -293,12 +435,24 @@
     // }
 
     function submit() {
+      const currentButtonText = elements.updateFormButton.textContent;
       handlers.onParseInput();
       lock();
       setUpdateFormButtonToSpinner();
       const form = connections.getCurrentForm();
       form.notes.push(Changes.makeNote());
-      handlers.onSubmit(form.stringify());
+      handlers.onSubmit(form.stringify(), onSubmitSuccess, () => {
+        HTML.empty(elements.updateFormButton);
+        elements.updateFormButton.textContent = currentButtonText;
+      });
+    }
+
+    function onSubmitSuccess(updatedForm) {
+      setUpdateFormButtonToText();
+      if (updatedForm) {
+        unlock(); // allows editing of form
+        displayForm(updatedForm);
+      }
     }
 
     function getCurrentStack() {
@@ -326,11 +480,13 @@
       Object.assign(connections, newConnections);
     }
 
+    // a group of UI elements that can be enabled/disabled together
+    function getEnableGroup() {
+      return Array.from(elements.container.querySelectorAll(".enableGroup"));
+    }
+
     function disable() {
-      elements.omnibox.setAttribute("disabled", true);
-      elements.newNoteButton.setAttribute("disabled", true);
-      elements.manualButton.setAttribute("disabled", true);
-      elements.omniboxButton.setAttribute("disabled", true);
+      getEnableGroup().forEach((el) => el.setAttribute("disabled", true));
       elements.updateButtonHint.textContent =
         "This is a closed form.  " + "You cannot edit it.";
       elements.copyButton.classList.remove("hidden");
@@ -340,10 +496,7 @@
     }
 
     function enable() {
-      elements.omnibox.removeAttribute("disabled");
-      elements.newNoteButton.removeAttribute("disabled");
-      elements.manualButton.removeAttribute("disabled");
-      elements.omniboxButton.removeAttribute("disabled");
+      getEnableGroup().forEach((el) => el.removeAttribute("disabled"));
       elements.updateButtonHint.textContent = "";
       elements.copyButton.classList.add("hidden");
       elements.duplicateButton.classList.add("hidden");
@@ -429,12 +582,11 @@
           toast(change.target.value + " OK");
           Changes.add(change);
           break;
-        case "manual": // SPECIAL CASE
+        case "manual":
           Changes.add(change);
           return; // no change to buttons or "saved" state for manual entries
       }
 
-      Changes.saved = false;
       elements.undoButton.removeAttribute("disabled");
       const form = connections.getCurrentForm();
       if (form.isBlank()) {
@@ -640,7 +792,7 @@
           } else if (choice === "other") {
             item.notes = [item.notes, input.value].filter((s) => s).join(", ");
           }
-          FormPage.updateItems({
+          updateItems({
             target: {
               name: "items",
               value,
@@ -867,7 +1019,7 @@
         return;
       }
       const form = connections.getCurrentForm();
-      const author = usernameDisplay.textContent;
+      const author = getUsername();
       form.notes.push({
         timestamp: Date.now(),
         author,
@@ -881,7 +1033,7 @@
       });
       elements.noteSection.appendChild(
         HTML.createElement("p", {
-          textContent: `"Note: [${author}] ${body}`,
+          textContent: `Note: [${author}] ${body}`,
         })
       );
       if (elements.noteSection.classList.contains("hidden")) {
@@ -911,7 +1063,8 @@
       ) {
         HTML.modal({
           child: HTML.paragraph(
-            'The start time has passed and no one has checked in.  Do you want to close this form as a "no show?"'
+            "The start time has passed and no one has checked in.  " +
+              'Do you want to close this form as a "no show?"'
           ),
           closeText: "Cancel",
           onOk: () =>
@@ -921,6 +1074,7 @@
         });
       }
     }
+
     function unlock() {
       locked = false;
     }
@@ -1181,7 +1335,7 @@
         class: "action",
         textContent: "Check In",
         onClick: () => {
-          const savedItem = FormPage.getSavedForm().items.find(
+          const savedItem = getSavedForm().items.find(
             (item) => (item.barcode || item.id) == id
           );
           if (!savedItem) {
@@ -1277,9 +1431,49 @@
       elements.updateFormButton.appendChild(HTML.spinner());
     }
 
+    function setUpdateFormButtonToText() {
+      HTML.empty(elements.updateFormButton);
+      elements.updateFormButton.textContent = updateButtonText.disabled;
+    }
+
     function setDeleteFormButtonToSpinner() {
       HTML.empty(elements.deleteFormButton);
       elements.deleteFormButton.appendChild(HTML.spinner());
+    }
+
+    function getUsername() {
+      const el = document.querySelector("span.usernameDisplay");
+      if (el) return el.textContent;
+      return "anonymous";
+    }
+
+    function onChangeLog() {
+      const changes = [
+        ...getCurrentStack()
+          .getCurrentForm()
+          .notes.reduce((areChanges, note) => {
+            const change = Utility.tryJsonParse(note.body);
+            if (!Array.isArray(change)) return areChanges;
+            change.forEach((entry) => (entry.author = note.author));
+            return [...areChanges, ...change];
+          }, []),
+        ...Changes.getStack(),
+      ];
+      HTML.modal({
+        children: [
+          HTML.table(
+            HTML.row(...["Time", "User", "Field", "Value"].map(HTML.cell))
+          ),
+          ...changes.map(({ timestamp, author, name, value }) =>
+            HTML.row(
+              HTML.cell(DateUtils.getFormattedDate(new Date(timestamp))),
+              HTML.cell(author),
+              HTML.cell(Utility.uncamelCase(name)),
+              HTML.cell(value)
+            )
+          ),
+        ],
+      });
     }
   })();
 </script>

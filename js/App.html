@@ -28,31 +28,35 @@
       }),
       usernameDisplay: HTML.createElement("span", { class: "usernameDisplay" }),
     };
-    const page = HTML.page({
-      hidden: false,
-      name: "app",
-      children: [
-        HTML.createElement("header", {
-          children: [
-            HTML.heading1("Equipment Check Out"),
-            HTML.createElement("span", {
-              class: "usernameContainer",
-              textContent: "signed in as ",
-              child: elements.usernameDisplay,
-            }),
-          ],
-        }),
-        HTML.createElement("nav", {
-          children: [
-            elements.newFormButton,
-            elements.openFormsButton,
-            elements.closedFormsButton,
-          ],
-        }),
-        ClosedFormsPage.getHtmlNode(),
-        OpenFormsPage.getHtmlNode(),
-      ],
-    });
+    document.body.appendChild(
+      HTML.page({
+        hidden: false,
+        name: "app",
+        children: [
+          HTML.createElement("header", {
+            children: [
+              HTML.heading1("Equipment Check Out"),
+              HTML.createElement("span", {
+                class: "usernameContainer",
+                textContent: "signed in as ",
+                child: elements.usernameDisplay,
+              }),
+            ],
+          }),
+          HTML.createElement("nav", {
+            children: [
+              elements.newFormButton,
+              elements.openFormsButton,
+              elements.closedFormsButton,
+            ],
+          }),
+          ClosedFormsPage.getHtmlNode(),
+          OpenFormsPage.getHtmlNode(),
+          FormPage.getHtmlNode(),
+          LoadingPage.getHtmlNode(),
+        ],
+      })
+    );
 
     const pages = {
       ClosedFormsPage,
@@ -88,6 +92,7 @@
       getSavedForm: FormPage.getSavedForm,
       getCurrentForm: OpenFormsPage.getCurrentForm,
     });
+    Omnibox.setElement(FormPage.getOmnibox());
     FormPage.setHandlers({
       onDelete,
       onDisplayForm: () => showPage(FormPage),
@@ -177,14 +182,37 @@
       }
     }
 
-    function onSubmit(form) {
-      withErrorHandler
+    function onSubmit(
+      form,
+      onSuccess = () => undefined,
+      onFailure = () => undefined
+    ) {
+      google.script.run
+        .withFailureHandler((error) => {
+          displayErrorMessage(error.message);
+          onFailure();
+        })
         .withSuccessHandler((response) => {
-          if (response.post === "updateForm") return onUpdateForm(response);
-          if (response.post === "openForms") return onOpenForms(response);
-          if (response.post === "collision") return onCollision(response);
-          if (response.post === "invalid")
+          if (response.target === "updateForm") {
+            const updatedForm = new Form(JSON.parse(response.form));
+            OpenFormsPage.getStack()
+              .replace(updatedForm)
+              .updateIndex(updatedForm);
+            onSuccess(updatedForm);
+            return;
+          }
+          if (response.target === "openForms") {
+            onSuccess();
+            return onOpenForms(response);
+          }
+          if (response.target === "collision") {
+            onFailure();
+            return onCollision(response);
+          }
+          if (response.target === "invalid") {
+            onFailure();
             return displayErrorMessage("Form is invalid");
+          }
         })
         .doPost({
           post: "updateForm",
@@ -429,15 +457,6 @@
       } else {
         Omnibox.parse();
       }
-    }
-
-    function onUpdateForm(response) {
-      //app.changes.saved = true; //! Should be Changes.clear();
-      FormPage.lockButtons(); // disables "update" until next change
-      FormPage.unlock(); // allows editing of form
-      const updatedForm = new Form(JSON.parse(response.form));
-      OpenFormsPage.getStack().replace(updatedForm).updateIndex(updatedForm);
-      FormPage.displayForm(updatedForm);
     }
 
     function displayErrorMessage(message) {
