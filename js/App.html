@@ -12,22 +12,61 @@
   */
   /* exported App */
   const App = (function () {
+    const state = {
+      roster: null,
+      closedForms: null,
+      openForms: null,
+      inventory: null,
+      savedForm: null,
+      currentForm: null,
+      saved: true,
+    };
     const elements = {
       newFormButton: HTML.createElement("button", {
         textContent: "New Form",
         class: "share",
         disabled: true,
+        onClick: () => {
+          const onOk = () => {
+            const form = new Form({});
+            state.openForms.push(form);
+            setForm(form);
+          };
+          if (!state.saved) loseDataWarning(onOk);
+          else onOk();
+        },
       }),
       openFormsButton: HTML.createElement("button", {
         textContent: "View Open Forms",
         disabled: true,
+        onClick: (_, button) => {
+          button.setAttribute("disabled", true);
+          // check for unsaved changes, TBD,
+          state.openForms = null;
+          withErrorHandler
+            .withSuccessHandler(onOpenForms)
+            .doGet({ get: "openForms" });
+          showLoadingPage();
+        },
       }),
       closedFormsButton: HTML.createElement("button", {
         textContent: "View Closed Forms",
         disabled: true,
+        onClick: () => {
+          // const onOk = () => showPage(ClosedFormsPage);
+          // if (!FormPage.isSaved()) FormPage.loseDataWarning(onOk);
+          // else onOk();
+        },
       }),
       usernameDisplay: HTML.createElement("span", { class: "usernameDisplay" }),
     };
+    const pageContainer = HTML.createElement("div", {
+      child: LoadingPage({
+        rosterStatus: "Loading students...",
+        inventoryStatus: "Loading inventory...",
+        openFormsStatus: "Loading open forms...",
+      }),
+    });
     document.body.appendChild(
       HTML.page({
         hidden: false,
@@ -50,99 +89,64 @@
               elements.closedFormsButton,
             ],
           }),
-          ClosedFormsPage.getHtmlNode(),
-          OpenFormsPage.getHtmlNode(),
-          FormPage.getHtmlNode(),
-          LoadingPage.getHtmlNode(),
+          pageContainer,
         ],
       })
     );
-
-    const pages = {
-      ClosedFormsPage,
-      FormPage,
-      LoadingPage,
-      OpenFormsPage,
-    };
-
-    for (const page in pages) {
-      if (!["show", "hide"].every((fn) => fn in pages[page]))
-        displayErrorMessage(
-          `${page} doesn't have required show/hide functions`
-        );
-    }
 
     const withErrorHandler = google.script.run.withFailureHandler((error) => {
       console.error(error);
       displayErrorMessage(error.message);
     });
 
-    OpenFormsPage.setHandlers({
-      clickTable: ({ form }) => FormPage.displayForm(form),
-    });
-    Omnibox.setHandlers({
-      onLogManualEntry: (value) =>
-        FormPage.handleChange({ target: { name: "manual", value } }),
-      onItemChange: FormPage.updateItems,
-      onStudentChange: FormPage.updateStudents,
-      onNewCodabar,
-      onNeedsSignature,
-    });
-    Omnibox.setConnections({
-      getSavedForm: FormPage.getSavedForm,
-      getCurrentForm: OpenFormsPage.getCurrentForm,
-    });
-    Omnibox.setElement(FormPage.getOmnibox());
-    FormPage.setHandlers({
-      onDelete,
-      onDisplayForm: () => showPage(FormPage),
-      onItemMetaClick: Omnibox.setInputAndParse,
-      onItemQuantityChange: Omnibox.handleItem,
-      onManualEntry: Omnibox.manualEntry,
-      onModalQuantityChange: (item) => Omnibox.makeQuantityChangeDialog(item)(),
-      onParseInput: Omnibox.parse,
-      onStudentMetaClick: Omnibox.setInputAndParse,
-      onSubmit,
-      onUnload: () => withErrorHandler.doPost({ post: "unload" }),
-    });
-    FormPage.setConnections({
-      getCurrentForm: OpenFormsPage.getCurrentForm,
-      getStack: OpenFormsPage.getStack,
-    });
-    ClosedFormsPage.setHandlers({
-      onFormSelect: FormPage.displayForm,
-      onUpdate: (dateRangeJSON) =>
-        withErrorHandler
-          .withSuccessHandler(onClosedForms)
-          .doGet({ get: "archive", dateRangeJSON }),
-    });
-    ClosedFormsPage.setConnections({
-      setCurrentStack: FormPage.setCurrentStack,
-    });
-
-    elements.openFormsButton.addEventListener("click", () => {
-      // check for unsaved changes, TBD,
-      withErrorHandler
-        .withSuccessHandler(onOpenForms)
-        .doGet({ get: "openForms" });
-    });
-    elements.closedFormsButton.addEventListener("click", () => {
-      const onOk = () => showPage(ClosedFormsPage);
-      if (!FormPage.isSaved()) FormPage.loseDataWarning(onOk);
-      else onOk();
-    });
-    elements.newFormButton.addEventListener("click", () => {
-      const onOk = () => {
-        const newForm = new Form({});
-        const stack = OpenFormsPage.getStack();
-        FormPage.setCurrentStack(stack);
-        stack.push(newForm);
-        // app.changes.saved = false; //! TODO ensure that FormPage is internally handling this
-        FormPage.displayForm(newForm);
-      };
-      if (!FormPage.isSaved()) FormPage.loseDataWarning(onOk);
-      else onOk();
-    });
+    // OpenFormsPage.setHandlers({
+    //   clickTable: ({ form }) => FormPage.displayForm(form),
+    // });
+    // Omnibox.setHandlers({
+    //   onLogManualEntry: (value) =>
+    //     FormPage.handleChange({ target: { name: "manual", value } }),
+    //   onItemChange: (change) => {
+    //     HTML.toast(`${change.target.value} OK`);
+    //     FormPage.updateItems(change);
+    //   },
+    //   onStudentChange: (change) => {
+    //     HTML.toast(`${change.target.value} OK`);
+    //     FormPage.updateStudents(change);
+    //   },
+    //   onNewCodabar,
+    //   onNeedsSignature,
+    // });
+    // Omnibox.setConnections({
+    //   getSavedForm: FormPage.getSavedForm,
+    //   getCurrentForm: () => undefined, //OpenFormsPage.getCurrentForm,
+    // });
+    // Omnibox.setElement(FormPage.getOmnibox());
+    // FormPage.setHandlers({
+    //   onDelete,
+    //   // onDisplayForm: () => showPage(FormPage),
+    //   onItemMetaClick: Omnibox.setInputAndParse,
+    //   onItemQuantityChange: Omnibox.handleItem,
+    //   onManualEntry: Omnibox.manualEntry,
+    //   onModalQuantityChange: (item) => Omnibox.makeQuantityChangeDialog(item)(),
+    //   onParseInput: Omnibox.parse,
+    //   onStudentMetaClick: Omnibox.setInputAndParse,
+    //   onSubmit,
+    //   onUnload: () => withErrorHandler.doPost({ post: "unload" }),
+    // });
+    // FormPage.setConnections({
+    //   getCurrentForm: () => undefined, //OpenFormsPage.getCurrentForm,
+    //   getStack: () => undefined, //OpenFormsPage.getStack,
+    // });
+    // ClosedFormsPage.setHandlers({
+    //   onFormSelect: FormPage.displayForm,
+    //   onUpdate: (dateRangeJSON) =>
+    //     withErrorHandler
+    //       .withSuccessHandler(onClosedForms)
+    //       .doGet({ get: "archive", dateRangeJSON }),
+    // });
+    // ClosedFormsPage.setConnections({
+    //   setCurrentStack: FormPage.setCurrentStack,
+    // });
 
     // initial server calls
     withErrorHandler
@@ -157,16 +161,7 @@
       .withSuccessHandler(onRoster)
       .doGet({ get: "students", init: true });
     withErrorHandler
-      .withSuccessHandler((response) => {
-        const inventory = Omnibox.getInventory();
-        inventory.setItems(JSON.parse(response.items));
-        if (inventory.getLength() < 1) {
-          return displayErrorMessage("Error: Server found no items!");
-        }
-        if (response.unlock) {
-          tryUnlock();
-        }
-      })
+      .withSuccessHandler(onInventory)
       .doGet({ get: "items", init: true });
     withErrorHandler.withSuccessHandler(onClosedForms).doGet({
       get: "archive",
@@ -176,9 +171,20 @@
 
     //---- function definitions
 
-    function showPage(page) {
-      for (const key in pages) {
-        pages[key][page === pages[key] ? "show" : "hide"]();
+    function onInventory(response) {
+      // const inventory = Omnibox.getInventory();
+      // inventory.setItems(JSON.parse(response.items));
+      try {
+        var inventory = JSON.parse(response.items);
+      } catch (error) {
+        return displayErrorMessage("Error getting inventory from server");
+      }
+      if (!inventory.length) {
+        return displayErrorMessage("Error: Server found no items!");
+      }
+      state.inventory = inventory;
+      if (response.unlock) {
+        tryUnlock();
       }
     }
 
@@ -195,9 +201,9 @@
         .withSuccessHandler((response) => {
           if (response.target === "updateForm") {
             const updatedForm = new Form(JSON.parse(response.form));
-            OpenFormsPage.getStack()
-              .replace(updatedForm)
-              .updateIndex(updatedForm);
+            // OpenFormsPage.getStack()
+            //   .replace(updatedForm)
+            //   .updateIndex(updatedForm);
             onSuccess(updatedForm);
             return;
           }
@@ -296,49 +302,51 @@
     //   );
     // }
 
+    function showLoadingPage() {
+      updatePageContainer(
+        LoadingPage({
+          rosterStatus: state.roster
+            ? `${state.roster.length} people downloaded`
+            : "Loading students...",
+          inventoryStatus: state.inventory
+            ? `${state.inventory.length} items downloaded`
+            : "Loading inventory...",
+          openFormsStatus: state.openForms
+            ? `${state.openForms.length} open forms downloaded`
+            : "Loading open forms...",
+        })
+      );
+    }
+
     /**
      * tryUnlock controls when the loading page switches to the open forms page
      */
     function tryUnlock() {
-      const rosterLength = Omnibox.getRoster().length,
-        inventoryLength = Omnibox.getInventory().getLength(),
-        stack = OpenFormsPage.getStack(),
-        stackInit = stack.isInitialized();
-      if (rosterLength > 1) {
-        LoadingPage.updateStatus(
-          "rosterStatus",
-          `${rosterLength} people downloaded`
-        );
-      }
-      if (inventoryLength > 1) {
-        LoadingPage.updateStatus(
-          "inventoryStatus",
-          `${inventoryLength} items downloaded`
-        );
-      }
-      if (stackInit) {
-        LoadingPage.updateStatus(
-          "openFormsStatus",
-          `${stack.getLength()} forms downloaded`
-        );
-      }
-      if (rosterLength < 1 || inventoryLength < 1 || !stackInit) {
+      // const rosterLength = Omnibox.getRoster().length,
+      //   inventoryLength = Omnibox.getInventory().getLength(),
+      //   stack = new Stack(), //OpenFormsPage.getStack(),
+      //   stackInit = stack.isInitialized();
+      showLoadingPage();
+      if (![state.inventory, state.roster, state.openForms].every(Boolean)) {
         return false;
       }
       elements.openFormsButton.removeAttribute("disabled");
       elements.newFormButton.removeAttribute("disabled");
-      showPage(OpenFormsPage);
+      updatePageContainer(
+        OpenFormsPage({ openForms: state.openForms, setForm })
+      );
       return true;
     }
 
     function onClosedForms(response) {
       try {
-        ClosedFormsPage.setForms(JSON.parse(response.formList));
+        var closedForms = response.formList;
       } catch (error) {
         return displayErrorMessage(
           "Server was unable to retrieve the closed forms."
         );
       }
+      state.closedForms = closedForms;
       if (response.unlock) {
         elements.closedFormsButton.removeAttribute("disabled");
       }
@@ -360,15 +368,15 @@
     }
 
     function onOpenForms(response) {
-      const stack = OpenFormsPage.getStack();
       try {
-        stack.importForms(JSON.parse(response.formList)).sortForms();
+        var openForms = JSON.parse(response.formList);
       } catch (error) {
         return displayErrorMessage(
           "Error: server failed to get the open forms."
         );
       }
-      FormPage.setCurrentStack(stack);
+      // FormPage.setCurrentStack(stack);
+      state.openForms = openForms.map((form) => new Form(form));
       //! TODO check that the "saved" prop is updated by something else, should be Changes.clear()
       // app.changes.saved = true;
       tryUnlock();
@@ -409,7 +417,7 @@
       }
       // are changes saved?
       if (FormPage.isSaved()) {
-        OpenFormsPage.setStack(newForms);
+        //OpenFormsPage.setStack(newForms);
         FormPage.displayForm(newForm);
         // app.pages.form.setTimeout(); //! TODO rethink
       } else {
@@ -447,11 +455,15 @@
     }
 
     function onRoster(response) {
-      const roster = JSON.parse(response.students);
-      Omnibox.setRoster(roster);
+      try {
+        var roster = JSON.parse(response.students);
+      } catch (error) {
+        return displayErrorMessage("Error getting roster from server.");
+      }
       if (roster.length < 1) {
         return displayErrorMessage("No students found");
       }
+      state.roster = roster;
       if (response.unlock) {
         tryUnlock();
       } else {
@@ -462,6 +474,34 @@
     function displayErrorMessage(message) {
       HTML.modal({
         children: [HTML.heading1("Error"), HTML.paragraph(message)],
+      });
+    }
+
+    function updatePageContainer(page) {
+      HTML.empty(pageContainer);
+      pageContainer.appendChild(page);
+    }
+
+    function setForm(form) {
+      updatePageContainer(
+        FormPage({
+          form,
+          omnibox: HTML.createElement("input", { type: "text" }),
+          submit: () => displayErrorMessage("submit is disabled"),
+          onChange: console.log,
+        })
+      );
+    }
+
+    function loseDataWarning(onOk) {
+      HTML.modal({
+        children: [
+          HTML.heading1("Warning, your changes are not saved"),
+          HTML.paragraph("Are you sure?"),
+        ],
+        closeText: "Cancel",
+        okText: "Lose changes",
+        onOk,
       });
     }
   })();

@@ -1,0 +1,43 @@
+<script>
+  /* global DateUtils HTML Utility */
+  /* exported DateTimeInput */
+  function DateTimeInput({ name, value, onChange }) {
+    const date = DateUtils.parseFormattedDate(
+      value || DateUtils.getFormattedDate(new Date())
+    );
+    return [
+      HTML.createElement("input", {
+        type: "date",
+        name: `${name}Date`,
+        autocomplete: "off",
+        placeholder: "mm/dd/yyyy",
+        value: DateUtils.formatDashed(date),
+        onChange,
+      }),
+      HTML.select({
+        name: `${name}Hour`,
+        children: Utility.range(12, 1).map((option) => HTML.option(option)),
+        value: DateUtils.parseHours(date.getHours()),
+        onChange,
+      }),
+      document.createTextNode(":"),
+      HTML.select({
+        name: `${name}Minute`,
+        children: Utility.range(12, 0, 5).map((n) =>
+          HTML.createElement("option", {
+            textContent: String(n).padStart(2, "0"),
+            value: n,
+          })
+        ),
+        value: DateUtils.roundMinutes(date.getMinutes()),
+        onChange,
+      }),
+      HTML.select({
+        name: `${name}AMPM`,
+        children: ["AM", "PM"].map((option) => HTML.option(option)),
+        value: DateUtils.parseAMPM(date.getHours()),
+        onChange,
+      }),
+    ];
+  }
+</script>

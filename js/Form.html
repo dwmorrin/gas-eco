@@ -1,5 +1,5 @@
 <script>
-  /* global Inventory */
+  /* global Inventory Item */
   /* exported Form */
   /**
    * @param {obj} - passing in an existing form makes a copy of that form
@@ -7,17 +7,17 @@
    */
   function Form(
     {
-      bookedStudents = null,
+      bookedStudents = "",
       bookingId = null,
-      contact = null,
-      endTime = null,
+      contact = "",
+      endTime = "",
       id = null,
-      location = null,
-      overnight = null,
-      project = null,
-      startTime = null,
-      tape = null,
-      hash = null,
+      location = "",
+      overnight = false,
+      project = "",
+      startTime = "",
+      tape = false,
+      hash = "",
       items = null,
       notes = [],
       students = [],
@@ -35,16 +35,16 @@
         this.items.push(copy);
       });
     } else this.items = new Inventory().setItems(items);
-    this.bookedStudents = duplicating ? null : bookedStudents;
+    this.bookedStudents = duplicating ? null : String(bookedStudents);
     this.bookingId = duplicating ? null : bookingId;
-    this.contact = duplicating ? null : contact;
-    this.endTime = endTime;
+    this.contact = duplicating ? null : String(contact);
+    this.endTime = String(endTime);
     this.id = duplicating ? null : id;
-    this.location = location;
-    this.project = duplicating ? null : project;
-    this.overnight = duplicating ? null : overnight;
-    this.startTime = startTime;
-    this.tape = duplicating ? null : tape;
+    this.location = String(location);
+    this.project = duplicating ? null : String(project);
+    this.overnight = duplicating ? null : Boolean(overnight);
+    this.startTime = String(startTime);
+    this.tape = duplicating ? null : Boolean(tape);
     this.hash = duplicating ? null : hash;
     this.notes = duplicating
       ? [

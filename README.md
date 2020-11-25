@@ -24,6 +24,8 @@ All the visible HTML is created via JavaScript.
 - Item, Inventory, Form, and Stack are classes
 - App is the entry file.
 
+(At this point, basically just rewriting this to be a poor imitation of a well-known library)
+
 #### HTML
 
 - html/index: point of entry, just serves as a container for JS and CSS

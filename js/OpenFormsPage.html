@@ -1,35 +1,29 @@
 <script>
-  /* global DateUtils HTML Stack Utility */
+  /* global DateUtils HTML Utility OpenFormsTable */
   /* exported OpenFormsPage */
-  const OpenFormsPage = (function () {
-    const elements = {
-      container: document.querySelector("div.openFormsContainer"),
-      equipmentTableBody: HTML.createElement("tbody", {
-        class: "equipmentOut",
-      }),
-      formsTableBody: HTML.createElement("tbody", { class: "open" }),
-      formsTableHead: HTML.createElement("thead", {
-        class: "open",
-        children: [
-          HTML.headerCell({ child: HTML.documentIcon() }),
-          ...["startTime", "endTime", "location", "students"].map((text) =>
-            HTML.createElement("th", {
-              "data-sort": text,
-              textContent: Utility.uncamelCase(text),
-            })
-          ),
-        ],
-      }),
-    };
-
-    elements.container = HTML.page({
+  function OpenFormsPage({ openForms, setForm }) {
+    return HTML.page({
       name: "openForms",
       children: [
         HTML.createElement("h2", { textContent: "Open Forms" }),
         HTML.createElement("h3", {
           textContent: "click on a form to view and edit",
         }),
-        HTML.table(elements.formsTableHead, elements.formsTableBody),
+        HTML.table(
+          HTML.createElement("thead", {
+            class: "open",
+            children: [
+              HTML.headerCell({ child: HTML.documentIcon() }),
+              ...["startTime", "endTime", "location", "students"].map((text) =>
+                HTML.createElement("th", {
+                  "data-sort": text,
+                  textContent: Utility.uncamelCase(text),
+                })
+              ),
+            ],
+          }),
+          OpenFormsTable({ openForms, setForm })
+        ),
         HTML.createElement("h2", { textContent: "Equipment Checked Out" }),
         HTML.table(
           HTML.createElement("thead", {
@@ -40,134 +34,12 @@
               )
             ),
           }),
-          elements.equipmentTableBody
+          HTML.createElement("tbody", {
+            class: "equipmentOut",
+          })
         ),
       ],
     });
-    let stack = new Stack();
-
-    let refreshId = null;
-
-    const handlers = {
-      clickTable: () => undefined,
-    };
-
-    elements.formsTableHead.addEventListener("click", (event) => {
-      stack.sortForms(event.target.dataset.sort);
-      populateFormsTable(stack);
-    });
-
-    elements.formsTableBody.addEventListener("click", (event) =>
-      handlers.clickTable({
-        event,
-        form: stack.getByID(event.target.parentNode.getAttribute("data-id")),
-      })
-    );
-
-    return {
-      getCurrentForm,
-      getHtmlNode,
-      getRefreshId,
-      getStack,
-      hide,
-      isShowing,
-      setHandlers,
-      setStack,
-      show,
-    };
-
-    function getHtmlNode() {
-      return elements.container;
-    }
-
-    function getRefreshId() {
-      return refreshId;
-    }
-
-    function setHandlers(newHandlers) {
-      Object.assign(handlers, newHandlers);
-    }
-
-    //! TODO why?
-    function getStack() {
-      return stack;
-    }
-
-    function setStack(newStack) {
-      stack = newStack;
-    }
-
-    function getCurrentForm() {
-      return stack.getCurrentForm();
-    }
-
-    function isShowing() {
-      return !elements.container.classList.contains("hidden");
-    }
-
-    function show() {
-      elements.container.classList.remove("hidden");
-      // if (refreshId === null) {
-      //   setInterval();
-      // }
-      populateFormsTable(stack);
-    }
-
-    function hide() {
-      elements.container.classList.add("hidden");
-      // if (refreshId !== null) {
-      //   window.clearInterval(refreshId);
-      // }
-      // refreshId = null;
-    }
-    /**
-     * refreshOpenForms is a window.setTimeout callback function
-     *   to fetch the open forms from the server and silently update.
-     */
-    // function refreshOpenForms() {
-    //   app.run
-    //     .withUserObject({ timeoutId: refreshId })
-    //     .doGet({ get: "openFormsQuiet" });
-    // }
-    // function setInterval() {
-    //   refreshId = window.setInterval(refreshOpenForms, 60000);
-    // }
-
-    function populateFormsTable(forms) {
-      HTML.empty(elements.formsTableBody);
-      HTML.empty(elements.equipmentTableBody);
-
-      // highlight the column currently sorted by
-      displaySortedBy(forms, elements.formsTableHead);
-
-      // if there's no forms...
-      if (!forms.getLength()) {
-        return elements.formsTableBody.appendChild(
-          HTML.createElement("tr", {
-            class: "hoveroff",
-            child: HTML.createElement("td", {
-              textContent: "No open forms",
-              colspan: 5,
-            }),
-          })
-        );
-      }
-
-      // else populate
-      forms.forEach(makeOpenFormTableRows);
-
-      // if makeOpenFormTableRows found no equipment out...
-      if (!elements.equipmentTableBody.firstChild) {
-        elements.equipmentTableBody.appendChild(
-          HTML.createElement("tr", {
-            child: HTML.createElement("td", {
-              class: "noPointerEvents",
-              textContent: "No equipment checked-out.",
-            }),
-          })
-        );
-      }
-    }
 
     function displaySortedBy(stack, tableHead) {
       Array.from(tableHead.querySelectorAll("th")).forEach((header) => {
@@ -200,7 +72,7 @@
       if (type === "active" && now > endTime - fifteenMinutes) {
         type = "endingSoon";
       }
-      elements.formsTableBody.appendChild(
+      formsTableBody.appendChild(
         HTML.createElement("tr", {
           class: type,
           "data-id": form.id,
@@ -222,7 +94,7 @@
       { location, students, endTime, id: formId },
       { description, id: itemId }
     ) {
-      elements.equipmentTableBody.appendChild(
+      equipmentTableBody.appendChild(
         HTML.createElement("tr", {
           "data-id": formId,
           children: [
@@ -235,5 +107,5 @@
         })
       );
     }
-  })();
+  }
 </script>

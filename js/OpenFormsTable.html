@@ -1,0 +1,41 @@
+<script>
+  /* global DateUtils HTML */
+  /* exported OpenFormsTable */
+  function OpenFormsTable({ openForms, setForm }) {
+    return HTML.createElement("tbody", {
+      children: openForms.map((form) =>
+        HTML.createElement("tr", {
+          class: getFormStatus(form),
+          children: [
+            HTML.createElement("td", { child: HTML.documentIcon() }),
+            ...[
+              form.startTime,
+              form.endTime,
+              form.location,
+              form.bookedStudents ||
+                form.students.map((student) => student.name).join(", "),
+            ].map((textContent) => HTML.createElement("td", { textContent })),
+          ],
+          onClick: () => setForm(form),
+        })
+      ),
+    });
+
+    function getFormStatus(form) {
+      const endTime = DateUtils.parseFormattedDate(form.endTime).getTime(),
+        fifteenMinutes = 15 * 60 * 1000, // milliseconds
+        now = Date.now();
+      // determine if active, ending soon, or late (green, yellow, red)
+      if (form.students.some((student) => student.checkIn)) {
+        if (now > endTime) {
+          return "late";
+        }
+        if (now > endTime - fifteenMinutes) {
+          return "endingSoon";
+        }
+        return "active";
+      }
+      return "inactive";
+    }
+  }
+</script>

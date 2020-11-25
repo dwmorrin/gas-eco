@@ -1,27 +1,17 @@
 <script>
-  /* global Config Form DateUtils HTML toast Utility */
+  /* global Config DateUtils HTML Utility DateTimeInput */
   /* exported FormPage */
-
-  /**
-   * TODO clarify the disable/enable controls vs lock/unlock controls
-   *   disable/enable seems to be open vs closed
-   *   lock/unlock seems to be form submission
-   */
-  const FormPage = (function () {
-    const noop = () => undefined;
-    const handlers = {
-      onDelete: noop,
-      onDisplayForm: noop,
-      onItemMetaClick: noop,
-      onItemQuantityChange: noop,
-      onManualEntry: noop,
-      onModalQuantityChange: noop,
-      onParseInput: noop,
-      onStudentMetaClick: noop,
-      onSubmit: noop,
-      onUnload: noop,
-    };
-    const connections = {}; // getCurrentForm, getStack
+  function FormPage({
+    form,
+    disabled = false,
+    savable = false,
+    formIndexDisplay = "",
+    omnibox,
+    submit,
+    onChange,
+  }) {
+    console.log(form);
+    // submodule to track form changes
     const Changes = (function () {
       let saved = true;
       let stack = [];
@@ -54,328 +44,6 @@
         },
       };
     })();
-    const updateButtonText = {
-      enabled: {
-        CLOSE: "Update and Close",
-        CREATE: "Submit",
-        UPDATE: "Update",
-      },
-      disabled: "all changes saved",
-    };
-    const locationOtherOption = HTML.option("Other");
-    const omnibox = HTML.createElement("input", {
-      class: "omnibox enableGroup",
-      type: "text",
-    });
-    const copyButton = HTML.button("Copy items to clipboard", {
-      class: "hidden",
-      tabindex: -1,
-      onClick: () =>
-        Utility.copyToClipboard(
-          JSON.stringify(getCurrentStack().getCurrentForm().items.getStripped())
-        ),
-    });
-    const duplicateButton = HTML.button("Duplicate this form", {
-      class: "hidden",
-      tabindex: -1,
-      onClick: () => {
-        const newForm = new Form(getSavedForm(), true);
-        const stack = connections.getStack();
-        setCurrentStack(stack);
-        stack.push(newForm);
-        // app.changes.saved = false; //! TODO - do we need this?
-        displayForm(newForm);
-      },
-    });
-    const currentFormstackDisplay = HTML.createElement("span", {
-      class: "currentFormstackDisplay",
-    });
-    const updateFormButton = HTML.button("Submit", {
-      disabled: true,
-      class: "action buttonTight",
-      onClick: submit,
-    });
-    const advanceBookingButton = HTML.button("Save as advance booking", {
-      class: "action buttonTight hidden",
-      disabled: true,
-      tabindex: -1,
-      onClick: () => {
-        HTML.modal({
-          children: [
-            HTML.heading1("Save for later?"),
-            HTML.paragraph(
-              "All sign-in and check-out info will be removed. " +
-                "Add all people and items before saving. " +
-                "You can only do this once."
-            ),
-          ],
-          closeText: "Cancel",
-          okText: "Save as advance booking",
-          onOk: makeAdvanceBooking,
-        });
-      },
-    });
-    const undoButton = HTML.button("Revert to saved form", {
-      onClick: () =>
-        HTML.modal({
-          children: [
-            HTML.heading1("Undo all changes"),
-            HTML.paragraph(
-              "Do you want to undo all changes since the last save?"
-            ),
-          ],
-          okText: "Revert to saved form",
-          onOk: () => {
-            // if (!window.isNaN(app.pages.form.autosaveID)) {
-            //   window.clearTimeout(app.pages.form.autosaveID);
-            //   app.pages.form.autosaveID = NaN;
-            // }
-            displayForm(connections.getCurrentForm());
-          },
-        }),
-    });
-    const updateButtonHint = HTML.createElement("span", {
-      class: "updateButtonHint",
-    });
-    const noteSection = HTML.createElement("section", {
-      class: "globalnotes hidden",
-    });
-    const locationSelect = HTML.createElement("select", {
-      name: "location",
-      children: [
-        HTML.option("please select", "none"),
-        ...Array.from(Config.locations).map(HTML.option),
-        locationOtherOption,
-      ],
-    });
-    const tableStaticFields = HTML.createElement("table", {
-      class: "staticFields",
-      onClick: handleClickStaticTable,
-      children: [
-        ...[
-          ["Booked Students", "bookedStudentsDisplay"],
-          ["Contact", "contactDisplay"],
-          ["Project", "projectDisplay"],
-          ["Analog Tape", "tapeDisplay"],
-          ["Overnight Setup", "overnightDisplay"],
-        ].map(([textContent, id]) =>
-          HTML.createElement("tr", {
-            class: "hidden",
-            children: [HTML.headerCell(textContent), HTML.cell({ id })],
-          })
-        ),
-        HTML.row(
-          HTML.headerCell("Location"),
-          HTML.cell({ id: "locationDisplay", class: "editable hidden" }),
-          HTML.cell({ class: "hidden", child: locationSelect })
-        ),
-        HTML.row(
-          HTML.headerCell("Start Time"),
-          HTML.cell({ id: "startTimeDisplay", class: "editable hidden" }),
-          HTML.cell({
-            class: "hidden",
-            children: HTML.dateTimeInputs("start"),
-          })
-        ),
-        HTML.row(
-          HTML.headerCell("End Time"),
-          HTML.cell({ id: "endTimeDisplay", class: "editable hidden" }),
-          HTML.cell({
-            class: "hidden",
-            children: HTML.dateTimeInputs("end"),
-          })
-        ),
-      ],
-    });
-    const studentList = HTML.createElement("tbody", {
-      class: "studentList",
-      child: HTML.row(HTML.cell("Scan ID to sign in a student")),
-      onClick: handleClickStudent,
-    });
-    const itemList = HTML.createElement("tbody", {
-      class: "itemList",
-      onClick: handleClickItem,
-      child: HTML.row(HTML.cell("Scan barcode to check out an item")),
-    });
-    const modelForm = HTML.createElement("form", {
-      class: "model",
-      onChange: handleChange,
-      onSubmit: (e) => e.preventDefault(),
-      children: [
-        HTML.createElement("input", { type: "hidden", name: "notes" }),
-        HTML.createElement("input", { type: "hidden", name: "startTime" }),
-        HTML.createElement("input", { type: "hidden", name: "endTime" }),
-        HTML.createElement("section", {
-          class: "formControls",
-          children: [
-            HTML.createElement("div", {
-              tabindex: 0,
-              onFocus: () => locationSelect.focus(),
-            }),
-            omnibox,
-            HTML.button("🔎", {
-              class: "buttonSmall enableGroup",
-              tabindex: -1,
-              onClick: () => handlers.onParseInput(),
-            }),
-            HTML.button("Add item without barcode or ID", {
-              class: "enableGroup",
-              tabindex: -1,
-              onClick: () => handlers.onManualEntry(),
-            }),
-            HTML.button("New note", {
-              class: "action enableGroup",
-              tabindex: -1,
-              onClick: () => {
-                const input = HTML.createElement("textarea");
-                HTML.modal({
-                  children: [
-                    HTML.heading1("New note"),
-                    HTML.paragraph("Enter a note"),
-                    input,
-                  ],
-                  okText: "Save note",
-                  onOk: () => saveNote(input.value),
-                });
-                input.focus();
-              },
-            }),
-            HTML.button("Change log", {
-              tabindex: -1,
-              onClick: onChangeLog,
-            }),
-            copyButton,
-            duplicateButton,
-            HTML.br(),
-            HTML.button("Previous form", {
-              tabindex: -1,
-              onClick: getPrevious,
-            }),
-            HTML.button("Next form", {
-              tabindex: -1,
-              onClick: getNext,
-            }),
-            currentFormstackDisplay,
-            HTML.br(),
-            updateFormButton,
-            advanceBookingButton,
-            undoButton,
-            updateButtonHint,
-          ],
-        }),
-        noteSection,
-        HTML.createElement("section", {
-          children: [
-            tableStaticFields,
-            HTML.createElement("div", {
-              tabindex: 0,
-              onFocus: () => omnibox.focus(),
-            }),
-          ],
-        }),
-        HTML.createElement("section", {
-          children: [
-            HTML.createElement("h4", { textContent: "Students" }),
-            HTML.table(
-              HTML.createElement("thead", {
-                class: "form formStudents",
-                children: [
-                  HTML.row(
-                    ...["Name", "NetID", "Signed In", "Signed Out"].map(
-                      HTML.headerCell
-                    )
-                  ),
-                ],
-              }),
-              studentList
-            ),
-          ],
-        }),
-        HTML.createElement("section", {
-          children: [
-            HTML.createElement("h4", { textContent: "Equipment Checked Out" }),
-            HTML.table(
-              HTML.createElement("thead", {
-                class: "form formItems",
-                children: [
-                  HTML.row(
-                    ...[
-                      "Qty",
-                      "Items",
-                      "Item ID",
-                      "Checked Out",
-                      "Checked In",
-                    ].map(HTML.headerCell)
-                  ),
-                ],
-              }),
-              itemList
-            ),
-          ],
-        }),
-      ],
-    });
-    const elements = {
-      locationOtherOption,
-      advanceBookingButton,
-      copyButton,
-      currentFormstackDisplay,
-      deleteFormButton: HTML.createElement("button", {
-        textContent: "Delete this form",
-        class: "create",
-        onClick: () => {
-          if (getSavedForm().isBlank()) {
-            return handlers.onDelete();
-          }
-          HTML.modal({
-            child: HTML.paragraph(
-              "This will close out the form and mark it deleted. Are you sure?"
-            ),
-            closeText: "Cancel",
-            onOk: () => {
-              lock();
-              setDeleteFormButtonToSpinner();
-              const form = connections.getCurrentForm();
-              Changes.add({
-                target: {
-                  name: "delete",
-                  value: "form deleted",
-                },
-              });
-              form.notes.push(Changes.makeNote());
-              handlers.onDelete(form.stringify());
-            },
-          });
-        },
-      }),
-      duplicateButton,
-      form: modelForm,
-      itemList,
-      locationSelect,
-      noteSection,
-      omnibox,
-      studentList,
-      tableStaticFields,
-      undoButton,
-      updateButtonHint,
-      updateFormButton,
-    };
-    elements.container = HTML.page({
-      name: "form",
-      children: [modelForm, elements.deleteFormButton],
-      onKeydown: (event) => {
-        if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
-          submit();
-        }
-      },
-    });
-
-    let autosaveID = null;
-    let savedForm = new Form({});
-    let currentStack = null;
-    let locked = false;
-    let timeoutId = null;
-    let touched = new Set();
 
     /**
      * @see {@link https://developer.mozilla.org/en-US/docs/Web/Events/beforeunload}
@@ -386,263 +54,314 @@
         event.returnValue = confirmationMessage; // Gecko, Trident, Chrome 34+
         return confirmationMessage; // Gecko, WebKit, Chrome <34
       } else {
-        handlers.onUnload();
+        // handlers.onUnload();
       }
     });
 
-    const exported = {
-      disable,
-      displayForm,
-      enable,
-      getCurrentStack,
-      getHtmlNode,
-      getOmnibox() {
-        // TODO this is a temporary solution to communicate with Omnibox module
-        return omnibox;
-      },
-      getSavedForm,
-      handleChange,
-      hide,
-      isLocked,
-      isSaved,
-      isShowing,
-      lock,
-      lockButtons,
-      loseData,
-      loseDataWarning,
-      saveNote,
-      setConnections,
-      setCurrentStack,
-      setDeleteFormButtonToSpinner,
-      setHandlers,
-      setSavedForm,
-      setUpdateFormButtonToSpinner,
-      show,
-      updateItems,
-      updateStudents,
-    };
-
-    return exported;
-
-    function getHtmlNode() {
-      return elements.container;
-    }
-
-    // function checkForms() {
-    //   app.run
-    //     .withUserObject({ timeoutId: timeoutId })
-    //     .doGet({ get: "checkForms" });
-    // }
-
-    function submit() {
-      const currentButtonText = elements.updateFormButton.textContent;
-      handlers.onParseInput();
-      lock();
-      setUpdateFormButtonToSpinner();
-      const form = connections.getCurrentForm();
-      form.notes.push(Changes.makeNote());
-      handlers.onSubmit(form.stringify(), onSubmitSuccess, () => {
-        HTML.empty(elements.updateFormButton);
-        elements.updateFormButton.textContent = currentButtonText;
-      });
-    }
-
-    function onSubmitSuccess(updatedForm) {
-      setUpdateFormButtonToText();
-      if (updatedForm) {
-        unlock(); // allows editing of form
-        displayForm(updatedForm);
-      }
-    }
-
-    function getCurrentStack() {
-      return currentStack;
-    }
-
-    function setCurrentStack(newStack) {
-      currentStack = newStack;
-    }
-
-    function getSavedForm() {
-      return savedForm;
-    }
-
-    function setSavedForm(form) {
-      savedForm = form;
-      return exported;
-    }
-
-    function setHandlers(newHandlers) {
-      Object.assign(handlers, newHandlers);
-    }
-
-    function setConnections(newConnections) {
-      Object.assign(connections, newConnections);
-    }
-
-    // a group of UI elements that can be enabled/disabled together
-    function getEnableGroup() {
-      return Array.from(elements.container.querySelectorAll(".enableGroup"));
-    }
-
-    function disable() {
-      getEnableGroup().forEach((el) => el.setAttribute("disabled", true));
-      elements.updateButtonHint.textContent =
-        "This is a closed form.  " + "You cannot edit it.";
-      elements.copyButton.classList.remove("hidden");
-      elements.duplicateButton.classList.remove("hidden");
-      elements.advanceBookingButton.classList.add("hidden");
-      elements.advanceBookingButton.setAttribute("disabled", true);
-    }
-
-    function enable() {
-      getEnableGroup().forEach((el) => el.removeAttribute("disabled"));
-      elements.updateButtonHint.textContent = "";
-      elements.copyButton.classList.add("hidden");
-      elements.duplicateButton.classList.add("hidden");
-      refreshUpdateButton();
-    }
-
-    function loseData() {
-      Changes.clear();
-      elements.updateButtonHint.textContent = "";
-      elements.updateFormButton.disabled = true;
-      elements.undoButton.disabled = true;
-    }
-
-    function getNext() {
-      const form = currentStack.getNext();
-      if (!form) {
-        // we're already at the end
-        elements.omnibox.focus();
-        return;
-      }
-      if (!Changes.isSaved()) {
-        currentStack.getPrevious(); // fix currentIndex
-        // handlers.onUnsavedForm("nextForm");
-        return loseDataWarning(() => {
-          Changes.loseData();
-          displayForm(currentStack.getNext());
-        });
-      }
-      displayForm(form);
-    }
-
-    function getPrevious() {
-      const form = currentStack.getPrevious();
-      if (!form) {
-        // we're already at the beginning
-        elements.omnibox.focus();
-        return;
-      }
-      if (!Changes.isSaved()) {
-        currentStack.getNext(); // fix currentIndex
-        // handlers.onUnsavedForm("previousForm");
-        return loseDataWarning(() => {
-          Changes.loseData();
-          displayForm(currentStack.getPrevious());
-        });
-      }
-      displayForm(form);
-    }
-
-    /** for form validation and attach beforeunload listener for unsaved changes */
-    function handleChange(change) {
-      if (
-        (change.target.classList &&
-          change.target.classList.contains("selectQuantity")) ||
-        change.target == elements.omnibox
-      ) {
-        return;
-      }
-
-      switch (change.target.name) {
-        case "location":
-          handleChangeLocation(change);
-          if (change.target.value === "Other") {
-            return;
-          }
-          break;
-        case "startDate":
-        case "startHour":
-        case "startMinute":
-        case "startAMPM":
-        case "endDate":
-        case "endHour":
-        case "endMinute":
-        case "endAMPM":
-          handleChangeTime(change);
-          break;
-        case "advanceBooking":
-        case "notes":
-          Changes.add(change);
-          break;
-        case "items":
-        case "students":
-          toast(change.target.value + " OK");
-          Changes.add(change);
-          break;
-        case "manual":
-          Changes.add(change);
-          return; // no change to buttons or "saved" state for manual entries
-      }
-
-      elements.undoButton.removeAttribute("disabled");
-      const form = connections.getCurrentForm();
-      if (form.isBlank()) {
-        elements.updateFormButton.textContent = updateButtonText.enabled.CREATE;
-        elements.advanceBookingButton.classList.remove("hidden");
-      } else {
-        elements.updateFormButton.textContent = updateButtonText.enabled.UPDATE;
-        elements.advanceBookingButton.classList.add("hidden");
-      }
-      elements.updateFormButton.classList.add("create");
-
-      // clear the old autosave, if it exists
-      if (autosaveID !== null) {
-        window.clearTimeout(autosaveID);
-        autosaveID = null;
-      }
-      if (form.isReadyToPost()) {
-        // automatically try to save in 60 seconds
-        autosaveID = window.setTimeout(() => {
-          // recheck form is still valid
-          if (
-            !connections.getCurrentForm().isReadyToPost() ||
-            document.querySelector("div.overlay") // blocking modal is showing
-          ) {
-            return;
-          }
+    return HTML.page({
+      name: "form",
+      children: [
+        HTML.createElement("form", {
+          class: "model",
+          onSubmit: (e) => e.preventDefault(),
+          children: [
+            HTML.createElement("input", { type: "hidden", name: "notes" }),
+            HTML.createElement("input", { type: "hidden", name: "startTime" }),
+            HTML.createElement("input", { type: "hidden", name: "endTime" }),
+            HTML.createElement("section", {
+              class: "formControls",
+              children: [
+                HTML.createElement("div", {
+                  tabindex: 0,
+                  // onFocus: () => locationSelect.focus(),
+                }),
+                omnibox,
+                HTML.button("🔎", {
+                  class: "buttonSmall",
+                  disabled,
+                  tabindex: -1,
+                  onClick: () => alert("parse input disabled"), //handlers.onParseInput(),
+                }),
+                HTML.button("Add item without barcode or ID", {
+                  disabled,
+                  tabindex: -1,
+                  onClick: () => alert("manual entry disabled"), //handlers.onManualEntry(),
+                }),
+                HTML.button("New note", {
+                  class: "action",
+                  disabled,
+                  tabindex: -1,
+                  onClick: () => {
+                    const input = HTML.createElement("textarea");
+                    HTML.modal({
+                      children: [
+                        HTML.heading1("New note"),
+                        HTML.paragraph("Enter a note"),
+                        input,
+                      ],
+                      okText: "Save note",
+                      onOk: () => saveNote(input.value),
+                    });
+                    input.focus();
+                  },
+                }),
+                HTML.button("Change log", {
+                  tabindex: -1,
+                  onClick: onChangeLog,
+                }),
+                HTML.button("Copy items to clipboard", {
+                  class: disabled ? "" : "hidden",
+                  tabindex: -1,
+                  onClick: () => alert("copy items disabled"),
+                  // Utility.copyToClipboard(
+                  //   JSON.stringify(
+                  //     getCurrentStack().getCurrentForm().items.getStripped()
+                  //   )
+                  // ),
+                }),
+                HTML.br(),
+                HTML.button("Previous form", {
+                  tabindex: -1,
+                  onClick: () => alert("get previous disabled"), //getPrevious,
+                }),
+                HTML.button("Next form", {
+                  tabindex: -1,
+                  onClick: () => alert("get next disabled"), //getNext,
+                }),
+                HTML.createElement("span", {
+                  textContent: formIndexDisplay,
+                }),
+                HTML.br(),
+                HTML.button("Submit", {
+                  disabled: disabled || !savable,
+                  class: "action buttonTight",
+                  onClick: submit,
+                }),
+                HTML.button("Save as advance booking", {
+                  class: `action buttonTight${form.isBlank() ? "" : " hidden"}`,
+                  disabled: disabled || !savable,
+                  tabindex: -1,
+                  onClick: () => {
+                    HTML.modal({
+                      children: [
+                        HTML.heading1("Save for later?"),
+                        HTML.paragraph(
+                          "All sign-in and check-out info will be removed. " +
+                            "Add all people and items before saving. " +
+                            "You can only do this once."
+                        ),
+                      ],
+                      closeText: "Cancel",
+                      okText: "Save as advance booking",
+                      onOk: makeAdvanceBooking,
+                    });
+                  },
+                }),
+                HTML.button("Revert to saved form", {
+                  disabled,
+                  onClick: () =>
+                    HTML.modal({
+                      children: [
+                        HTML.heading1("Undo all changes"),
+                        HTML.paragraph(
+                          "Do you want to undo all changes since the last save?"
+                        ),
+                      ],
+                      okText: "Revert to saved form",
+                      onOk: () => undefined,
+                    }),
+                }),
+                HTML.createElement("span", {
+                  class: "updateButtonHint",
+                  textContent: getUpdateButtonHint(),
+                }),
+              ],
+            }),
+            HTML.createElement("section", {
+              class: "globalnotes",
+              children: form.notes.reduce((notes, note) => {
+                if (Utility.tryJsonParse(note.body)) return notes;
+                return [
+                  ...notes,
+                  HTML.createElement("p", {
+                    textContent: `Note: [${note.author}] ${note.body}`,
+                  }),
+                ];
+              }, []),
+            }),
+            HTML.createElement("section", {
+              children: [
+                HTML.createElement("table", {
+                  class: "staticFields",
+                  children: [
+                    ...[
+                      ["Booked Students", "bookedStudents"],
+                      ["Contact", "contact"],
+                      ["Project", "project"],
+                      ["Analog Tape", "tape"],
+                      ["Overnight Setup", "overnight"],
+                    ].reduce(
+                      (rows, [textContent, key]) =>
+                        form[key]
+                          ? [
+                              ...rows,
+                              HTML.createElement("tr", {
+                                children: [
+                                  HTML.headerCell(textContent),
+                                  HTML.cell(form[key]),
+                                ],
+                              }),
+                            ]
+                          : rows,
+                      []
+                    ),
+                    HTML.row(
+                      HTML.headerCell("Location"),
+                      HTML.cell({
+                        textContent: form.location || "",
+                        onClick: form.location
+                          ? (_, locationDisplay) => {
+                              if (disabled) return;
+                              locationDisplay.parentNode.appendChild(
+                                locationSelect()
+                              );
+                              locationDisplay.remove();
+                            }
+                          : () => undefined,
+                        children: form.location ? [] : [locationSelect()],
+                      })
+                    ),
+                    HTML.row(
+                      HTML.headerCell("Start Time"),
+                      HTML.cell({
+                        onClick: form.startTime
+                          ? handleClickTimeDisplay({
+                              name: "start",
+                              value: form.startTime,
+                            })
+                          : () => undefined,
+                        textContent: form.startTime,
+                        children: form.startTime
+                          ? []
+                          : DateTimeInput({
+                              name: "start",
+                              value: form.startTime,
+                            }),
+                      })
+                    ),
+                    HTML.row(
+                      HTML.headerCell("End Time"),
+                      HTML.cell({
+                        onClick: form.endTime
+                          ? handleClickTimeDisplay({
+                              name: "end",
+                              value: form.endTime,
+                            })
+                          : () => undefined,
+                        textContent: form.endTime,
+                        children: form.endTime
+                          ? []
+                          : DateTimeInput({
+                              name: "end",
+                              value: form.endTime,
+                            }),
+                      })
+                    ),
+                  ],
+                }),
+                HTML.createElement("div", {
+                  tabindex: 0,
+                  onFocus: () => omnibox.focus(),
+                }),
+              ],
+            }),
+            HTML.createElement("section", {
+              children: [
+                HTML.createElement("h4", { textContent: "Students" }),
+                HTML.table(
+                  HTML.createElement("thead", {
+                    class: "form formStudents",
+                    children: [
+                      HTML.row(
+                        ...["Name", "NetID", "Signed In", "Signed Out"].map(
+                          HTML.headerCell
+                        )
+                      ),
+                    ],
+                  }),
+                  HTML.createElement("tbody", {
+                    class: "studentList",
+                    children: form.students.length
+                      ? form.students.map(makeStudentRow)
+                      : [HTML.row(HTML.cell("Scan ID to sign in a student"))],
+                  })
+                ),
+              ],
+            }),
+            HTML.createElement("section", {
+              children: [
+                HTML.createElement("h4", {
+                  textContent: "Equipment Checked Out",
+                }),
+                HTML.table(
+                  HTML.createElement("thead", {
+                    class: "form formItems",
+                    children: [
+                      HTML.row(
+                        ...[
+                          "Qty",
+                          "Items",
+                          "Item ID",
+                          "Checked Out",
+                          "Checked In",
+                        ].map(HTML.headerCell)
+                      ),
+                    ],
+                  }),
+                  HTML.createElement("tbody", {
+                    class: "itemList",
+                    children: form.items.getLength()
+                      ? form.items.map(makeItemRow) // slice.reverse?
+                      : [
+                          HTML.row(
+                            HTML.cell("Scan barcode to check out an item")
+                          ),
+                        ],
+                  })
+                ),
+              ],
+            }),
+          ],
+        }),
+      ],
+      onKeydown: (event) => {
+        if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
           submit();
-        }, 60000);
-        // are we ready to close?
-        const noShow = form.isNoShow();
-        if (form.isReadyToClose() || noShow) {
-          elements.updateFormButton.textContent =
-            updateButtonText.enabled.CLOSE;
-        } // Enable update button
-        elements.advanceBookingButton.removeAttribute("disabled");
-        elements.updateFormButton.removeAttribute("disabled");
-        elements.updateButtonHint.textContent = noShow
-          ? "This session is past due. Updating will mark the " +
-            'students as "no show" and close the form.'
-          : "your changes are not saved yet";
-      } else {
-        // Disable update button
-        elements.advanceBookingButton.setAttribute("disabled", true);
-        elements.updateFormButton.setAttribute("disabled", true);
-        elements.updateButtonHint.textContent =
-          "please enter start time, end time, location, " +
-          "and at least one student";
-      }
-      elements.omnibox.focus();
+        }
+      },
+    });
+
+    function handleClickTimeDisplay({ name, value }) {
+      return (_, timeDisplay) => {
+        if (disabled) return;
+        timeDisplay.textContent = "";
+        DateTimeInput({
+          name,
+          value,
+          onChange: handleChangeTime,
+        }).forEach((el) => timeDisplay.parentNode.appendChild(el));
+        timeDisplay.remove();
+      };
+    }
+
+    function getUpdateButtonHint() {
+      if (disabled) return "This is a closed form. You cannot edit it.";
+      if (!savable)
+        return "Please enter start time, end time, location, and at least one student";
+      return "";
     }
 
     function handleChangeLocation(change) {
-      if (change.target.value === "none") {
-        change.target.value = connections.getCurrentForm().location || "none";
-        return;
-      }
       if (change.target.value === "Other") {
         const input = HTML.createElement("input", { type: "text" });
         HTML.modal({
@@ -655,116 +374,28 @@
           ],
           okText: "Set location",
           onOk: () =>
-            handleChange({
+            handleChangeLocation({
               target: {
                 name: "location",
                 value: input.value || "none",
               },
             }),
           onClose: () =>
-            handleChange({ target: { name: "location", value: "none" } }),
+            handleChangeLocation({
+              target: { name: "location", value: "none" },
+            }),
         });
         input.focus();
         return;
       }
-      // update form
-      connections.getCurrentForm().location = change.target.value;
-      // update location select element
-      const other = elements.locationOtherOption;
-      if (Config.locations.has(change.target.value)) {
-        other.textContent = other.value = "Other";
-      } else {
-        elements.locationSelect.value = other.textContent = other.value =
-          change.target.value;
-      }
-      Changes.add(change);
+      onChange(change);
     }
 
     function handleChangeTime(change) {
-      touched.add(change.target);
-      let t = parseDateAndTimeInputs();
-      const els = elements.form;
-      const startEls = [
-        els.startDate,
-        els.startHour,
-        els.startMinute,
-        els.startAMPM,
-      ];
-      const endEls = [els.endDate, els.endHour, els.endMinute, els.endAMPM];
-      // CHECK #0: Are t.start and t.end valid?
-      if (window.isNaN(t.startTime.getTime())) {
-        startEls.forEach((el) => el.classList.add("error"));
-        window.alert("please enter a valid start time.");
-        return;
-      } else if (window.isNaN(t.endTime.getTime())) {
-        endEls.forEach((el) => el.classList.add("error"));
-        window.alert("please enter a valid end time.");
-        return;
-      }
-      // CHECK #1: If start is after end, if end is untouched, add 1 hour to end
-      const userTouchedEnd = endEls.some((el) => touched.has(el));
-      if (t.endTime.getTime() <= t.startTime.getTime()) {
-        if (!userTouchedEnd) {
-          const newEnd = new Date(t.startTime);
-          newEnd.setHours(t.startTime.getHours() + 1);
-          dateToInput(newEnd, els.endDate);
-          t = parseDateAndTimeInputs();
-        }
-      }
-      // CHECK #2: If start is still after end, display error to user
-      if (t.endTime.getTime() <= t.startTime.getTime()) {
-        endEls.forEach((el) => {
-          el.classList.add("error");
-        });
-        window.alert("Start time is after end time.");
-        return;
-      } else {
-        // In case there was an error before, reset the classLists
-        startEls.forEach((el) => {
-          el.classList.remove("error");
-        });
-        endEls.forEach((el) => {
-          el.classList.remove("error");
-        });
-      }
-      const form = connections.getCurrentForm();
-      const startTime = DateUtils.getFormattedDate(t.startTime);
-      els.startTime.value = form.startTime = startTime;
-      const endTime = DateUtils.getFormattedDate(t.endTime);
-      els.endTime.value = form.endTime = endTime;
-      const type = change.target.name.slice(0, 1),
-        newChange = { target: {} };
-      if (type === "s") {
-        newChange.target.name = "startTime";
-        newChange.target.value = els.startTime.value;
-      } else if (type === "e") {
-        newChange.target.name = "endTime";
-        newChange.target.value = els.endTime.value;
-      }
-      Changes.add(newChange);
+      onChange(change);
     }
 
-    function handleClickItem(click) {
-      if (currentStack !== connections.getStack()) {
-        return;
-      }
-      const data = click.target.parentNode.dataset;
-      if (click.metaKey) {
-        handlers.onItemMetaClick(data.id || data.barcode);
-        return;
-      }
-      const itemRow = click.target.classList.contains("itemnotes")
-        ? click.target.parentNode.previousSibling
-        : click.target.parentNode;
-      const form = connections.getCurrentForm();
-      const key = itemRow.dataset.id === "" ? "barcode" : "id";
-      const item =
-        itemRow.dataset.id === ""
-          ? form.items.getByBarcode(itemRow.dataset.barcode)
-          : form.items.getById(itemRow.dataset.id);
-      if (!item) {
-        window.alert("cannot take note for " + itemRow.dataset[key]);
-      }
+    function handleClickItem(item) {
       const radio = HTML.radio("itemOptions");
       const input = HTML.createElement("textarea");
       HTML.modal({
@@ -803,73 +434,6 @@
       input.focus();
     }
 
-    function handleClickStaticTable(click) {
-      if (currentStack !== connections.getStack()) {
-        return;
-      }
-      if (click.target.tagName != "TD") {
-        return;
-      }
-      if (click.target.classList.contains("editable")) {
-        if (!elements.omnibox.disabled) {
-          const inputCell = HTML.getNextSibling(click.target);
-          const input = HTML.getFirstChild(inputCell);
-          switch (input.name) {
-            case "location":
-              resetLocation(); // select loses custom "Other"
-              input.value = click.target.textContent;
-              if (input.value == "") {
-                // form is using custom "Other"
-                input.value = "none"; // this will discard custom value
-              }
-              break;
-            case "startDate": // fallthrough
-            case "endDate":
-              setTimeInputs();
-              break;
-          }
-          click.target.classList.add("hidden");
-          inputCell.classList.remove("hidden");
-        }
-      }
-    }
-
-    function setTimeInputs(...names) {
-      ((names.length && names) || ["start", "end"]).forEach((name) => {
-        const input = document.querySelector(`input[name="${name}Date"]`);
-        const date = DateUtils.parseFormattedDate(
-          elements.form[`${name}Time`].value
-        );
-        dateToInput(date, input);
-      });
-    }
-    function dateToInput(date, input) {
-      const hour = HTML.getNextSibling(input);
-      const minute = HTML.getNextSibling(hour);
-      const ampm = HTML.getNextSibling(minute);
-      input.value = DateUtils.formatDashed(date);
-      minute.value = DateUtils.roundMinutes(date.getMinutes());
-      hour.value = DateUtils.parseHours(date.getHours());
-      ampm.value = DateUtils.parseAMPM(date.getHours());
-    }
-
-    function handleClickStudent(click) {
-      if (currentStack !== connections.getStack()) {
-        return;
-      }
-      const netId = click.target.parentNode.dataset.netid;
-      if (click.metaKey) {
-        handlers.onStudentMetaClick(netId);
-        return;
-      }
-      const students = connections.getCurrentForm().students;
-      const student = students.find((s) => s.netId == netId);
-      if (!student) {
-        return window.alert("could not find student with NetID " + netId);
-      }
-      handleStudentNote(student);
-    }
-
     function handleStudentNote(student) {
       const radio = HTML.radio("studentOptions");
       const input = HTML.createElement("textarea");
@@ -906,7 +470,7 @@
               },
             });
           } else if (choice === "no show") {
-            handleChange({
+            onChange({
               target: {
                 name: "students",
                 value: `${student.name} did not show up`,
@@ -920,49 +484,16 @@
       input.focus();
     }
 
-    function hide() {
-      touched = new Set();
-      elements.container.classList.add("hidden");
-      if (timeoutId !== null) {
-        window.clearTimeout(timeoutId);
-        timeoutId = null;
-      }
+    function cancelAutosave() {
       if (autosaveID !== null) {
         window.clearTimeout(autosaveID);
         autosaveID = null;
       }
-      unlock();
-    }
-
-    function isLocked() {
-      return locked;
-    }
-
-    function isSaved() {
-      return Changes.isSaved();
-    }
-
-    /**
-     * isShowing should verify if the user is currently on the single form view
-     * @returns {bool}
-     */
-    function isShowing() {
-      return !elements.container.classList.contains("hidden");
-    }
-
-    function lock() {
-      locked = true;
-    }
-
-    function lockButtons() {
-      elements.undoButton.setAttribute("disabled", true);
-      elements.updateButtonHint.textContent = "";
-      elements.updateFormButton.setAttribute("disabled", true);
     }
 
     function makeAdvanceBooking() {
-      connections.getCurrentForm().makeAdvanceBooking();
-      handleChange({
+      // connections.getCurrentForm().makeAdvanceBooking();
+      onChange({
         target: { name: "advanceBooking", value: "Make advance booking" },
       });
     }
@@ -993,39 +524,17 @@
       return { startTime, endTime };
     }
 
-    function refreshUpdateButton() {
-      const currentForm = connections.getCurrentForm();
-      elements.updateFormButton.setAttribute("disabled", true);
-      if (currentForm && currentForm.isBlank()) {
-        elements.updateFormButton.textContent = updateButtonText.enabled.CREATE;
-        elements.updateFormButton.classList.add("create");
-        elements.advanceBookingButton.classList.remove("hidden");
-        elements.advanceBookingButton.setAttribute("disabled", true);
-      } else {
-        elements.updateFormButton.textContent = updateButtonText.disabled;
-        elements.updateFormButton.classList.remove("create");
-        elements.advanceBookingButton.classList.add("hidden");
-      }
-    }
-
-    function resetLocation() {
-      elements.locationSelect.value = "none";
-      elements.locationOtherOption.value = elements.locationOtherOption.textContent =
-        "Other";
-    }
-
     function saveNote(body) {
       if (body.length < 1) {
         return;
       }
-      const form = connections.getCurrentForm();
       const author = getUsername();
       form.notes.push({
         timestamp: Date.now(),
         author,
         body,
       });
-      handleChange({
+      onChange({
         target: {
           name: "notes",
           value: body.length > 10 ? body.slice(0, 10) + "..." : body,
@@ -1039,195 +548,6 @@
       if (elements.noteSection.classList.contains("hidden")) {
         elements.noteSection.classList.remove("hidden");
       }
-    }
-    function setTimeout() {
-      // do not set this when viewing the archive stack
-      // if (currentStack === OpenFormsPage.getStack()) {
-      //   timeoutId = window.setTimeout(checkForms, 60000);
-      // }
-    }
-    function show() {
-      if (timeoutId === null) {
-        setTimeout();
-      }
-      refreshUpdateButton();
-      elements.deleteFormButton.innerHTML = "Delete this form";
-      elements.container.classList.remove("hidden");
-      if (!document.querySelector("div.overlay")) {
-        // no blocking modal detected
-        elements.omnibox.focus();
-      }
-      if (
-        currentStack === connections.getStack() &&
-        currentStack.getCurrentForm().isNoShow()
-      ) {
-        HTML.modal({
-          child: HTML.paragraph(
-            "The start time has passed and no one has checked in.  " +
-              'Do you want to close this form as a "no show?"'
-          ),
-          closeText: "Cancel",
-          onOk: () =>
-            handleChange({
-              target: { name: "students", value: "no show" },
-            }),
-        });
-      }
-    }
-
-    function unlock() {
-      locked = false;
-    }
-
-    function loseDataWarning(onOk) {
-      HTML.modal({
-        children: [
-          HTML.heading1("Warning, your changes are not saved"),
-          HTML.paragraph("Are you sure?"),
-        ],
-        closeText: "Cancel",
-        okText: "Lose changes",
-        onOk,
-      });
-    }
-
-    /**
-     * @param {Form} form
-     * @param {bool} archived - is this a closed form?
-     * @return void
-     */
-    function displayForm(form) {
-      resetLocation();
-      for (const key in form) {
-        switch (key) {
-          case "items": {
-            const items = form[key];
-            HTML.empty(elements.itemList);
-            if (items.getLength() > 0) {
-              items.slice().reverse().forEach(makeItemRow);
-            }
-            break;
-          }
-          case "notes": {
-            HTML.empty(elements.noteSection);
-            const notes = form[key];
-            if (notes.length == 0) {
-              elements.form.notes.value = JSON.stringify([]);
-              elements.noteSection.classList.add("hidden");
-            } else {
-              for (const note of notes) {
-                if (!Utility.tryJsonParse(note.body)) {
-                  elements.noteSection.appendChild(
-                    HTML.createElement("p", {
-                      textContent: `Note: [${note.author}] ${note.body}`,
-                    })
-                  );
-                }
-              }
-              if (elements.noteSection.firstChild)
-                elements.noteSection.classList.remove("hidden");
-              else elements.noteSection.classList.add("hidden");
-              elements.form.notes.value = JSON.stringify(notes);
-            }
-            break;
-          }
-          case "students": {
-            const students = form[key];
-            HTML.empty(elements.studentList);
-            if (students.length > 0) {
-              students.forEach(makeStudentRow);
-            }
-            break;
-          }
-          case "startTime": // fallthrough
-          case "endTime": // fallthrough
-          case "bookedStudents": // fallthrough
-          case "contact": // fallthrough
-          case "project": // fallthrough
-          case "tape": // fallthrough
-          case "overnight": // fallthrough
-          case "location": {
-            const td = document.querySelector("#" + key + "Display");
-            if (form[key]) {
-              // There's data to display
-              HTML.attributes(td, {
-                textContent: form[key],
-                removeClass: "hidden",
-              });
-              td.parentNode.classList.remove("hidden");
-              if (td.nextElementSibling) {
-                td.nextElementSibling.classList.add("hidden");
-              }
-              if (["location", "startTime", "endTime"].includes(key)) {
-                elements.form[key].value = form[key];
-              }
-              // if "Other" value, we need to put that value back into the select
-              if (key === "location" && elements.form.location.value === "") {
-                elements.locationOtherOption.value = elements.locationOtherOption.textContent =
-                  form[key];
-                elements.form[key].value = form[key];
-              }
-            } else {
-              // There's not data, so maybe show an input for the user, and clear old data
-              switch (key) {
-                case "startTime":
-                case "endTime": {
-                  HTML.attributes(td, {
-                    textContent: "",
-                    class: "hidden",
-                  });
-                  elements.form[key].value = "";
-                  td.nextElementSibling.classList.remove("hidden");
-                  const today = new Date(),
-                    dateInput = td.nextElementSibling.firstElementChild,
-                    hourInput = dateInput.nextElementSibling,
-                    minuteInput = hourInput.nextElementSibling,
-                    ampmInput = minuteInput.nextElementSibling;
-                  const hour = today.getHours();
-
-                  minuteInput.value = DateUtils.roundMinutes(
-                    today.getMinutes()
-                  );
-                  hourInput.value = DateUtils.parseHours(hour);
-                  ampmInput.value = DateUtils.parseAMPM(hour);
-                  dateInput.value = DateUtils.formatDashed(today);
-
-                  break;
-                }
-                case "location":
-                  HTML.attributes(td, {
-                    class: "hidden",
-                  });
-                  td.nextElementSibling.classList.remove("hidden");
-                  elements.locationSelect.value = "none";
-                  break;
-                default:
-                  td.parentNode.classList.add("hidden");
-              }
-            }
-            break;
-          }
-        }
-      }
-      // copy form
-      savedForm = new Form(form);
-
-      // cleanup
-      Changes.clear();
-      elements.omnibox.value = "";
-
-      // indicate where this form is in the current stack, e.g. "1/6"
-      const stack = currentStack;
-      elements.currentFormstackDisplay.textContent =
-        stack.getCurrentIndex() + 1 + "/" + stack.getLength();
-
-      if (stack === connections.getStack()) {
-        enable();
-      } else {
-        disable();
-      }
-
-      handlers.onDisplayForm();
     }
 
     function makeQuantityButtons(item, isArchive) {
@@ -1262,38 +582,39 @@
     }
 
     function makeItemRow(item) {
-      const isArchive = currentStack !== connections.getStack();
-      elements.itemList.appendChild(
-        HTML.createElement("tr", {
-          class: item.isSerialized ? "serialized" : "nonserialized",
-          "data-id": item.id,
-          "data-barcode": item.barcode,
-          children: [
-            HTML.cell({ child: makeQuantityButtons(item, isArchive) }),
-            HTML.cell(item.description),
-            HTML.cell(item.id),
-            HTML.cell(
-              item.checkOut
-                ? item.checkOut
-                : {
-                    child: HTML.createElement("i", {
-                      textContent: "Scan barcode to check out",
-                    }),
-                  }
-            ),
-            HTML.cell({ child: makeCheckInButton(item, isArchive) }),
-          ],
-        })
-      );
-      elements.itemList.appendChild(
-        HTML.createElement("tr", {
-          child: HTML.createElement("td", {
-            colspan: 4,
-            class: "itemnotes",
-            textContent: "Notes: " + item.notes,
-          }),
-        })
-      );
+      return HTML.createElement("tr", {
+        class: item.isSerialized ? "serialized" : "nonserialized",
+        children: [
+          HTML.cell({ child: makeQuantityButtons(item, disabled) }),
+          HTML.cell(item.description),
+          HTML.cell(item.id),
+          HTML.cell(
+            item.checkOut
+              ? item.checkOut
+              : {
+                  child: HTML.createElement("i", {
+                    textContent: "Scan barcode to check out",
+                  }),
+                }
+          ),
+          HTML.cell({ child: makeCheckInButton(item, disabled) }),
+        ],
+        onClick: ({ metaKey, target }) => {
+          if (target.tagName.toLowerCase() === "button") return;
+          if (metaKey) alert("click item with meta key disabled");
+          //handlers.onItemMetaClick(item.id || item.barcode);
+          else handleClickItem(item);
+        },
+      });
+      // elements.itemList.appendChild(
+      //   HTML.createElement("tr", {
+      //     child: HTML.createElement("td", {
+      //       colspan: 4,
+      //       class: "itemnotes",
+      //       textContent: "Notes: " + item.notes,
+      //     }),
+      //   })
+      // );
     }
 
     function makeCheckInButton(item, isArchive) {
@@ -1314,14 +635,15 @@
           class: "create",
           textContent: "Remove",
           onClick: () => {
-            const form = connections.getCurrentForm();
-            const item = form.items.removeByItem(item);
-            updateItems({
-              target: {
-                name: "items",
-                value: item.description + " removed",
-              },
-            });
+            alert("item remove function disabled");
+            // const form = connections.getCurrentForm();
+            // form.items.removeByItem(item);
+            // updateItems({
+            //   target: {
+            //     name: "items",
+            //     value: item.description + " removed",
+            //   },
+            // });
           },
         });
       }
@@ -1335,19 +657,20 @@
         class: "action",
         textContent: "Check In",
         onClick: () => {
-          const savedItem = getSavedForm().items.find(
-            (item) => (item.barcode || item.id) == id
-          );
-          if (!savedItem) {
-            return window.alert(
-              "This item was just checked-out. Update or revert the form to continue."
-            );
-          }
-          const quantityToReturn =
-            savedItem.getQuantity() > 1
-              ? document.querySelector(`select[data-itemid="${id}"]`).value
-              : undefined;
-          handlers.onItemQuantityChange(savedItem, quantityToReturn, false);
+          alert("item check in fn disabled");
+          // const savedItem = getSavedForm().items.find(
+          //   (item) => (item.barcode || item.id) == id
+          // );
+          // if (!savedItem) {
+          //   return window.alert(
+          //     "This item was just checked-out. Update or revert the form to continue."
+          //   );
+          // }
+          // const quantityToReturn =
+          //   savedItem.getQuantity() > 1
+          //     ? document.querySelector(`select[data-itemid="${id}"]`).value
+          //     : undefined;
+          // handlers.onItemQuantityChange(savedItem, quantityToReturn, false);
         },
       });
       const quantity = item.getQuantity();
@@ -1379,66 +702,42 @@
     }
 
     function makeStudentRow(student) {
-      const isArchive = currentStack !== connections.getStack();
-      elements.studentList.appendChild(
-        HTML.createElement("tr", {
-          "data-netid": student.netId,
-          children: [
-            HTML.cell(student.name),
-            HTML.cell(student.netId),
-            HTML.createElement("td", {
-              child: student.checkIn
-                ? document.createTextNode(student.checkIn)
-                : isArchive
-                ? document.createTextNode("")
-                : HTML.createElement("i", {
-                    textContent: "Scan ID to sign in",
-                  }),
-            }),
-            HTML.createElement("td", {
-              child: student.left
-                ? HTML.createElement("span", {
-                    class: "alert",
-                    textContent: "DID NOT CHECK OUT",
-                  })
-                : student.checkOut
-                ? document.createTextNode(student.checkOut)
-                : isArchive || !student.checkIn
-                ? document.createTextNode("")
-                : HTML.createElement("i", {
-                    textContent: "Scan ID to sign out",
-                  }),
-            }),
-          ],
-        })
-      );
-    }
-
-    function updateItems(change) {
-      HTML.empty(elements.itemList);
-      connections.getCurrentForm().items.reverse().forEach(makeItemRow);
-      handleChange(change);
-    }
-
-    function updateStudents(change) {
-      HTML.empty(elements.studentList);
-      connections.getCurrentForm().students.forEach(makeStudentRow);
-      handleChange(change);
-    }
-
-    function setUpdateFormButtonToSpinner() {
-      HTML.empty(elements.updateFormButton);
-      elements.updateFormButton.appendChild(HTML.spinner());
-    }
-
-    function setUpdateFormButtonToText() {
-      HTML.empty(elements.updateFormButton);
-      elements.updateFormButton.textContent = updateButtonText.disabled;
-    }
-
-    function setDeleteFormButtonToSpinner() {
-      HTML.empty(elements.deleteFormButton);
-      elements.deleteFormButton.appendChild(HTML.spinner());
+      // isArchive === disabled
+      return HTML.createElement("tr", {
+        children: [
+          HTML.cell(student.name),
+          HTML.cell(student.netId),
+          HTML.createElement("td", {
+            child: student.checkIn
+              ? document.createTextNode(student.checkIn)
+              : disabled
+              ? document.createTextNode("")
+              : HTML.createElement("i", {
+                  textContent: "Scan ID to sign in",
+                }),
+          }),
+          HTML.createElement("td", {
+            child: student.left
+              ? HTML.createElement("span", {
+                  class: "alert",
+                  textContent: "DID NOT CHECK OUT",
+                })
+              : student.checkOut
+              ? document.createTextNode(student.checkOut)
+              : disabled || !student.checkIn
+              ? document.createTextNode("")
+              : HTML.createElement("i", {
+                  textContent: "Scan ID to sign out",
+                }),
+          }),
+        ],
+        onClick: ({ metaKey, target }) => {
+          if (target.tagName.toLowerCase() === "button") return;
+          if (metaKey) return alert("click student with meta key disabled");
+          //handlers.onStudentMetaClick(student.netId);
+          else handleStudentNote(student);
+        },
+      });
     }
 
     function getUsername() {
@@ -1449,14 +748,12 @@
 
     function onChangeLog() {
       const changes = [
-        ...getCurrentStack()
-          .getCurrentForm()
-          .notes.reduce((areChanges, note) => {
-            const change = Utility.tryJsonParse(note.body);
-            if (!Array.isArray(change)) return areChanges;
-            change.forEach((entry) => (entry.author = note.author));
-            return [...areChanges, ...change];
-          }, []),
+        ...form.notes.reduce((areChanges, note) => {
+          const change = Utility.tryJsonParse(note.body);
+          if (!Array.isArray(change)) return areChanges;
+          change.forEach((entry) => (entry.author = note.author));
+          return [...areChanges, ...change];
+        }, []),
         ...Changes.getStack(),
       ];
       HTML.modal({
@@ -1475,5 +772,19 @@
         ],
       });
     }
-  })();
+    function locationSelect() {
+      return HTML.select({
+        name: "location",
+        value: form.location,
+        onChange: handleChangeLocation,
+        children: [
+          HTML.option("please select", "none"),
+          ...Array.from(Config.locations).map((location) =>
+            HTML.option(location)
+          ),
+          HTML.option("Other"),
+        ],
+      });
+    }
+  }
 </script>

@@ -326,28 +326,26 @@
      *   and passes the value to the correct handler or shows the user an error.
      */
     function parse() {
-      let value = element.value;
+      if (!element.value) return;
 
-      if (!value) {
-        // nothing was entered, abort
-        return;
-      }
-
-      if (/^\s*\[\s*{\s*"/.test(value)) {
+      // see the "Copy items to clipboard" button
+      if (/^\s*\[\s*{\s*"/.test(element.value)) {
         // JSON array of objects: "[{}]"
-        JSON.parse(value).forEach(handleItem);
+        JSON.parse(element.value).forEach(handleItem);
         return;
       }
 
-      value = value.toLowerCase(); // case insenstive input
-      let parsed;
+      const value = element.value.toLowerCase(); // case insenstive input
+      // let parsed;
       // DETERMINE TYPE: ID card barcode, item barcode, item ID/SKU, student name
       const codabarRegex = /^[a-d][0-9]{5,}[a-d]$/; // "a123...789b" pattern
       if (codabarRegex.test(value)) {
         // Check student id
-        parsed = roster.find((student) => student.id.toLowerCase() == value);
-        if (parsed) {
-          handleStudent(parsed);
+        const foundStudent = roster.find(
+          (student) => student.id.toLowerCase() == value
+        );
+        if (foundStudent) {
+          handleStudent(foundStudent);
           return;
         }
         // handlers.onNewCodabar(value);
@@ -388,38 +386,34 @@
       }
 
       const idType = /^[a-z]+[0-9]+/.test(value) ? "netId" : "name"; // Check student name and id
-      parsed = roster.find((student) => student[idType].toLowerCase() == value);
-      if (parsed) {
+      const foundStudent = roster.find(
+        (student) => student[idType].toLowerCase() == value
+      );
+      if (foundStudent) {
         handlers.onLogManualEntry(element.value);
-        handleStudent(parsed);
+        handleStudent(foundStudent);
         return;
       }
 
-      const itemIdregex = /[A-Za-z]+-[A-Za-z0-9]+/, // letter(s), hyphen, digit(s) or letter(s)
-        barcoderegex = /^[0-9]+$/; // only digits
-      if (itemIdregex.test(value)) {
-        parsed = inventory.getById(value);
-        if (!parsed && /^manual/.test(value)) {
-          parsed = connections
-            .getCurrentForm()
-            .items.find(
-              (item) => item.id.toLowerCase().replace(/-0+/, "-") == value
-            );
-        } else {
-          handlers.onLogManualEntry(element.value);
-        }
-      } else if (barcoderegex.test(value)) {
-        // assume it's a barcode
-        if (value === "10000") {
-          clear();
-          return manualEntry();
-        }
-        parsed = inventory.getByBarcode(value);
+      // two special cases: magic number for manual entry and generated "manual" IDs
+      if (value === "10000") {
+        clear();
+        return manualEntry();
       }
-      if (parsed) {
-        handleItem(new Item(parsed));
-        return;
-      }
+      if (/^manual/.test(value))
+        return handleItem(
+          new Item(
+            connections
+              .getCurrentForm()
+              .items.find(
+                (item) => item.id.toLowerCase().replace(/-0+/, "-") == value
+              )
+          )
+        );
+
+      const foundItem =
+        inventory.getById(value) || inventory.getByBarcode(value);
+      if (foundItem) return handleItem(new Item(foundItem));
 
       clear();
 

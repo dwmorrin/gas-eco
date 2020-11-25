@@ -1,5 +1,4 @@
 <script>
-  /* global Utility */
   /* exported HTML */
   const HTML = (function () {
     return {
@@ -8,7 +7,6 @@
       button,
       cell,
       createElement,
-      dateTimeInputs,
       documentIcon,
       empty,
       getFirstChild,
@@ -21,11 +19,13 @@
       labeledInput,
       labeledRadio,
       modal,
+      option,
       page,
       paragraph,
-      option,
+      queryAll,
       radio,
       row,
+      select,
       spinner,
       table,
       tableBody,
@@ -33,28 +33,41 @@
       toast,
     };
 
+    /**
+     * event handling:
+     *   attrs["onX"], where "X" is some event name (e.g. "onClick")
+     *   accepts a function that will receive the event object as argument 1
+     *   and the HTMLElement as argument 2.
+     */
     function attributes(el, attrs) {
-      for (const key in attrs) {
-        if (key === "class") el.classList.add(...attrs[key].split(/\s+/));
-        else if (key === "removeClass") el.classList.remove(attrs[key]);
-        else if (key === "child") el.appendChild(attrs[key]);
-        else if (key === "children")
-          attrs[key].forEach((child) => el.appendChild(child));
-        else if (key === "innerHTML") el.innerHTML = attrs[key];
-        else if (key === "textContent") el.textContent = attrs[key];
-        else if (/^on[A-Z]/.test(key))
-          // onClick, onKeydown, etc
-          attrs[key] &&
-            el.addEventListener(
-              key.replace(/^on([A-Z])/, (_, c) => c.toLowerCase()),
-              attrs[key]
-            );
-        else if (["selected", "checked"].includes(key)) {
-          // only create attribute if true
-          attrs[key] && el.setAttribute(key, attrs[key]);
-        } else el.setAttribute(key, attrs[key]);
+      try {
+        for (const key in attrs) {
+          if (key === "class") el.classList.add(...attrs[key].split(/\s+/));
+          else if (key === "removeClass") el.classList.remove(attrs[key]);
+          else if (key === "child") el.appendChild(attrs[key]);
+          else if (key === "children")
+            attrs[key].forEach((child) => el.appendChild(child));
+          else if (key === "innerHTML") el.innerHTML = attrs[key];
+          else if (key === "textContent") el.textContent = attrs[key];
+          else if (/^on[A-Z]/.test(key))
+            // onClick, onKeydown, etc
+            attrs[key] &&
+              el.addEventListener(
+                key.replace(/^on([A-Z])/, (_, c) => c.toLowerCase()),
+                (event) => attrs[key](event, el)
+              );
+          else if (["selected", "checked", "disabled"].includes(key)) {
+            // only create attribute if true
+            attrs[key] && el.setAttribute(key, attrs[key]);
+          } else el.setAttribute(key, attrs[key]);
+        }
+        return el;
+      } catch (error) {
+        console.group();
+        console.log("Hit an error while making an element");
+        console.log({ error, el, attrs });
+        console.groupEnd();
       }
-      return el;
     }
 
     function br() {
@@ -246,9 +259,9 @@
       window.setTimeout(() => container.remove(), 5000);
     }
 
-    function page({ name, children, hidden = true, onClick, onKeydown }) {
+    function page({ name, children, onClick, onKeydown }) {
       const div = createElement("div", {
-        class: `${name}Container${hidden ? " hidden" : ""}`,
+        class: `${name}Container`,
         children,
         onClick,
         onKeydown,
@@ -275,37 +288,24 @@
       return labeledInput(textContent, { name, type: "checkbox", checked });
     }
 
-    function dateTimeInputs(namePrefix) {
-      return [
-        HTML.createElement("input", {
-          type: "date",
-          name: `${namePrefix}Date`,
-          autocomplete: "off",
-          placeholder: "mm/dd/yyyy",
-        }),
-        HTML.createElement("select", {
-          name: `${namePrefix}Hour`,
-          children: Utility.range(12, 1).map(HTML.option),
-        }),
-        document.createTextNode(":"),
-        HTML.createElement("select", {
-          name: `${namePrefix}Minute`,
-          children: Utility.range(12, 0, 5).map((n) =>
-            HTML.createElement("option", {
-              textContent: String(n).padStart(2, "0"),
-              value: n,
-            })
-          ),
-        }),
-        HTML.createElement("select", {
-          name: `${namePrefix}AMPM`,
-          children: ["AM", "PM"].map(HTML.option),
-        }),
-      ];
-    }
-
     function button(textContent, attrs) {
       return createElement("button", { ...attrs, textContent });
+    }
+
+    function queryAll(parentNode, query) {
+      return Array.from(parentNode.querySelectorAll(query));
+    }
+
+    /**
+     * To set the value of a <select>, the options have to be attached first.
+     * Children attribute must be processed before value attribute.
+     * createElement does not specify order of attributes, thus this function
+     * controls the processing order of the attributes.
+     */
+    function select(attrs) {
+      const el = createElement("select", attrs);
+      if (attrs.value) el.value = attrs.value;
+      return el;
     }
   })();
 </script>

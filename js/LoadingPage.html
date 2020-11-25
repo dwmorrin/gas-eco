@@ -1,17 +1,9 @@
 <script>
   /* global HTML */
   /* exported LoadingPage */
-  const LoadingPage = (function () {
-    const elements = {
-      rosterStatus: HTML.createElement("span", { id: "loadingRosterStatus" }),
-      inventoryStatus: HTML.createElement("span", {
-        id: "loadingInventoryStatus",
-      }),
-      openFormsStatus: HTML.createElement("span", {
-        id: "loadingOpenFormsStatus",
-      }),
-    };
-    elements.container = HTML.page({
+  function LoadingPage({ rosterStatus, inventoryStatus, openFormsStatus }) {
+    // let timeoutId = null;
+    return HTML.page({
       hidden: false,
       name: "loading",
       children: [
@@ -21,67 +13,33 @@
           children: [
             HTML.createElement("li", {
               id: "loadingRoster",
-              textContent: "Student roster...",
-              child: elements.rosterStatus,
+              textContent: rosterStatus,
             }),
             HTML.createElement("li", {
               id: "loadingInventory",
-              textContent: "Item inventory...",
-              child: elements.inventoryStatus,
+              textContent: inventoryStatus,
             }),
             HTML.createElement("li", {
               id: "loadingOpenForms",
-              textContent: "Open forms...",
-              child: elements.openFormsStatus,
+              textContent: openFormsStatus,
             }),
           ],
         }),
       ],
     });
-    let timeoutId = null;
 
-    return { getHtmlNode, show, hide, isShowing, updateStatus };
-
-    function getHtmlNode() {
-      return elements.container;
-    }
-
-    function updateStatus(key, value) {
-      if (key in elements) elements[key].textContent = value;
-    }
-
-    function handleTimeout() {
-      if (timeoutId == null) {
-        return;
-      }
-      HTML.modal({
-        child: HTML.paragraph(
-          "Looks like the server is taking a long time. " +
-            "Paper forms are available either in the filing cabinet at the desk " +
-            'or look for "Equipment Checkout Form.pdf" on your computer.'
-        ),
-      });
-      timeoutId = null;
-    }
-    function hide() {
-      if (timeoutId !== null) {
-        window.clearTimeout(timeoutId);
-      }
-      timeoutId = null;
-      elements.container.classList.add("hidden");
-      ["rosterStatus", "inventoryStatus", "openFormsStatus"].forEach((key) => {
-        elements[key].textContent = "";
-      });
-    }
-    function isShowing() {
-      return !elements.container.classList.contains("hidden");
-    }
-    function setTimeout() {
-      timeoutId = window.setTimeout(handleTimeout, 10000);
-    }
-    function show() {
-      setTimeout();
-      elements.container.classList.remove("hidden");
-    }
-  })();
+    // function handleTimeout() {
+    //   if (timeoutId == null) {
+    //     return;
+    //   }
+    //   HTML.modal({
+    //     child: HTML.paragraph(
+    //       "Looks like the server is taking a long time. " +
+    //         "Paper forms are available either in the filing cabinet at the desk " +
+    //         'or look for "Equipment Checkout Form.pdf" on your computer.'
+    //     ),
+    //   });
+    //   timeoutId = null;
+    // }
+  }
 </script>
