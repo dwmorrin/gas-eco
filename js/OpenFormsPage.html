@@ -1,111 +1,73 @@
 <script>
-  /* global DateUtils HTML Utility OpenFormsTable */
+  /* global HTML Utility OpenFormsTable EquipmentOutTable */
   /* exported OpenFormsPage */
-  function OpenFormsPage({ openForms, setForm }) {
-    return HTML.page({
+  function OpenFormsPage({ openForms, setForm, setOpenForms }) {
+    const { createElement, documentIcon, headerCell, page, row, table } = HTML;
+    const { compareStrings, sort, uncamelCase } = Utility;
+    return page({
       name: "openForms",
       children: [
-        HTML.createElement("h2", { textContent: "Open Forms" }),
-        HTML.createElement("h3", {
+        createElement("h2", { textContent: "Open Forms" }),
+        createElement("h3", {
           textContent: "click on a form to view and edit",
         }),
-        HTML.table(
-          HTML.createElement("thead", {
+        table(
+          createElement("thead", {
             class: "open",
             children: [
-              HTML.headerCell({ child: HTML.documentIcon() }),
+              headerCell({ child: documentIcon() }),
               ...["startTime", "endTime", "location", "students"].map((text) =>
-                HTML.createElement("th", {
-                  "data-sort": text,
-                  textContent: Utility.uncamelCase(text),
+                createElement("th", {
+                  onClick: (_, el) => {
+                    el.classList.add("sortedBy", "ascending");
+                    sortFormsBy(text);
+                  },
+                  textContent: uncamelCase(text),
                 })
               ),
             ],
           }),
           OpenFormsTable({ openForms, setForm })
         ),
-        HTML.createElement("h2", { textContent: "Equipment Checked Out" }),
-        HTML.table(
-          HTML.createElement("thead", {
+        createElement("h2", { textContent: "Equipment Checked Out" }),
+        table(
+          createElement("thead", {
             class: "equipmentOut",
-            child: HTML.row(
+            child: row(
               ...["Item", "Id", "Location", "Students", "End Time"].map(
-                HTML.headerCell
+                headerCell
               )
             ),
           }),
-          HTML.createElement("tbody", {
-            class: "equipmentOut",
-          })
+          EquipmentOutTable({ openForms, setForm })
         ),
       ],
     });
 
-    function displaySortedBy(stack, tableHead) {
-      Array.from(tableHead.querySelectorAll("th")).forEach((header) => {
-        header.classList.remove("sortedBy", "ascending", "descending");
-        if (header.dataset.sort === stack.sortBy) {
-          header.classList.add(
-            "sortedBy",
-            stack.sortDescending ? "descending" : "ascending"
-          );
+    function sortFormsBy(text) {
+      var fn;
+      switch (text) {
+        case "startTime":
+          fn = ({ startTime: a }, { startTime: b }) =>
+            new Date(a) - new Date(b);
+          break;
+        case "endTime":
+          fn = ({ endTime: a }, { endTime: b }) => new Date(a) - new Date(b);
+          break;
+        case "location":
+          fn = ({ location: a }, { location: b }) => compareStrings(a, b);
+          break;
+        case "students": {
+          const getNames = (names, { name }) => [...names, name];
+          fn = ({ students: a }, { students: b }) =>
+            compareStrings(
+              a.reduce(getNames, []).join(", "),
+              b.reduce(getNames, []).join(", ")
+            );
+          break;
         }
-      });
-    }
-
-    function makeOpenFormTableRows(form) {
-      form.items
-        .filter((item) => item.checkedOut)
-        .forEach((item) => populateEquipmentOutList(form, item));
-
-      let type = "inactive", // assume inactive
-        endTime = DateUtils.parseFormattedDate(form.endTime).getTime(),
-        fifteenMinutes = 15 * 60 * 1000, // milliseconds
-        now = Date.now();
-      // determine if active, ending soon, or late (green, yellow, red)
-      if (form.students.some((student) => student.checkIn)) {
-        type = "active";
       }
-      if (type === "active" && now > endTime) {
-        type = "late";
-      }
-      if (type === "active" && now > endTime - fifteenMinutes) {
-        type = "endingSoon";
-      }
-      formsTableBody.appendChild(
-        HTML.createElement("tr", {
-          class: type,
-          "data-id": form.id,
-          children: [
-            HTML.createElement("td", { child: HTML.documentIcon() }),
-            ...[
-              form.startTime,
-              form.endTime,
-              form.location,
-              form.bookedStudents ||
-                form.students.map((student) => student.name).join(", "),
-            ].map((textContent) => HTML.createElement("td", { textContent })),
-          ],
-        })
-      );
-    }
-
-    function populateEquipmentOutList(
-      { location, students, endTime, id: formId },
-      { description, id: itemId }
-    ) {
-      equipmentTableBody.appendChild(
-        HTML.createElement("tr", {
-          "data-id": formId,
-          children: [
-            description,
-            itemId,
-            location,
-            students.map((student) => student.name).join(", "),
-            endTime,
-          ].map((textContent) => HTML.createElement("td", { textContent })),
-        })
-      );
+      setOpenForms(sort(openForms, fn));
     }
   }
 </script>

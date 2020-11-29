@@ -3,13 +3,20 @@
   /* exported Utility */
   const Utility = (function () {
     return {
+      compareStrings,
       copyToClipboard,
       digestMessage,
       hexString,
+      nullIf,
       range,
+      sort,
       tryJsonParse,
       uncamelCase,
     };
+
+    function compareStrings(a, b) {
+      return a < b ? -1 : a > b ? 1 : 0;
+    }
 
     function copyToClipboard(data) {
       const textArea = document.createElement("textarea");
@@ -40,8 +47,18 @@
       return hexCodes.join("");
     }
 
+    function nullIf(condition, expression) {
+      return condition ? null : expression;
+    }
+
     function range(length, start = 0, step = 1) {
       return Array.from({ length }).map((_, i) => i * step + start);
+    }
+
+    function sort(array, fn) {
+      const copy = array.slice();
+      copy.sort(fn);
+      return copy;
     }
 
     function tryJsonParse(string) {

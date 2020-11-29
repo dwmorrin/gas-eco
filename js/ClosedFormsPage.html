@@ -1,450 +1,97 @@
 <script>
-  /* global Config HTML Stack DateUtils Utility */
+  /* global ClosedFormsTable ClosedFormsInputs HTML FormFilters */
   /* exported ClosedFormsPage */
-  const ClosedFormsPage = (function () {
-    const noop = () => undefined;
-    const handlers = {
-      onFormSelect: noop,
-      onUpdate: noop,
-    };
-    const connections = {
-      setCurrentStack: noop,
-    };
-    const matchItemsRadio = HTML.labeledRadio("matchItems");
-    const elements = {
-      // container: HTML.createElement("div", { class: "archiveContainer" }),
-      queryButton: HTML.createElement("button", {
-        class: "action",
-        textContent: "Update View",
+  function ClosedFormsPage({
+    closedForms,
+    setForm,
+    closedFormsQuery,
+    setClosedFormsQuery,
+  }) {
+    const { createElement, getRadioValue, page, update } = HTML;
+    const checkboxKeys = [
+      "isBooked",
+      "isNotBooked",
+      "isTape",
+      "byMissingItem",
+      "byLateStudents",
+      "byNoShow",
+      "byStudentLeft",
+      "byHasNotes",
+      "byHasManual",
+    ];
+    let filteredForms = filter(closedForms, closedFormsQuery);
+    const queryCount = createElement("span", { class: "querycount" });
+
+    const closedFormsContainer = createElement("div", {
+      child: ClosedFormsTable({
+        forms: filteredForms,
+        setForm,
       }),
-      queryCount: HTML.createElement("span", { class: "querycount" }),
-      queryInputs: HTML.createElement("form", {
-        class: "query",
-        children: [
-          document.createTextNode("Start Time Range (Required):"),
-          HTML.labeledDateInput("Range Start", "start"),
-          HTML.labeledDateInput("Range End", "end"),
-          HTML.createElement("label", {
-            textContent: "Location",
-            child: HTML.createElement("select", {
-              name: "location",
-              children: ["All", ...Config.locations, "Other"].map(HTML.option),
-            }),
-          }),
-          HTML.labeledInput("Students", { name: "students", type: "text" }),
-          HTML.labeledInput("Items", { name: "items", type: "text" }),
-          matchItemsRadio("Form has all of the items", "all", true),
-          matchItemsRadio("Form has any of the items", "any"),
-          ...[
-            ["Booked session", "isBooked"],
-            ["Not booked session", "isNoteBooked"],
-            ["Tape session", "isTape"],
-            ["Missing an item", "byMissingItem"],
-            ["Late check in or out", "byLateStudents"],
-            ["No student checked in", "byNoShow"],
-            ["Student did not check out", "byStudentLeft"],
-            ["Has notes", "byHasNotes"],
-            ["Has manual entries", "byHasManual"],
-          ].map(([textContent, name]) =>
-            HTML.labeledCheckbox(textContent, name)
-          ),
-        ],
-      }),
-      tableBody: HTML.createElement("tbody", { class: "archive" }),
-      tableHead: HTML.createElement("thead", {
-        class: "archive",
-        children: [
-          HTML.row(
-            HTML.headerCell({ child: HTML.documentIcon() }),
-            ...[
-              "startTime",
-              "endTime",
-              "location",
-              "students",
-              "items",
-              "bookingId",
-              "bookedStudents",
-              "contact",
-              "project",
-              "tape",
-              "overnight",
-            ].map((text) =>
-              HTML.headerCell({
-                "data-sort": text,
-                textContent: Utility.uncamelCase(text),
-              })
-            )
-          ),
-        ],
-      }),
-    };
-    elements.container = HTML.page({
+    });
+
+    return page({
       name: "archive",
       children: [
-        HTML.createElement("h2", { textContent: "Closed Forms" }),
-        elements.queryInputs,
-        HTML.createElement("table", {
-          children: [elements.tableHead, elements.tableBody],
-        }),
+        createElement("h2", { textContent: "Closed Forms" }),
+        ClosedFormsInputs({ closedFormsQuery, onSubmit }),
+        closedFormsContainer,
       ],
     });
 
-    elements.queryButton.addEventListener("click", () => query());
-    const filteredStack = new Stack();
-    let stack = new Stack();
-    const range = {
-      start: "", // 'yyyy-mm-dd'
-      end: "", // 'yyyy-mm-dd'
-    };
-
-    elements.tableBody.addEventListener("click", handleClickTable);
-    elements.tableHead.addEventListener("click", handleClickTableHead);
-    elements.queryInputs.addEventListener("change", handleChange);
-
-    const filters = {
-      isBooked: (form) => form.bookingId,
-      isNotBooked: (form) => !form.bookingId,
-      isTape: (form) => form.tape,
-      byStudentName: (form) => {
-        const inputs = elements.queryInputs;
-        const studentQuery = inputs.students.value.toLowerCase().split(",");
-        return studentQuery.every((nameLookingFor) => {
-          nameLookingFor = nameLookingFor.toLowerCase().replace(/\s/g, "");
-          return form.students.find((student) => {
-            const name = student.name.toLowerCase().replace(/\s/g, "");
-            return name.includes(nameLookingFor);
-          });
-        });
-      },
-      byMatchAllItemID: (form) => {
-        const inputs = elements.queryInputs;
-        const itemQuery = inputs.items.value.toUpperCase().split(",");
-        return itemQuery.every(form.items.contains);
-      },
-      byMatchAnyItemID: (form) => {
-        const inputs = elements.queryInputs;
-        const itemQuery = inputs.items.value.toUpperCase().split(",");
-        return itemQuery.some(form.items.contains);
-      },
-      byMissingItem: (form) => {
-        return form.items.some((item) => item.missing);
-      },
-      byStudentLeft: (form) => {
-        return form.students.some((student) => student.left);
-      },
-      byHasManual: (form) => {
-        for (let note of form.notes) {
-          try {
-            let changes = JSON.parse(note.body);
-            for (let change of changes) {
-              if (change.name == "manual") {
-                return true;
-              }
-            }
-          } catch (e) {
-            // not changes, ignore
-          }
-        }
-        return false;
-      },
-      byHasNotes: (form) => {
-        for (let note of form.notes) {
-          try {
-            // Unintuitive use of try/catch:
-            JSON.parse(note.body); // (success == change log )
-          } catch (e) {
-            // (  error == global note)
-            return true;
-          }
-        }
-        return false;
-      },
-      byLateStudents: (form) => {
-        const inGracePeriod = 15, // minutes
-          outGracePeriod = 10,
-          start = DateUtils.parseFormattedDate(form.startTime),
-          end = DateUtils.parseFormattedDate(form.endTime);
-        start.setMinutes(start.getMinutes() + inGracePeriod);
-        end.setMinutes(end.getMinutes() + outGracePeriod);
-
-        const checkedInOnTime = (student) =>
-          !student.checkIn ||
-          DateUtils.parseFormattedDate(student.checkIn).getTime() <=
-            start.getTime();
-
-        const studentIncompleteHTML = "DID NOT CHECK OUT";
-        const checkedOutLate = (student) =>
-          (student.checkIn &&
-            (!student.checkOut ||
-              student.checkOut === studentIncompleteHTML)) ||
-          (student.checkOut &&
-            student.checkOut !== studentIncompleteHTML &&
-            DateUtils.parseFormattedDate(student.checkOut).getTime() >
-              end.getTime());
-
-        return (
-          !form.students.some(checkedInOnTime) ||
-          form.students.some(checkedOutLate)
-        );
-      },
-      byNoShow: (form) => form.students.every((s) => s.checkIn == null),
-      byTimeRange: (form) => {
-        const inputs = elements.queryInputs;
-        const startRange = new Date(inputs.start.value + "T00:00:00"),
-          endRange = new Date(inputs.end.value + "T23:59:59"),
-          start = DateUtils.parseFormattedDate(form.startTime);
-        if (
-          start.getTime() <= startRange.getTime() ||
-          start.getTime() >= endRange.getTime()
-        ) {
-          return false;
-        }
-        return true;
-      },
-      byLocation: (form) => {
-        const inputs = elements.queryInputs;
-        if (inputs.location.value != "Other") {
-          if (form.location != inputs.location.value) {
-            return false;
-          }
-        } else {
-          if (Config.locations.has(form.location)) {
-            return false;
-          }
-        }
-        return true;
-      },
-    };
-    init();
-
-    return {
-      getDateRangeAsJSON,
-      getHtmlNode,
-      getStack,
-      hide,
-      query,
-      setConnections,
-      setForms,
-      setHandlers,
-      show,
-    };
-
-    function getHtmlNode() {
-      return elements.container;
-    }
-
-    function getStack() {
-      return stack;
-    }
-
-    function setForms(forms) {
-      stack.importForms(forms);
-    }
-
-    function getDateRangeAsJSON() {
-      const inputs = elements.queryInputs;
-      return JSON.stringify({
-        start: DateUtils.getFormattedDate(
-          new Date(inputs.start.value + "T00:00:00")
-        ),
-        end: DateUtils.getFormattedDate(
-          new Date(inputs.end.value + "T23:59:59")
-        ),
-      });
-    }
-
-    function setConnections(newConnections) {
-      Object.assign(connections, newConnections);
-    }
-
-    function setHandlers(newHandlers) {
-      Object.assign(handlers, newHandlers);
-    }
-
-    function handleChange(change) {
-      if (change.target.getAttribute("type") === "date") {
-        // see if new date range exceeds old date range
-        const inputs = elements.queryInputs;
-        const start = new Date(inputs.start.value + "T00:00:00"),
-          end = new Date(inputs.end.value + "T23:59:59"),
-          oldStart = new Date(range.start + "T00:00:00"),
-          oldEnd = new Date(range.end + "T23:59:59");
-        // cancel change if start > end
-        if (start.getTime() > end.getTime()) {
-          inputs.start.value = range.start;
-          inputs.end.value = range.end;
-          window.alert("Range start can not be after end");
-          change.preventDefault();
-          return;
-        }
-        if (
-          start.getTime() < oldStart.getTime() ||
-          end.getTime() > oldEnd.getTime()
-        ) {
-          update();
-        } else {
-          query();
-        }
-        // update range
-        range.start = DateUtils.formatDashed(start);
-        range.end = DateUtils.formatDashed(end);
-      }
-    }
-    function handleClickTable(click) {
-      if (click.target.parentNode.classList.contains("hoveroff")) {
-        return;
-      }
-      handlers.onFormSelect(
-        filteredStack.getByID(click.target.parentNode.getAttribute("data-id"))
+    // returns same object as closedFormsQuery
+    function getClosedFormsQuery(form) {
+      const query = {};
+      // these keys have .value attributes
+      ["start", "end", "location", "students", "items"].forEach(
+        (key) => (query[key] = form[key].value)
       );
-    }
-    function handleClickTableHead(click) {
-      stack.sortForms(click.target.dataset.sort);
-      populateArchiveTable(stack);
-    }
-
-    function displaySortedBy(stack, tableHead) {
-      Array.from(tableHead.querySelectorAll("th")).forEach((header) => {
-        header.classList.remove("sortedBy", "ascending", "descending");
-        if (header.dataset.sort === stack.sortBy) {
-          header.classList.add(
-            "sortedBy",
-            stack.sortDescending ? "descending" : "ascending"
-          );
-        }
-      });
+      // these keys have .checked attributes
+      checkboxKeys.forEach((key) => (query[key] = form[key].checked));
+      // this key is a radio value
+      query.matchItems = getRadioValue(form);
+      return query;
     }
 
-    function makeArchiveTableRows(form) {
-      elements.tableBody.appendChild(
-        HTML.createElement("tr", {
-          "data-id": form.id,
-          children: [
-            HTML.cell({ child: HTML.documentIcon() }),
-            ...[
-              form.startTime,
-              form.endTime,
-              form.location,
-              form.students.map((student) => student.name).join(", "),
-              form.items.getLength() > 0 ? "YES" : "NO", // "has items"
-              form.bookingId,
-              form.bookedStudents,
-              form.contact,
-              form.project,
-              form.tape ? "YES" : "",
-              form.overnight ? "YES" : "",
-            ].map((text) => HTML.cell(text)),
-          ],
-        })
-      );
-    }
-
-    function init() {
-      const inputs = elements.queryInputs,
-        today = DateUtils.formatDashed(new Date());
-      inputs.start.value = today;
-      inputs.end.value = today;
-      range.start = today;
-      range.end = today;
-    }
-
-    function isTodaySelected() {
-      const today = new Date();
-      today.setHours(0);
-      today.setMinutes(0);
-      today.setSeconds(0);
-      today.setMilliseconds(0);
-      const selectedEndTime = new Date(range.end + "T00:00:00").getTime();
-      return selectedEndTime >= today.getTime();
-    }
-    /**
-     * @param {Stack} formStack
-     */
-    function populateArchiveTable(formStack) {
-      HTML.empty(elements.tableBody);
-
-      displaySortedBy(formStack, elements.tableHead);
-
-      // if there's no forms...
-      if (formStack.getLength() === 0) {
-        return elements.tableBody.appendChild(
-          HTML.createElement("tr", {
-            class: "hoveroff",
-            child: HTML.createElement("td", {
-              textContent: "No forms matched your search.",
-              colspan: 12, // fill entire row
-            }),
-          })
-        );
-      }
-      // else populate
-      formStack.forEach(makeArchiveTableRows);
-    }
-
-    function show() {
-      if (isTodaySelected()) {
-        update();
-      } else {
-        query();
-      }
-      connections.setCurrentStack(filteredStack);
-      elements.container.classList.remove("hidden");
-    }
-
-    function hide() {
-      elements.container.classList.add("hidden");
-    }
-
-    function update() {
-      handlers.onUpdate(getDateRangeAsJSON());
-    }
-
-    function query() {
-      const archiveElements = elements.container,
-        inputs = elements.queryInputs,
-        appliedFilters = [];
-
-      const dateInputs = archiveElements.querySelectorAll('input[type="date"]');
-      if (!dateInputs[0].value) {
-        // initialize date range inputs
-        init();
-      }
-
-      appliedFilters.push(filters.byTimeRange); // always run
-
-      if (inputs.location.value != "All") {
-        appliedFilters.push(filters.byLocation);
-      }
-
-      if (inputs.students.value) {
-        appliedFilters.push(filters.byStudentName);
-      }
-
-      if (inputs.items.value && inputs.matchItems.value == "all") {
-        appliedFilters.push(filters.byMatchAllItemID);
-      }
-
-      if (inputs.items.value && inputs.matchItems.value == "any") {
-        appliedFilters.push(filters.byMatchAnyItemID);
-      }
-
-      const checkboxes = archiveElements.querySelectorAll(
-        'input[type="checkbox"]'
-      );
-      for (let i = 0; i < checkboxes.length; ++i) {
-        if (checkboxes[i].checked) {
-          appliedFilters.push(filters[checkboxes[i].name]);
-        }
-      }
-      filteredStack.setForms(
-        appliedFilters.reduce((forms, func) => forms.filter(func), stack)
-      );
-
-      const length = filteredStack.getLength();
-      elements.queryCount.textContent =
+    function onSubmit(form) {
+      const query = getClosedFormsQuery(form);
+      filteredForms = filter(closedForms, query);
+      const length = filteredForms.length;
+      queryCount.textContent =
         length == 1 ? `${length} form` : `${length} forms`;
-      filteredStack.sortForms();
-      populateArchiveTable(filteredStack);
+      setClosedFormsQuery(query);
+      update(
+        closedFormsContainer,
+        ClosedFormsTable({ forms: filteredForms, setForm })
+      );
     }
-  })();
+
+    function filter(array, query) {
+      const { start, end, location, students, items, matchItems } = query;
+      const appliedFilters = [];
+
+      appliedFilters.push(FormFilters.byTimeRange(start, end));
+
+      if (location != "All") {
+        appliedFilters.push(FormFilters.byLocation(location));
+      }
+
+      if (students) {
+        appliedFilters.push(FormFilters.byStudentName(students));
+      }
+
+      if (items && matchItems == "all") {
+        appliedFilters.push(FormFilters.byMatchAllItemID(items));
+      }
+
+      if (items && matchItems == "any") {
+        appliedFilters.push(FormFilters.byMatchAnyItemID(items));
+      }
+
+      checkboxKeys.forEach(
+        (key) => query[key] && appliedFilters.push(FormFilters[key])
+      );
+
+      return appliedFilters.reduce((forms, func) => forms.filter(func), array);
+    }
+  }
 </script>

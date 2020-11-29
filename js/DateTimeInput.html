@@ -5,20 +5,19 @@
     const date = DateUtils.parseFormattedDate(
       value || DateUtils.getFormattedDate(new Date())
     );
-    return [
+    // const _onChange = () =>
+    const inputs = [
       HTML.createElement("input", {
         type: "date",
         name: `${name}Date`,
         autocomplete: "off",
         placeholder: "mm/dd/yyyy",
         value: DateUtils.formatDashed(date),
-        onChange,
       }),
       HTML.select({
         name: `${name}Hour`,
         children: Utility.range(12, 1).map((option) => HTML.option(option)),
         value: DateUtils.parseHours(date.getHours()),
-        onChange,
       }),
       document.createTextNode(":"),
       HTML.select({
@@ -30,14 +29,27 @@
           })
         ),
         value: DateUtils.roundMinutes(date.getMinutes()),
-        onChange,
       }),
       HTML.select({
         name: `${name}AMPM`,
         children: ["AM", "PM"].map((option) => HTML.option(option)),
         value: DateUtils.parseAMPM(date.getHours()),
-        onChange,
       }),
     ];
+    inputs.forEach((input) =>
+      input.addEventListener("change", (event) => {
+        onChange({
+          event,
+          name,
+          values: {
+            date: inputs[0].value,
+            hour: inputs[1].value,
+            minutes: inputs[3].value,
+            ampm: inputs[4].value,
+          },
+        });
+      })
+    );
+    return inputs;
   }
 </script>

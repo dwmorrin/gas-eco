@@ -1,0 +1,42 @@
+<script>
+  /* global HTML */
+  /* exported EquipmentOutTable */
+  function EquipmentOutTable({ openForms, setForm }) {
+    const { cell, createElement } = HTML;
+    return createElement("tbody", {
+      class: "equipmentOut",
+      children: openForms.reduce(
+        (openItems, form) => [
+          ...openItems,
+          ...form.items.reduce(
+            (checkedOutItems, item) =>
+              item.checkedOut
+                ? [...checkedOutItems, itemToRow(form, item)]
+                : checkedOutItems,
+            []
+          ),
+        ],
+        []
+      ),
+    });
+
+    function itemToRow(form, item) {
+      const { endTime, location, students } = form;
+      const { barcode, description, id } = item;
+      return createElement("tr", {
+        onClick: () => setForm(form),
+        children: [
+          cell(description),
+          cell(id || barcode || ""),
+          cell(location),
+          cell(
+            students
+              .reduce((names, { name }) => [...names, name], [])
+              .join(", ")
+          ),
+          cell(endTime),
+        ],
+      });
+    }
+  }
+</script>

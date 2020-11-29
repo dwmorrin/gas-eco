@@ -1,0 +1,23 @@
+<script>
+  /* global HTML */
+  /* exported ModalQuantityChange */
+  /**
+   * onOk receives the input value.
+   */
+  function ModalQuantityChange({ item, onOk }) {
+    const newQuantityInput = HTML.createElement("input", {
+      class: "newQuantity",
+    });
+    return HTML.modal({
+      children: [
+        HTML.heading1("Change quantity"),
+        HTML.paragraph(
+          `Enter the new quantity: (current quantity: ${item.getQuantity()})`
+        ),
+        newQuantityInput,
+      ],
+      okText: "Ok",
+      onOk: () => onOk(newQuantityInput.value),
+    });
+  }
+</script>

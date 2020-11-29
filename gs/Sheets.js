@@ -135,26 +135,15 @@ function getAllStudents_() {
 }
 
 /* exported getArchivedForms_ */
-function getArchivedForms_(dateRangeJSON) {
-  var dateRange = JSON.parse(dateRangeJSON); // dateRange.start, dateRange.end
-  dateRange.start = DateUtils.parseFormattedDate(dateRange.start);
-  dateRange.end = DateUtils.parseFormattedDate(dateRange.end);
+function getArchivedForms_() {
   var sheet = SpreadsheetApp.openById(index.forms.SHEET_ID).getSheetByName(
     index.forms.ARCHIVE_NAME
   );
-  var data = sheet.getDataRange().getValues(),
-    forms = new Stack_();
+  var data = sheet.getDataRange().getValues();
+  const forms = new Stack_();
   data.shift();
   data.forEach(function (row) {
-    forms.push(new Form_(row).setHash());
-  });
-  forms = forms.filter(function (form) {
-    var start = DateUtils.parseFormattedDate(form.startTime);
-    var end = DateUtils.parseFormattedDate(form.endTime);
-    return (
-      start.getTime() >= dateRange.start.getTime() &&
-      end.getTime() <= dateRange.end.getTime()
-    );
+    forms.push(new Form_(row));
   });
   return forms;
 }

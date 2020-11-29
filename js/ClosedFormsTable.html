@@ -1,0 +1,63 @@
+<script>
+  /* global HTML Utility */
+  /* exported ClosedFormsTable */
+  function ClosedFormsTable({ forms, setForm }) {
+    const { cell, createElement, documentIcon, row, headerCell, table } = HTML;
+    const { uncamelCase } = Utility;
+
+    return table(
+      createElement("thead", {
+        class: "archive",
+        child: row(
+          headerCell({ child: documentIcon() }),
+          ...[
+            "startTime",
+            "endTime",
+            "location",
+            "students",
+            "items",
+            "bookingId",
+            "bookedStudents",
+            "contact",
+            "project",
+            "tape",
+            "overnight",
+          ].map((text) => headerCell({ textContent: uncamelCase(text) }))
+        ),
+      }),
+      createElement("tbody", {
+        children: forms.length
+          ? forms.map((form) =>
+              createElement("tr", {
+                onClick: () => setForm(form),
+                children: [
+                  cell({ child: documentIcon() }),
+                  ...[
+                    form.startTime,
+                    form.endTime,
+                    form.location,
+                    form.students.map((student) => student.name).join(", "),
+                    form.items.length ? "YES" : "NO", // "has items"
+                    form.bookingId,
+                    form.bookedStudents,
+                    form.contact,
+                    form.project,
+                    form.tape ? "YES" : "",
+                    form.overnight ? "YES" : "",
+                  ].map(cell),
+                ],
+              })
+            )
+          : [
+              createElement("tr", {
+                class: "hoveroff",
+                child: createElement("td", {
+                  textContent: "No forms matched your search.",
+                  colspan: 12, // fill entire row
+                }),
+              }),
+            ],
+      })
+    );
+  }
+</script>

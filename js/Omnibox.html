@@ -7,70 +7,15 @@
     Utility
    */
   /* exported Omnibox */
-  const Omnibox = (function () {
-    // const element = document.querySelector("input.omnibox");
+  function Omnibox({ onSubmit }) {
+    const { createElement } = HTML;
     let element = null;
-    const noop = () => undefined;
-    const handlers = {
-      onLogManualEntry: noop,
-      onItemChange: noop,
-      onStudentChange: noop,
-      onNewCodabar: noop,
-      onNeedsSignature: noop,
-    };
-    const connections = {
-      getCurrentForm: noop,
-    };
     const inventory = new Inventory();
     let roster = [];
 
-    return {
-      getInventory,
-      getRoster,
-      handleItem,
-      makeQuantityChangeDialog,
-      manualEntry,
-      parse,
-      setConnections,
-      setElement,
-      setHandlers,
-      setInputAndParse,
-      setRoster,
-    };
-
-    function setElement(htmlNode) {
-      element = htmlNode;
-      element.addEventListener("keydown", handleKeydown);
-    }
-
-    function setInputAndParse(value) {
-      element.value = value;
-      parse();
-    }
-
-    function getInventory() {
-      return inventory;
-    }
-
-    function getRoster() {
-      return roster;
-    }
-
-    function setRoster(newRoster) {
-      roster = newRoster;
-    }
-
-    function setHandlers(newHandlers) {
-      Object.assign(handlers, newHandlers);
-    }
-
-    function setConnections(newConnections) {
-      Object.assign(connections, newConnections);
-    }
-
-    function clear() {
-      element.value = "";
-    }
+    return createElement("input", {
+      type: "text",
+    });
 
     function handleItem(item, quantityToReturn, ambiguous = true) {
       const form = connections.getCurrentForm();
@@ -595,5 +540,5 @@
       weightedResults.sort((a, b) => a.weight - b.weight);
       return weightedResults;
     }
-  })();
+  }
 </script>

@@ -1,66 +1,39 @@
 <script>
-  /* global Inventory Item */
+  /* global Item */
   /* exported Form */
   /**
    * @param {obj} - passing in an existing form makes a copy of that form
    * @param {Boolean} duplicating Indicates the obj is a Form we want to duplicate
    */
-  function Form(
-    {
-      bookedStudents = "",
-      bookingId = null,
-      contact = "",
-      endTime = "",
-      id = null,
-      location = "",
-      overnight = false,
-      project = "",
-      startTime = "",
-      tape = false,
-      hash = "",
-      items = null,
-      notes = [],
-      students = [],
-    },
-    duplicating = false
-  ) {
-    if (duplicating && items) {
-      this.items = new Inventory();
-      items.forEach((item) => {
-        item.quantity = item.getQuantity();
-        const copy = new Item(item);
-        item.quantity = undefined;
-        copy.checkIn = copy.checkOut = copy.notes = "";
-        copy.checkedOut = copy.missing = false;
-        this.items.push(copy);
-      });
-    } else this.items = new Inventory().setItems(items);
-    this.bookedStudents = duplicating ? null : String(bookedStudents);
-    this.bookingId = duplicating ? null : bookingId;
-    this.contact = duplicating ? null : String(contact);
+  function Form({
+    bookedStudents = "",
+    bookingId = null,
+    contact = "",
+    endTime = "",
+    id = null,
+    location = "",
+    overnight = false,
+    project = "",
+    startTime = "",
+    tape = false,
+    hash = "",
+    items = [],
+    notes = [],
+    students = [],
+  }) {
+    this.items = items.map((item) => new Item(item));
+    this.bookedStudents = String(bookedStudents);
+    this.bookingId = bookingId;
+    this.contact = String(contact);
     this.endTime = String(endTime);
-    this.id = duplicating ? null : id;
+    this.id = id;
     this.location = String(location);
-    this.project = duplicating ? null : String(project);
-    this.overnight = duplicating ? null : Boolean(overnight);
+    this.project = String(project);
+    this.overnight = Boolean(overnight);
     this.startTime = String(startTime);
-    this.tape = duplicating ? null : Boolean(tape);
-    this.hash = duplicating ? null : hash;
-    this.notes = duplicating
-      ? [
-          {
-            timestamp: Date.now(),
-            author: "unknown",
-            body: JSON.stringify([
-              {
-                name: "duplicated",
-                value: id,
-                timestamp: Date.now(),
-              },
-            ]),
-          },
-        ]
-      : notes.slice();
+    this.tape = Boolean(tape);
+    this.hash = hash;
+    this.notes = notes.slice();
     if (this.notes.length > 0) {
       // copy
       this.notes = this.notes.map((note) => {
@@ -71,14 +44,7 @@
     if (this.students.length > 0) {
       // copy
       this.students = this.students.map((student) => {
-        return duplicating
-          ? {
-              ...student,
-              checkIn: null,
-              checkOut: null,
-              left: false,
-            }
-          : { ...student };
+        return { ...student };
       });
     }
   }

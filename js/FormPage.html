@@ -1,5 +1,5 @@
 <script>
-  /* global Config DateUtils HTML Utility DateTimeInput */
+  /* global Config DateUtils HTML Utility DateTimeInput ModalQuantityChange */
   /* exported FormPage */
   function FormPage({
     form,
@@ -7,10 +7,12 @@
     savable = false,
     formIndexDisplay = "",
     omnibox,
-    submit,
+    onSubmit,
     onChange,
+    onDelete,
   }) {
-    console.log(form);
+    const { copyToClipboard, nullIf, tryJsonParse, uncamelCase } = Utility;
+    const { button, cell, createElement, modal, page, row, table } = HTML;
     // submodule to track form changes
     const Changes = (function () {
       let saved = true;
@@ -35,65 +37,49 @@
         isSaved() {
           return saved;
         },
-        makeNote() {
+        makeNote(author) {
           return {
             timestamp: Date.now(),
-            author: getUsername(),
+            author,
             body: JSON.stringify(this.stack),
           };
         },
       };
     })();
 
-    /**
-     * @see {@link https://developer.mozilla.org/en-US/docs/Web/Events/beforeunload}
-     */
-    window.addEventListener("beforeunload", function (event) {
-      if (!Changes.isSaved()) {
-        const confirmationMessage = "Are you sure?";
-        event.returnValue = confirmationMessage; // Gecko, Trident, Chrome 34+
-        return confirmationMessage; // Gecko, WebKit, Chrome <34
-      } else {
-        // handlers.onUnload();
-      }
-    });
-
-    return HTML.page({
+    return page({
       name: "form",
       children: [
-        HTML.createElement("form", {
+        createElement("form", {
           class: "model",
           onSubmit: (e) => e.preventDefault(),
           children: [
-            HTML.createElement("input", { type: "hidden", name: "notes" }),
-            HTML.createElement("input", { type: "hidden", name: "startTime" }),
-            HTML.createElement("input", { type: "hidden", name: "endTime" }),
-            HTML.createElement("section", {
+            createElement("section", {
               class: "formControls",
               children: [
-                HTML.createElement("div", {
+                createElement("div", {
                   tabindex: 0,
                   // onFocus: () => locationSelect.focus(),
                 }),
                 omnibox,
-                HTML.button("🔎", {
+                button("🔎", {
                   class: "buttonSmall",
                   disabled,
                   tabindex: -1,
                   onClick: () => alert("parse input disabled"), //handlers.onParseInput(),
                 }),
-                HTML.button("Add item without barcode or ID", {
+                button("Add item without barcode or ID", {
                   disabled,
                   tabindex: -1,
                   onClick: () => alert("manual entry disabled"), //handlers.onManualEntry(),
                 }),
-                HTML.button("New note", {
+                button("New note", {
                   class: "action",
                   disabled,
                   tabindex: -1,
                   onClick: () => {
-                    const input = HTML.createElement("textarea");
-                    HTML.modal({
+                    const input = createElement("textarea");
+                    modal({
                       children: [
                         HTML.heading1("New note"),
                         HTML.paragraph("Enter a note"),
@@ -105,62 +91,69 @@
                     input.focus();
                   },
                 }),
-                HTML.button("Change log", {
+                button("Change log", {
                   tabindex: -1,
                   onClick: onChangeLog,
                 }),
-                HTML.button("Copy items to clipboard", {
-                  class: disabled ? "" : "hidden",
-                  tabindex: -1,
-                  onClick: () => alert("copy items disabled"),
-                  // Utility.copyToClipboard(
-                  //   JSON.stringify(
-                  //     getCurrentStack().getCurrentForm().items.getStripped()
-                  //   )
-                  // ),
-                }),
+                nullIf(
+                  !disabled,
+                  button("Copy items to clipboard", {
+                    tabindex: -1,
+                    onClick: () =>
+                      copyToClipboard(JSON.stringify(form.items.getStripped())),
+                  })
+                ),
+                nullIf(
+                  disabled,
+                  button("Delete this form", {
+                    onClick: onDelete,
+                  })
+                ),
                 HTML.br(),
-                HTML.button("Previous form", {
+                button("Previous form", {
                   tabindex: -1,
                   onClick: () => alert("get previous disabled"), //getPrevious,
                 }),
-                HTML.button("Next form", {
+                button("Next form", {
                   tabindex: -1,
                   onClick: () => alert("get next disabled"), //getNext,
                 }),
-                HTML.createElement("span", {
+                createElement("span", {
                   textContent: formIndexDisplay,
                 }),
                 HTML.br(),
-                HTML.button("Submit", {
+                button("Submit", {
                   disabled: disabled || !savable,
                   class: "action buttonTight",
-                  onClick: submit,
+                  onClick: () => onSubmit(form),
                 }),
-                HTML.button("Save as advance booking", {
-                  class: `action buttonTight${form.isBlank() ? "" : " hidden"}`,
-                  disabled: disabled || !savable,
-                  tabindex: -1,
-                  onClick: () => {
-                    HTML.modal({
-                      children: [
-                        HTML.heading1("Save for later?"),
-                        HTML.paragraph(
-                          "All sign-in and check-out info will be removed. " +
-                            "Add all people and items before saving. " +
-                            "You can only do this once."
-                        ),
-                      ],
-                      closeText: "Cancel",
-                      okText: "Save as advance booking",
-                      onOk: makeAdvanceBooking,
-                    });
-                  },
-                }),
-                HTML.button("Revert to saved form", {
+                nullIf(
+                  disabled || !form.isBlank(),
+                  button("Save as advance booking", {
+                    class: `action buttonTight`,
+                    disabled: !savable,
+                    tabindex: -1,
+                    onClick: () => {
+                      modal({
+                        children: [
+                          HTML.heading1("Save for later?"),
+                          HTML.paragraph(
+                            "All sign-in and check-out info will be removed. " +
+                              "Add all people and items before saving. " +
+                              "You can only do this once."
+                          ),
+                        ],
+                        closeText: "Cancel",
+                        okText: "Save as advance booking",
+                        onOk: makeAdvanceBooking,
+                      });
+                    },
+                  })
+                ),
+                button("Revert to saved form", {
                   disabled,
                   onClick: () =>
-                    HTML.modal({
+                    modal({
                       children: [
                         HTML.heading1("Undo all changes"),
                         HTML.paragraph(
@@ -171,27 +164,27 @@
                       onOk: () => undefined,
                     }),
                 }),
-                HTML.createElement("span", {
+                createElement("span", {
                   class: "updateButtonHint",
                   textContent: getUpdateButtonHint(),
                 }),
               ],
             }),
-            HTML.createElement("section", {
+            createElement("section", {
               class: "globalnotes",
               children: form.notes.reduce((notes, note) => {
-                if (Utility.tryJsonParse(note.body)) return notes;
+                if (tryJsonParse(note.body)) return notes;
                 return [
                   ...notes,
-                  HTML.createElement("p", {
+                  createElement("p", {
                     textContent: `Note: [${note.author}] ${note.body}`,
                   }),
                 ];
               }, []),
             }),
-            HTML.createElement("section", {
+            createElement("section", {
               children: [
-                HTML.createElement("table", {
+                createElement("table", {
                   class: "staticFields",
                   children: [
                     ...[
@@ -205,19 +198,19 @@
                         form[key]
                           ? [
                               ...rows,
-                              HTML.createElement("tr", {
+                              createElement("tr", {
                                 children: [
                                   HTML.headerCell(textContent),
-                                  HTML.cell(form[key]),
+                                  cell(form[key]),
                                 ],
                               }),
                             ]
                           : rows,
                       []
                     ),
-                    HTML.row(
+                    row(
                       HTML.headerCell("Location"),
-                      HTML.cell({
+                      cell({
                         textContent: form.location || "",
                         onClick: form.location
                           ? (_, locationDisplay) => {
@@ -231,9 +224,9 @@
                         children: form.location ? [] : [locationSelect()],
                       })
                     ),
-                    HTML.row(
+                    row(
                       HTML.headerCell("Start Time"),
-                      HTML.cell({
+                      cell({
                         onClick: form.startTime
                           ? handleClickTimeDisplay({
                               name: "start",
@@ -249,9 +242,9 @@
                             }),
                       })
                     ),
-                    HTML.row(
+                    row(
                       HTML.headerCell("End Time"),
-                      HTML.cell({
+                      cell({
                         onClick: form.endTime
                           ? handleClickTimeDisplay({
                               name: "end",
@@ -269,45 +262,45 @@
                     ),
                   ],
                 }),
-                HTML.createElement("div", {
+                createElement("div", {
                   tabindex: 0,
                   onFocus: () => omnibox.focus(),
                 }),
               ],
             }),
-            HTML.createElement("section", {
+            createElement("section", {
               children: [
-                HTML.createElement("h4", { textContent: "Students" }),
-                HTML.table(
-                  HTML.createElement("thead", {
+                createElement("h4", { textContent: "Students" }),
+                table(
+                  createElement("thead", {
                     class: "form formStudents",
                     children: [
-                      HTML.row(
+                      row(
                         ...["Name", "NetID", "Signed In", "Signed Out"].map(
                           HTML.headerCell
                         )
                       ),
                     ],
                   }),
-                  HTML.createElement("tbody", {
+                  createElement("tbody", {
                     class: "studentList",
                     children: form.students.length
                       ? form.students.map(makeStudentRow)
-                      : [HTML.row(HTML.cell("Scan ID to sign in a student"))],
+                      : [row(cell("Scan ID to sign in a student"))],
                   })
                 ),
               ],
             }),
-            HTML.createElement("section", {
+            createElement("section", {
               children: [
-                HTML.createElement("h4", {
+                createElement("h4", {
                   textContent: "Equipment Checked Out",
                 }),
-                HTML.table(
-                  HTML.createElement("thead", {
+                table(
+                  createElement("thead", {
                     class: "form formItems",
                     children: [
-                      HTML.row(
+                      row(
                         ...[
                           "Qty",
                           "Items",
@@ -318,15 +311,11 @@
                       ),
                     ],
                   }),
-                  HTML.createElement("tbody", {
+                  createElement("tbody", {
                     class: "itemList",
-                    children: form.items.getLength()
+                    children: form.items.length
                       ? form.items.map(makeItemRow) // slice.reverse?
-                      : [
-                          HTML.row(
-                            HTML.cell("Scan barcode to check out an item")
-                          ),
-                        ],
+                      : [row(cell("Scan barcode to check out an item"))],
                   })
                 ),
               ],
@@ -336,7 +325,7 @@
       ],
       onKeydown: (event) => {
         if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
-          submit();
+          onSubmit(form);
         }
       },
     });
@@ -348,7 +337,7 @@
         DateTimeInput({
           name,
           value,
-          onChange: handleChangeTime,
+          onChange: onChangeTime,
         }).forEach((el) => timeDisplay.parentNode.appendChild(el));
         timeDisplay.remove();
       };
@@ -363,8 +352,8 @@
 
     function handleChangeLocation(change) {
       if (change.target.value === "Other") {
-        const input = HTML.createElement("input", { type: "text" });
-        HTML.modal({
+        const input = createElement("input", { type: "text" });
+        modal({
           children: [
             HTML.heading1("Location: Other"),
             HTML.paragraph(
@@ -391,24 +380,20 @@
       onChange(change);
     }
 
-    function handleChangeTime(change) {
-      onChange(change);
-    }
-
     function handleClickItem(item) {
       const radio = HTML.radio("itemOptions");
-      const input = HTML.createElement("textarea");
-      HTML.modal({
+      const input = createElement("textarea");
+      modal({
         children: [
           HTML.heading1("Add notes to item"),
-          HTML.table(
-            HTML.row(
-              HTML.cell("Item cannot be found"),
-              HTML.cell({ child: radio("missing") })
+          table(
+            row(
+              cell("Item cannot be found"),
+              cell({ child: radio("missing") })
             ),
-            HTML.row(
-              HTML.cell("Other (please specifiy below"),
-              HTML.cell({ child: radio("other") })
+            row(
+              cell("Other (please specifiy below"),
+              cell({ child: radio("other") })
             )
           ),
           input,
@@ -423,7 +408,7 @@
           } else if (choice === "other") {
             item.notes = [item.notes, input.value].filter((s) => s).join(", ");
           }
-          updateItems({
+          onChange({
             target: {
               name: "items",
               value,
@@ -436,22 +421,22 @@
 
     function handleStudentNote(student) {
       const radio = HTML.radio("studentOptions");
-      const input = HTML.createElement("textarea");
-      HTML.modal({
+      const input = createElement("textarea");
+      modal({
         children: [
           HTML.heading1("Add notes to student"),
-          HTML.table(
-            HTML.row(
-              HTML.cell("Student never showed up."),
-              HTML.cell({ child: radio("no show") })
+          table(
+            row(
+              cell("Student never showed up."),
+              cell({ child: radio("no show") })
             ),
-            HTML.row(
-              HTML.cell("Student left without checking out."),
-              HTML.cell({ child: radio("left") })
+            row(
+              cell("Student left without checking out."),
+              cell({ child: radio("left") })
             ),
-            HTML.row(
-              HTML.cell("Other (please specify below)"),
-              HTML.cell({ child: radio("other", true) })
+            row(
+              cell("Other (please specify below)"),
+              cell({ child: radio("other", true) })
             )
           ),
           input,
@@ -463,7 +448,7 @@
 
           if (choice === "left") {
             student.left = true;
-            updateStudents({
+            onChange({
               target: {
                 name: "students",
                 value: `${student.name} left without checking out`,
@@ -484,13 +469,6 @@
       input.focus();
     }
 
-    function cancelAutosave() {
-      if (autosaveID !== null) {
-        window.clearTimeout(autosaveID);
-        autosaveID = null;
-      }
-    }
-
     function makeAdvanceBooking() {
       // connections.getCurrentForm().makeAdvanceBooking();
       onChange({
@@ -498,30 +476,10 @@
       });
     }
 
-    function parseDateAndTimeInputs() {
-      let startTime = new Date(elements.form.startDate.value + "T00:00:00"),
-        endTime = new Date(elements.form.endDate.value + "T00:00:00"),
-        startHour = +elements.form.startHour.value,
-        endHour = +elements.form.endHour.value,
-        startMinute = +elements.form.startMinute.value,
-        endMinute = +elements.form.endMinute.value;
-      const ampmConverter = (ampm, hour) => {
-        if (ampm == "PM" && hour != 12) {
-          hour += 12;
-        } else if (ampm == "AM" && hour == 12) {
-          // i.e. 12 AM
-          hour = 0;
-        }
-        return hour;
-      };
-      startHour = ampmConverter(elements.form.startAMPM.value, startHour);
-      endHour = ampmConverter(elements.form.endAMPM.value, endHour);
-      startTime.setHours(startHour);
-      startTime.setMinutes(startMinute);
-      endTime.setHours(endHour);
-      endTime.setMinutes(endMinute);
-
-      return { startTime, endTime };
+    function onChangeTime({ name, values }) {
+      const { date, hour, minutes, ampm } = values;
+      const value = `${date} ${hour}:${minutes} ${ampm}`;
+      onChange({ target: { name, value } });
     }
 
     function saveNote(body) {
@@ -540,33 +498,36 @@
           value: body.length > 10 ? body.slice(0, 10) + "..." : body,
         },
       });
-      elements.noteSection.appendChild(
-        HTML.createElement("p", {
-          textContent: `Note: [${author}] ${body}`,
-        })
-      );
-      if (elements.noteSection.classList.contains("hidden")) {
-        elements.noteSection.classList.remove("hidden");
-      }
     }
 
     function makeQuantityButtons(item, isArchive) {
       if (isArchive || item.checkIn || item.isSerialized()) {
         return document.createTextNode(item.getQuantity());
       }
-      return HTML.createElement("span", {
+      return createElement("span", {
         children: [
-          HTML.createElement("button", {
+          button(String(item.getQuantity()), {
             class: "quantity",
-            onClick: () => handlers.onModalQuantityChange(item),
-            textContent: item.getQuantity(),
+            onClick: () =>
+              ModalQuantityChange({
+                item,
+                onClick: (value) => {
+                  item.changeQuantity(value); // TODO switch to immutable
+                  onChange({
+                    target: {
+                      name: "items",
+                      value: `${item.description} qty to ${value}`,
+                    },
+                  });
+                },
+              }),
           }),
-          HTML.createElement("button", {
+          button("+", {
             class: "quantity",
             onClick: () => {
               const quantity = item.getQuantity();
               item.changeQuantity(1);
-              updateItems({
+              onChange({
                 target: {
                   name: "items",
                   value: `${item.description} qty ${quantity} to ${
@@ -575,29 +536,28 @@
                 },
               });
             },
-            textContent: "+",
           }),
         ],
       });
     }
 
     function makeItemRow(item) {
-      return HTML.createElement("tr", {
+      return createElement("tr", {
         class: item.isSerialized ? "serialized" : "nonserialized",
         children: [
-          HTML.cell({ child: makeQuantityButtons(item, disabled) }),
-          HTML.cell(item.description),
-          HTML.cell(item.id),
-          HTML.cell(
+          cell({ child: makeQuantityButtons(item, disabled) }),
+          cell(item.description),
+          cell(item.id),
+          cell(
             item.checkOut
               ? item.checkOut
               : {
-                  child: HTML.createElement("i", {
+                  child: createElement("i", {
                     textContent: "Scan barcode to check out",
                   }),
                 }
           ),
-          HTML.cell({ child: makeCheckInButton(item, disabled) }),
+          cell({ child: makeCheckInButton(item, disabled) }),
         ],
         onClick: ({ metaKey, target }) => {
           if (target.tagName.toLowerCase() === "button") return;
@@ -607,8 +567,8 @@
         },
       });
       // elements.itemList.appendChild(
-      //   HTML.createElement("tr", {
-      //     child: HTML.createElement("td", {
+      //   createElement("tr", {
+      //     child: createElement("td", {
       //       colspan: 4,
       //       class: "itemnotes",
       //       textContent: "Notes: " + item.notes,
@@ -622,7 +582,7 @@
         return document.createTextNode("");
       }
       if (item.missing) {
-        return HTML.createElement("span", {
+        return createElement("span", {
           class: "alert",
           textContent: "ITEM IS MISSING",
         });
@@ -631,14 +591,14 @@
         return document.createTextNode(item.checkIn);
       }
       if (!item.checkOut || !item.checkedOut) {
-        return HTML.createElement("button", {
+        return createElement("button", {
           class: "create",
           textContent: "Remove",
           onClick: () => {
             alert("item remove function disabled");
             // const form = connections.getCurrentForm();
             // form.items.removeByItem(item);
-            // updateItems({
+            // onChange({
             //   target: {
             //     name: "items",
             //     value: item.description + " removed",
@@ -648,12 +608,12 @@
         });
       }
       if (!item.checkIn && item.isSerialized()) {
-        return HTML.createElement("i", {
+        return createElement("i", {
           textContent: "Scan barcode to return",
         });
       }
       const id = item.id || item.barcode;
-      const checkInButton = HTML.createElement("button", {
+      const checkInButton = createElement("button", {
         class: "action",
         textContent: "Check In",
         onClick: () => {
@@ -675,21 +635,21 @@
       });
       const quantity = item.getQuantity();
       if (quantity > 1) {
-        return HTML.createElement("span", {
+        return createElement("span", {
           "data-id": item.id,
           "data-barcode": item.barcode,
           children: [
             checkInButton,
-            HTML.createElement("select", {
+            createElement("select", {
               class: "selectQuantity",
               "data-itemid": id,
               children: [
-                HTML.createElement("option", {
+                createElement("option", {
                   value: "all",
                   textContent: "All",
                 }),
                 ...Array.from({ length: quantity - 1 }).map((_, i) =>
-                  HTML.createElement("option", {
+                  createElement("option", {
                     textContent: String(i + 1),
                   })
                 ),
@@ -703,22 +663,22 @@
 
     function makeStudentRow(student) {
       // isArchive === disabled
-      return HTML.createElement("tr", {
+      return createElement("tr", {
         children: [
-          HTML.cell(student.name),
-          HTML.cell(student.netId),
-          HTML.createElement("td", {
+          cell(student.name),
+          cell(student.netId),
+          createElement("td", {
             child: student.checkIn
               ? document.createTextNode(student.checkIn)
               : disabled
               ? document.createTextNode("")
-              : HTML.createElement("i", {
+              : createElement("i", {
                   textContent: "Scan ID to sign in",
                 }),
           }),
-          HTML.createElement("td", {
+          createElement("td", {
             child: student.left
-              ? HTML.createElement("span", {
+              ? createElement("span", {
                   class: "alert",
                   textContent: "DID NOT CHECK OUT",
                 })
@@ -726,7 +686,7 @@
               ? document.createTextNode(student.checkOut)
               : disabled || !student.checkIn
               ? document.createTextNode("")
-              : HTML.createElement("i", {
+              : createElement("i", {
                   textContent: "Scan ID to sign out",
                 }),
           }),
@@ -749,24 +709,22 @@
     function onChangeLog() {
       const changes = [
         ...form.notes.reduce((areChanges, note) => {
-          const change = Utility.tryJsonParse(note.body);
+          const change = tryJsonParse(note.body);
           if (!Array.isArray(change)) return areChanges;
           change.forEach((entry) => (entry.author = note.author));
           return [...areChanges, ...change];
         }, []),
         ...Changes.getStack(),
       ];
-      HTML.modal({
+      modal({
         children: [
-          HTML.table(
-            HTML.row(...["Time", "User", "Field", "Value"].map(HTML.cell))
-          ),
+          table(row(...["Time", "User", "Field", "Value"].map(cell))),
           ...changes.map(({ timestamp, author, name, value }) =>
-            HTML.row(
-              HTML.cell(DateUtils.getFormattedDate(new Date(timestamp))),
-              HTML.cell(author),
-              HTML.cell(Utility.uncamelCase(name)),
-              HTML.cell(value)
+            row(
+              cell(DateUtils.getFormattedDate(new Date(timestamp))),
+              cell(author),
+              cell(uncamelCase(name)),
+              cell(value)
             )
           ),
         ],

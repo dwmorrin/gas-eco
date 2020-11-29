@@ -2,15 +2,11 @@
   /* exported HTML */
   const HTML = (function () {
     return {
-      attributes,
       br,
       button,
       cell,
       createElement,
       documentIcon,
-      empty,
-      getFirstChild,
-      getNextSibling,
       getRadioValue,
       headerCell,
       heading1,
@@ -22,7 +18,6 @@
       option,
       page,
       paragraph,
-      queryAll,
       radio,
       row,
       select,
@@ -31,6 +26,7 @@
       tableBody,
       tableHead,
       toast,
+      update,
     };
 
     /**
@@ -38,15 +34,17 @@
      *   attrs["onX"], where "X" is some event name (e.g. "onClick")
      *   accepts a function that will receive the event object as argument 1
      *   and the HTMLElement as argument 2.
+     *
+     * children:
+     *   any falsy value will be skipped (for conditional rendering)
      */
     function attributes(el, attrs) {
       try {
         for (const key in attrs) {
           if (key === "class") el.classList.add(...attrs[key].split(/\s+/));
-          else if (key === "removeClass") el.classList.remove(attrs[key]);
           else if (key === "child") el.appendChild(attrs[key]);
           else if (key === "children")
-            attrs[key].forEach((child) => el.appendChild(child));
+            attrs[key].forEach((child) => child && el.appendChild(child));
           else if (key === "innerHTML") el.innerHTML = attrs[key];
           else if (key === "textContent") el.textContent = attrs[key];
           else if (/^on[A-Z]/.test(key))
@@ -56,10 +54,10 @@
                 key.replace(/^on([A-Z])/, (_, c) => c.toLowerCase()),
                 (event) => attrs[key](event, el)
               );
-          else if (["selected", "checked", "disabled"].includes(key)) {
+          else if (["selected", "checked", "disabled"].includes(key))
             // only create attribute if true
             attrs[key] && el.setAttribute(key, attrs[key]);
-          } else el.setAttribute(key, attrs[key]);
+          else el.setAttribute(key, attrs[key]);
         }
         return el;
       } catch (error) {
@@ -98,28 +96,12 @@
       while (el && el.firstChild) el.removeChild(el.firstChild);
     }
 
-    function getFirstChild(element) {
-      let firstChild = element.firstChild;
-      while (firstChild != null && firstChild.nodeType == 3) {
-        firstChild = firstChild.nextSibling;
-      }
-      return firstChild;
-    }
-
-    function getNextSibling(element) {
-      let nextSibling = element.nextSibling;
-      while (nextSibling != null && nextSibling.nodeType == 3) {
-        nextSibling = nextSibling.nextSibling;
-      }
-      return nextSibling;
-    }
-
     function labeledRadio(name) {
       return (textContent, value, checked = false) =>
         createElement("label", {
           textContent,
           child: createElement("input", {
-            type: radio,
+            type: "radio",
             name,
             value,
             checked,
@@ -276,8 +258,9 @@
       });
     }
 
-    function labeledDateInput(textContent, name) {
+    function labeledDateInput(textContent = "", name = "", attrs = {}) {
       return labeledInput(textContent, {
+        ...attrs,
         name,
         type: "date",
         placeholder: "yyyy-mm-dd",
@@ -292,10 +275,6 @@
       return createElement("button", { ...attrs, textContent });
     }
 
-    function queryAll(parentNode, query) {
-      return Array.from(parentNode.querySelectorAll(query));
-    }
-
     /**
      * To set the value of a <select>, the options have to be attached first.
      * Children attribute must be processed before value attribute.
@@ -306,6 +285,12 @@
       const el = createElement("select", attrs);
       if (attrs.value) el.value = attrs.value;
       return el;
+    }
+
+    function update(node, newChild) {
+      empty(node);
+      node.appendChild(newChild);
+      return node;
     }
   })();
 </script>

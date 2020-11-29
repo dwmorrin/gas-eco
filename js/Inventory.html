@@ -31,9 +31,13 @@
       return items.length;
     };
 
+    this.reduce = function (fn, initialValue) {
+      return items.reduce(fn, initialValue);
+    };
+
     // this section exposes array functions
     this.every = function (func) {
-      items.every(func);
+      return items.every(func);
     };
     this.forEach = function (func) {
       items.forEach(func);
