@@ -119,15 +119,13 @@
     });
 
     /**
+     * Warns user when trying to close tab and changes are not saved.
      * @see {@link https://developer.mozilla.org/en-US/docs/Web/Events/beforeunload}
      */
     window.addEventListener("beforeunload", function (event) {
       if (!state.saved) {
-        const confirmationMessage = "Are you sure?";
-        event.returnValue = confirmationMessage; // Gecko, Trident, Chrome 34+
-        return confirmationMessage; // Gecko, WebKit, Chrome <34
-      } else {
-        // handlers.onUnload();
+        event.preventDefault(); // Firefox, Safari
+        event.returnValue = ""; // Chrome, Edge, Firefox
       }
     });
 
@@ -402,7 +400,7 @@
           disabled,
           form,
           formIndexDisplay: `${
-            state.openForms.findIndex((f) => f === form) + 1
+            state.openForms.findIndex(({ id }) => id === form.id) + 1
           }/${state.openForms.length}`,
           onDelete,
           onSubmit,

@@ -120,7 +120,7 @@
                 br(),
                 button("Submit", {
                   disabled: disabled || !savable,
-                  class: "action buttonTight",
+                  class: `action buttonTight${savable ? " create" : ""}`,
                   onClick: () => onSubmit(form),
                 }),
                 nullIf(
@@ -719,7 +719,10 @@
         ...form.notes.reduce((areChanges, note) => {
           const change = tryJsonParse(note.body);
           if (!Array.isArray(change)) return areChanges;
-          change.forEach((entry) => (entry.author = note.author));
+          change.forEach((entry) => {
+            entry.author = note.author;
+            if (!entry.timestamp) entry.timestamp = note.timestamp;
+          });
           return [...areChanges, ...change];
         }, []),
       ];
