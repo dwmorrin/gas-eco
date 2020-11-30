@@ -21,7 +21,7 @@
     notes = [],
     students = [],
   }) {
-    this.items = items.map((item) => new Item(item));
+    this.items = Object.freeze(items.map((item) => new Item(item)));
     this.bookedStudents = String(bookedStudents);
     this.bookingId = bookingId;
     this.contact = String(contact);
@@ -33,21 +33,16 @@
     this.startTime = String(startTime);
     this.tape = Boolean(tape);
     this.hash = hash;
-    this.notes = notes.slice();
-    if (this.notes.length > 0) {
-      // copy
-      this.notes = this.notes.map((note) => {
-        return typeof note === "object" ? { ...note } : note;
-      });
-    }
-    this.students = students.slice();
-    if (this.students.length > 0) {
-      // copy
-      this.students = this.students.map((student) => {
-        return { ...student };
-      });
-    }
+    this.notes = Object.freeze(
+      notes.map((note) => (typeof note === "object" ? { ...note } : note))
+    );
+    this.students = Object.freeze(
+      students.slice().map((student) => ({ ...student }))
+    );
+
+    return Object.freeze(this);
   }
+
   Form.prototype.hasActiveStudent = function () {
     const studentCounter = function (count, student) {
       if (student.checkIn && !(student.checkOut || student.left)) {

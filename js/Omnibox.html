@@ -7,128 +7,50 @@
     Utility
    */
   /* exported Omnibox */
-  function Omnibox({ onSubmit }) {
-    const { createElement } = HTML;
-    let element = null;
-    const inventory = new Inventory();
-    let roster = [];
+  function Omnibox({ form, inventory, onSubmit, roster }) {
+    const { cell, createElement, heading1, modal, paragraph, row } = HTML;
+    const { tryJsonParse } = Utility;
+    const { getByBarcode, getById } = Inventory;
+    const { getFormattedDate } = DateUtils;
 
     return createElement("input", {
       type: "text",
+      placeholder: "Scan barcode or type NetID/ItemID",
+      onKeydown: ({ metaKey, ctrlKey, key, preventDefault }, input) => {
+        if (!metaKey && !ctrlKey && key === "Enter") {
+          preventDefault();
+          const { type, value, error } = parse(input);
+          if (error)
+            return modal({
+              children: [heading1("Error"), paragraph(error.message)],
+            });
+          onSubmit({ type, value });
+        } else if (key === "Escape") input.blur();
+      },
     });
-
-    function handleItem(item, quantityToReturn, ambiguous = true) {
-      const form = connections.getCurrentForm();
-      const itemOnForm = form.items.find((i) => {
-        if (item.id && i.id == item.id) {
-          return true;
-        }
-        if (item.barcode && i.barcode == item.barcode) {
-          return true;
-        }
-        return false;
-      });
-      const change = {
-        // fake change event
-        target: {
-          name: "items",
-          value:
-            item.id && !/^manual/i.test(item.id) ? item.id : item.description,
-        },
-      };
-
-      if (!itemOnForm) {
-        // new item
-        item = new Item(item); // copy it
-        item.checkOut = DateUtils.getFormattedDateTime(new Date());
-        form.items.push(item);
-        change.target.value += " check-out";
-      } else if (quantityToReturn && quantityToReturn != "all") {
-        itemOnForm.changeQuantity(-quantityToReturn);
-        change.target.value = `returned ${quantityToReturn} ${change.target.value}`;
-      } else {
-        const savedItem = connections.getSavedForm().items.getByItem(item);
-        if (itemOnForm.checkOut && itemOnForm.checkIn) {
-          // checkout again?
-          clear();
-          if (!savedItem.checkIn) {
-            window.alert(
-              `${itemOnForm.description} ` +
-                `was just checked-in.  Update or revert to check-out again.`
-            );
-            return;
-          }
-          return HTML.modal({
-            children: [
-              HTML.heading1("Check out again?"),
-              HTML.paragraph(
-                `${itemOnForm.description} was already checked back in.`
-              ),
-            ],
-            okText: "Check out again",
-            onOk: () => {
-              itemOnForm.checkIn = "";
-              itemOnForm.checkedOutAgain = true;
-              handlers.onItemChange({
-                target: {
-                  name: "items",
-                  value: `${itemOnForm.description} checked out again`,
-                },
-              });
-            },
-          });
-        } else if (itemOnForm.checkOut) {
-          // Its a check-in
-          if (!savedItem || !savedItem.checkOut || itemOnForm.checkedOutAgain) {
-            clear();
-            if (!item.isSerialized()) {
-              handlers.onQuantityChange(item);
-              return;
-            }
-            return window.alert(
-              `${item.description} was just checked-out. Update or revert the form to continue.`
-            );
-          }
-          if (!item.isSerialized() && ambiguous) {
-            clear();
-            return getItemAction(itemOnForm);
-          }
-          itemOnForm.checkIn = DateUtils.getFormattedDateTime(new Date());
-          // clears the missing property if it was set.
-          itemOnForm.missing = false;
-          change.target.value += " check-in";
-        } else {
-          // Its a check-out for reserved gear
-          itemOnForm.checkOut = DateUtils.getFormattedDateTime(new Date());
-          change.target.value += " check-out";
-        }
-      }
-      clear();
-      handlers.onItemChange(change);
-    }
 
     /**
      * creates a dialog to determine if the user meant to check in an item
      * or check out more of the same item
      */
     function getItemAction(item) {
-      HTML.modal({
+      modal({
         children: [
           HTML.heading1("Check in or out?"),
           HTML.table(
-            HTML.row(
-              HTML.cell("Check the item back in?"),
-              HTML.cell({
-                child: HTML.createElement("button", {
+            row(
+              cell("Check the item back in?"),
+              cell({
+                child: createElement("button", {
                   textContent: "Check In",
                   onClick: () => handleItem(item, "all", false),
                 }),
               })
             ),
-            HTML.row(
-              HTML.cell("Check out more of these?"),
-              HTML.cell({
-                child: HTML.createElement("button", {
+            row(
+              cell("Check out more of these?"),
+              cell({
+                child: createElement("button", {
                   textContent: "Check Out",
                   onClick: makeQuantityChangeDialog(item),
                 }),
@@ -139,30 +61,12 @@
       });
     }
 
-    function makeQuantityChangeDialog(item) {
-      const newQuantityInput = HTML.createElement("input", {
-        class: "newQuantity",
-      });
-      return () =>
-        HTML.modal({
-          children: [
-            HTML.heading1("Change quantity"),
-            HTML.paragraph(
-              `Enter the new quantity: (current quantity: ${item.getQuantity()})`
-            ),
-            newQuantityInput,
-          ],
-          okText: "Ok",
-          onOk: makeQuantityHandler(item, newQuantityInput),
-        });
-    }
-
     function makeQuantityHandler(item, newQuantityInput) {
       return () => {
         const quantity = +newQuantityInput.value;
-        const savedItem = connections
-          .getSavedForm()
-          .items.find(({ description }) => description === item.description);
+        const savedItem = form.items.find(
+          ({ description }) => description === item.description
+        );
         if (!item.checkedOutAgain && savedItem) {
           const savedQuantity = savedItem.getQuantity();
           if (quantity < savedQuantity) {
@@ -193,19 +97,9 @@
       };
     }
 
-    function handleKeydown(keydown) {
-      if (keydown.key === "Escape") keydown.target.blur();
-      if (keydown.key === "Enter") {
-        keydown.preventDefault();
-        parse();
-        return;
-      }
-    }
-
     /** @param {Student} input */
     function handleStudent(student) {
       student = Object.assign({}, student);
-      const form = connections.getCurrentForm();
       const students = form.students;
       const studentOnForm = students.find((s) => s.netId == student.netId);
       const change = {
@@ -221,7 +115,7 @@
           handlers.onNeedsSignature(student.netId);
           return;
         }
-        student.checkIn = DateUtils.getFormattedDateTime(new Date());
+        student.checkIn = getFormattedDate(new Date());
         students.push(student);
         change.target.value += " check-in";
       } else {
@@ -229,9 +123,9 @@
           if (studentOnForm.checkIn && studentOnForm.checkOut) {
             throw new Error(studentOnForm.name + " is already checked out.");
           } else if (studentOnForm.checkIn) {
-            const savedStudent = connections
-              .getSavedForm()
-              .students.find((s) => s.netId == student.netId);
+            const savedStudent = form.students.find(
+              ({ netId }) => netId === student.netId
+            );
             if (!savedStudent || !savedStudent.checkIn) {
               throw new Error(
                 `${student.name} was just checked-in. Update the form before checking out.`
@@ -244,16 +138,14 @@
                   "Otherwise try updating the form."
               );
             }
-            studentOnForm.checkOut = DateUtils.getFormattedDateTime(new Date());
+            studentOnForm.checkOut = getFormattedDate(new Date());
             change.target.value += " check-out";
           } else {
             if (!student.signatureOnFile) {
               handlers.onNeedsSignature(student.netId);
               return;
             } else {
-              studentOnForm.checkIn = DateUtils.getFormattedDateTime(
-                new Date()
-              );
+              studentOnForm.checkIn = getFormattedDate(new Date());
               change.target.value += " check-in";
             }
           }
@@ -270,100 +162,77 @@
 
     /**
      * parse examines the current value of the omnibox text input element
-     *   and passes the value to the correct handler or shows the user an error.
+     * and returns an object that should always be checked for an error key.
+     * {
+     *   type?: "itemArray" |
+     *               "item" |
+     *            "student" |
+     *         "newCodabar" | // codabar detected but not found in roster
+     *        "manualEntry" | // magic number for manual item entry detected
+     *              "query" |, // no exact match; search through roster & inventory
+     *   value?: Item[] | Item | Student | string,
+     *   error?: Error,
+     * }
      */
-    function parse() {
-      if (!element.value) return;
+    function parse(element) {
+      if (!element.value)
+        return { error: new Error("Enter a barcode, NetID, or item ID") };
 
       // see the "Copy items to clipboard" button
       if (/^\s*\[\s*{\s*"/.test(element.value)) {
         // JSON array of objects: "[{}]"
-        JSON.parse(element.value).forEach(handleItem);
-        return;
+        const items = tryJsonParse(element.value);
+        if (!items || !Array.isArray(items))
+          return {
+            type: "itemArray",
+            error: new Error(
+              "Input appears to be JSON but I couldn't parse it."
+            ),
+          };
+        return { type: "itemArray", value: items };
       }
 
-      const value = element.value.toLowerCase(); // case insenstive input
-      // let parsed;
-      // DETERMINE TYPE: ID card barcode, item barcode, item ID/SKU, student name
+      const value = element.value.toLowerCase(); // case insensitive input
       const codabarRegex = /^[a-d][0-9]{5,}[a-d]$/; // "a123...789b" pattern
       if (codabarRegex.test(value)) {
         // Check student id
-        const foundStudent = roster.find(
-          (student) => student.id.toLowerCase() == value
-        );
+        const foundStudent = roster.find(({ id }) => id.toLowerCase() == value);
         if (foundStudent) {
-          handleStudent(foundStudent);
-          return;
+          return { type: "student", value: foundStudent };
         }
-        // handlers.onNewCodabar(value);
-        const input = HTML.createElement("input", {
-          value: "codabar",
-          placeholder: "enter student's NetID",
-        });
-        HTML.modal({
-          children: [
-            HTML.heading1("ID not recognized"),
-            HTML.paragraph(
-              "If you scanned an ID, add it to the student's info by " +
-                "submitting their NetID.  If you think you are seeing this " +
-                'message in error, choose "close".'
-            ),
-            input,
-          ],
-          okText: "Submit",
-          onOk: () => {
-            const netId = input.value;
-            const student = getRoster().find(
-              (student) => student.netId.toLowerCase() === netId
-            );
-            if (!student) {
-              return window.alert(
-                "Hmmm, NetID " +
-                  netId +
-                  " does not match a current student. " +
-                  "Check that it was entered correctly, try refreshing the browser, " +
-                  "or submit a trouble report."
-              );
-            }
-            handlers.onNewCodabar({ netId, codabar: value });
-          },
-        });
-        input.focus();
-        return;
+        return { type: "newCodabar", value };
       }
 
       const idType = /^[a-z]+[0-9]+/.test(value) ? "netId" : "name"; // Check student name and id
       const foundStudent = roster.find(
-        (student) => student[idType].toLowerCase() == value
+        (student) => student[idType].toLowerCase() === value
       );
       if (foundStudent) {
-        handlers.onLogManualEntry(element.value);
-        handleStudent(foundStudent);
-        return;
+        return { type: "student", value: foundStudent };
       }
 
       // two special cases: magic number for manual entry and generated "manual" IDs
       if (value === "10000") {
-        clear();
-        return manualEntry();
+        return { type: "manualEntry" };
       }
       if (/^manual/.test(value))
-        return handleItem(
-          new Item(
-            connections
-              .getCurrentForm()
-              .items.find(
-                (item) => item.id.toLowerCase().replace(/-0+/, "-") == value
-              )
-          )
-        );
+        return {
+          type: "item",
+          value: new Item(
+            form.items.find(
+              ({ id }) => id.toLowerCase().replace(/-0+/, "-") === value
+            )
+          ),
+        };
 
       const foundItem =
-        inventory.getById(value) || inventory.getByBarcode(value);
-      if (foundItem) return handleItem(new Item(foundItem));
+        getById(inventory, value) || getByBarcode(inventory, value);
+      if (foundItem) return { type: "item", value: foundItem };
 
-      clear();
+      return { type: "query", value };
+    }
 
+    function __query__(value, element) {
       const queryResults = _query(
         value.replace(/'/g, ""),
         (obj) => {
@@ -385,7 +254,7 @@
       ).filter((result) => result.weight < 4);
 
       if (queryResults.length > 0) {
-        return HTML.modal({
+        return modal({
           children: [
             HTML.heading1("Search results"),
             HTML.paragraph("Are you looking for one of these?"),
@@ -395,12 +264,12 @@
                 if (!id) return rows;
                 return [
                   ...rows,
-                  HTML.createElement("tr", {
-                    children: [
-                      HTML.cell(value.name || value.description),
-                      HTML.cell(id),
-                    ],
-                    onClick: () => setInputAndParse(id),
+                  createElement("tr", {
+                    children: [cell(value.name || value.description), cell(id)],
+                    onClick: () => {
+                      element.value = id;
+                      parse(element);
+                    },
                   }),
                 ];
               }, [])
@@ -408,46 +277,11 @@
           ],
         });
       }
-      HTML.modal({
+      modal({
         child: HTML.paragraph(
           `"${value}" not found.  You can type in item IDs like "NEU-1", or names like "John Smith".`
         ),
       });
-    }
-
-    function manualEntry() {
-      const input = HTML.createElement("textarea");
-      HTML.modal({
-        children: [
-          HTML.heading1("Check out item without barcode"),
-          HTML.paragraph(
-            "Describe the item: (required, provide as much detail as possible)"
-          ),
-          input,
-        ],
-        okText: "Check out",
-        onOk: () => {
-          const description = input.value;
-          if (description === "") {
-            return;
-          }
-          Utility.digestMessage(description).then((hash) => {
-            handleItem({
-              id: "MANUAL-" + Utility.hexString(hash).substring(0, 5),
-              checkIn: null,
-              checkOut: null,
-              quantity: 1,
-              serialized: false,
-              barcode: null,
-              description,
-              checkedOut: false,
-              notes: "",
-              missing: false,
-            });
-          });
-        },
-      });
-      input.focus();
     }
 
     /**

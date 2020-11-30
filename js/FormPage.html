@@ -1,10 +1,12 @@
 <script>
+  "use strict";
   /* global
   Config
   DateTimeInput
   DateUtils
   Form
   HTML
+  Item
   ModalQuantityChange
   Omnibox
   Utility
@@ -15,15 +17,16 @@
     form,
     formIndexDisplay = "",
     onChange,
+    inventory,
     onDelete,
     onRedo,
     onSubmit,
     onUndo,
+    roster,
     savable = false,
     saved,
     username = "anonymous",
   }) {
-    const { copyToClipboard, nullIf, tryJsonParse, uncamelCase } = Utility;
     const {
       br,
       button,
@@ -41,7 +44,15 @@
       select,
       table,
     } = HTML;
-    const omnibox = Omnibox({});
+    const { copyToClipboard, nullIf, tryJsonParse, uncamelCase } = Utility;
+    const { getFormattedDate } = DateUtils;
+
+    const omnibox = Omnibox({
+      form,
+      inventory,
+      onSubmit: (obj) => console.log({ omnibox: obj }),
+      roster,
+    });
 
     return page({
       name: "form",
@@ -206,13 +217,13 @@
                             onClick: (_, locationDisplay) => {
                               if (disabled) return;
                               locationDisplay.parentNode.appendChild(
-                                locationSelect()
+                                LocationSelect()
                               );
                               locationDisplay.remove();
                             },
                           })
                         : cell({
-                            child: locationSelect(),
+                            child: LocationSelect(),
                           })
                     ),
                     row(
@@ -276,7 +287,7 @@
                   createElement("tbody", {
                     class: "studentList",
                     children: form.students.length
-                      ? form.students.map(makeStudentRow)
+                      ? form.students.map(StudentRow)
                       : [row(cell("Scan ID to sign in a student"))],
                   })
                 ),
@@ -305,7 +316,7 @@
                   createElement("tbody", {
                     class: "itemList",
                     children: form.items.length
-                      ? form.items.map(makeItemRow) // slice.reverse?
+                      ? form.items.map(ItemRow) // slice.reverse?
                       : [row(cell("Scan barcode to check out an item"))],
                   })
                 ),
@@ -514,19 +525,19 @@
       });
     }
 
-    function makeQuantityButtons(item, isArchive) {
+    function QuantityButtons(item, isArchive) {
       if (isArchive || item.checkIn || item.isSerialized()) {
-        return document.createTextNode(item.getQuantity());
+        return document.createTextNode(item.quantity);
       }
       return createElement("span", {
         children: [
-          button(String(item.getQuantity()), {
+          button(String(item.quantity), {
             class: "quantity",
             onClick: () =>
               ModalQuantityChange({
                 item,
                 onClick: (value) => {
-                  item.changeQuantity(value); // TODO switch to immutable
+                  alert("TODO: need to replace old item with new"); //item.changeQuantity(value);
                   onChange({
                     target: {
                       name: "items",
@@ -539,8 +550,8 @@
           button("+", {
             class: "quantity",
             onClick: () => {
-              const quantity = item.getQuantity();
-              item.changeQuantity(1);
+              const quantity = item.quantity;
+              alert("TODO: need to update quantity immutably"); //item.changeQuantity(1);
               onChange({
                 target: {
                   name: "items",
@@ -555,11 +566,11 @@
       });
     }
 
-    function makeItemRow(item) {
+    function ItemRow(item) {
       return createElement("tr", {
         class: item.isSerialized ? "serialized" : "nonserialized",
         children: [
-          cell({ child: makeQuantityButtons(item, disabled) }),
+          cell({ child: QuantityButtons(item, disabled) }),
           cell(item.description),
           cell(item.id),
           cell(
@@ -571,7 +582,7 @@
                   }),
                 }
           ),
-          cell({ child: makeCheckInButton(item, disabled) }),
+          cell({ child: CheckInButton(item, disabled) }),
         ],
         onClick: ({ metaKey, target }) => {
           if (target.tagName.toLowerCase() === "button") return;
@@ -591,7 +602,7 @@
       // );
     }
 
-    function makeCheckInButton(item, isArchive) {
+    function CheckInButton(item, isArchive) {
       if (item.checkedOutAgain) {
         return document.createTextNode("");
       }
@@ -647,7 +658,7 @@
           // handlers.onItemQuantityChange(savedItem, quantityToReturn, false);
         },
       });
-      const quantity = item.getQuantity();
+      const quantity = item.quantity;
       if (quantity > 1) {
         return createElement("span", {
           "data-id": item.id,
@@ -675,7 +686,7 @@
       return checkInButton;
     }
 
-    function makeStudentRow(student) {
+    function StudentRow(student) {
       // isArchive === disabled
       return createElement("tr", {
         children: [
@@ -741,7 +752,7 @@
       });
     }
 
-    function locationSelect() {
+    function LocationSelect() {
       return select({
         name: "location",
         value: form.location,
@@ -752,6 +763,88 @@
           option("Other"),
         ],
       });
+    }
+
+    function handleItem(item) {
+      const currentItem = form.items.find(
+        ({ barcode, id }) =>
+          (item.id && id === item.id) ||
+          (item.barcode && barcode === item.barcode)
+      );
+      const change = {
+        // fake change event
+        target: {
+          name: "items",
+          value:
+            item.id && !/^manual/i.test(item.id) ? item.id : item.description,
+        },
+      };
+
+      if (!currentItem) {
+        return new Form({
+          ...form,
+          items: [
+            ...form.items,
+            new Item({ ...item, checkOut: getFormattedDate(new Date()) }),
+          ],
+        });
+      }
+      if (currentItem.checkOut && currentItem.checkIn) {
+        // checking out again
+        return new Form({
+          ...form,
+          items: [
+            ...form.items,
+            new Item({ ...item, checkOut: getFormattedDate(new Date()) }),
+          ],
+        });
+      } else if (currentItem.checkOut) {
+        // checking in OR scanning additional items
+        const quantityInput = createElement("input", { type: "text" });
+        if (!item.isSerialized()) {
+          return modal({
+            onOk: () =>
+              console.log(
+                "TBD: updating method",
+                new Form({
+                  ...form,
+                  items: form.items.map((i) =>
+                    i === currentItem
+                      ? new Item({
+                          ...currentItem,
+                          quantity: quantityInput.value,
+                        })
+                      : currentItem
+                  ),
+                })
+              ),
+          });
+        }
+        return new Form({
+          ...form,
+          items: [
+            ...form.items,
+            new Item({
+              ...item,
+              checkIn: getFormattedDate(new Date()),
+              missing: false,
+            }),
+          ],
+        });
+      } else {
+        // Its a check-out for reserved gear
+        return new Form({
+          ...form,
+          items: form.items.map((i) =>
+            i === currentItem
+              ? new Item({
+                  ...currentItem,
+                  checkOut: getFormattedDate(new Date()),
+                })
+              : currentItem
+          ),
+        });
+      }
     }
   }
 </script>

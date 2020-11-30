@@ -1,4 +1,5 @@
 <script>
+  "use strict";
   /* global
   ClosedFormsPage
   DateUtils
@@ -263,11 +264,13 @@
     }
 
     function onNewCodabar({ netId, codabar }) {
-      FormPage.setUpdateFormButtonToSpinner();
       withErrorHandler
         .withSuccessHandler((response) => {
-          Omnibox.setRoster(JSON.parse(response.students));
-          Omnibox.parse();
+          const students = tryJsonParse(response.students);
+          if (!students)
+            displayErrorMessage("Error retrieving student list from server");
+          state.roster = students;
+          // automatically try to update form, but how?
         })
         .doPost({
           post: "codabar",
@@ -409,6 +412,8 @@
           onRedo,
           saved: state.saved,
           username: getUsername(),
+          inventory: state.inventory,
+          roster: state.roster,
         })
       );
     }
