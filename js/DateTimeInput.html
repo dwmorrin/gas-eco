@@ -18,7 +18,7 @@
       select({
         name: `${name}Hour`,
         children: Utility.range(12, 1).map((n) => option(n)),
-        value: hour,
+        value: Number(hour), // to remove zero pad
       }),
       document.createTextNode(":"),
       select({
