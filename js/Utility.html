@@ -7,6 +7,7 @@
       copyToClipboard,
       digestMessage,
       hexString,
+      last,
       nullIf,
       range,
       sort,
@@ -45,6 +46,10 @@
         return paddedHexCode;
       });
       return hexCodes.join("");
+    }
+
+    function last(array) {
+      return array[array.length - 1];
     }
 
     function nullIf(condition, expression) {

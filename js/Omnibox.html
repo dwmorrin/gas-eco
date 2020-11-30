@@ -40,7 +40,7 @@
       if (!itemOnForm) {
         // new item
         item = new Item(item); // copy it
-        item.checkOut = DateUtils.getFormattedDate(new Date());
+        item.checkOut = DateUtils.getFormattedDateTime(new Date());
         form.items.push(item);
         change.target.value += " check-out";
       } else if (quantityToReturn && quantityToReturn != "all") {
@@ -93,13 +93,13 @@
             clear();
             return getItemAction(itemOnForm);
           }
-          itemOnForm.checkIn = DateUtils.getFormattedDate(new Date());
+          itemOnForm.checkIn = DateUtils.getFormattedDateTime(new Date());
           // clears the missing property if it was set.
           itemOnForm.missing = false;
           change.target.value += " check-in";
         } else {
           // Its a check-out for reserved gear
-          itemOnForm.checkOut = DateUtils.getFormattedDate(new Date());
+          itemOnForm.checkOut = DateUtils.getFormattedDateTime(new Date());
           change.target.value += " check-out";
         }
       }
@@ -221,7 +221,7 @@
           handlers.onNeedsSignature(student.netId);
           return;
         }
-        student.checkIn = DateUtils.getFormattedDate(new Date());
+        student.checkIn = DateUtils.getFormattedDateTime(new Date());
         students.push(student);
         change.target.value += " check-in";
       } else {
@@ -244,14 +244,16 @@
                   "Otherwise try updating the form."
               );
             }
-            studentOnForm.checkOut = DateUtils.getFormattedDate(new Date());
+            studentOnForm.checkOut = DateUtils.getFormattedDateTime(new Date());
             change.target.value += " check-out";
           } else {
             if (!student.signatureOnFile) {
               handlers.onNeedsSignature(student.netId);
               return;
             } else {
-              studentOnForm.checkIn = DateUtils.getFormattedDate(new Date());
+              studentOnForm.checkIn = DateUtils.getFormattedDateTime(
+                new Date()
+              );
               change.target.value += " check-in";
             }
           }

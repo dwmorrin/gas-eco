@@ -2,15 +2,15 @@
   /* exported DateUtils */
   const DateUtils = (function () {
     return {
-      formatDashed,
-      getFormattedDate,
-      parseFormattedDate,
-      roundMinutes,
-      parseAMPM,
-      parseHours,
+      formatDashedDate,
+      getFormattedDateTime,
     };
 
-    function formatDashed(date) {
+    /**
+     * @param {Date} date
+     * @returns {String} 2020-31-12
+     */
+    function formatDashedDate(date) {
       return (
         date.getFullYear() +
         "-" +
@@ -20,53 +20,26 @@
       );
     }
 
-    function getFormattedDate(date) {
+    /**
+     * @param {Date} date
+     * @param {Boolean} roundTheMinutes
+     * @returns {String} 12/31/2020 12:59 PM
+     */
+    function getFormattedDateTime(date, roundTheMinutes = false) {
       const year = date.getFullYear();
       const month = date.getMonth() + 1; // zero indexed
       const day = date.getDate();
-      const minutes = date.getMinutes();
+      const minutes = roundTheMinutes
+        ? roundMinutes(date.getMinutes())
+        : date.getMinutes();
       let hour = date.getHours();
-      const ampm = hour > 11 ? "pm" : "am";
+      const ampm = hour > 11 ? "PM" : "AM";
 
       if (hour > 11) hour %= 12;
       if (hour === 0) hour = 12;
       return `${zeropad(month)}/${zeropad(day)}/${year} ${zeropad(
         hour
       )}:${zeropad(minutes)} ${ampm}`;
-    }
-
-    /**
-     * @param {string} dateString
-     * @return {Date}
-     */
-    function parseFormattedDate(dateString) {
-      // mm/dd/yyyy hh:mm am
-      let month = dateString.slice(0, 2),
-        day = dateString.slice(3, 5),
-        year = dateString.slice(6, 10),
-        hour = dateString.slice(11, 13),
-        minutes = dateString.slice(14, 16),
-        ampm = dateString.slice(17, 19);
-      // convert ampm to 24 hour
-      if (ampm == "pm") {
-        ampm = 12;
-      } else {
-        ampm = 0;
-      }
-      hour = (hour % 12) + ampm;
-
-      return new Date(
-        year +
-          "-" +
-          zeropad(month) +
-          "-" +
-          zeropad(day) +
-          "T" +
-          zeropad(hour) +
-          ":" +
-          zeropad(minutes) +
-          ":00"
-      );
     }
 
     function roundMinutes(minutes) {
@@ -76,14 +49,6 @@
           minutes - minute
         : // roll back to :05
           minutes - minute - 5;
-    }
-
-    function parseHours(hours) {
-      return hours > 12 ? hours - 12 : hours === 0 ? hours + 12 : hours;
-    }
-
-    function parseAMPM(hours) {
-      return hours >= 12 ? "PM" : "AM";
     }
 
     function zeropad(n) {

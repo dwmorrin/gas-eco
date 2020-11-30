@@ -1,51 +1,47 @@
 <script>
-  /* global Config DateUtils HTML Utility DateTimeInput ModalQuantityChange */
+  /* global
+  Config
+  DateTimeInput
+  DateUtils
+  Form
+  HTML
+  ModalQuantityChange
+  Omnibox
+  Utility
+  */
   /* exported FormPage */
   function FormPage({
-    form,
     disabled = false,
-    savable = false,
+    form,
     formIndexDisplay = "",
-    omnibox,
-    onSubmit,
     onChange,
     onDelete,
+    onRedo,
+    onSubmit,
+    onUndo,
+    savable = false,
+    saved,
+    username = "anonymous",
   }) {
     const { copyToClipboard, nullIf, tryJsonParse, uncamelCase } = Utility;
-    const { button, cell, createElement, modal, page, row, table } = HTML;
-    // submodule to track form changes
-    const Changes = (function () {
-      let saved = true;
-      let stack = [];
-      return {
-        add(change) {
-          let newChange = {
-            name: change.target.name,
-            value: change.target.value,
-            timestamp: Date.now(),
-          };
-          stack.push(newChange);
-          saved = false;
-        },
-        clear() {
-          stack = [];
-          saved = true;
-        },
-        getStack() {
-          return stack.slice();
-        },
-        isSaved() {
-          return saved;
-        },
-        makeNote(author) {
-          return {
-            timestamp: Date.now(),
-            author,
-            body: JSON.stringify(this.stack),
-          };
-        },
-      };
-    })();
+    const {
+      br,
+      button,
+      cell,
+      createElement,
+      getRadioValue,
+      headerCell,
+      heading1,
+      modal,
+      option,
+      page,
+      paragraph,
+      radio,
+      row,
+      select,
+      table,
+    } = HTML;
+    const omnibox = Omnibox({});
 
     return page({
       name: "form",
@@ -81,8 +77,8 @@
                     const input = createElement("textarea");
                     modal({
                       children: [
-                        HTML.heading1("New note"),
-                        HTML.paragraph("Enter a note"),
+                        heading1("New note"),
+                        paragraph("Enter a note"),
                         input,
                       ],
                       okText: "Save note",
@@ -109,7 +105,7 @@
                     onClick: onDelete,
                   })
                 ),
-                HTML.br(),
+                br(),
                 button("Previous form", {
                   tabindex: -1,
                   onClick: () => alert("get previous disabled"), //getPrevious,
@@ -121,7 +117,7 @@
                 createElement("span", {
                   textContent: formIndexDisplay,
                 }),
-                HTML.br(),
+                br(),
                 button("Submit", {
                   disabled: disabled || !savable,
                   class: "action buttonTight",
@@ -136,8 +132,8 @@
                     onClick: () => {
                       modal({
                         children: [
-                          HTML.heading1("Save for later?"),
-                          HTML.paragraph(
+                          heading1("Save for later?"),
+                          paragraph(
                             "All sign-in and check-out info will be removed. " +
                               "Add all people and items before saving. " +
                               "You can only do this once."
@@ -150,19 +146,13 @@
                     },
                   })
                 ),
-                button("Revert to saved form", {
+                button("Undo", {
                   disabled,
-                  onClick: () =>
-                    modal({
-                      children: [
-                        HTML.heading1("Undo all changes"),
-                        HTML.paragraph(
-                          "Do you want to undo all changes since the last save?"
-                        ),
-                      ],
-                      okText: "Revert to saved form",
-                      onOk: () => undefined,
-                    }),
+                  onClick: onUndo,
+                }),
+                button("Redo", {
+                  disabled,
+                  onClick: onRedo,
                 }),
                 createElement("span", {
                   class: "updateButtonHint",
@@ -200,7 +190,7 @@
                               ...rows,
                               createElement("tr", {
                                 children: [
-                                  HTML.headerCell(textContent),
+                                  headerCell(textContent),
                                   cell(form[key]),
                                 ],
                               }),
@@ -209,56 +199,57 @@
                       []
                     ),
                     row(
-                      HTML.headerCell("Location"),
-                      cell({
-                        textContent: form.location || "",
-                        onClick: form.location
-                          ? (_, locationDisplay) => {
+                      headerCell("Location"),
+                      saved && form.location
+                        ? cell({
+                            textContent: form.location,
+                            onClick: (_, locationDisplay) => {
                               if (disabled) return;
                               locationDisplay.parentNode.appendChild(
                                 locationSelect()
                               );
                               locationDisplay.remove();
-                            }
-                          : () => undefined,
-                        children: form.location ? [] : [locationSelect()],
-                      })
+                            },
+                          })
+                        : cell({
+                            child: locationSelect(),
+                          })
                     ),
                     row(
-                      HTML.headerCell("Start Time"),
-                      cell({
-                        onClick: form.startTime
-                          ? handleClickTimeDisplay({
-                              name: "start",
-                              value: form.startTime,
-                            })
-                          : () => undefined,
-                        textContent: form.startTime,
-                        children: form.startTime
-                          ? []
-                          : DateTimeInput({
+                      headerCell("Start Time"),
+                      saved && form.startTime
+                        ? cell({
+                            onClick: handleClickTimeDisplay({
                               name: "start",
                               value: form.startTime,
                             }),
-                      })
+                            textContent: form.startTime,
+                          })
+                        : cell({
+                            children: DateTimeInput({
+                              name: "start",
+                              value: form.startTime,
+                              onChange: onChangeTime,
+                            }),
+                          })
                     ),
                     row(
-                      HTML.headerCell("End Time"),
-                      cell({
-                        onClick: form.endTime
-                          ? handleClickTimeDisplay({
-                              name: "end",
-                              value: form.endTime,
-                            })
-                          : () => undefined,
-                        textContent: form.endTime,
-                        children: form.endTime
-                          ? []
-                          : DateTimeInput({
+                      headerCell("End Time"),
+                      saved && form.endTime
+                        ? cell({
+                            onClick: handleClickTimeDisplay({
                               name: "end",
                               value: form.endTime,
                             }),
-                      })
+                            textContent: form.endTime,
+                          })
+                        : cell({
+                            children: DateTimeInput({
+                              name: "end",
+                              value: form.endTime,
+                              onChange: onChangeTime,
+                            }),
+                          })
                     ),
                   ],
                 }),
@@ -277,7 +268,7 @@
                     children: [
                       row(
                         ...["Name", "NetID", "Signed In", "Signed Out"].map(
-                          HTML.headerCell
+                          headerCell
                         )
                       ),
                     ],
@@ -307,7 +298,7 @@
                           "Item ID",
                           "Checked Out",
                           "Checked In",
-                        ].map(HTML.headerCell)
+                        ].map(headerCell)
                       ),
                     ],
                   }),
@@ -325,6 +316,7 @@
       ],
       onKeydown: (event) => {
         if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+          event.preventDefault();
           onSubmit(form);
         }
       },
@@ -355,8 +347,8 @@
         const input = createElement("input", { type: "text" });
         modal({
           children: [
-            HTML.heading1("Location: Other"),
-            HTML.paragraph(
+            heading1("Location: Other"),
+            paragraph(
               "Location must be on the 5th or 6th floor of 370 Jay Street."
             ),
             input,
@@ -377,30 +369,33 @@
         input.focus();
         return;
       }
-      onChange(change);
+      onChange({
+        form: new Form({ ...form, location: change.target.value }),
+        change,
+      });
     }
 
     function handleClickItem(item) {
-      const radio = HTML.radio("itemOptions");
+      const optionRadio = radio("itemOptions");
       const input = createElement("textarea");
       modal({
         children: [
-          HTML.heading1("Add notes to item"),
+          heading1("Add notes to item"),
           table(
             row(
               cell("Item cannot be found"),
-              cell({ child: radio("missing") })
+              cell({ child: optionRadio("missing") })
             ),
             row(
               cell("Other (please specifiy below"),
-              cell({ child: radio("other") })
+              cell({ child: optionRadio("other") })
             )
           ),
           input,
         ],
         okText: "Add note",
         onOk: ({ modal }) => {
-          const choice = HTML.getRadioValue(modal);
+          const choice = getRadioValue(modal);
           let value = "";
           if (choice === "missing") {
             item.missing = true;
@@ -409,9 +404,12 @@
             item.notes = [item.notes, input.value].filter((s) => s).join(", ");
           }
           onChange({
-            target: {
-              name: "items",
-              value,
+            form,
+            change: {
+              target: {
+                name: "items",
+                value,
+              },
             },
           });
         },
@@ -420,45 +418,51 @@
     }
 
     function handleStudentNote(student) {
-      const radio = HTML.radio("studentOptions");
+      const optionRadio = radio("studentOptions");
       const input = createElement("textarea");
       modal({
         children: [
-          HTML.heading1("Add notes to student"),
+          heading1("Add notes to student"),
           table(
             row(
               cell("Student never showed up."),
-              cell({ child: radio("no show") })
+              cell({ child: optionRadio("no show") })
             ),
             row(
               cell("Student left without checking out."),
-              cell({ child: radio("left") })
+              cell({ child: optionRadio("left") })
             ),
             row(
               cell("Other (please specify below)"),
-              cell({ child: radio("other", true) })
+              cell({ child: optionRadio("other", true) })
             )
           ),
           input,
         ],
         okText: "Submit",
         onOk: ({ modal }) => {
-          const choice = HTML.getRadioValue(modal);
+          const choice = getRadioValue(modal);
           const textValue = input.value;
 
           if (choice === "left") {
             student.left = true;
             onChange({
-              target: {
-                name: "students",
-                value: `${student.name} left without checking out`,
+              form,
+              change: {
+                target: {
+                  name: "students",
+                  value: `${student.name} left without checking out`,
+                },
               },
             });
           } else if (choice === "no show") {
             onChange({
-              target: {
-                name: "students",
-                value: `${student.name} did not show up`,
+              form,
+              change: {
+                target: {
+                  name: "students",
+                  value: `${student.name} did not show up`,
+                },
               },
             });
           } else if (choice === "other") {
@@ -478,15 +482,25 @@
 
     function onChangeTime({ name, values }) {
       const { date, hour, minutes, ampm } = values;
-      const value = `${date} ${hour}:${minutes} ${ampm}`;
-      onChange({ target: { name, value } });
+      const [year, month, day] = date.split("-");
+      const value = `${month}/${day}/${year} ${hour}:${String(minutes).padStart(
+        "0",
+        2
+      )} ${ampm}`;
+      onChange({
+        form: new Form({
+          ...form,
+          [`${name}Time`]: value,
+        }),
+        change: { target: { name, value } },
+      });
     }
 
     function saveNote(body) {
       if (body.length < 1) {
         return;
       }
-      const author = getUsername();
+      const author = username;
       form.notes.push({
         timestamp: Date.now(),
         author,
@@ -700,12 +714,6 @@
       });
     }
 
-    function getUsername() {
-      const el = document.querySelector("span.usernameDisplay");
-      if (el) return el.textContent;
-      return "anonymous";
-    }
-
     function onChangeLog() {
       const changes = [
         ...form.notes.reduce((areChanges, note) => {
@@ -714,14 +722,13 @@
           change.forEach((entry) => (entry.author = note.author));
           return [...areChanges, ...change];
         }, []),
-        ...Changes.getStack(),
       ];
       modal({
         children: [
           table(row(...["Time", "User", "Field", "Value"].map(cell))),
           ...changes.map(({ timestamp, author, name, value }) =>
             row(
-              cell(DateUtils.getFormattedDate(new Date(timestamp))),
+              cell(DateUtils.getFormattedDateTime(new Date(timestamp))),
               cell(author),
               cell(uncamelCase(name)),
               cell(value)
@@ -730,17 +737,16 @@
         ],
       });
     }
+
     function locationSelect() {
-      return HTML.select({
+      return select({
         name: "location",
         value: form.location,
         onChange: handleChangeLocation,
         children: [
-          HTML.option("please select", "none"),
-          ...Array.from(Config.locations).map((location) =>
-            HTML.option(location)
-          ),
-          HTML.option("Other"),
+          option("please select", "none"),
+          ...Array.from(Config.locations).map((location) => option(location)),
+          option("Other"),
         ],
       });
     }

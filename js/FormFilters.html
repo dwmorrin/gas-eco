@@ -1,5 +1,5 @@
 <script>
-  /* global Config DateUtils */
+  /* global Config */
   /* exported FormFilters */
   const FormFilters = (function () {
     return {
@@ -60,15 +60,14 @@
       byLateStudents: (form) => {
         const inGracePeriod = 15, // minutes
           outGracePeriod = 10,
-          start = DateUtils.parseFormattedDate(form.startTime),
-          end = DateUtils.parseFormattedDate(form.endTime);
+          start = new Date(form.startTime),
+          end = new Date(form.endTime);
         start.setMinutes(start.getMinutes() + inGracePeriod);
         end.setMinutes(end.getMinutes() + outGracePeriod);
 
         const checkedInOnTime = (student) =>
           !student.checkIn ||
-          DateUtils.parseFormattedDate(student.checkIn).getTime() <=
-            start.getTime();
+          new Date(student.checkIn).getTime() <= start.getTime();
 
         const studentIncompleteHTML = "DID NOT CHECK OUT";
         const checkedOutLate = (student) =>
@@ -77,8 +76,7 @@
               student.checkOut === studentIncompleteHTML)) ||
           (student.checkOut &&
             student.checkOut !== studentIncompleteHTML &&
-            DateUtils.parseFormattedDate(student.checkOut).getTime() >
-              end.getTime());
+            new Date(student.checkOut).getTime() > end.getTime());
 
         return (
           !form.students.some(checkedInOnTime) ||
@@ -90,7 +88,7 @@
         const startTime = new Date(start + "T00:00:00").getTime(),
           endTime = new Date(end + "T23:59:59").getTime();
         return (form) => {
-          const t = DateUtils.parseFormattedDate(form.startTime).getTime();
+          const t = new Date(form.startTime).getTime();
           return t >= startTime && t <= endTime;
         };
       },

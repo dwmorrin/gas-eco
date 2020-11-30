@@ -22,7 +22,7 @@
     });
 
     function getFormStatus(form) {
-      const endTime = DateUtils.parseFormattedDate(form.endTime).getTime(),
+      const endTime = new Date(form.endTime).getTime(),
         fifteenMinutes = 15 * 60 * 1000, // milliseconds
         now = Date.now();
       // determine if active, ending soon, or late (green, yellow, red)

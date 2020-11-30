@@ -6,23 +6,24 @@
   FormPage
   HTML
   LoadingPage
-  Omnibox
   OpenFormsPage
   Utility
   google
   */
   /* exported App */
   const App = (function () {
-    const { button, createElement, modal, update } = HTML;
-    const { tryJsonParse } = Utility;
-    const { getFormattedDate } = DateUtils;
+    const { button, createElement, modal, paragraph, update } = HTML;
+    const { last, tryJsonParse } = Utility;
+    const { getFormattedDateTime } = DateUtils;
     const state = {
-      roster: null,
+      changeStack: [], // each change produces a new Form
       closedForms: null,
-      openForms: null,
-      inventory: null,
-      saved: true,
       closedFormsQuery: {},
+      inventory: null,
+      openForms: null,
+      roster: null,
+      saved: true,
+      undoStack: [], // each "undo" takes from changeStack, for "redo", cleared on change
     };
     const newFormButton = button("New Form", {
       class: "share",
@@ -111,8 +112,8 @@
     withErrorHandler.withSuccessHandler(onClosedForms).doGet({
       get: "archive",
       dateRangeJSON: JSON.stringify({
-        start: getFormattedDate(new Date("01/01/2019")),
-        end: getFormattedDate(new Date()),
+        start: getFormattedDateTime(new Date("01/01/2019")),
+        end: getFormattedDateTime(new Date()),
       }),
       init: true,
     });
@@ -127,6 +128,33 @@
         return confirmationMessage; // Gecko, WebKit, Chrome <34
       } else {
         // handlers.onUnload();
+      }
+    });
+
+    // have to attach to window to catch this regardless of focus
+    // should probably check context, because this is currently a FormPage
+    // context, but could not figure out how to declare inside FormPage
+    window.addEventListener("keydown", (event) => {
+      if (
+        event.target.tagName &&
+        event.target.tagName.toLowerCase() === "input"
+      )
+        return;
+      if (
+        (event.metaKey || event.ctrlKey) &&
+        !event.shiftKey &&
+        event.key === "z"
+      ) {
+        event.preventDefault();
+        return onUndo();
+      }
+      if (
+        (event.metaKey || event.ctrlKey) &&
+        event.shiftKey &&
+        event.key === "z"
+      ) {
+        event.preventDefault();
+        return onRedo();
       }
     });
 
@@ -202,10 +230,7 @@
     function onNeedsSignature(netid) {
       let canceled = false;
       modal({
-        children: [
-          HTML.heading1("Add signature"),
-          HTML.paragraph("Please wait..."),
-        ],
+        children: [HTML.heading1("Add signature"), paragraph("Please wait...")],
         closeText: "Cancel",
         onClose: () => (canceled = true),
       });
@@ -219,7 +244,7 @@
           modal({
             children: [
               HTML.heading1("Add signature"),
-              HTML.paragraph(
+              paragraph(
                 "Production area policy acknowledgment signature not found " +
                   "for this person. All persons must read the policy and have " +
                   "a signature on file. Please use the tablet to show the " +
@@ -329,7 +354,7 @@
       modal({
         children: [
           HTML.heading1("Uh-oh, your form conflicts with another form"),
-          HTML.paragraph(
+          paragraph(
             "Unfortunately a newer version of the form has been found on the server.  In a future update you can save your work, but for now we have to destroy it.  Sorry!!"
           ),
         ],
@@ -362,12 +387,15 @@
 
     function displayErrorMessage(message) {
       modal({
-        children: [HTML.heading1("Error"), HTML.paragraph(message)],
+        children: [HTML.heading1("Error"), paragraph(message)],
       });
     }
 
     function setForm(form, disabled = false) {
-      state.saved = true;
+      if (state.saved) {
+        state.changeStack = [form];
+        state.undoStack = [];
+      }
       update(
         pageContainer,
         FormPage({
@@ -376,24 +404,68 @@
           formIndexDisplay: `${
             state.openForms.findIndex((f) => f === form) + 1
           }/${state.openForms.length}`,
-          omnibox: createElement("input", { type: "text" }),
           onDelete,
           onSubmit,
           onChange,
+          onUndo,
+          onRedo,
+          saved: state.saved,
+          username: getUsername(),
         })
       );
     }
 
-    function onChange(change) {
-      console.log(change);
+    function onUndo() {
+      if (state.changeStack.length === 1)
+        return modal({
+          child: paragraph("Nothing to undo."),
+        });
+      state.undoStack.push(state.changeStack.pop());
+      setForm(last(state.changeStack));
+    }
+
+    function onRedo() {
+      if (!state.undoStack.length)
+        return modal({ child: paragraph("Nothing to redo.") });
+      state.changeStack.push(state.undoStack.pop());
+      setForm(last(state.changeStack));
+    }
+
+    function onChange({
+      form,
+      change: {
+        target: { name, value },
+      },
+    }) {
+      const newForm = new Form({
+        ...form,
+        notes: [
+          ...form.notes,
+          {
+            timestamp: Date.now(),
+            author: getUsername(),
+            // body is JSON to be compatible with legacy forms
+            // if diff'ing notes vs changes can be updated, stop stringifying here
+            body: JSON.stringify([{ name, value }]),
+          },
+        ],
+      });
+      state.changeStack.push(newForm);
+      state.undoStack = [];
       state.saved = false;
+      setForm(newForm);
+    }
+
+    function getUsername() {
+      const el = document.querySelector("span.usernameDisplay");
+      return el && el.textContent ? el.textContent : "anonymous";
     }
 
     function loseDataWarning(onOk) {
       modal({
         children: [
           HTML.heading1("Warning, your changes are not saved"),
-          HTML.paragraph("Are you sure?"),
+          paragraph("Are you sure?"),
         ],
         closeText: "Cancel",
         okText: "Lose changes",
