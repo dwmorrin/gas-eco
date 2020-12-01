@@ -196,7 +196,7 @@ var DateUtils = {};
  * @param {Date} date
  * @return {string}
  */
-DateUtils.getFormattedDate = function (date) {
+DateUtils.getFormattedDateTime = function (date) {
   var year = date.getFullYear(),
     month = date.getMonth() + 1, // zero indexed
     day = date.getDate(),

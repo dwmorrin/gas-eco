@@ -49,7 +49,7 @@
         ? // roll back to :00
           minutes - minute
         : // roll back to :05
-          minutes - minute - 5;
+          minutes - (minute - 5);
     }
 
     function zeropad(n) {

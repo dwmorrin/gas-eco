@@ -127,9 +127,4 @@
       item.checkedOut = false;
     });
   };
-  Form.prototype.stringify = function () {
-    const copy = Object.assign({}, this);
-    copy.items = this.items.archive();
-    return JSON.stringify(copy);
-  };
 </script>

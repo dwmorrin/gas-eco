@@ -7,27 +7,51 @@
     Utility
    */
   /* exported Omnibox */
-  function Omnibox({ form, inventory, onSubmit, roster }) {
-    const { cell, createElement, heading1, modal, paragraph, row } = HTML;
+  function Omnibox({ disabled, form, inventory, onSubmit, roster }) {
+    const {
+      button,
+      cell,
+      createElement,
+      heading1,
+      modal,
+      paragraph,
+      row,
+    } = HTML;
     const { tryJsonParse } = Utility;
     const { getByBarcode, getById } = Inventory;
-    const { getFormattedDate } = DateUtils;
-
-    return createElement("input", {
+    const { getFormattedDateTime } = DateUtils;
+    const input = createElement("input", {
       type: "text",
       placeholder: "Scan barcode or type NetID/ItemID",
-      onKeydown: ({ metaKey, ctrlKey, key, preventDefault }, input) => {
+      onKeydown: (event, el) => {
+        const { metaKey, ctrlKey, key } = event;
         if (!metaKey && !ctrlKey && key === "Enter") {
-          preventDefault();
-          const { type, value, error } = parse(input);
-          if (error)
-            return modal({
-              children: [heading1("Error"), paragraph(error.message)],
-            });
-          onSubmit({ type, value });
-        } else if (key === "Escape") input.blur();
+          event.preventDefault();
+          onOmniboxSubmit();
+        } else if (key === "Escape") el.blur();
       },
     });
+
+    return createElement("span", {
+      children: [
+        input,
+        button("🔎", {
+          class: "buttonSmall",
+          disabled,
+          tabindex: -1,
+          onClick: () => onOmniboxSubmit(),
+        }),
+      ],
+    });
+
+    function onOmniboxSubmit() {
+      const { type, value, error } = parse(input);
+      if (error)
+        return modal({
+          children: [heading1("Error"), paragraph(error.message)],
+        });
+      onSubmit({ type, value });
+    }
 
     /**
      * creates a dialog to determine if the user meant to check in an item
@@ -89,75 +113,10 @@
         handlers.onItemChange({
           target: {
             name: "items",
-            value: `${
-              item.description
-            } qty ${item.getQuantity()} to ${quantity}`,
+            value: `${item.description} qty ${item.quantity} to ${quantity}`,
           },
         });
       };
-    }
-
-    /** @param {Student} input */
-    function handleStudent(student) {
-      student = Object.assign({}, student);
-      const students = form.students;
-      const studentOnForm = students.find((s) => s.netId == student.netId);
-      const change = {
-        // fake change event
-        target: {
-          name: "students",
-          value: student.name,
-        },
-      };
-
-      if (!studentOnForm) {
-        if (!student.signatureOnFile) {
-          handlers.onNeedsSignature(student.netId);
-          return;
-        }
-        student.checkIn = getFormattedDate(new Date());
-        students.push(student);
-        change.target.value += " check-in";
-      } else {
-        try {
-          if (studentOnForm.checkIn && studentOnForm.checkOut) {
-            throw new Error(studentOnForm.name + " is already checked out.");
-          } else if (studentOnForm.checkIn) {
-            const savedStudent = form.students.find(
-              ({ netId }) => netId === student.netId
-            );
-            if (!savedStudent || !savedStudent.checkIn) {
-              throw new Error(
-                `${student.name} was just checked-in. Update the form before checking out.`
-              );
-            }
-            if (form.hasItemsOut()) {
-              throw new Error(
-                "Cannot check out student. " +
-                  "If this is the last student, all gear must be returned. " +
-                  "Otherwise try updating the form."
-              );
-            }
-            studentOnForm.checkOut = getFormattedDate(new Date());
-            change.target.value += " check-out";
-          } else {
-            if (!student.signatureOnFile) {
-              handlers.onNeedsSignature(student.netId);
-              return;
-            } else {
-              studentOnForm.checkIn = getFormattedDate(new Date());
-              change.target.value += " check-in";
-            }
-          }
-        } catch (error) {
-          element.classList.add("error");
-          window.alert(error.message);
-          window.setTimeout(() => element.classList.remove("error"), 2000);
-          return;
-        }
-      }
-      clear();
-      handlers.onStudentChange(change);
     }
 
     /**
@@ -230,151 +189,6 @@
       if (foundItem) return { type: "item", value: foundItem };
 
       return { type: "query", value };
-    }
-
-    function __query__(value, element) {
-      const queryResults = _query(
-        value.replace(/'/g, ""),
-        (obj) => {
-          if (obj instanceof Item) {
-            const keys = [];
-            if (obj.description !== "") {
-              keys.push(obj.description.trim().toLowerCase());
-            }
-            if (obj.id !== "") {
-              keys.push(obj.id.trim().toLowerCase());
-            }
-            return keys;
-          }
-          // else it is a student
-          return [obj.name.trim().toLowerCase().replace(/'/g, "")];
-        },
-        inventory.slice(),
-        roster
-      ).filter((result) => result.weight < 4);
-
-      if (queryResults.length > 0) {
-        return modal({
-          children: [
-            HTML.heading1("Search results"),
-            HTML.paragraph("Are you looking for one of these?"),
-            HTML.table(
-              ...queryResults.reduce((rows, { value }) => {
-                const id = value.netId || value.id || value.barcode;
-                if (!id) return rows;
-                return [
-                  ...rows,
-                  createElement("tr", {
-                    children: [cell(value.name || value.description), cell(id)],
-                    onClick: () => {
-                      element.value = id;
-                      parse(element);
-                    },
-                  }),
-                ];
-              }, [])
-            ),
-          ],
-        });
-      }
-      modal({
-        child: HTML.paragraph(
-          `"${value}" not found.  You can type in item IDs like "NEU-1", or names like "John Smith".`
-        ),
-      });
-    }
-
-    /**
-     * query searches through the supplied arrays inspected keys, as found with
-     *   the supplied key making function, and returns a weighted result array.
-     * The preliminary search filters inventory and roster for anything that
-     *   seems to include the query expression.  As a simple misspelling aid,
-     *   the expression is tokenized and matching starts from truncated strings
-     *   and grows until a match might be found.
-     * The second search does the opposite: the full tokens are examined and
-     *   reduced if needed.  Each reduction (which could indicate a misspelling)
-     *   causes an increase in the weight.
-     *   The best results have a low weight, the worst results have a high weight.
-     * @param {string} q - query expression
-     * @param {function} keyMaker - ({}) => string[]
-     * @param {{}[]} arrays - arrays to query
-     * @returns {{value: {}, weight: number}[]}
-     */
-    function _query(q, keyMaker, ...arrays) {
-      const expression = q.trim().toLowerCase();
-      const sep = /[\s\W]+/;
-      const terms = expression.split(sep);
-      // reduce the large set of possibilities to a narrow set of possibilities
-      const preliminary = function (obj) {
-        const keys = keyMaker(obj);
-        for (const term of terms) {
-          if (term.length < 3) {
-            continue;
-          }
-          for (let i = 3; i <= term.length; ++i) {
-            for (const key of keys) {
-              if (key.includes(term.slice(0, i))) {
-                return true;
-              }
-            }
-          }
-        }
-      };
-      const results = arrays
-        .reduce((reduced, arr) => reduced.concat(arr), [])
-        .filter(preliminary);
-
-      // examine the subset and score how good the result appears to be
-      const score = { BEST: 0, GOOD: 1, BAD: 10 };
-      const weigh = (value) => {
-        const keys = keyMaker(value);
-        let minWeight = score.BAD;
-        for (
-          let str = expression;
-          str.length > 2;
-          str = str.slice(0, str.length - 1)
-        ) {
-          for (const key of keys) {
-            if (key.includes(str)) {
-              if (key === str || key.startsWith(str)) {
-                const weight = score.BEST + expression.length - str.length;
-                minWeight = weight < minWeight ? weight : minWeight;
-                str = "";
-                break;
-              }
-            }
-          }
-        }
-        // term by term matching: these results are averaged
-        // we want results that match all of the user's input to get the best scores
-        const termScores = [];
-        for (let i = 0; i < terms.length; ++i) {
-          for (
-            let str = terms[i];
-            str.length > 2;
-            str = str.slice(0, str.length - 1)
-          ) {
-            for (const key of keys) {
-              if (key.includes(str)) {
-                termScores.push(score.GOOD + terms[i].length - str.length);
-                str = "";
-                break;
-              }
-            }
-          }
-          if (termScores.length === i) {
-            // implies we didn't push a good score
-            termScores.push(score.BAD);
-          }
-        }
-        const average =
-          termScores.reduce((sum, val) => sum + val) / termScores.length;
-        minWeight = average < minWeight ? average : minWeight;
-        return { value, weight: minWeight };
-      };
-      const weightedResults = results.map(weigh);
-      weightedResults.sort((a, b) => a.weight - b.weight);
-      return weightedResults;
     }
   }
 </script>

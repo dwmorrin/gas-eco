@@ -7,9 +7,12 @@
   Form
   HTML
   Item
+  ModalManualEntry
+  ModalNewCodabar
   ModalQuantityChange
   Omnibox
   Utility
+  searchResources
   */
   /* exported FormPage */
   function FormPage({
@@ -44,13 +47,20 @@
       select,
       table,
     } = HTML;
-    const { copyToClipboard, nullIf, tryJsonParse, uncamelCase } = Utility;
-    const { getFormattedDate } = DateUtils;
+    const {
+      copyToClipboard,
+      nullIf,
+      replace,
+      tryJsonParse,
+      uncamelCase,
+    } = Utility;
+    const { getFormattedDateTime } = DateUtils;
 
     const omnibox = Omnibox({
+      disabled,
       form,
       inventory,
-      onSubmit: (obj) => console.log({ omnibox: obj }),
+      onSubmit: onOmniboxSubmit,
       roster,
     });
 
@@ -69,12 +79,6 @@
                   // onFocus: () => locationSelect.focus(),
                 }),
                 omnibox,
-                button("🔎", {
-                  class: "buttonSmall",
-                  disabled,
-                  tabindex: -1,
-                  onClick: () => alert("parse input disabled"), //handlers.onParseInput(),
-                }),
                 button("Add item without barcode or ID", {
                   disabled,
                   tabindex: -1,
@@ -781,22 +785,28 @@
       };
 
       if (!currentItem) {
-        return new Form({
-          ...form,
-          items: [
-            ...form.items,
-            new Item({ ...item, checkOut: getFormattedDate(new Date()) }),
-          ],
+        return onChange({
+          form: new Form({
+            ...form,
+            items: [
+              ...form.items,
+              new Item({ ...item, checkOut: getFormattedDateTime(new Date()) }),
+            ],
+          }),
+          change,
         });
       }
       if (currentItem.checkOut && currentItem.checkIn) {
         // checking out again
-        return new Form({
-          ...form,
-          items: [
-            ...form.items,
-            new Item({ ...item, checkOut: getFormattedDate(new Date()) }),
-          ],
+        return onChange({
+          form: new Form({
+            ...form,
+            items: [
+              ...form.items,
+              new Item({ ...item, checkOut: getFormattedDateTime(new Date()) }),
+            ],
+          }),
+          change,
         });
       } else if (currentItem.checkOut) {
         // checking in OR scanning additional items
@@ -804,9 +814,8 @@
         if (!item.isSerialized()) {
           return modal({
             onOk: () =>
-              console.log(
-                "TBD: updating method",
-                new Form({
+              onChange({
+                form: new Form({
                   ...form,
                   items: form.items.map((i) =>
                     i === currentItem
@@ -816,34 +825,131 @@
                         })
                       : currentItem
                   ),
-                })
-              ),
+                }),
+                change,
+              }),
           });
         }
-        return new Form({
-          ...form,
-          items: [
-            ...form.items,
-            new Item({
-              ...item,
-              checkIn: getFormattedDate(new Date()),
-              missing: false,
-            }),
-          ],
+        return onChange({
+          form: new Form({
+            ...form,
+            items: [
+              ...form.items,
+              new Item({
+                ...item,
+                checkIn: getFormattedDateTime(new Date()),
+                missing: false,
+              }),
+            ],
+          }),
+          change,
         });
       } else {
         // Its a check-out for reserved gear
-        return new Form({
-          ...form,
-          items: form.items.map((i) =>
-            i === currentItem
-              ? new Item({
-                  ...currentItem,
-                  checkOut: getFormattedDate(new Date()),
-                })
-              : currentItem
-          ),
+        return onChange({
+          form: new Form({
+            ...form,
+            items: form.items.map((i) =>
+              i === currentItem
+                ? new Item({
+                    ...currentItem,
+                    checkOut: getFormattedDateTime(new Date()),
+                  })
+                : currentItem
+            ),
+          }),
+          change,
         });
+      }
+    }
+
+    function handleItemArray() {
+      alert("handleItemArray not implemented");
+    }
+
+    function handleStudent(student) {
+      const change = {
+        // fake change event
+        target: {
+          name: "students",
+          value: student.name,
+        },
+      };
+
+      const studentOnForm = form.students.find((s) => s.netId == student.netId);
+      if (!studentOnForm) {
+        if (!student.signatureOnFile) {
+          // handlers.onNeedsSignature(student.netId);
+          return alert("TBD: get signature modal");
+        }
+        change.target.value += " check-in";
+        return onChange({
+          form: new Form({
+            ...form,
+            students: [
+              ...form.students,
+              { ...student, checkIn: getFormattedDateTime(new Date()) },
+            ],
+          }),
+          change,
+        });
+      }
+      if (studentOnForm.checkIn && studentOnForm.checkOut) {
+        return alert("TODO: check out student again");
+      }
+      if (studentOnForm.checkIn) {
+        if (form.hasItemsOut()) {
+          throw new Error(
+            "Cannot check out student. " +
+              "If this is the last student, all gear must be returned. " +
+              "Otherwise try updating the form."
+          );
+        }
+        change.target.value += " check-out";
+        return onChange({
+          form: new Form({
+            ...form,
+            students: [
+              ...form.students,
+              { ...student, checkOut: getFormattedDateTime(new Date()) },
+            ],
+          }),
+          change,
+        });
+      }
+      if (!student.signatureOnFile) {
+        // handlers.onNeedsSignature(student.netId);
+        return alert("getting signature modal not implemented");
+      }
+      alert(
+        "Error: we've reached the end of student input without doing anything"
+      );
+    }
+
+    function onOmniboxSubmit({ type, value }) {
+      switch (type) {
+        case "itemArray":
+          return handleItemArray(value);
+        case "item":
+          return handleItem(value);
+        case "student":
+          return handleStudent(value);
+        case "newCodabar":
+          return ModalNewCodabar({
+            codabar: value,
+            roster,
+            onSubmit: () => alert("TBD, finish codabar"),
+          });
+        case "manualEntry":
+          return ModalManualEntry({
+            onSubmit: () => alert("TBD, finish manual entry"),
+          });
+        case "query":
+          return searchResources(value);
+        default:
+          modal({
+            children: [heading1("Error"), paragraph(`Unknown type: ${type}`)],
+          });
       }
     }
   }

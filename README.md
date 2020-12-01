@@ -38,7 +38,6 @@ All the visible HTML is created via JavaScript.
 
 #### Models
 
-- gs/Booking
 - gs/Form
 - gs/Note
 - gs/Student

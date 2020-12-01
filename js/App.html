@@ -381,9 +381,8 @@
       if (roster.length < 1) {
         return displayErrorMessage("No students found");
       }
-      state.roster = roster;
+      state.roster = roster.map(Object.freeze);
       if (response.unlock) tryUnlock();
-      else Omnibox.parse();
     }
 
     function displayErrorMessage(message) {

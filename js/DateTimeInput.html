@@ -27,7 +27,7 @@
         children: Utility.range(12, 0, 5).map((n) =>
           option(String(n).padStart(2, "0"), n)
         ),
-        value: minutes,
+        value: Number(minutes), // to remove zero pad
       }),
       select({
         name: `${name}AMPM`,
