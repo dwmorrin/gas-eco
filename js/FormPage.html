@@ -19,9 +19,15 @@
     disabled = false,
     form,
     formIndexDisplay = "",
+    formInputsTouched,
     onChange,
     inventory,
+    itemSort,
     onDelete,
+    onNeedsSignature,
+    onNewCodabar,
+    onNextForm,
+    onPreviousForm,
     onRedo,
     onSubmit,
     onUndo,
@@ -29,6 +35,7 @@
     savable = false,
     saved,
     username = "anonymous",
+    waiting,
   }) {
     const {
       br,
@@ -45,12 +52,13 @@
       radio,
       row,
       select,
+      spinner,
       table,
     } = HTML;
     const {
       copyToClipboard,
       nullIf,
-      replace,
+      sort,
       tryJsonParse,
       uncamelCase,
     } = Utility;
@@ -62,7 +70,10 @@
       inventory,
       onSubmit: onOmniboxSubmit,
       roster,
+      waiting,
     });
+
+    console.log({ saved, savable, form, formInputsTouched });
 
     return page({
       name: "form",
@@ -74,20 +85,15 @@
             createElement("section", {
               class: "formControls",
               children: [
-                createElement("div", {
-                  tabindex: 0,
-                  // onFocus: () => locationSelect.focus(),
-                }),
                 omnibox,
                 button("Add item without barcode or ID", {
+                  class: "action",
                   disabled,
-                  tabindex: -1,
-                  onClick: () => alert("manual entry disabled"), //handlers.onManualEntry(),
+                  onClick: () => ModalManualEntry({ onSubmit: handleItem }),
                 }),
                 button("New note", {
                   class: "action",
                   disabled,
-                  tabindex: -1,
                   onClick: () => {
                     const input = createElement("textarea");
                     modal({
@@ -103,47 +109,47 @@
                   },
                 }),
                 button("Change log", {
-                  tabindex: -1,
                   onClick: onChangeLog,
+                  disabled: waiting,
                 }),
                 nullIf(
-                  !disabled,
+                  !disabled || waiting,
                   button("Copy items to clipboard", {
-                    tabindex: -1,
                     onClick: () =>
                       copyToClipboard(JSON.stringify(form.items.getStripped())),
                   })
                 ),
                 nullIf(
-                  disabled,
+                  disabled && !waiting,
                   button("Delete this form", {
-                    onClick: onDelete,
+                    class: "create",
+                    disabled: disabled || waiting,
+                    onClick: () => onDelete(form),
                   })
                 ),
                 br(),
                 button("Previous form", {
-                  tabindex: -1,
-                  onClick: () => alert("get previous disabled"), //getPrevious,
+                  onClick: () => onPreviousForm(),
+                  disabled: waiting,
                 }),
                 button("Next form", {
-                  tabindex: -1,
-                  onClick: () => alert("get next disabled"), //getNext,
+                  onClick: () => onNextForm(),
+                  disabled: waiting,
                 }),
                 createElement("span", {
                   textContent: formIndexDisplay,
                 }),
                 br(),
-                button("Submit", {
+                button(waiting ? "Submitting..." : "Submit", {
                   disabled: disabled || !savable,
-                  class: `action buttonTight${savable ? " create" : ""}`,
+                  class: `buttonTight ${savable ? "create" : "action"}`,
                   onClick: () => onSubmit(form),
                 }),
                 nullIf(
                   disabled || !form.isBlank(),
                   button("Save as advance booking", {
-                    class: `action buttonTight`,
+                    class: "action buttonTight",
                     disabled: !savable,
-                    tabindex: -1,
                     onClick: () => {
                       modal({
                         children: [
@@ -173,6 +179,7 @@
                   class: "updateButtonHint",
                   textContent: getUpdateButtonHint(),
                 }),
+                nullIf(!waiting, spinner()),
               ],
             }),
             createElement("section", {
@@ -215,7 +222,7 @@
                     ),
                     row(
                       headerCell("Location"),
-                      saved && form.location
+                      disabled || (saved && form.location)
                         ? cell({
                             textContent: form.location,
                             onClick: (_, locationDisplay) => {
@@ -232,7 +239,11 @@
                     ),
                     row(
                       headerCell("Start Time"),
-                      saved && form.startTime
+                      disabled ||
+                        (saved &&
+                          !form.isBlank() &&
+                          form.startTime &&
+                          !formInputsTouched.has("startTime"))
                         ? cell({
                             onClick: handleClickTimeDisplay({
                               name: "start",
@@ -250,7 +261,11 @@
                     ),
                     row(
                       headerCell("End Time"),
-                      saved && form.endTime
+                      disabled ||
+                        (saved &&
+                          !form.isBlank() &&
+                          form.endTime &&
+                          !formInputsTouched.has("endTime"))
                         ? cell({
                             onClick: handleClickTimeDisplay({
                               name: "end",
@@ -267,10 +282,6 @@
                           })
                     ),
                   ],
-                }),
-                createElement("div", {
-                  tabindex: 0,
-                  onFocus: () => omnibox.focus(),
                 }),
               ],
             }),
@@ -320,7 +331,7 @@
                   createElement("tbody", {
                     class: "itemList",
                     children: form.items.length
-                      ? form.items.map(ItemRow) // slice.reverse?
+                      ? sort(form.items, itemSort).map(ItemRow)
                       : [row(cell("Scan barcode to check out an item"))],
                   })
                 ),
@@ -351,10 +362,11 @@
     }
 
     function getUpdateButtonHint() {
+      if (waiting) return "Please wait while the form is being saved...";
       if (disabled) return "This is a closed form. You cannot edit it.";
-      if (!savable)
-        return "Please enter start time, end time, location, and at least one student";
-      return "";
+      if (form.isBlank() && !savable)
+        return "Please enter start time, end time, location, and at least one student.";
+      return "All changes saved.";
     }
 
     function handleChangeLocation(change) {
@@ -496,6 +508,7 @@
     }
 
     function onChangeTime({ name, values }) {
+      name = `${name}Time`;
       const { date, hour, minutes, ampm } = values;
       const [year, month, day] = date.split("-");
       const value = `${month}/${day}/${year} ${hour}:${String(minutes).padStart(
@@ -505,7 +518,7 @@
       onChange({
         form: new Form({
           ...form,
-          [`${name}Time`]: value,
+          [name]: value,
         }),
         change: { target: { name, value } },
       });
@@ -876,7 +889,9 @@
         },
       };
 
-      const studentOnForm = form.students.find((s) => s.netId == student.netId);
+      const studentOnForm = form.students.find(
+        ({ netId }) => netId === student.netId
+      );
       if (!studentOnForm) {
         if (!student.signatureOnFile) {
           // handlers.onNeedsSignature(student.netId);
@@ -918,8 +933,7 @@
         });
       }
       if (!student.signatureOnFile) {
-        // handlers.onNeedsSignature(student.netId);
-        return alert("getting signature modal not implemented");
+        return onNeedsSignature(student.netId);
       }
       alert(
         "Error: we've reached the end of student input without doing anything"
@@ -938,12 +952,11 @@
           return ModalNewCodabar({
             codabar: value,
             roster,
-            onSubmit: () => alert("TBD, finish codabar"),
+            onSubmit: ({ netId, codabar }) =>
+              onNewCodabar({ netId, codabar, form }),
           });
         case "manualEntry":
-          return ModalManualEntry({
-            onSubmit: () => alert("TBD, finish manual entry"),
-          });
+          return ModalManualEntry({ onSubmit: handleItem });
         case "query":
           return searchResources(value);
         default:

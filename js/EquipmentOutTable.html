@@ -1,30 +1,78 @@
 <script>
-  /* global HTML */
+  /* global HTML Utility */
   /* exported EquipmentOutTable */
-  function EquipmentOutTable({ openForms, setForm }) {
+  function EquipmentOutTable({
+    itemsOutSort,
+    itemsOutSortAscending,
+    openForms,
+    setForm,
+  }) {
     const { cell, createElement } = HTML;
-    return createElement("tbody", {
-      class: "equipmentOut",
-      children: openForms.reduce(
-        (openItems, form) => [
-          ...openItems,
+    const {
+      compareDateStrings,
+      compareKey,
+      compareStrings,
+      sort,
+      reverse,
+    } = Utility;
+
+    const checkedOutItems = sort(
+      openForms.reduce(
+        (openFormItems, form) => [
+          ...openFormItems,
           ...form.items.reduce(
-            (checkedOutItems, item) =>
+            (items, item) =>
               item.checkedOut
-                ? [...checkedOutItems, itemToRow(form, item)]
-                : checkedOutItems,
+                ? [
+                    ...items,
+                    {
+                      location: form.location,
+                      students: form.students,
+                      endTime: form.endTime,
+                      formId: form.id,
+                      ...item,
+                    },
+                  ]
+                : items,
             []
           ),
         ],
         []
       ),
+      compareKey(
+        itemsOutSort,
+        {
+          description: compareStrings,
+          id: compareStrings,
+          location: compareStrings,
+          students: () => 0,
+          endTime: compareDateStrings,
+        }[itemsOutSort]
+      )
+    );
+
+    const children = (itemsOutSortAscending
+      ? checkedOutItems
+      : reverse(checkedOutItems)
+    ).map(itemToRow);
+
+    return createElement("tbody", {
+      class: "equipmentOut",
+      children,
     });
 
-    function itemToRow(form, item) {
-      const { endTime, location, students } = form;
-      const { barcode, description, id } = item;
+    function itemToRow({
+      description,
+      endTime,
+      barcode,
+      location,
+      students,
+      id,
+      formId,
+    }) {
       return createElement("tr", {
-        onClick: () => setForm(form),
+        onClick: () =>
+          setForm({ form: openForms.find(({ id }) => id === formId) }),
         children: [
           cell(description),
           cell(id || barcode || ""),

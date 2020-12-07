@@ -1,5 +1,5 @@
 <script>
-  /* global DateUtils HTML */
+  /* global HTML */
   /* exported OpenFormsTable */
   function OpenFormsTable({ openForms, setForm }) {
     return HTML.createElement("tbody", {
@@ -16,7 +16,7 @@
                 form.students.map((student) => student.name).join(", "),
             ].map((textContent) => HTML.createElement("td", { textContent })),
           ],
-          onClick: () => setForm(form),
+          onClick: () => setForm({ form }),
         })
       ),
     });

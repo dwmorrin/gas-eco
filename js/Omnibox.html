@@ -22,6 +22,7 @@
     const { getFormattedDateTime } = DateUtils;
     const input = createElement("input", {
       type: "text",
+      class: "omnibox",
       placeholder: "Scan barcode or type NetID/ItemID",
       onKeydown: (event, el) => {
         const { metaKey, ctrlKey, key } = event;

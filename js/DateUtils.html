@@ -3,9 +3,16 @@
   /* exported DateUtils */
   const DateUtils = (function () {
     return {
+      addOneHour,
       formatDashedDate,
       getFormattedDateTime,
     };
+
+    function addOneHour(date) {
+      const result = new Date();
+      result.setHours(date.getHours() + 1);
+      return result;
+    }
 
     /**
      * @param {Date} date

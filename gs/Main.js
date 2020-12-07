@@ -89,12 +89,13 @@ function doPost(request) {
     case "codabar":
       writeCodabar_(request.netId, request.codabar);
       response.students = JSON.stringify(getAllStudents_());
+      response.target = "codabar";
       break;
     case "deleteForm":
       var form = new Form_(JSON.parse(request.form));
       try {
         writeFormToSheet_(form, true);
-        request.post = "openForms";
+        response.target = "openForms";
         response.formList = getOpenForms_().stringify();
       } catch (error) {
         if (error instanceof ErrorFormCollision_) {
@@ -111,16 +112,20 @@ function doPost(request) {
       break;
     case "rejected":
       writeRejectedFormToSheet_(new Form_(request.form));
+      response.target = "rejected";
       break;
     case "signature":
       writeSignatureToSheet_(request);
       response.students = JSON.stringify(getAllStudents_());
+      response.target = "signature";
       break;
     case "signatureTimeout":
       clearSignatureValidation_();
+      response.target = "signatureTimeout";
       break;
     case "startSignature":
       startSignature_(request.netid);
+      response.target = "startSignature";
       break;
     case "updateForm":
       form = new Form_(JSON.parse(request.form));
@@ -128,10 +133,11 @@ function doPost(request) {
         form.validate(); // throws ErrorFormInvalid_
         if (form.isReadyToClose() || form.isNoShow()) {
           writeFormToSheet_(form, true); // throws ErrorFormCollision_
-          request.post = "openForms";
+          response.target = "openForms";
           response.formList = getOpenForms_().stringify();
         } else {
           response.form = writeFormToSheet_(form).stringify(); // throws ErrorFormCollision_
+          response.target = "updateForm";
         }
       } catch (error) {
         if (error instanceof ErrorFormCollision_) {
@@ -159,7 +165,6 @@ function doPost(request) {
       break;
   }
   lock.releaseLock();
-  response.target = request.post;
 
   return response;
 }

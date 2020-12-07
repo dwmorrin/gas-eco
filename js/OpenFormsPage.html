@@ -1,9 +1,18 @@
 <script>
   /* global HTML Utility OpenFormsTable EquipmentOutTable */
   /* exported OpenFormsPage */
-  function OpenFormsPage({ openForms, setForm, setOpenForms }) {
+  function OpenFormsPage({
+    ascending,
+    itemsOutSort,
+    itemsOutSortAscending,
+    openForms,
+    setForm,
+    sortedBy,
+    onSortForms,
+    onSortItemsOut,
+  }) {
     const { createElement, documentIcon, headerCell, page, row, table } = HTML;
-    const { compareStrings, sort, uncamelCase } = Utility;
+    const { uncamelCase } = Utility;
     return page({
       name: "openForms",
       children: [
@@ -18,10 +27,11 @@
               headerCell({ child: documentIcon() }),
               ...["startTime", "endTime", "location", "students"].map((text) =>
                 createElement("th", {
-                  onClick: (_, el) => {
-                    el.classList.add("sortedBy", "ascending");
-                    sortFormsBy(text);
-                  },
+                  class:
+                    text === sortedBy
+                      ? `sortedBy ${ascending ? "" : "descending"}`
+                      : "",
+                  onClick: () => onSortForms(text),
                   textContent: uncamelCase(text),
                 })
               ),
@@ -34,40 +44,29 @@
           createElement("thead", {
             class: "equipmentOut",
             child: row(
-              ...["Item", "Id", "Location", "Students", "End Time"].map(
-                headerCell
+              ...["description", "id", "location", "students", "endTime"].map(
+                (text) =>
+                  createElement("th", {
+                    textContent: uncamelCase(text),
+                    class:
+                      text === itemsOutSort
+                        ? `sortedBy ${
+                            itemsOutSortAscending ? "" : "descending"
+                          }`
+                        : "",
+                    onClick: () => onSortItemsOut(text),
+                  })
               )
             ),
           }),
-          EquipmentOutTable({ openForms, setForm })
+          EquipmentOutTable({
+            itemsOutSort,
+            itemsOutSortAscending,
+            openForms,
+            setForm,
+          })
         ),
       ],
     });
-
-    function sortFormsBy(text) {
-      var fn;
-      switch (text) {
-        case "startTime":
-          fn = ({ startTime: a }, { startTime: b }) =>
-            new Date(a) - new Date(b);
-          break;
-        case "endTime":
-          fn = ({ endTime: a }, { endTime: b }) => new Date(a) - new Date(b);
-          break;
-        case "location":
-          fn = ({ location: a }, { location: b }) => compareStrings(a, b);
-          break;
-        case "students": {
-          const getNames = (names, { name }) => [...names, name];
-          fn = ({ students: a }, { students: b }) =>
-            compareStrings(
-              a.reduce(getNames, []).join(", "),
-              b.reduce(getNames, []).join(", ")
-            );
-          break;
-        }
-      }
-      setOpenForms(sort(openForms, fn));
-    }
   }
 </script>

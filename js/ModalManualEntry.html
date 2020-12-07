@@ -1,14 +1,14 @@
 <script>
-  /* global HTML Utility */
+  /* global HTML Item Utility */
   /* exported ModalManualEntry */
   function ModalManualEntry({ onSubmit }) {
-    const { createElement, modal } = HTML;
+    const { createElement, heading1, paragraph, modal } = HTML;
     const { digestMessage, hexString } = Utility;
     const input = createElement("input", { type: "text" });
     modal({
       children: [
-        HTML.heading1("Check out item without barcode"),
-        HTML.paragraph(
+        heading1("Check out item without barcode"),
+        paragraph(
           "Describe the item: (required, provide as much detail as possible)"
         ),
         input,
@@ -20,18 +20,12 @@
           return;
         }
         digestMessage(description).then((hash) =>
-          onSubmit({
-            id: `MANUAL-${hexString(hash).substring(0, 5)}`,
-            checkIn: null,
-            checkOut: null,
-            quantity: 1,
-            serialized: false,
-            barcode: null,
-            description,
-            checkedOut: false,
-            notes: "",
-            missing: false,
-          })
+          onSubmit(
+            new Item({
+              id: `MANUAL-${hexString(hash).substring(0, 5)}`,
+              description,
+            })
+          )
         );
       },
     });

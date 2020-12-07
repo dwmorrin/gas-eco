@@ -13,15 +13,38 @@
   */
   /* exported App */
   const App = (function () {
-    const { button, createElement, modal, paragraph, update } = HTML;
-    const { last, tryJsonParse } = Utility;
-    const { getFormattedDateTime } = DateUtils;
+    const { button, createElement, heading1, modal, paragraph, update } = HTML;
+    const {
+      compareDateStrings,
+      compareKey,
+      compareStrings,
+      last,
+      replace,
+      reverse,
+      sort,
+      tryJsonParse,
+    } = Utility;
+    const { addOneHour, getFormattedDateTime } = DateUtils;
+    const byCheckOutAscending = compareKey(
+      "checkOut",
+      (a, b) => new Date(a) - new Date(b)
+    );
+    const byCheckOutDescending = compareKey(
+      "checkOut",
+      (a, b) => new Date(b) - new Date(a)
+    );
     const state = {
       changeStack: [], // each change produces a new Form
       closedForms: null,
       closedFormsQuery: {},
+      formInputsTouched: new Set(),
       inventory: null,
+      itemSort: byCheckOutDescending,
+      itemsOutSort: "description",
+      itemsOutSortAscending: true,
       openForms: null,
+      openFormSort: "startTime",
+      openFormSortAscending: true,
       roster: null,
       saved: true,
       undoStack: [], // each "undo" takes from changeStack, for "redo", cleared on change
@@ -31,9 +54,12 @@
       disabled: true,
       onClick: () => {
         const onOk = () => {
-          const form = new Form({});
+          const form = new Form({
+            startTime: getFormattedDateTime(new Date(), true),
+            endTime: getFormattedDateTime(addOneHour(new Date()), true),
+          });
           state.openForms.push(form);
-          setForm(form);
+          setForm({ form });
         };
         if (!state.saved) loseDataWarning(onOk);
         else onOk();
@@ -42,13 +68,16 @@
     const openFormsButton = button("View Open Forms", {
       disabled: true,
       onClick: (_, button) => {
-        button.setAttribute("disabled", true);
-        // check for unsaved changes, TBD,
-        state.openForms = null;
-        withErrorHandler
-          .withSuccessHandler(onOpenForms)
-          .doGet({ get: "openForms" });
-        showLoadingPage();
+        const onOk = () => {
+          button.setAttribute("disabled", true);
+          state.openForms = null;
+          withErrorHandler
+            .withSuccessHandler(onOpenForms)
+            .doGet({ get: "openForms" });
+          showLoadingPage();
+        };
+        if (!state.saved) loseDataWarning(onOk);
+        else onOk();
       },
     });
     const closedFormsButton = button("View Closed Forms", {
@@ -74,7 +103,7 @@
         children: [
           createElement("header", {
             children: [
-              HTML.heading1("Equipment Check Out"),
+              heading1("Equipment Check Out"),
               createElement("span", {
                 class: "usernameContainer",
                 textContent: "signed in as ",
@@ -172,6 +201,25 @@
       }
     }
 
+    // returns [next, prev]
+    function makeFormNavigation({ form, type }) {
+      const forms = type === "open" ? state.openForms : state.closedForms;
+      return [
+        () => {
+          const index = forms.findIndex(({ id }) => id === form.id) + 1;
+          if (index <= 0 || !forms[index])
+            return modal({ child: paragraph("This is the last form.") });
+          setForm({ form: forms[index], type });
+        },
+        () => {
+          const index = forms.findIndex(({ id }) => id === form.id) - 1;
+          if (index < 0)
+            return modal({ child: paragraph("This is the first form.") });
+          setForm({ form: forms[index], type });
+        },
+      ];
+    }
+
     function onSubmit(
       form,
       onSuccess = () => undefined,
@@ -185,11 +233,13 @@
         .withSuccessHandler((response) => {
           if (response.target === "updateForm") {
             const updatedForm = new Form(JSON.parse(response.form));
-            // OpenFormsPage.getStack()
-            //   .replace(updatedForm)
-            //   .updateIndex(updatedForm);
-            onSuccess(updatedForm);
-            return;
+            state.openForms = replace(
+              state.openForms,
+              ({ id }) => id === updatedForm.id,
+              updatedForm
+            );
+            state.saved = true;
+            return setForm({ form: updatedForm });
           }
           if (response.target === "openForms") {
             onSuccess();
@@ -206,30 +256,38 @@
         })
         .doPost({
           post: "updateForm",
-          form,
+          form: JSON.stringify(form),
         });
+      setForm({ form, disabled: true, waiting: true });
     }
 
     function onDelete(form) {
-      if (form)
+      const onOk = () => {
         withErrorHandler
           .withSuccessHandler((response) => {
-            if (response.post === "openForms") return onOpenForms(response);
-            if (response.post === "collision") return onCollision(response);
+            if (response.target === "openForms") {
+              state.saved = true;
+              return onOpenForms(response);
+            }
+            if (response.target === "collision") return onCollision(response);
           })
-          .doPost({ post: "deleteForm", form });
-      else
-        withErrorHandler
-          .withSuccessHandler((response) => {
-            onOpenForms(response);
-          })
-          .doGet({ get: "openForms" });
+          .doPost({ post: "deleteForm", form: JSON.stringify(form) });
+        setForm({ form, disabled: true, waiting: true });
+      };
+      modal({
+        children: [
+          heading1("Are you sure?"),
+          paragraph("This will delete the form. You cannot undo this action."),
+        ],
+        onOk,
+        okText: "Delete this form",
+      });
     }
 
-    function onNeedsSignature(netid) {
+    function onNeedsSignature({ netId, form }) {
       let canceled = false;
       modal({
-        children: [HTML.heading1("Add signature"), paragraph("Please wait...")],
+        children: [heading1("Add signature"), paragraph("Please wait...")],
         closeText: "Cancel",
         onClose: () => (canceled = true),
       });
@@ -242,35 +300,52 @@
           context.modal.remove();
           modal({
             children: [
-              HTML.heading1("Add signature"),
+              heading1("Add signature"),
               paragraph(
                 "Production area policy acknowledgment signature not found " +
                   "for this person. All persons must read the policy and have " +
                   "a signature on file. Please use the tablet to show the " +
                   "person the policy and capture their signature. " +
-                  "Click the 'Signature Done/Recheck' when they are finished " +
+                  'Click the "Signature done" button when they are finished ' +
                   "using the tablet."
               ),
             ],
-            okText: "Signature Done/Recheck",
+            okText: "Signature done",
             onOk: () =>
               withErrorHandler
-                .withSuccessHandler(onRoster)
+                .withSuccessHandler((response) => {
+                  onRoster(response);
+                  setForm({ form });
+                  modal({
+                    children: [
+                      heading1("Student information updated"),
+                      paragraph(
+                        "Please try scanning the ID again to continue."
+                      ),
+                    ],
+                  });
+                })
                 .doGet({ get: "students", init: false }),
           });
         })
         .withUserObject({ canceled })
-        .doPost({ post: "startSignature", netid });
+        .doPost({ post: "startSignature", netid: netId });
     }
 
-    function onNewCodabar({ netId, codabar }) {
+    function onNewCodabar({ netId, codabar, form }) {
       withErrorHandler
         .withSuccessHandler((response) => {
           const students = tryJsonParse(response.students);
           if (!students)
             displayErrorMessage("Error retrieving student list from server");
-          state.roster = students;
-          // automatically try to update form, but how?
+          state.roster = students.map(Object.freeze);
+          setForm({ form });
+          modal({
+            children: [
+              heading1("Student information updated"),
+              paragraph("Please try scanning the ID again to continue."),
+            ],
+          });
         })
         .doPost({
           post: "codabar",
@@ -317,7 +392,16 @@
     function showOpenFormsPage() {
       update(
         pageContainer,
-        OpenFormsPage({ openForms: state.openForms, setForm, setOpenForms })
+        OpenFormsPage({
+          ascending: state.openFormSortAscending,
+          itemsOutSort: state.itemsOutSort,
+          itemsOutSortAscending: state.itemsOutSortAscending,
+          onSortForms,
+          onSortItemsOut,
+          openForms: state.openForms,
+          setForm,
+          sortedBy: state.openFormSort,
+        })
       );
     }
 
@@ -328,7 +412,7 @@
           closedForms: state.closedForms,
           closedFormsQuery: state.closedFormsQuery,
           setClosedFormsQuery: (query) => (state.closedFormsQuery = query),
-          setForm: (form) => setForm(form, true),
+          setForm,
           setOpenForms,
         })
       );
@@ -354,7 +438,7 @@
       response.submittedForm = tryJsonParse(response.submittedForm);
       modal({
         children: [
-          HTML.heading1("Uh-oh, your form conflicts with another form"),
+          heading1("Uh-oh, your form conflicts with another form"),
           paragraph(
             "Unfortunately a newer version of the form has been found on the server.  In a future update you can save your work, but for now we have to destroy it.  Sorry!!"
           ),
@@ -387,15 +471,24 @@
 
     function displayErrorMessage(message) {
       modal({
-        children: [HTML.heading1("Error"), paragraph(message)],
+        children: [heading1("Error"), paragraph(message)],
       });
     }
 
-    function setForm(form, disabled = false) {
+    function setForm({
+      autoFocus = true,
+      disabled = false,
+      form,
+      type = "open",
+      waiting = false,
+    }) {
       if (state.saved) {
+        // reset undo system
         state.changeStack = [form];
         state.undoStack = [];
       }
+      if (type === "closed") disabled = true;
+      const [onNextForm, onPreviousForm] = makeFormNavigation({ form, type });
       update(
         pageContainer,
         FormPage({
@@ -404,17 +497,35 @@
           formIndexDisplay: `${
             state.openForms.findIndex(({ id }) => id === form.id) + 1
           }/${state.openForms.length}`,
-          onDelete,
-          onSubmit,
+          formInputsTouched: state.formInputsTouched,
+          inventory: state.inventory,
+          itemSort: state.itemSort,
           onChange,
-          onUndo,
+          onDelete,
+          onNeedsSignature,
+          onNewCodabar,
+          onNextForm,
+          onPreviousForm,
           onRedo,
+          onSubmit,
+          onUndo,
+          roster: state.roster,
+          savable:
+            !state.saved &&
+            !!form.location &&
+            !!form.startTime &&
+            !!form.endTime &&
+            form.students.some(({ checkIn }) => checkIn),
           saved: state.saved,
           username: getUsername(),
-          inventory: state.inventory,
-          roster: state.roster,
+          waiting,
         })
       );
+      if (autoFocus) onAutoFocus();
+    }
+
+    function onAutoFocus() {
+      pageContainer.querySelector(".omnibox").focus();
     }
 
     function onUndo() {
@@ -423,14 +534,14 @@
           child: paragraph("Nothing to undo."),
         });
       state.undoStack.push(state.changeStack.pop());
-      setForm(last(state.changeStack));
+      setForm({ form: last(state.changeStack) });
     }
 
     function onRedo() {
       if (!state.undoStack.length)
         return modal({ child: paragraph("Nothing to redo.") });
       state.changeStack.push(state.undoStack.pop());
-      setForm(last(state.changeStack));
+      setForm({ form: last(state.changeStack) });
     }
 
     function onChange({
@@ -452,10 +563,11 @@
           },
         ],
       });
+      state.formInputsTouched.add(name);
       state.changeStack.push(newForm);
       state.undoStack = [];
       state.saved = false;
-      setForm(newForm);
+      setForm({ form: newForm });
     }
 
     function getUsername() {
@@ -466,13 +578,44 @@
     function loseDataWarning(onOk) {
       modal({
         children: [
-          HTML.heading1("Warning, your changes are not saved"),
+          heading1("Warning, your changes are not saved"),
           paragraph("Are you sure?"),
         ],
         closeText: "Cancel",
         okText: "Lose changes",
         onOk,
       });
+    }
+
+    // all ascending
+    function getOpenFormSortByColumnName(name) {
+      return {
+        startTime: compareKey("startTime", compareDateStrings),
+        endTime: compareKey("endTime", compareDateStrings),
+        location: compareKey("location", compareStrings),
+        students: compareKey("students", (a, b) =>
+          compareStrings(minName(a), minName(b))
+        ),
+      }[name];
+      function minName(students) {
+        return students.reduce((min, { name }) => (name < min ? name : min));
+      }
+    }
+
+    function onSortForms(name) {
+      if (state.openFormSort !== name) state.openFormSort = name;
+      else state.openFormSortAscending = !state.openFormSortAscending;
+      const sorted = sort(
+        state.openForms,
+        getOpenFormSortByColumnName(state.openFormSort)
+      );
+      setOpenForms(state.openFormSortAscending ? sorted : reverse(sorted));
+    }
+
+    function onSortItemsOut(name) {
+      if (state.itemsOutSort !== name) state.itemsOutSort = name;
+      else state.itemsOutSortAscending = !state.itemsOutSortAscending;
+      showOpenFormsPage();
     }
   })();
 </script>

@@ -30,7 +30,7 @@
         children: forms.length
           ? forms.map((form) =>
               createElement("tr", {
-                onClick: () => setForm(form),
+                onClick: () => setForm({ form, type: "closed" }),
                 children: [
                   cell({ child: documentIcon() }),
                   ...[

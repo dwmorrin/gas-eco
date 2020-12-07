@@ -41,7 +41,8 @@
     function attributes(el, attrs) {
       try {
         for (const key in attrs) {
-          if (key === "class") el.classList.add(...attrs[key].split(/\s+/));
+          if (key === "class")
+            attrs[key] && el.classList.add(...attrs[key].trim().split(/\s+/));
           else if (key === "child") el.appendChild(attrs[key]);
           else if (key === "children")
             attrs[key].forEach((child) => child && el.appendChild(child));
