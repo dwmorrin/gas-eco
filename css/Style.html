@@ -1,4 +1,14 @@
 <style>
+  .itemsNotSaved {
+    background-color: papayawhip;
+  }
+  .itemsOut {
+    background-color: gainsboro;
+  }
+  .itemsIn {
+    background-color: silver;
+  }
+
   button[value="deleteForm"] {
     margin-top: 25px;
   }
@@ -112,7 +122,7 @@
 
   div.openFormsContainer tbody tr:not(.hoveroff):hover,
   tbody.archive tr:not(.hoveroff):hover,
-  div.modal table tr[data-id]:hover {
+  div.modal table tr.searchResults:hover {
     background-color: lightcyan;
     cursor: pointer;
   }
@@ -377,7 +387,7 @@
       bottom: 0;
     }
     100% {
-      bottom: 25%;
+      bottom: 10%;
     }
   }
 

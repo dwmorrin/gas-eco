@@ -1,5 +1,5 @@
 <script>
-  /* global toast */
+  /* global HTML */
   /* exported Utility */
   const Utility = (function () {
     return {
@@ -11,6 +11,7 @@
       hexString,
       last,
       nullIf,
+      pick,
       range,
       remove,
       replace,
@@ -40,7 +41,7 @@
       document.body.appendChild(textArea);
       textArea.select();
       document.execCommand("copy"); //! execCommand is deprecated, migrate to ClipboardAPI
-      toast("Items copied");
+      HTML.toast("Items copied");
       // removes the text area after copying so that it is not seen
       document.body.removeChild(textArea);
     }
@@ -67,6 +68,16 @@
 
     function nullIf(condition, expression) {
       return condition ? null : expression;
+    }
+
+    function pick(...keys) {
+      return (obj) => {
+        const copy = {};
+        for (const key of keys) {
+          copy[key] = obj[key];
+        }
+        return copy;
+      };
     }
 
     function range(length, start = 0, step = 1) {

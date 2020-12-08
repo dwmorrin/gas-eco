@@ -170,6 +170,7 @@
       child,
       children,
       innerHTML,
+      onClick,
       onClose = () => {
         return;
       },
@@ -192,6 +193,9 @@
         div.remove();
         blocker && blocker.remove();
       };
+      if (onClick)
+        // for children to determine when cleanup occurs
+        div.addEventListener("click", (event) => onClick({ event, cleanup }));
       const closeButton = createElement("button", {
         textContent: closeText,
         onClick: () => {

@@ -1,19 +1,19 @@
 <script>
   "use strict";
   /* global
-  Config
-  DateTimeInput
-  DateUtils
-  Form
-  HTML
-  Item
-  ModalManualEntry
-  ModalNewCodabar
-  ModalQuantityChange
-  Omnibox
-  Utility
-  searchResources
-  */
+    Config
+    DateTimeInput
+    DateUtils
+    Form
+    HTML
+    Item
+    ModalManualEntry
+    ModalNewCodabar
+    ModalQuantityChange
+    Omnibox
+    Utility
+    searchResources
+    */
   /* exported FormPage */
   function FormPage({
     disabled = false,
@@ -63,6 +63,7 @@
       compareStrings,
       copyToClipboard,
       nullIf,
+      pick,
       remove,
       replace,
       sort,
@@ -123,7 +124,13 @@
                   !disabled || waiting,
                   button("Copy items to clipboard", {
                     onClick: () =>
-                      copyToClipboard(JSON.stringify(form.items.getStripped())),
+                      copyToClipboard(
+                        JSON.stringify(
+                          form.items.map(
+                            pick("barcode", "description", "id", "quantity")
+                          )
+                        )
+                      ),
                   })
                 ),
                 nullIf(
@@ -342,14 +349,38 @@
                     ],
                   }),
                   createElement("tbody", {
-                    class: "itemList itemsOut",
+                    class: "itemList itemsNotSaved",
                     children: form.items.length
                       ? sort(
-                          form.items.filter(({ checkedOut }) => checkedOut),
+                          form.items.filter(
+                            ({ checkIn, checkedOut }) => !checkIn && !checkedOut
+                          ),
                           getItemSortFn(itemSort)
                         ).map(ItemRow)
-                      : [row(cell("Scan barcode to check out an item"))],
+                      : [
+                          row(
+                            cell({
+                              textContent: "Scan barcode to check out an item",
+                              colspan: 5,
+                              onClick: () => flashOmnibox(),
+                            })
+                          ),
+                        ],
                   }),
+                  nullIf(
+                    !form.items.some(
+                      ({ checkOut, checkedOut }) => checkOut && checkedOut
+                    ),
+                    createElement("tbody", {
+                      class: "itemList itemsOut",
+                      children: sort(
+                        form.items.filter(
+                          ({ checkOut, checkedOut }) => checkOut && checkedOut
+                        ),
+                        getItemSortFn(itemSort)
+                      ).map(ItemRow),
+                    })
+                  ),
                   nullIf(
                     !form.items.length,
                     createElement("tbody", {
@@ -359,7 +390,14 @@
                             form.items.filter(({ checkIn }) => checkIn),
                             getItemSortFn(itemSort)
                           ).map(ItemRow)
-                        : [row(cell("Scan barcode to check in an item"))],
+                        : [
+                            row(
+                              cell({
+                                textContent: "Scan barcode to check in an item",
+                                colspan: 5,
+                              })
+                            ),
+                          ],
                     })
                   )
                 ),
@@ -375,6 +413,24 @@
         }
       },
     });
+
+    // to show user where enter barcodes to add items
+    function flashOmnibox() {
+      const input = document.querySelector(".omnibox");
+      let count = 0;
+      const flash = () => {
+        input.classList.toggle("error");
+        ++count;
+        if (count < 12) window.setTimeout(flash, 250);
+        else input.classList.remove("error");
+      };
+      flash();
+      modal({
+        blocking: false,
+        child: paragraph("Use the text box to enter barcodes."),
+        onClose: () => input.focus(),
+      });
+    }
 
     function getItemSortFn(name) {
       return {
@@ -941,8 +997,50 @@
       }
     }
 
-    function handleItemArray() {
-      alert("handleItemArray not implemented");
+    function handleItemArray(items) {
+      const compareItem = (item) => ({ barcode, description, id }) =>
+        barcode === item.barcode &&
+        description === item.description &&
+        id === item.id;
+      const verified = items.filter((item) =>
+        inventory.find(compareItem(item))
+      );
+      if (!verified.length) {
+        return modal({
+          child: paragraph(
+            "Data corrupted: could not find one or more items in inventory. Please manually enter your items."
+          ),
+        });
+      }
+      if (verified.some((item) => form.items.find(compareItem(item)))) {
+        return modal({
+          child: paragraph(
+            [
+              "Some items entered are already on this form.",
+              "Not sure if you want to check in or out these items.",
+              "Please manually enter your items instead.",
+            ].join(" ")
+          ),
+        });
+      }
+      onChange({
+        form: new Form({
+          ...form,
+          items: [
+            ...form.items,
+            ...verified.map(
+              (item) =>
+                new Item({
+                  ...item,
+                  checkOut: getFormattedDateTime(new Date()),
+                })
+            ),
+          ],
+        }),
+        change: {
+          target: { name: "items", value: "bulk entry" },
+        },
+      });
     }
 
     function handleStudent(student) {
@@ -1005,7 +1103,7 @@
       );
     }
 
-    function onOmniboxSubmit({ type, value }) {
+    function onOmniboxSubmit({ type, value, onOmniboxSubmit }) {
       switch (type) {
         case "itemArray":
           return handleItemArray(value);
@@ -1023,7 +1121,12 @@
         case "manualEntry":
           return ModalManualEntry({ onSubmit: handleItem });
         case "query":
-          return searchResources(value);
+          return searchResources({
+            inventory,
+            onOmniboxSubmit,
+            roster,
+            value,
+          });
         default:
           modal({
             children: [heading1("Error"), paragraph(`Unknown type: ${type}`)],

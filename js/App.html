@@ -6,6 +6,7 @@
   Form
   FormPage
   HTML
+  Item
   LoadingPage
   OpenFormsPage
   Utility
@@ -51,7 +52,8 @@
             startTime: getFormattedDateTime(new Date(), true),
             endTime: getFormattedDateTime(addOneHour(new Date()), true),
           });
-          state.openForms.push(form);
+          state.openForms = [...state.openForms, form];
+          state.saved = false;
           setForm({ form });
         });
       },
@@ -182,7 +184,7 @@
       if (!inventory.length) {
         return displayErrorMessage("Error: Server found no items!");
       }
-      state.inventory = inventory;
+      state.inventory = inventory.map((item) => new Item(item));
       if (response.unlock) {
         tryUnlock();
       }
@@ -578,6 +580,7 @@
           okText: "Lose changes",
           onOk: () => {
             state.saved = true;
+            state.openForms = state.openForms.filter((form) => !form.isBlank());
             onOk();
           },
         });

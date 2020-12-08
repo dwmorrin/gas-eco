@@ -3,23 +3,25 @@
   // for looking up items
   /* global HTML Item */
   /* exported searchResources */
-  function searchResources(value, element, inventory, roster, cb) {
+  function searchResources({ value, inventory, roster, onOmniboxSubmit }) {
     const { cell, createElement, modal, heading1, paragraph, table } = HTML;
     const queryResults = _query(
       value.replace(/'/g, ""),
       (obj) => {
         if (obj instanceof Item) {
           const keys = [];
-          if (obj.description !== "") {
+          if (typeof obj.description === "string" && obj.description) {
             keys.push(obj.description.trim().toLowerCase());
           }
-          if (obj.id !== "") {
+          if (typeof obj.id === "string" && obj.id) {
             keys.push(obj.id.trim().toLowerCase());
           }
           return keys;
+        } else if (typeof obj.name === "string" && obj.name)
+          return [obj.name.trim().toLowerCase().replace(/'/g, "")];
+        else {
+          return [];
         }
-        // else it is a student
-        return [obj.name.trim().toLowerCase().replace(/'/g, "")];
       },
       inventory.slice(),
       roster
@@ -27,6 +29,11 @@
 
     if (queryResults.length > 0) {
       return modal({
+        onClick: ({ event, cleanup }) => {
+          if (event.target.tagName.toLowerCase() === "td") {
+            cleanup();
+          }
+        },
         children: [
           heading1("Search results"),
           paragraph("Are you looking for one of these?"),
@@ -37,10 +44,10 @@
               return [
                 ...rows,
                 createElement("tr", {
+                  class: "searchResults",
                   children: [cell(value.name || value.description), cell(id)],
                   onClick: () => {
-                    element.value = id;
-                    cb(element);
+                    onOmniboxSubmit(id);
                   },
                 }),
               ];

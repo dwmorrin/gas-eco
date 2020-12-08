@@ -3,27 +3,17 @@
     HTML
     Item
     Inventory
-    DateUtils
     Utility
    */
   /* exported Omnibox */
   function Omnibox({ disabled, form, inventory, onSubmit, roster }) {
-    const {
-      button,
-      cell,
-      createElement,
-      heading1,
-      modal,
-      paragraph,
-      row,
-    } = HTML;
+    const { button, createElement, heading1, modal, paragraph } = HTML;
     const { tryJsonParse } = Utility;
     const { getByBarcode, getById } = Inventory;
-    const { getFormattedDateTime } = DateUtils;
     const input = createElement("input", {
       type: "text",
       class: "omnibox",
-      placeholder: "Scan barcode or type NetID/ItemID",
+      placeholder: "Scan barcode or search",
       onKeydown: (event, el) => {
         const { metaKey, ctrlKey, key } = event;
         if (!metaKey && !ctrlKey && key === "Enter") {
@@ -45,79 +35,18 @@
       ],
     });
 
-    function onOmniboxSubmit() {
+    /**
+     * @param {number|string|undefined} injectedValue for query results
+     */
+    function onOmniboxSubmit(injectedValue) {
+      if (["string", "number"].includes(typeof injectedValue))
+        input.value = injectedValue;
       const { type, value, error } = parse(input);
       if (error)
         return modal({
           children: [heading1("Error"), paragraph(error.message)],
         });
-      onSubmit({ type, value });
-    }
-
-    /**
-     * creates a dialog to determine if the user meant to check in an item
-     * or check out more of the same item
-     */
-    function getItemAction(item) {
-      modal({
-        children: [
-          HTML.heading1("Check in or out?"),
-          HTML.table(
-            row(
-              cell("Check the item back in?"),
-              cell({
-                child: createElement("button", {
-                  textContent: "Check In",
-                  onClick: () => handleItem(item, "all", false),
-                }),
-              })
-            ),
-            row(
-              cell("Check out more of these?"),
-              cell({
-                child: createElement("button", {
-                  textContent: "Check Out",
-                  onClick: makeQuantityChangeDialog(item),
-                }),
-              })
-            )
-          ),
-        ],
-      });
-    }
-
-    function makeQuantityHandler(item, newQuantityInput) {
-      return () => {
-        const quantity = +newQuantityInput.value;
-        const savedItem = form.items.find(
-          ({ description }) => description === item.description
-        );
-        if (!item.checkedOutAgain && savedItem) {
-          const savedQuantity = savedItem.getQuantity();
-          if (quantity < savedQuantity) {
-            window.alert(
-              quantity +
-                " is less than the previous quantity " +
-                savedQuantity +
-                ". You can only enter a larger amount " +
-                "or check in this item."
-            );
-            return;
-          }
-        }
-        try {
-          item.setQuantity(quantity);
-        } catch (error) {
-          window.alert(error);
-          return;
-        }
-        handlers.onItemChange({
-          target: {
-            name: "items",
-            value: `${item.description} qty ${item.quantity} to ${quantity}`,
-          },
-        });
-      };
+      onSubmit({ type, value, onOmniboxSubmit });
     }
 
     /**
@@ -129,14 +58,14 @@
      *            "student" |
      *         "newCodabar" | // codabar detected but not found in roster
      *        "manualEntry" | // magic number for manual item entry detected
-     *              "query" |, // no exact match; search through roster & inventory
+     *              "query",  // no exact match; search through roster & inventory
      *   value?: Item[] | Item | Student | string,
      *   error?: Error,
      * }
      */
     function parse(element) {
       if (!element.value)
-        return { error: new Error("Enter a barcode, NetID, or item ID") };
+        return { error: new Error("Enter a barcode, item ID, NetID, or name") };
 
       // see the "Copy items to clipboard" button
       if (/^\s*\[\s*{\s*"/.test(element.value)) {
