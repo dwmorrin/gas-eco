@@ -23,12 +23,14 @@
     onChange,
     inventory,
     itemSort,
+    itemSortAscending,
     onDelete,
     onNeedsSignature,
     onNewCodabar,
     onNextForm,
     onPreviousForm,
     onRedo,
+    onSortItems,
     onSubmit,
     onUndo,
     roster,
@@ -56,8 +58,13 @@
       table,
     } = HTML;
     const {
+      compareDateStrings,
+      compareKey,
+      compareStrings,
       copyToClipboard,
       nullIf,
+      remove,
+      replace,
       sort,
       tryJsonParse,
       uncamelCase,
@@ -222,9 +229,13 @@
                     ),
                     row(
                       headerCell("Location"),
-                      disabled || (saved && form.location)
+                      form.isBlank() || formInputsTouched.has("location")
                         ? cell({
+                            child: LocationSelect(),
+                          })
+                        : cell({
                             textContent: form.location,
+                            class: "editable",
                             onClick: (_, locationDisplay) => {
                               if (disabled) return;
                               locationDisplay.parentNode.appendChild(
@@ -233,52 +244,43 @@
                               locationDisplay.remove();
                             },
                           })
-                        : cell({
-                            child: LocationSelect(),
-                          })
                     ),
                     row(
                       headerCell("Start Time"),
-                      disabled ||
-                        (saved &&
-                          !form.isBlank() &&
-                          form.startTime &&
-                          !formInputsTouched.has("startTime"))
+                      form.isBlank() || formInputsTouched.has("startTime")
                         ? cell({
+                            children: DateTimeInput({
+                              name: "start",
+                              value: form.startTime,
+                              onChange: onChangeTime,
+                            }),
+                          })
+                        : cell({
                             onClick: handleClickTimeDisplay({
                               name: "start",
                               value: form.startTime,
                             }),
                             textContent: form.startTime,
-                          })
-                        : cell({
-                            children: DateTimeInput({
-                              name: "start",
-                              value: form.startTime,
-                              onChange: onChangeTime,
-                            }),
+                            class: "editable",
                           })
                     ),
                     row(
                       headerCell("End Time"),
-                      disabled ||
-                        (saved &&
-                          !form.isBlank() &&
-                          form.endTime &&
-                          !formInputsTouched.has("endTime"))
+                      form.isBlank() || formInputsTouched.has("endTime")
                         ? cell({
+                            children: DateTimeInput({
+                              name: "end",
+                              value: form.endTime,
+                              onChange: onChangeTime,
+                            }),
+                          })
+                        : cell({
                             onClick: handleClickTimeDisplay({
                               name: "end",
                               value: form.endTime,
                             }),
                             textContent: form.endTime,
-                          })
-                        : cell({
-                            children: DateTimeInput({
-                              name: "end",
-                              value: form.endTime,
-                              onChange: onChangeTime,
-                            }),
+                            class: "editable",
                           })
                     ),
                   ],
@@ -319,21 +321,47 @@
                     children: [
                       row(
                         ...[
-                          "Qty",
-                          "Items",
-                          "Item ID",
-                          "Checked Out",
-                          "Checked In",
-                        ].map(headerCell)
+                          ["Qty", "quantity"],
+                          ["Items", "description"],
+                          ["Item ID", "id"],
+                          ["Checked Out", "checkOut"],
+                          ["Checked In", "checkIn"],
+                        ].map(([textContent, key]) =>
+                          createElement("th", {
+                            textContent,
+                            class:
+                              key === itemSort
+                                ? `sortedBy ${
+                                    itemSortAscending ? "" : "descending"
+                                  }`
+                                : "",
+                            onClick: () => onSortItems(key, form),
+                          })
+                        )
                       ),
                     ],
                   }),
                   createElement("tbody", {
-                    class: "itemList",
+                    class: "itemList itemsOut",
                     children: form.items.length
-                      ? sort(form.items, itemSort).map(ItemRow)
+                      ? sort(
+                          form.items.filter(({ checkedOut }) => checkedOut),
+                          getItemSortFn(itemSort)
+                        ).map(ItemRow)
                       : [row(cell("Scan barcode to check out an item"))],
-                  })
+                  }),
+                  nullIf(
+                    !form.items.length,
+                    createElement("tbody", {
+                      class: "itemList itemsIn",
+                      children: form.items.some(({ checkIn }) => checkIn)
+                        ? sort(
+                            form.items.filter(({ checkIn }) => checkIn),
+                            getItemSortFn(itemSort)
+                          ).map(ItemRow)
+                        : [row(cell("Scan barcode to check in an item"))],
+                    })
+                  )
                 ),
               ],
             }),
@@ -347,6 +375,16 @@
         }
       },
     });
+
+    function getItemSortFn(name) {
+      return {
+        checkOut: compareKey(name, compareDateStrings),
+        checkIn: compareKey(name, compareDateStrings),
+        id: compareKey(name, compareStrings),
+        quantity: compareKey(name, compareStrings),
+        description: compareKey(name, compareStrings),
+      }[name];
+    }
 
     function handleClickTimeDisplay({ name, value }) {
       return (_, timeDisplay) => {
@@ -364,9 +402,10 @@
     function getUpdateButtonHint() {
       if (waiting) return "Please wait while the form is being saved...";
       if (disabled) return "This is a closed form. You cannot edit it.";
-      if (form.isBlank() && !savable)
+      if ((form.isBlank() && !savable) || (!saved && !savable))
         return "Please enter start time, end time, location, and at least one student.";
-      return "All changes saved.";
+      if (form.isBlank() && savable) return "Click submit to save this form.";
+      if (!form.isBlank() && saved) return "All changes saved.";
     }
 
     function handleChangeLocation(change) {
@@ -553,12 +592,19 @@
             onClick: () =>
               ModalQuantityChange({
                 item,
-                onClick: (value) => {
-                  alert("TODO: need to replace old item with new"); //item.changeQuantity(value);
+                onOk: (value) => {
+                  const items = replace(
+                    form.items,
+                    (i) => i === item,
+                    new Item({ ...item, quantity: value })
+                  );
                   onChange({
-                    target: {
-                      name: "items",
-                      value: `${item.description} qty to ${value}`,
+                    form: new Form({ ...form, items }),
+                    change: {
+                      target: {
+                        name: "items",
+                        value: `${item.description} qty to ${value}`,
+                      },
                     },
                   });
                 },
@@ -568,13 +614,20 @@
             class: "quantity",
             onClick: () => {
               const quantity = item.quantity;
-              alert("TODO: need to update quantity immutably"); //item.changeQuantity(1);
+              const items = replace(
+                form.items,
+                (i) => i === item,
+                new Item({ ...item, quantity: quantity + 1 })
+              );
               onChange({
-                target: {
-                  name: "items",
-                  value: `${item.description} qty ${quantity} to ${
-                    quantity + 1
-                  }`,
+                form: new Form({ ...form, items }),
+                change: {
+                  target: {
+                    name: "items",
+                    value: `${item.description} quantity ${quantity} to ${
+                      quantity + 1
+                    }`,
+                  },
                 },
               });
             },
@@ -602,7 +655,8 @@
           cell({ child: CheckInButton(item, disabled) }),
         ],
         onClick: ({ metaKey, target }) => {
-          if (target.tagName.toLowerCase() === "button") return;
+          if (["button", "select"].includes(target.tagName.toLowerCase()))
+            return;
           if (metaKey) alert("click item with meta key disabled");
           //handlers.onItemMetaClick(item.id || item.barcode);
           else handleClickItem(item);
@@ -637,15 +691,18 @@
           class: "create",
           textContent: "Remove",
           onClick: () => {
-            alert("item remove function disabled");
-            // const form = connections.getCurrentForm();
-            // form.items.removeByItem(item);
-            // onChange({
-            //   target: {
-            //     name: "items",
-            //     value: item.description + " removed",
-            //   },
-            // });
+            onChange({
+              form: new Form({
+                ...form,
+                items: remove(form.items, (i) => i === item),
+              }),
+              change: {
+                target: {
+                  name: "items",
+                  value: item.description + " removed",
+                },
+              },
+            });
           },
         });
       }
@@ -658,22 +715,26 @@
       const checkInButton = createElement("button", {
         class: "action",
         textContent: "Check In",
-        onClick: () => {
-          alert("item check in fn disabled");
-          // const savedItem = getSavedForm().items.find(
-          //   (item) => (item.barcode || item.id) == id
-          // );
-          // if (!savedItem) {
-          //   return window.alert(
-          //     "This item was just checked-out. Update or revert the form to continue."
-          //   );
-          // }
-          // const quantityToReturn =
-          //   savedItem.getQuantity() > 1
-          //     ? document.querySelector(`select[data-itemid="${id}"]`).value
-          //     : undefined;
-          // handlers.onItemQuantityChange(savedItem, quantityToReturn, false);
-        },
+        onClick: () =>
+          onChange({
+            form: new Form({
+              ...form,
+              items: replace(
+                form.items,
+                (i) => i === item,
+                new Item({
+                  ...item,
+                  checkIn: getFormattedDateTime(new Date()),
+                })
+              ),
+            }),
+            change: {
+              target: {
+                name: "items",
+                value: `${item.id || item.description} check-in`,
+              },
+            },
+          }),
       });
       const quantity = item.quantity;
       if (quantity > 1) {
@@ -775,8 +836,12 @@
         value: form.location,
         onChange: handleChangeLocation,
         children: [
-          option("please select", "none"),
+          option("please select", ""),
           ...Array.from(Config.locations).map((location) => option(location)),
+          nullIf(
+            !form.location || Config.locations.has(form.location),
+            option(form.location)
+          ),
           option("Other"),
         ],
       });

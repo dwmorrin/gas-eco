@@ -25,67 +25,54 @@
       tryJsonParse,
     } = Utility;
     const { addOneHour, getFormattedDateTime } = DateUtils;
-    const byCheckOutAscending = compareKey(
-      "checkOut",
-      (a, b) => new Date(a) - new Date(b)
-    );
-    const byCheckOutDescending = compareKey(
-      "checkOut",
-      (a, b) => new Date(b) - new Date(a)
-    );
     const state = {
-      changeStack: [], // each change produces a new Form
       closedForms: null,
       closedFormsQuery: {},
       formInputsTouched: new Set(),
       inventory: null,
-      itemSort: byCheckOutDescending,
+      itemSort: "checkOut",
+      itemSortAscending: true,
       itemsOutSort: "description",
       itemsOutSortAscending: true,
-      openForms: null,
       openFormSort: "startTime",
       openFormSortAscending: true,
+      openForms: null,
+      redoStack: /* Form */ [], // each undo is pushed into here
       roster: null,
       saved: true,
-      undoStack: [], // each "undo" takes from changeStack, for "redo", cleared on change
+      undoStack: /* Form */ [], // each change pushes the old Form here
     };
     const newFormButton = button("New Form", {
       class: "share",
       disabled: true,
       onClick: () => {
-        const onOk = () => {
+        loseDataWarning(() => {
           const form = new Form({
             startTime: getFormattedDateTime(new Date(), true),
             endTime: getFormattedDateTime(addOneHour(new Date()), true),
           });
           state.openForms.push(form);
           setForm({ form });
-        };
-        if (!state.saved) loseDataWarning(onOk);
-        else onOk();
+        });
       },
     });
     const openFormsButton = button("View Open Forms", {
       disabled: true,
       onClick: (_, button) => {
-        const onOk = () => {
+        loseDataWarning(() => {
           button.setAttribute("disabled", true);
           state.openForms = null;
           withErrorHandler
             .withSuccessHandler(onOpenForms)
             .doGet({ get: "openForms" });
           showLoadingPage();
-        };
-        if (!state.saved) loseDataWarning(onOk);
-        else onOk();
+        });
       },
     });
     const closedFormsButton = button("View Closed Forms", {
       disabled: true,
       onClick: () => {
-        const onOk = () => showClosedFormsPage();
-        if (!state.saved) loseDataWarning(onOk);
-        else onOk();
+        loseDataWarning(() => showClosedFormsPage());
       },
     });
     const usernameDisplay = createElement("span", { class: "usernameDisplay" });
@@ -209,13 +196,13 @@
           const index = forms.findIndex(({ id }) => id === form.id) + 1;
           if (index <= 0 || !forms[index])
             return modal({ child: paragraph("This is the last form.") });
-          setForm({ form: forms[index], type });
+          loseDataWarning(() => setForm({ form: forms[index], type }));
         },
         () => {
           const index = forms.findIndex(({ id }) => id === form.id) - 1;
           if (index < 0)
             return modal({ child: paragraph("This is the first form.") });
-          setForm({ form: forms[index], type });
+          loseDataWarning(() => setForm({ form: forms[index], type }));
         },
       ];
     }
@@ -484,8 +471,10 @@
     }) {
       if (state.saved) {
         // reset undo system
-        state.changeStack = [form];
-        state.undoStack = [];
+        state.undoStack = [form];
+        state.redoStack = [];
+        // reset touched inputs
+        state.formInputsTouched.clear();
       }
       if (type === "closed") disabled = true;
       const [onNextForm, onPreviousForm] = makeFormNavigation({ form, type });
@@ -500,6 +489,7 @@
           formInputsTouched: state.formInputsTouched,
           inventory: state.inventory,
           itemSort: state.itemSort,
+          itemSortAscending: state.itemSortAscending,
           onChange,
           onDelete,
           onNeedsSignature,
@@ -507,6 +497,7 @@
           onNextForm,
           onPreviousForm,
           onRedo,
+          onSortItems,
           onSubmit,
           onUndo,
           roster: state.roster,
@@ -529,19 +520,19 @@
     }
 
     function onUndo() {
-      if (state.changeStack.length === 1)
+      if (state.undoStack.length === 1)
         return modal({
           child: paragraph("Nothing to undo."),
         });
-      state.undoStack.push(state.changeStack.pop());
-      setForm({ form: last(state.changeStack) });
+      state.redoStack.push(state.undoStack.pop());
+      setForm({ form: last(state.undoStack) });
     }
 
     function onRedo() {
-      if (!state.undoStack.length)
+      if (!state.redoStack.length)
         return modal({ child: paragraph("Nothing to redo.") });
-      state.changeStack.push(state.undoStack.pop());
-      setForm({ form: last(state.changeStack) });
+      state.undoStack.push(state.redoStack.pop());
+      setForm({ form: last(state.undoStack) });
     }
 
     function onChange({
@@ -564,8 +555,8 @@
         ],
       });
       state.formInputsTouched.add(name);
-      state.changeStack.push(newForm);
-      state.undoStack = [];
+      state.undoStack.push(newForm);
+      state.redoStack = [];
       state.saved = false;
       setForm({ form: newForm });
     }
@@ -576,15 +567,20 @@
     }
 
     function loseDataWarning(onOk) {
-      modal({
-        children: [
-          heading1("Warning, your changes are not saved"),
-          paragraph("Are you sure?"),
-        ],
-        closeText: "Cancel",
-        okText: "Lose changes",
-        onOk,
-      });
+      if (state.saved) onOk();
+      else
+        modal({
+          children: [
+            heading1("Warning, your changes are not saved"),
+            paragraph("Are you sure?"),
+          ],
+          closeText: "Cancel",
+          okText: "Lose changes",
+          onOk: () => {
+            state.saved = true;
+            onOk();
+          },
+        });
     }
 
     // all ascending
@@ -616,6 +612,12 @@
       if (state.itemsOutSort !== name) state.itemsOutSort = name;
       else state.itemsOutSortAscending = !state.itemsOutSortAscending;
       showOpenFormsPage();
+    }
+
+    function onSortItems(name, form) {
+      if (state.itemSort !== name) state.itemSort = name;
+      else state.itemSortAscending = !state.itemSortAscending;
+      setForm({ form });
     }
   })();
 </script>

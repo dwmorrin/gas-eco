@@ -11,16 +11,18 @@
     quantity = 1,
     notes = "",
     missing = false,
+    quantityIn = 0,
   }) {
-    this.quantity = Number(quantity);
     this.barcode = String(barcode);
-    this.id = String(id);
-    this.checkedOut = Boolean(checkedOut);
     this.checkIn = String(checkIn);
     this.checkOut = String(checkOut);
+    this.checkedOut = Boolean(checkedOut);
     this.description = String(description);
-    this.notes = String(notes);
+    this.id = String(id);
     this.missing = Boolean(missing);
+    this.notes = String(notes);
+    this.quantity = Number(quantity);
+    this.quantityIn = Number(quantityIn);
 
     return Object.freeze(this);
   }
