@@ -24,13 +24,13 @@
           (student) => student.netId.toLowerCase() === netId
         );
         if (!student) {
-          return window.alert(
-            "Hmmm, NetID " +
-              netId +
-              " does not match a current student. " +
-              "Check that it was entered correctly, try refreshing the browser, " +
-              "or submit a trouble report."
-          );
+          return modal({
+            child: paragraph(
+              `Hmmm, NetID ${netId} does not match a current student. ` +
+                "Check that it was entered correctly, try refreshing the browser, " +
+                "or submit a trouble report."
+            ),
+          });
         }
         onSubmit({ netId, codabar });
       },

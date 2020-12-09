@@ -10,19 +10,22 @@
   </head>
 
   <body>
+    <!-- independent utilities -->
+    <?!= include_('js/DateUtils'); ?>
+    <?!= include_('js/HTML'); ?>
+    <?!= include_('js/Utility'); ?>
+
     <!-- environment -->
     <?!= include_('js/Config') ?>
+    <!-- requires Config -->
+    <?!= include_('js/FormFilters'); ?>
 
     <!-- classes -->
     <?!= include_('js/Item'); ?>
     <?!= include_('js/Inventory'); ?>
     <?!= include_('js/Form'); ?>
 
-    <!-- utility modules -->
-    <?!= include_('js/Utility'); ?>
-    <?!= include_('js/HTML'); ?>
-    <?!= include_('js/DateUtils'); ?>
-    <?!= include_('js/FormFilters'); ?>
+    <!-- requires HTML, Item -->
     <?!= include_('js/searchResources'); ?>
 
     <!-- page components -->

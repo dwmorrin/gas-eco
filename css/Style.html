@@ -136,6 +136,8 @@
   }
 
   .blockAround {
+    animation-duration: 1s;
+    animation-name: half-fade-in;
     background-color: black;
     opacity: 0.5;
     position: absolute;
@@ -160,7 +162,7 @@
     background-color: limegreen;
     border: 1px solid black;
     border-radius: 2px;
-    bottom: 25%;
+    bottom: 10%;
     left: 50%;
     padding: 1em;
     position: fixed;
@@ -383,6 +385,15 @@
 
   tr.inactive td:not(:first-child) {
     font-style: italic;
+  }
+
+  @keyframes half-fade-in {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 0.5;
+    }
   }
 
   @keyframes fade-out {

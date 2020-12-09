@@ -4,6 +4,7 @@
   const DateUtils = (function () {
     return {
       addOneHour,
+      copyTime,
       formatDashedDate,
       getFormattedDateTime,
     };
@@ -11,6 +12,13 @@
     function addOneHour(date) {
       const result = new Date();
       result.setHours(date.getHours() + 1);
+      return result;
+    }
+
+    function copyTime(date) {
+      const result = new Date();
+      result.setHours(date.getHours());
+      result.setMinutes(date.getMinutes());
       return result;
     }
 

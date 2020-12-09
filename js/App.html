@@ -14,7 +14,15 @@
   */
   /* exported App */
   const App = (function () {
-    const { button, createElement, heading1, modal, paragraph, update } = HTML;
+    const {
+      button,
+      createElement,
+      heading1,
+      modal,
+      paragraph,
+      toast,
+      update,
+    } = HTML;
     const {
       compareDateStrings,
       compareKey,
@@ -157,21 +165,10 @@
         event.target.tagName.toLowerCase() === "input"
       )
         return;
-      if (
-        (event.metaKey || event.ctrlKey) &&
-        !event.shiftKey &&
-        event.key === "z"
-      ) {
+      if ((event.metaKey || event.ctrlKey) && event.key === "z") {
         event.preventDefault();
+        if (event.shiftKey) return onRedo();
         return onUndo();
-      }
-      if (
-        (event.metaKey || event.ctrlKey) &&
-        event.shiftKey &&
-        event.key === "z"
-      ) {
-        event.preventDefault();
-        return onRedo();
       }
     });
 
@@ -561,6 +558,7 @@
       state.redoStack = [];
       state.saved = false;
       setForm({ form: newForm });
+      if (["items", "students"].includes(name)) toast(value);
     }
 
     function getUsername() {

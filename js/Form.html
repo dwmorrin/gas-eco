@@ -1,10 +1,6 @@
 <script>
-  /* global Item */
+  /* global DateUtils Item */
   /* exported Form */
-  /**
-   * @param {obj} - passing in an existing form makes a copy of that form
-   * @param {Boolean} duplicating Indicates the obj is a Form we want to duplicate
-   */
   function Form({
     bookedStudents = "",
     bookingId = null,
@@ -115,16 +111,38 @@
     return true;
   };
   Form.prototype.makeAdvanceBooking = function () {
-    if (!this.isBlank()) {
-      throw new Error("advance booking only allowed with new, unsaved forms");
-    }
-    // remove check-ins from students
-    this.students.forEach((student) => {
-      student.checkIn = null;
+    return new Form({
+      ...this,
+      notes: [],
+      students: this.students.map((student) => ({
+        ...student,
+        checkIn: null,
+        checkOut: null,
+        left: false,
+      })),
+      items: this.items.map(
+        (item) =>
+          new Item({ ...item, checkOut: "", checkIn: "", checkedOut: false })
+      ),
     });
-    this.items.forEach((item) => {
-      item.checkOut = "";
-      item.checkedOut = false;
+  };
+  Form.prototype.duplicate = function () {
+    const { copyTime, getFormattedDateTime } = DateUtils;
+    return new Form({
+      ...this,
+      startTime: getFormattedDateTime(copyTime(new Date(this.startTime))),
+      endTime: getFormattedDateTime(copyTime(new Date(this.endTime))),
+      notes: [],
+      students: this.students.map((student) => ({
+        ...student,
+        checkIn: null,
+        checkOut: null,
+        left: false,
+      })),
+      items: this.items.map(
+        (item) =>
+          new Item({ ...item, checkOut: "", checkIn: "", checkedOut: false })
+      ),
     });
   };
 </script>

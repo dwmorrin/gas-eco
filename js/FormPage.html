@@ -59,6 +59,7 @@
       tableBody,
       tableHead,
       tip,
+      toast,
     } = HTML;
     const {
       applyTo,
@@ -140,14 +141,16 @@
                 nullIf(
                   !disabled || waiting,
                   button("Copy items to clipboard", {
-                    onClick: () =>
+                    onClick: () => {
                       copyToClipboard(
                         JSON.stringify(
                           form.items.map(
                             pick("barcode", "description", "id", "quantity")
                           )
                         )
-                      ),
+                      );
+                      toast("Items copied");
+                    },
                   })
                 ),
                 nullIf(
@@ -193,7 +196,7 @@
                         ],
                         closeText: "Cancel",
                         okText: "Save as advance booking",
-                        onOk: makeAdvanceBooking,
+                        onOk: () => onSubmit(form.makeAdvanceBooking()),
                       });
                     },
                   })
@@ -608,13 +611,6 @@
       input.focus();
     }
 
-    function makeAdvanceBooking() {
-      // connections.getCurrentForm().makeAdvanceBooking();
-      onChange({
-        target: { name: "advanceBooking", value: "Make advance booking" },
-      });
-    }
-
     function onChangeTime({ name, values }) {
       name = `${name}Time`;
       const { date, hour, minutes, ampm } = values;
@@ -631,7 +627,10 @@
             ? {
                 ...form,
                 startTime: value,
-                endTime: getFormattedDateTime(addOneHour(new Date(value))),
+                endTime: getFormattedDateTime(
+                  addOneHour(new Date(value)),
+                  true
+                ),
               }
             : { ...form, [name]: value }
         ),
@@ -734,8 +733,7 @@
           onClick: ({ metaKey, target }) => {
             if (["button", "select"].includes(target.tagName.toLowerCase()))
               return;
-            if (metaKey) alert("click item with meta key disabled");
-            //handlers.onItemMetaClick(item.id || item.barcode);
+            if (metaKey) handleItem(item);
             else handleClickItem(item);
           },
         }),
@@ -900,8 +898,7 @@
         ],
         onClick: ({ metaKey, target }) => {
           if (target.tagName.toLowerCase() === "button") return;
-          if (metaKey) return alert("click student with meta key disabled");
-          //handlers.onStudentMetaClick(student.netId);
+          if (metaKey) return handleStudent(student);
           else handleStudentNote(student);
         },
       });
@@ -1101,10 +1098,8 @@
         ({ netId }) => netId === student.netId
       );
       if (!studentOnForm) {
-        if (!student.signatureOnFile) {
-          // handlers.onNeedsSignature(student.netId);
-          return alert("TBD: get signature modal");
-        }
+        if (!student.signatureOnFile)
+          return onNeedsSignature({ netId: student.netId, form });
         change.target.value += " check-in";
         return onChange({
           form: new Form({
@@ -1118,15 +1113,35 @@
         });
       }
       if (studentOnForm.checkIn && studentOnForm.checkOut) {
-        return alert("TODO: check out student again");
+        return modal({
+          children: [
+            heading1("Check in again?"),
+            paragraph(
+              "We already have a check-out (end) time for this person. " +
+                "Are they not done?"
+            ),
+          ],
+          okText: "Activate again",
+          onOk: () =>
+            onChange({
+              form: new Form({
+                ...form,
+                students: replace(form.students, is(student), {
+                  ...student,
+                  checkOut: null,
+                }),
+              }),
+            }),
+        });
       }
       if (studentOnForm.checkIn) {
         if (form.hasItemsOut()) {
-          throw new Error(
-            "Cannot check out student. " +
-              "If this is the last student, all gear must be returned. " +
-              "Otherwise try updating the form."
-          );
+          return modal({
+            children: [
+              heading1("Items are still checked out"),
+              paragraph("Cannot check out until all gear is returned."),
+            ],
+          });
         }
         change.target.value += " check-out";
         return onChange({
@@ -1140,12 +1155,15 @@
           change,
         });
       }
-      if (!student.signatureOnFile) {
-        return onNeedsSignature(student.netId);
-      }
-      alert(
-        "Error: we've reached the end of student input without doing anything"
-      );
+      // TODO: this state should be unreachable. Is it?
+      modal({
+        children: [
+          heading1("Error"),
+          paragraph(
+            `Hmm, not sure what to do with ${student.name || student.netId}`
+          ),
+        ],
+      });
     }
 
     function onOmniboxSubmit({ type, value, onOmniboxSubmit }) {
