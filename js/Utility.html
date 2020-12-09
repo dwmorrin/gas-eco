@@ -1,14 +1,43 @@
 <script>
-  /* global toast */
   /* exported Utility */
   const Utility = (function () {
     return {
+      applyTo,
+      compareDateStrings,
+      compareKey,
+      compareStrings,
       copyToClipboard,
       digestMessage,
       hexString,
+      identity,
+      is,
+      last,
+      nullIf,
+      pick,
+      range,
+      remove,
+      replace,
+      reverse,
+      sort,
       tryJsonParse,
       uncamelCase,
     };
+
+    function applyTo(a) {
+      return (fn) => fn(a);
+    }
+
+    function compareKey(key, predicate) {
+      return (a, b) => predicate(a[key], b[key]);
+    }
+
+    function compareDateStrings(a, b) {
+      return new Date(a) - new Date(b);
+    }
+
+    function compareStrings(a, b) {
+      return a < b ? -1 : a > b ? 1 : 0;
+    }
 
     function copyToClipboard(data) {
       const textArea = document.createElement("textarea");
@@ -18,7 +47,6 @@
       document.body.appendChild(textArea);
       textArea.select();
       document.execCommand("copy"); //! execCommand is deprecated, migrate to ClipboardAPI
-      toast("Items copied");
       // removes the text area after copying so that it is not seen
       document.body.removeChild(textArea);
     }
@@ -37,6 +65,62 @@
         return paddedHexCode;
       });
       return hexCodes.join("");
+    }
+
+    function identity(a) {
+      return a;
+    }
+
+    function is(x) {
+      return (y) => y === x;
+    }
+
+    function last(array) {
+      return array[array.length - 1];
+    }
+
+    function nullIf(condition, expression) {
+      return condition ? null : expression;
+    }
+
+    function pick(...keys) {
+      return (obj) => {
+        const copy = {};
+        for (const key of keys) {
+          copy[key] = obj[key];
+        }
+        return copy;
+      };
+    }
+
+    function range(length, start = 0, step = 1) {
+      return Array.from({ length }).map((_, i) => i * step + start);
+    }
+
+    function remove(array, predicate) {
+      const copy = array.slice();
+      const index = copy.findIndex(predicate);
+      if (index < 0) return copy;
+      copy.splice(index, 1);
+      return copy;
+    }
+
+    function replace(array, predicate, newValue) {
+      return array.map((currentValue) =>
+        predicate(currentValue) ? newValue : currentValue
+      );
+    }
+
+    function reverse(array) {
+      const copy = array.slice();
+      copy.reverse();
+      return copy;
+    }
+
+    function sort(array, fn) {
+      const copy = array.slice();
+      copy.sort(fn);
+      return copy;
     }
 
     function tryJsonParse(string) {

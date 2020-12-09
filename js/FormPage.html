@@ -1,0 +1,1200 @@
+<script>
+  "use strict";
+  /* global
+    Config
+    DateTimeInput
+    DateUtils
+    Form
+    HTML
+    Item
+    ModalManualEntry
+    ModalNewCodabar
+    ModalQuantityChange
+    Omnibox
+    Utility
+    searchResources
+    */
+  /* exported FormPage */
+  function FormPage({
+    disabled = false,
+    form,
+    formIndexDisplay = "",
+    formInputsTouched,
+    onChange,
+    inventory,
+    itemSort,
+    itemSortAscending,
+    onDelete,
+    onNeedsSignature,
+    onNewCodabar,
+    onNextForm,
+    onPreviousForm,
+    onRedo,
+    onSortItems,
+    onSubmit,
+    onUndo,
+    roster,
+    savable = false,
+    saved,
+    username = "anonymous",
+    waiting,
+  }) {
+    const {
+      br,
+      button,
+      cell,
+      createElement,
+      getRadioValue,
+      headerCell,
+      heading1,
+      modal,
+      option,
+      page,
+      paragraph,
+      radio,
+      row,
+      select,
+      spinner,
+      table,
+      tableBody,
+      tableHead,
+      tip,
+      toast,
+    } = HTML;
+    const {
+      applyTo,
+      compareDateStrings,
+      compareKey,
+      compareStrings,
+      copyToClipboard,
+      identity,
+      is,
+      nullIf,
+      pick,
+      remove,
+      replace,
+      reverse,
+      sort,
+      tryJsonParse,
+      uncamelCase,
+    } = Utility;
+    const { addOneHour, getFormattedDateTime } = DateUtils;
+
+    const omnibox = Omnibox({
+      disabled,
+      form,
+      inventory,
+      onSubmit: onOmniboxSubmit,
+      roster,
+      waiting,
+    });
+
+    console.log({ saved, savable, form, formInputsTouched });
+
+    // const sortedItems = applyIf(
+    //   reverse,
+    //   !itemSortAscending,
+    //   sort(form.items, getItemSortFn(itemSort))
+    // );
+
+    const sortedItems = applyTo(sort(form.items, getItemSortFn(itemSort)))(
+      itemSortAscending ? identity : reverse
+    );
+
+    return page({
+      name: "form",
+      children: [
+        createElement("form", {
+          class: "model",
+          onSubmit: (e) => e.preventDefault(),
+          children: [
+            createElement("section", {
+              class: "formControls",
+              children: [
+                omnibox,
+                button("Add item without barcode or ID", {
+                  class: "action",
+                  disabled,
+                  onClick: () => ModalManualEntry({ onSubmit: handleItem }),
+                }),
+                button("New note", {
+                  class: "action",
+                  disabled,
+                  onClick: () => {
+                    const input = createElement("textarea");
+                    modal({
+                      children: [
+                        heading1("New note"),
+                        paragraph("Enter a note"),
+                        input,
+                      ],
+                      okText: "Save note",
+                      onOk: () => saveNote(input.value),
+                    });
+                    input.focus();
+                  },
+                }),
+                button("Change log", {
+                  onClick: onChangeLog,
+                  disabled: waiting,
+                }),
+                nullIf(
+                  !disabled || waiting,
+                  button("Copy items to clipboard", {
+                    onClick: () => {
+                      copyToClipboard(
+                        JSON.stringify(
+                          form.items.map(
+                            pick("barcode", "description", "id", "quantity")
+                          )
+                        )
+                      );
+                      toast("Items copied");
+                    },
+                  })
+                ),
+                nullIf(
+                  disabled && !waiting,
+                  button("Delete this form", {
+                    class: "create",
+                    disabled: disabled || waiting,
+                    onClick: () => onDelete(form),
+                  })
+                ),
+                br(),
+                button("Previous form", {
+                  onClick: () => onPreviousForm(),
+                  disabled: waiting,
+                }),
+                button("Next form", {
+                  onClick: () => onNextForm(),
+                  disabled: waiting,
+                }),
+                createElement("span", {
+                  textContent: formIndexDisplay,
+                }),
+                br(),
+                button(waiting ? "Submitting..." : "Submit", {
+                  disabled: disabled || !savable,
+                  class: `buttonTight ${savable ? "create" : "action"}`,
+                  onClick: () => onSubmit(form),
+                }),
+                nullIf(
+                  disabled || !form.isBlank(),
+                  button("Save as advance booking", {
+                    class: "action buttonTight",
+                    disabled: !savable,
+                    onClick: () => {
+                      modal({
+                        children: [
+                          heading1("Save for later?"),
+                          paragraph(
+                            "All sign-in and check-out info will be removed. " +
+                              "Add all people and items before saving. " +
+                              "You can only do this once."
+                          ),
+                        ],
+                        closeText: "Cancel",
+                        okText: "Save as advance booking",
+                        onOk: () => onSubmit(form.makeAdvanceBooking()),
+                      });
+                    },
+                  })
+                ),
+                button("Undo", {
+                  disabled,
+                  onClick: onUndo,
+                }),
+                button("Redo", {
+                  disabled,
+                  onClick: onRedo,
+                }),
+                createElement("span", {
+                  class: "updateButtonHint",
+                  textContent: getUpdateButtonHint(),
+                }),
+                nullIf(!waiting, spinner()),
+              ],
+            }),
+            createElement("section", {
+              class: "globalnotes",
+              children: form.notes.reduce((notes, note) => {
+                if (tryJsonParse(note.body)) return notes;
+                return [
+                  ...notes,
+                  createElement("p", {
+                    textContent: `Note: [${note.author}] ${note.body}`,
+                  }),
+                ];
+              }, []),
+            }),
+            createElement("section", {
+              children: [
+                table({
+                  class: "staticFields",
+                  children: [
+                    ...[
+                      ["Booked Students", "bookedStudents"],
+                      ["Contact", "contact"],
+                      ["Project", "project"],
+                      ["Analog Tape", "tape"],
+                      ["Overnight Setup", "overnight"],
+                    ].reduce(
+                      (rows, [textContent, key]) =>
+                        form[key]
+                          ? [
+                              ...rows,
+                              createElement("tr", {
+                                children: [
+                                  headerCell(textContent),
+                                  cell(form[key]),
+                                ],
+                              }),
+                            ]
+                          : rows,
+                      []
+                    ),
+                    row(
+                      headerCell("Location"),
+                      form.isBlank() || formInputsTouched.has("location")
+                        ? cell({
+                            child: LocationSelect(),
+                          })
+                        : cell({
+                            textContent: form.location,
+                            class: "editable",
+                            onClick: (_, locationDisplay) => {
+                              if (disabled) return;
+                              locationDisplay.parentNode.appendChild(
+                                LocationSelect()
+                              );
+                              locationDisplay.remove();
+                            },
+                          })
+                    ),
+                    row(
+                      headerCell("Start Time"),
+                      form.isBlank() || formInputsTouched.has("startTime")
+                        ? cell({
+                            children: DateTimeInput({
+                              name: "start",
+                              value: form.startTime,
+                              onChange: onChangeTime,
+                            }),
+                          })
+                        : cell({
+                            onClick: handleClickTimeDisplay({
+                              name: "start",
+                              value: form.startTime,
+                            }),
+                            textContent: form.startTime,
+                            class: "editable",
+                          })
+                    ),
+                    row(
+                      headerCell("End Time"),
+                      form.isBlank() || formInputsTouched.has("endTime")
+                        ? cell({
+                            children: DateTimeInput({
+                              name: "end",
+                              value: form.endTime,
+                              onChange: onChangeTime,
+                            }),
+                          })
+                        : cell({
+                            onClick: handleClickTimeDisplay({
+                              name: "end",
+                              value: form.endTime,
+                            }),
+                            textContent: form.endTime,
+                            class: "editable",
+                          })
+                    ),
+                  ],
+                }),
+              ],
+            }),
+            createElement("section", {
+              children: [
+                createElement("h4", { textContent: "Students" }),
+                table(
+                  tableHead({
+                    class: "form formStudents",
+                    children: [
+                      row(
+                        ...["Name", "NetID", "Signed In", "Signed Out"].map(
+                          headerCell
+                        )
+                      ),
+                    ],
+                  }),
+                  tableBody({
+                    class: "studentList",
+                    children: form.students.length
+                      ? form.students.map(StudentRow)
+                      : [
+                          row({
+                            child: cell("Scan ID to sign in a student"),
+                            onClick: () => showOmniboxTip(),
+                          }),
+                        ],
+                  })
+                ),
+              ],
+            }),
+            createElement("section", {
+              children: [
+                createElement("h4", {
+                  textContent: "Equipment Checked Out",
+                }),
+                table(
+                  tableHead({
+                    class: "form formItems",
+                    children: [
+                      row(
+                        ...[
+                          ["Qty", "quantity"],
+                          ["Items", "description"],
+                          ["Item ID", "id"],
+                          ["Checked Out", "checkOut"],
+                          ["Checked In", "checkIn"],
+                        ].map(([textContent, key]) =>
+                          headerCell({
+                            textContent,
+                            class:
+                              key === itemSort
+                                ? `sortedBy ${
+                                    itemSortAscending ? "" : "descending"
+                                  }`
+                                : "",
+                            onClick: () => onSortItems(key, form),
+                          })
+                        )
+                      ),
+                    ],
+                  }),
+                  tableBody({
+                    class: "itemList itemsNotSaved",
+                    children: sortedItems.length
+                      ? sortedItems
+                          .filter(
+                            ({ checkIn, checkedOut }) => !checkIn && !checkedOut
+                          )
+                          .map(ItemRow)
+                          .flat()
+                      : [
+                          row(
+                            cell({
+                              textContent: "Scan barcode to check out an item",
+                              colspan: 5,
+                              onClick: () => showOmniboxTip(),
+                            })
+                          ),
+                        ],
+                  }),
+                  nullIf(
+                    !sortedItems.some(
+                      ({ checkOut, checkedOut }) => checkOut && checkedOut
+                    ),
+                    tableBody({
+                      class: "itemList itemsOut",
+                      children: sortedItems
+                        .filter(
+                          ({ checkOut, checkedOut }) => checkOut && checkedOut
+                        )
+                        .map(ItemRow)
+                        .flat(),
+                    })
+                  ),
+                  nullIf(
+                    !form.items.length,
+                    tableBody({
+                      class: "itemList itemsIn",
+                      children: sortedItems.some(({ checkIn }) => checkIn)
+                        ? sortedItems
+                            .filter(({ checkIn }) => checkIn)
+                            .map(ItemRow)
+                            .flat()
+                        : [
+                            row(
+                              cell({
+                                textContent: "Scan barcode to check in an item",
+                                colspan: 5,
+                              })
+                            ),
+                          ],
+                    })
+                  )
+                ),
+              ],
+            }),
+          ],
+        }),
+      ],
+      onKeydown: (event) => {
+        if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+          event.preventDefault();
+          onSubmit(form);
+        }
+      },
+    });
+
+    // to show user where enter barcodes to add items
+    function showOmniboxTip() {
+      tip({
+        element: document.querySelector(".omnibox"),
+        message: "Use the text box to enter barcodes and scan IDs.",
+        onClose: () => document.querySelector(".omnibox").focus(),
+      });
+    }
+
+    function getItemSortFn(name) {
+      return {
+        checkOut: compareKey(name, compareDateStrings),
+        checkIn: compareKey(name, compareDateStrings),
+        id: compareKey(name, compareStrings),
+        quantity: compareKey(name, compareStrings),
+        description: compareKey(name, compareStrings),
+      }[name];
+    }
+
+    function handleClickTimeDisplay({ name, value }) {
+      return (_, timeDisplay) => {
+        if (disabled) return;
+        timeDisplay.textContent = "";
+        DateTimeInput({
+          name,
+          value,
+          onChange: onChangeTime,
+        }).forEach((el) => timeDisplay.parentNode.appendChild(el));
+        timeDisplay.remove();
+      };
+    }
+
+    function getUpdateButtonHint() {
+      if (waiting) return "Please wait while the form is being saved...";
+      if (disabled) return "This is a closed form. You cannot edit it.";
+      if ((form.isBlank() && !savable) || (!saved && !savable))
+        return "Please enter start time, end time, location, and at least one student.";
+      if (form.isBlank() && savable) return "Click submit to save this form.";
+      if (!form.isBlank() && saved) return "All changes saved.";
+    }
+
+    function handleChangeLocation(change) {
+      if (change.target.value === "Other") {
+        const input = createElement("input", { type: "text" });
+        modal({
+          children: [
+            heading1("Location: Other"),
+            paragraph(
+              "Location must be on the 5th or 6th floor of 370 Jay Street."
+            ),
+            input,
+          ],
+          okText: "Set location",
+          onOk: () =>
+            handleChangeLocation({
+              target: {
+                name: "location",
+                value: input.value || "none",
+              },
+            }),
+          onClose: () =>
+            handleChangeLocation({
+              target: { name: "location", value: "none" },
+            }),
+        });
+        input.focus();
+        return;
+      }
+      onChange({
+        form: new Form({ ...form, location: change.target.value }),
+        change,
+      });
+    }
+
+    function handleClickItem(item) {
+      const optionRadio = radio("itemOptions");
+      const input = createElement("textarea");
+      modal({
+        children: [
+          heading1("Add notes to item"),
+          table(
+            row(
+              cell("Item cannot be found"),
+              cell({ child: optionRadio("missing") })
+            ),
+            row(
+              cell("Other (please specifiy below"),
+              cell({ child: optionRadio("other") })
+            )
+          ),
+          input,
+        ],
+        okText: "Add note",
+        onOk: ({ modal }) => {
+          const choice = getRadioValue(modal);
+          let value = "";
+          if (choice === "missing") {
+            item.missing = true;
+            value = `${item.description} marked as missing`;
+          } else if (choice === "other") {
+            item.notes = [item.notes, input.value].filter((s) => s).join(", ");
+          }
+          onChange({
+            form,
+            change: {
+              target: {
+                name: "items",
+                value,
+              },
+            },
+          });
+        },
+      });
+      input.focus();
+    }
+
+    function handleStudentNote(student) {
+      const optionRadio = radio("studentOptions");
+      const input = createElement("textarea");
+      modal({
+        children: [
+          heading1("Add notes to student"),
+          table(
+            row(
+              cell("Student never showed up."),
+              cell({ child: optionRadio("no show") })
+            ),
+            row(
+              cell("Student left without checking out."),
+              cell({ child: optionRadio("left") })
+            ),
+            row(
+              cell("Other (please specify below)"),
+              cell({ child: optionRadio("other", true) })
+            )
+          ),
+          input,
+        ],
+        okText: "Submit",
+        onOk: ({ modal }) => {
+          const choice = getRadioValue(modal);
+          const textValue = input.value;
+
+          if (choice === "left") {
+            student.left = true;
+            onChange({
+              form,
+              change: {
+                target: {
+                  name: "students",
+                  value: `${student.name} left without checking out`,
+                },
+              },
+            });
+          } else if (choice === "no show") {
+            onChange({
+              form,
+              change: {
+                target: {
+                  name: "students",
+                  value: `${student.name} did not show up`,
+                },
+              },
+            });
+          } else if (choice === "other") {
+            saveNote(`${student.name}: ${textValue}`);
+          }
+        },
+      });
+      input.focus();
+    }
+
+    function onChangeTime({ name, values }) {
+      name = `${name}Time`;
+      const { date, hour, minutes, ampm } = values;
+      const [year, month, day] = date.split("-");
+      const value = `${month}/${day}/${year} ${hour}:${String(minutes).padStart(
+        "0",
+        2
+      )} ${ampm}`;
+      onChange({
+        form: new Form(
+          form.isBlank() &&
+          name === "startTime" &&
+          !formInputsTouched.has("endTime")
+            ? {
+                ...form,
+                startTime: value,
+                endTime: getFormattedDateTime(
+                  addOneHour(new Date(value)),
+                  true
+                ),
+              }
+            : { ...form, [name]: value }
+        ),
+        change: { target: { name, value } },
+      });
+    }
+
+    function saveNote(body) {
+      if (body.length < 1) {
+        return;
+      }
+      const author = username;
+      form.notes.push({
+        timestamp: Date.now(),
+        author,
+        body,
+      });
+      onChange({
+        target: {
+          name: "notes",
+          value: body.length > 10 ? body.slice(0, 10) + "..." : body,
+        },
+      });
+    }
+
+    function QuantityButtons(item, isArchive) {
+      if (isArchive || item.checkIn || item.isSerialized()) {
+        return document.createTextNode(item.quantity);
+      }
+      return createElement("span", {
+        children: [
+          button(String(item.quantity), {
+            class: "quantity",
+            onClick: () =>
+              ModalQuantityChange({
+                item,
+                onOk: (value) => {
+                  const items = replace(
+                    form.items,
+                    is(item),
+                    new Item({ ...item, quantity: value })
+                  );
+                  onChange({
+                    form: new Form({ ...form, items }),
+                    change: {
+                      target: {
+                        name: "items",
+                        value: `${item.description} qty to ${value}`,
+                      },
+                    },
+                  });
+                },
+              }),
+          }),
+          button("+", {
+            class: "quantity",
+            onClick: () => {
+              const quantity = item.quantity;
+              const items = replace(
+                form.items,
+                is(item),
+                new Item({ ...item, quantity: quantity + 1 })
+              );
+              onChange({
+                form: new Form({ ...form, items }),
+                change: {
+                  target: {
+                    name: "items",
+                    value: `${item.description} quantity ${quantity} to ${
+                      quantity + 1
+                    }`,
+                  },
+                },
+              });
+            },
+          }),
+        ],
+      });
+    }
+
+    function ItemRow(item) {
+      return [
+        row({
+          class: item.isSerialized ? "serialized" : "nonserialized",
+          children: [
+            cell({ child: QuantityButtons(item, disabled) }),
+            cell(item.description),
+            cell(item.id),
+            cell(
+              item.checkOut
+                ? item.checkOut
+                : {
+                    child: createElement("i", {
+                      textContent: "Scan barcode to check out",
+                    }),
+                  }
+            ),
+            cell({ child: CheckInButton(item, disabled) }),
+          ],
+          onClick: ({ metaKey, target }) => {
+            if (["button", "select"].includes(target.tagName.toLowerCase()))
+              return;
+            if (metaKey) handleItem(item);
+            else handleClickItem(item);
+          },
+        }),
+        row({
+          child: cell({
+            colspan: 5,
+            class: "itemnotes",
+            textContent: "Notes: " + item.notes,
+            onClick: () => {
+              const input = createElement("textarea", {
+                textContent: item.notes,
+              });
+              modal({
+                children: [heading1("Add notes to item"), input],
+                okText: "Add notes",
+                onOk: () =>
+                  onChange({
+                    form: new Form({
+                      ...form,
+                      items: replace(
+                        form.items,
+                        is(item),
+                        new Item({ ...item, notes: input.value })
+                      ),
+                    }),
+                    change: {
+                      target: {
+                        name: "items",
+                        value: `${item.id || item.description} note: ${
+                          input.value
+                        }`,
+                      },
+                    },
+                  }),
+              });
+            },
+          }),
+        }),
+      ];
+    }
+
+    function CheckInButton(item, isArchive) {
+      if (item.checkedOutAgain) {
+        return document.createTextNode("");
+      }
+      if (item.missing) {
+        return createElement("span", {
+          class: "alert",
+          textContent: "ITEM IS MISSING",
+        });
+      }
+      if (isArchive || item.checkIn) {
+        return document.createTextNode(item.checkIn);
+      }
+      if (!item.checkOut || !item.checkedOut) {
+        return createElement("button", {
+          class: "create",
+          textContent: "Remove",
+          onClick: () => {
+            onChange({
+              form: new Form({
+                ...form,
+                items: remove(form.items, is(item)),
+              }),
+              change: {
+                target: {
+                  name: "items",
+                  value: item.description + " removed",
+                },
+              },
+            });
+          },
+        });
+      }
+      if (!item.checkIn && item.isSerialized()) {
+        return createElement("i", {
+          textContent: "Scan barcode to return",
+        });
+      }
+      const id = item.id || item.barcode;
+      const checkInButton = createElement("button", {
+        class: "action",
+        textContent: "Check In",
+        onClick: () =>
+          onChange({
+            form: new Form({
+              ...form,
+              items: replace(
+                form.items,
+                is(item),
+                new Item({
+                  ...item,
+                  checkIn: getFormattedDateTime(new Date()),
+                })
+              ),
+            }),
+            change: {
+              target: {
+                name: "items",
+                value: `${item.id || item.description} check-in`,
+              },
+            },
+          }),
+      });
+      const quantity = item.quantity;
+      if (quantity > 1) {
+        return createElement("span", {
+          "data-id": item.id,
+          "data-barcode": item.barcode,
+          children: [
+            checkInButton,
+            createElement("select", {
+              class: "selectQuantity",
+              "data-itemid": id,
+              children: [
+                createElement("option", {
+                  value: "all",
+                  textContent: "All",
+                }),
+                ...Array.from({ length: quantity - 1 }).map((_, i) =>
+                  createElement("option", {
+                    textContent: String(i + 1),
+                  })
+                ),
+              ],
+            }),
+          ],
+        });
+      }
+      return checkInButton;
+    }
+
+    function StudentRow(student) {
+      // isArchive === disabled
+      return createElement("tr", {
+        children: [
+          cell(student.name),
+          cell(student.netId),
+          createElement("td", {
+            child: student.checkIn
+              ? document.createTextNode(student.checkIn)
+              : disabled
+              ? document.createTextNode("")
+              : createElement("i", {
+                  textContent: "Scan ID to sign in",
+                }),
+          }),
+          createElement("td", {
+            child: student.left
+              ? createElement("span", {
+                  class: "alert",
+                  textContent: "DID NOT CHECK OUT",
+                })
+              : student.checkOut
+              ? document.createTextNode(student.checkOut)
+              : disabled || !student.checkIn
+              ? document.createTextNode("")
+              : createElement("i", {
+                  textContent: "Scan ID to sign out",
+                }),
+          }),
+        ],
+        onClick: ({ metaKey, target }) => {
+          if (target.tagName.toLowerCase() === "button") return;
+          if (metaKey) return handleStudent(student);
+          else handleStudentNote(student);
+        },
+      });
+    }
+
+    function onChangeLog() {
+      const changes = [
+        ...form.notes.reduce((areChanges, note) => {
+          const change = tryJsonParse(note.body);
+          if (!Array.isArray(change)) return areChanges;
+          change.forEach((entry) => {
+            entry.author = note.author;
+            if (!entry.timestamp) entry.timestamp = note.timestamp;
+          });
+          return [...areChanges, ...change];
+        }, []),
+      ];
+      modal({
+        children: [
+          table(row(...["Time", "User", "Field", "Value"].map(cell))),
+          ...changes.map(({ timestamp, author, name, value }) =>
+            row(
+              cell(DateUtils.getFormattedDateTime(new Date(timestamp))),
+              cell(author),
+              cell(uncamelCase(name)),
+              cell(value)
+            )
+          ),
+        ],
+      });
+    }
+
+    function LocationSelect() {
+      return select({
+        name: "location",
+        value: form.location,
+        onChange: handleChangeLocation,
+        children: [
+          option("please select", ""),
+          ...Array.from(Config.locations).map((location) => option(location)),
+          nullIf(
+            !form.location || Config.locations.has(form.location),
+            option(form.location)
+          ),
+          option("Other"),
+        ],
+      });
+    }
+
+    function handleItem(item) {
+      const currentItem = form.items.find(
+        ({ barcode, id }) =>
+          (item.id && id === item.id) ||
+          (item.barcode && barcode === item.barcode)
+      );
+      const change = {
+        // fake change event
+        target: {
+          name: "items",
+          value:
+            item.id && !/^manual/i.test(item.id) ? item.id : item.description,
+        },
+      };
+
+      if (!currentItem) {
+        return onChange({
+          form: new Form({
+            ...form,
+            items: [
+              ...form.items,
+              new Item({ ...item, checkOut: getFormattedDateTime(new Date()) }),
+            ],
+          }),
+          change,
+        });
+      }
+      if (currentItem.checkOut && currentItem.checkIn) {
+        // checking out again
+        return onChange({
+          form: new Form({
+            ...form,
+            items: [
+              ...form.items,
+              new Item({ ...item, checkOut: getFormattedDateTime(new Date()) }),
+            ],
+          }),
+          change,
+        });
+      } else if (currentItem.checkOut) {
+        // checking in OR scanning additional items
+        const quantityInput = createElement("input", { type: "text" });
+        if (!item.isSerialized()) {
+          return modal({
+            onOk: () =>
+              onChange({
+                form: new Form({
+                  ...form,
+                  items: replace(
+                    form.items,
+                    is(currentItem),
+                    new Item({ ...currentItem, quantity: quantityInput.value })
+                  ),
+                }),
+                change,
+              }),
+          });
+        }
+        return onChange({
+          form: new Form({
+            ...form,
+            items: [
+              ...form.items,
+              new Item({
+                ...item,
+                checkIn: getFormattedDateTime(new Date()),
+                missing: false,
+              }),
+            ],
+          }),
+          change,
+        });
+      } else {
+        // Its a check-out for reserved gear
+        return onChange({
+          form: new Form({
+            ...form,
+            items: replace(
+              form.items,
+              is(currentItem),
+              new Item({
+                ...currentItem,
+                checkOut: getFormattedDateTime(new Date()),
+              })
+            ),
+          }),
+          change,
+        });
+      }
+    }
+
+    function handleItemArray(items) {
+      const compareItem = (item) => ({ barcode, description, id }) =>
+        barcode === item.barcode &&
+        description === item.description &&
+        id === item.id;
+      const verified = items.filter((item) =>
+        inventory.find(compareItem(item))
+      );
+      if (!verified.length) {
+        return modal({
+          child: paragraph(
+            "Data corrupted: could not find one or more items in inventory. Please manually enter your items."
+          ),
+        });
+      }
+      if (verified.some((item) => form.items.find(compareItem(item)))) {
+        return modal({
+          child: paragraph(
+            [
+              "Some items entered are already on this form.",
+              "Not sure if you want to check in or out these items.",
+              "Please manually enter your items instead.",
+            ].join(" ")
+          ),
+        });
+      }
+      onChange({
+        form: new Form({
+          ...form,
+          items: [
+            ...form.items,
+            ...verified.map(
+              (item) =>
+                new Item({
+                  ...item,
+                  checkOut: getFormattedDateTime(new Date()),
+                })
+            ),
+          ],
+        }),
+        change: {
+          target: { name: "items", value: "bulk entry" },
+        },
+      });
+    }
+
+    function handleStudent(student) {
+      const change = {
+        // fake change event
+        target: {
+          name: "students",
+          value: student.name,
+        },
+      };
+
+      const studentOnForm = form.students.find(
+        ({ netId }) => netId === student.netId
+      );
+      if (!studentOnForm) {
+        if (!student.signatureOnFile)
+          return onNeedsSignature({ netId: student.netId, form });
+        change.target.value += " check-in";
+        return onChange({
+          form: new Form({
+            ...form,
+            students: [
+              ...form.students,
+              { ...student, checkIn: getFormattedDateTime(new Date()) },
+            ],
+          }),
+          change,
+        });
+      }
+      if (studentOnForm.checkIn && studentOnForm.checkOut) {
+        return modal({
+          children: [
+            heading1("Check in again?"),
+            paragraph(
+              "We already have a check-out (end) time for this person. " +
+                "Are they not done?"
+            ),
+          ],
+          okText: "Activate again",
+          onOk: () =>
+            onChange({
+              form: new Form({
+                ...form,
+                students: replace(form.students, is(student), {
+                  ...student,
+                  checkOut: null,
+                }),
+              }),
+            }),
+        });
+      }
+      if (studentOnForm.checkIn) {
+        if (form.hasItemsOut()) {
+          return modal({
+            children: [
+              heading1("Items are still checked out"),
+              paragraph("Cannot check out until all gear is returned."),
+            ],
+          });
+        }
+        change.target.value += " check-out";
+        return onChange({
+          form: new Form({
+            ...form,
+            students: [
+              ...form.students,
+              { ...student, checkOut: getFormattedDateTime(new Date()) },
+            ],
+          }),
+          change,
+        });
+      }
+      // TODO: this state should be unreachable. Is it?
+      modal({
+        children: [
+          heading1("Error"),
+          paragraph(
+            `Hmm, not sure what to do with ${student.name || student.netId}`
+          ),
+        ],
+      });
+    }
+
+    function onOmniboxSubmit({ type, value, onOmniboxSubmit }) {
+      switch (type) {
+        case "itemArray":
+          return handleItemArray(value);
+        case "item":
+          return handleItem(value);
+        case "student":
+          return handleStudent(value);
+        case "newCodabar":
+          return ModalNewCodabar({
+            codabar: value,
+            roster,
+            onSubmit: ({ netId, codabar }) =>
+              onNewCodabar({ netId, codabar, form }),
+          });
+        case "manualEntry":
+          return ModalManualEntry({ onSubmit: handleItem });
+        case "query":
+          return searchResources({
+            inventory,
+            onOmniboxSubmit,
+            roster,
+            value,
+          });
+        default:
+          modal({
+            children: [heading1("Error"), paragraph(`Unknown type: ${type}`)],
+          });
+      }
+    }
+  }
+</script>

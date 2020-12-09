@@ -21,13 +21,14 @@ function Form_(form) {
       this.bookedStudents = form[dataIndex.BOOKED_STUDENTS] || "";
       this.bookingId = form[dataIndex.BOOKING_ID] || "";
       this.contact = form[dataIndex.CONTACT] || "";
-      this.endTime = DateUtils.getFormattedDate(form[dataIndex.END_TIME]) || "";
+      this.endTime =
+        DateUtils.getFormattedDateTime(form[dataIndex.END_TIME]) || "";
       this.id = form[dataIndex.ID] || "";
       this.location = form[dataIndex.LOCATION] || "";
       this.project = form[dataIndex.PROJECT] || "";
       this.overnight = form[dataIndex.OVERNIGHT] || false;
       this.startTime =
-        DateUtils.getFormattedDate(form[dataIndex.START_TIME]) || "";
+        DateUtils.getFormattedDateTime(form[dataIndex.START_TIME]) || "";
       this.tape = form[dataIndex.TAPE] || false;
       this.hash = "";
 

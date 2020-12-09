@@ -12,12 +12,8 @@ Student_
 */
 /* ********* GLOBAL VARIABLES *********** */
 var index = {
-  bookings: {
-    SHEET_ID: "1zl4FBglYgCdR_FMdfbIQOOpnt9b8TwgnjxzRwcekPrY",
-    SHEET_NAME: "Daily Booking Data",
-  },
   forms: {
-    SHEET_ID: "1yMDg9w-vjZxeOYgES-XsicoWp9VvjV3xqCmdZhAyNI4",
+    SHEET_ID: "1q8i1VjR8DdBTSl5KGbxVJByCcqQIaRhJXBq89L8h29I",
     SHEET_NAME: "Forms",
     REJECTED_NAME: "Rejected",
     ARCHIVE_NAME: "Archive",
@@ -34,7 +30,7 @@ var index = {
     CHECKED_OUT: 13,
   },
   students: {
-    SHEET_ID: "126XmGFPuNPJpJPF7aKNFSeaOAgvFNerMYdnFg2F7YAA",
+    SHEET_ID: "1q5AW6L1Cya7PhSe1o4UmTjHw4qCE6e0LArVLycv8xKE",
     SHEET_NAME: "Students",
     SIGNATURE_SHEET_NAME: "Validation",
     ID: 0,
@@ -139,26 +135,15 @@ function getAllStudents_() {
 }
 
 /* exported getArchivedForms_ */
-function getArchivedForms_(dateRangeJSON) {
-  var dateRange = JSON.parse(dateRangeJSON); // dateRange.start, dateRange.end
-  dateRange.start = DateUtils.parseFormattedDate(dateRange.start);
-  dateRange.end = DateUtils.parseFormattedDate(dateRange.end);
+function getArchivedForms_() {
   var sheet = SpreadsheetApp.openById(index.forms.SHEET_ID).getSheetByName(
     index.forms.ARCHIVE_NAME
   );
-  var data = sheet.getDataRange().getValues(),
-    forms = new Stack_();
+  var data = sheet.getDataRange().getValues();
+  const forms = new Stack_();
   data.shift();
   data.forEach(function (row) {
-    forms.push(new Form_(row).setHash());
-  });
-  forms = forms.filter(function (form) {
-    var start = DateUtils.parseFormattedDate(form.startTime);
-    var end = DateUtils.parseFormattedDate(form.endTime);
-    return (
-      start.getTime() >= dateRange.start.getTime() &&
-      end.getTime() <= dateRange.end.getTime()
-    );
+    forms.push(new Form_(row));
   });
   return forms;
 }

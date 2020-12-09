@@ -1,0 +1,45 @@
+<script>
+  /* global HTML */
+  /* exported LoadingPage */
+  function LoadingPage({ rosterStatus, inventoryStatus, openFormsStatus }) {
+    // let timeoutId = null;
+    return HTML.page({
+      hidden: false,
+      name: "loading",
+      children: [
+        HTML.createElement("h2", { textContent: "Loading app data..." }),
+        HTML.createElement("ul", {
+          class: "loadingList",
+          children: [
+            HTML.createElement("li", {
+              id: "loadingRoster",
+              textContent: rosterStatus,
+            }),
+            HTML.createElement("li", {
+              id: "loadingInventory",
+              textContent: inventoryStatus,
+            }),
+            HTML.createElement("li", {
+              id: "loadingOpenForms",
+              textContent: openFormsStatus,
+            }),
+          ],
+        }),
+      ],
+    });
+
+    // function handleTimeout() {
+    //   if (timeoutId == null) {
+    //     return;
+    //   }
+    //   HTML.modal({
+    //     child: HTML.paragraph(
+    //       "Looks like the server is taking a long time. " +
+    //         "Paper forms are available either in the filing cabinet at the desk " +
+    //         'or look for "Equipment Checkout Form.pdf" on your computer.'
+    //     ),
+    //   });
+    //   timeoutId = null;
+    // }
+  }
+</script>

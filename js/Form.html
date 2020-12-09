@@ -1,87 +1,44 @@
 <script>
-  /* global Inventory */
+  /* global DateUtils Item */
   /* exported Form */
-  /**
-   * @param {obj} - passing in an existing form makes a copy of that form
-   * @param {Boolean} duplicating Indicates the obj is a Form we want to duplicate
-   */
-  function Form(
-    {
-      bookedStudents = null,
-      bookingId = null,
-      contact = null,
-      endTime = null,
-      id = null,
-      location = null,
-      overnight = null,
-      project = null,
-      startTime = null,
-      tape = null,
-      hash = null,
-      items = null,
-      notes = [],
-      students = [],
-    },
-    duplicating = false
-  ) {
-    if (duplicating && items) {
-      this.items = new Inventory();
-      items.forEach((item) => {
-        item.quantity = item.getQuantity();
-        const copy = new Item(item);
-        item.quantity = undefined;
-        copy.checkIn = copy.checkOut = copy.notes = "";
-        copy.checkedOut = copy.missing = false;
-        this.items.push(copy);
-      });
-    } else this.items = new Inventory().setItems(items);
-    this.bookedStudents = duplicating ? null : bookedStudents;
-    this.bookingId = duplicating ? null : bookingId;
-    this.contact = duplicating ? null : contact;
-    this.endTime = endTime;
-    this.id = duplicating ? null : id;
-    this.location = location;
-    this.project = duplicating ? null : project;
-    this.overnight = duplicating ? null : overnight;
-    this.startTime = startTime;
-    this.tape = duplicating ? null : tape;
-    this.hash = duplicating ? null : hash;
-    this.notes = duplicating
-      ? [
-          {
-            timestamp: Date.now(),
-            author: "unknown",
-            body: JSON.stringify([
-              {
-                name: "duplicated",
-                value: id,
-                timestamp: Date.now(),
-              },
-            ]),
-          },
-        ]
-      : notes.slice();
-    if (this.notes.length > 0) {
-      // copy
-      this.notes = this.notes.map((note) => {
-        return typeof note === "object" ? { ...note } : note;
-      });
-    }
-    this.students = students.slice();
-    if (this.students.length > 0) {
-      // copy
-      this.students = this.students.map((student) => {
-        return duplicating
-          ? {
-              ...student,
-              checkIn: null,
-              checkOut: null,
-              left: false,
-            }
-          : { ...student };
-      });
-    }
+  function Form({
+    bookedStudents = "",
+    bookingId = null,
+    contact = "",
+    endTime = "",
+    id = null,
+    location = "",
+    overnight = false,
+    project = "",
+    startTime = "",
+    tape = false,
+    hash = "",
+    items = [],
+    notes = [],
+    students = [],
+  }) {
+    this.items = Object.freeze(items.map((item) => new Item(item)));
+    this.bookedStudents = String(bookedStudents);
+    this.bookingId = bookingId;
+    this.contact = String(contact);
+    this.endTime = String(endTime);
+    this.id = id;
+    this.location = String(location);
+    this.project = String(project);
+    this.overnight = Boolean(overnight);
+    this.startTime = String(startTime);
+    this.tape = Boolean(tape);
+    this.hash = hash;
+    this.notes = Object.freeze(
+      notes.map((note) => (typeof note === "object" ? { ...note } : note))
+    );
+    this.students = Object.freeze(
+      students.slice().map((student) => ({ ...student }))
+    );
+
+    return Object.freeze(this);
   }
+
   Form.prototype.hasActiveStudent = function () {
     const studentCounter = function (count, student) {
       if (student.checkIn && !(student.checkOut || student.left)) {
@@ -154,21 +111,38 @@
     return true;
   };
   Form.prototype.makeAdvanceBooking = function () {
-    if (!this.isBlank()) {
-      throw new Error("advance booking only allowed with new, unsaved forms");
-    }
-    // remove check-ins from students
-    this.students.forEach((student) => {
-      student.checkIn = null;
-    });
-    this.items.forEach((item) => {
-      item.checkOut = "";
-      item.checkedOut = false;
+    return new Form({
+      ...this,
+      notes: [],
+      students: this.students.map((student) => ({
+        ...student,
+        checkIn: null,
+        checkOut: null,
+        left: false,
+      })),
+      items: this.items.map(
+        (item) =>
+          new Item({ ...item, checkOut: "", checkIn: "", checkedOut: false })
+      ),
     });
   };
-  Form.prototype.stringify = function () {
-    const copy = Object.assign({}, this);
-    copy.items = this.items.archive();
-    return JSON.stringify(copy);
+  Form.prototype.duplicate = function () {
+    const { copyTime, getFormattedDateTime } = DateUtils;
+    return new Form({
+      ...this,
+      startTime: getFormattedDateTime(copyTime(new Date(this.startTime))),
+      endTime: getFormattedDateTime(copyTime(new Date(this.endTime))),
+      notes: [],
+      students: this.students.map((student) => ({
+        ...student,
+        checkIn: null,
+        checkOut: null,
+        left: false,
+      })),
+      items: this.items.map(
+        (item) =>
+          new Item({ ...item, checkOut: "", checkIn: "", checkedOut: false })
+      ),
+    });
   };
 </script>

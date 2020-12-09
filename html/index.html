@@ -10,62 +10,42 @@
   </head>
 
   <body>
-    <header>
-      <h1>Equipment Check Out</h1>
-      <span class="usernameContainer"
-        >signed in as
-        <span class="usernameDisplay"><!-- populated by js --></span></span
-      >
-    </header>
+    <!-- independent utilities -->
+    <?!= include_('js/DateUtils'); ?>
+    <?!= include_('js/HTML'); ?>
+    <?!= include_('js/Utility'); ?>
 
-    <nav>
-      <button class="share" value="displayNewForm" disabled="true">
-        New Form
-      </button>
-      <button value="openForms" disabled="true">View Open Forms</button>
-      <button value="archivedForms" disabled="true">View Closed Forms</button>
-    </nav>
+    <!-- environment -->
+    <?!= include_('js/Config') ?>
+    <!-- requires Config -->
+    <?!= include_('js/FormFilters'); ?>
 
-    <!-- page sections (only one can be visible at a time) -->
-    <?!= include_('html/OpenForms'); ?>
-    <?!= include_('html/Form'); ?>
-    <?!= include_('html/Archive'); ?>
-    <?!= include_('html/Loading'); ?>
-
-    <!-- page fragments (can be visible at any time)-->
-    <div class="spinner hidden"></div>
-    <?!= include_('html/Modal'); ?>
-
-    <!-- javascript -->
-
-    <!-- model definitions -->
+    <!-- classes -->
     <?!= include_('js/Item'); ?>
     <?!= include_('js/Inventory'); ?>
     <?!= include_('js/Form'); ?>
-    <?!= include_('js/Stack'); ?>
-    <!-- utility function definitions -->
-    <?!= include_('js/HTML'); ?>
-    <?!= include_('js/DateUtils'); ?>
-    <?!= include_('js/Utility'); ?>
-    <?!= include_('js/Display'); ?>
 
-    <!-- app object -->
-    <?!= include_('js/app/main'); ?>
-    <?!= include_('js/app/Changes'); ?>
-    <?!= include_('js/app/DoCommand'); ?>
-    <?!= include_('js/app/Elements'); ?>
-    <?!= include_('js/app/Handlers'); ?>
-    <?!= include_('js/app/Modal'); ?>
-    <?!= include_('js/app/Omnibox'); ?>
-    <?!= include_('js/app/pages/Archive'); ?>
-    <?!= include_('js/app/pages/ArchiveQuery'); ?>
-    <?!= include_('js/app/pages/Form'); ?>
-    <?!= include_('js/app/pages/OpenForms'); ?>
-    <?!= include_('js/app/pages/Loading'); ?>
-    <?!= include_('js/app/Refresh'); ?>
-    <?!= include_('js/app/Spinner'); ?>
+    <!-- requires HTML, Item -->
+    <?!= include_('js/searchResources'); ?>
 
-    <!-- run commands -->
-    <?!= include_('js/Init'); ?>
+    <!-- page components -->
+    <?!= include_('js/OpenFormsTable') ?>
+    <?!= include_('js/ClosedFormsInputs') ?>
+    <?!= include_('js/ClosedFormsTable') ?>
+    <?!= include_('js/EquipmentOutTable') ?>
+    <?!= include_('js/DateTimeInput') ?>
+    <?!= include_('js/ModalQuantityChange') ?>
+    <?!= include_('js/ModalManualEntry') ?>
+    <?!= include_('js/ModalNewCodabar') ?>
+    <?!= include_('js/Omnibox') ?>
+
+    <!-- pages -->
+    <?!= include_('js/OpenFormsPage') ?>
+    <?!= include_('js/FormPage') ?>
+    <?!= include_('js/ClosedFormsPage') ?>
+    <?!= include_('js/LoadingPage'); ?>
+
+    <!-- entry -->
+    <?!= include_('js/App'); ?>
   </body>
 </html>

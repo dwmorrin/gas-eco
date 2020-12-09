@@ -1,0 +1,624 @@
+<script>
+  "use strict";
+  /* global
+  ClosedFormsPage
+  DateUtils
+  Form
+  FormPage
+  HTML
+  Item
+  LoadingPage
+  OpenFormsPage
+  Utility
+  google
+  */
+  /* exported App */
+  const App = (function () {
+    const {
+      button,
+      createElement,
+      heading1,
+      modal,
+      paragraph,
+      toast,
+      update,
+    } = HTML;
+    const {
+      compareDateStrings,
+      compareKey,
+      compareStrings,
+      last,
+      replace,
+      reverse,
+      sort,
+      tryJsonParse,
+    } = Utility;
+    const { addOneHour, getFormattedDateTime } = DateUtils;
+    const state = {
+      closedForms: null,
+      closedFormsQuery: {},
+      formInputsTouched: new Set(),
+      inventory: null,
+      itemSort: "checkOut",
+      itemSortAscending: true,
+      itemsOutSort: "description",
+      itemsOutSortAscending: true,
+      openFormSort: "startTime",
+      openFormSortAscending: true,
+      openForms: null,
+      redoStack: /* Form */ [], // each undo is pushed into here
+      roster: null,
+      saved: true,
+      undoStack: /* Form */ [], // each change pushes the old Form here
+    };
+    const newFormButton = button("New Form", {
+      class: "share",
+      disabled: true,
+      onClick: () => {
+        loseDataWarning(() => {
+          const form = new Form({
+            startTime: getFormattedDateTime(new Date(), true),
+            endTime: getFormattedDateTime(addOneHour(new Date()), true),
+          });
+          state.openForms = [...state.openForms, form];
+          state.saved = false;
+          setForm({ form });
+        });
+      },
+    });
+    const openFormsButton = button("View Open Forms", {
+      disabled: true,
+      onClick: (_, button) => {
+        loseDataWarning(() => {
+          button.setAttribute("disabled", true);
+          state.openForms = null;
+          withErrorHandler
+            .withSuccessHandler(onOpenForms)
+            .doGet({ get: "openForms" });
+          showLoadingPage();
+        });
+      },
+    });
+    const closedFormsButton = button("View Closed Forms", {
+      disabled: true,
+      onClick: () => {
+        loseDataWarning(() => showClosedFormsPage());
+      },
+    });
+    const usernameDisplay = createElement("span", { class: "usernameDisplay" });
+    const pageContainer = createElement("div", {
+      child: LoadingPage({
+        rosterStatus: "Loading students...",
+        inventoryStatus: "Loading inventory...",
+        openFormsStatus: "Loading open forms...",
+      }),
+    });
+    document.body.appendChild(
+      HTML.page({
+        hidden: false,
+        name: "app",
+        children: [
+          createElement("header", {
+            children: [
+              heading1("Equipment Check Out"),
+              createElement("span", {
+                class: "usernameContainer",
+                textContent: "signed in as ",
+                child: usernameDisplay,
+              }),
+            ],
+          }),
+          createElement("nav", {
+            children: [newFormButton, openFormsButton, closedFormsButton],
+          }),
+          pageContainer,
+        ],
+      })
+    );
+
+    const withErrorHandler = google.script.run.withFailureHandler((error) => {
+      console.error(error);
+      displayErrorMessage(error.message);
+    });
+
+    // initial server calls
+    withErrorHandler
+      .withSuccessHandler(onOpenForms)
+      .doGet({ get: "openForms", init: true });
+    withErrorHandler
+      .withSuccessHandler(
+        (response) => (usernameDisplay.textContent = response.user)
+      )
+      .doGet({ get: "user" });
+    withErrorHandler
+      .withSuccessHandler(onRoster)
+      .doGet({ get: "students", init: true });
+    withErrorHandler
+      .withSuccessHandler(onInventory)
+      .doGet({ get: "items", init: true });
+    withErrorHandler.withSuccessHandler(onClosedForms).doGet({
+      get: "archive",
+      dateRangeJSON: JSON.stringify({
+        start: getFormattedDateTime(new Date("01/01/2019")),
+        end: getFormattedDateTime(new Date()),
+      }),
+      init: true,
+    });
+
+    /**
+     * Warns user when trying to close tab and changes are not saved.
+     * @see {@link https://developer.mozilla.org/en-US/docs/Web/Events/beforeunload}
+     */
+    window.addEventListener("beforeunload", function (event) {
+      if (!state.saved) {
+        event.preventDefault(); // Firefox, Safari
+        event.returnValue = ""; // Chrome, Edge, Firefox
+      }
+    });
+
+    // have to attach to window to catch this regardless of focus
+    // should probably check context, because this is currently a FormPage
+    // context, but could not figure out how to declare inside FormPage
+    window.addEventListener("keydown", (event) => {
+      if (
+        event.target.tagName &&
+        event.target.tagName.toLowerCase() === "input"
+      )
+        return;
+      if ((event.metaKey || event.ctrlKey) && event.key === "z") {
+        event.preventDefault();
+        if (event.shiftKey) return onRedo();
+        return onUndo();
+      }
+    });
+
+    //---- function definitions
+
+    function onInventory(response) {
+      const inventory = tryJsonParse(response.items);
+      if (!inventory)
+        return displayErrorMessage("Error getting inventory from server");
+      if (!inventory.length) {
+        return displayErrorMessage("Error: Server found no items!");
+      }
+      state.inventory = inventory.map((item) => new Item(item));
+      if (response.unlock) {
+        tryUnlock();
+      }
+    }
+
+    // returns [next, prev]
+    function makeFormNavigation({ form, type }) {
+      const forms = type === "open" ? state.openForms : state.closedForms;
+      return [
+        () => {
+          const index = forms.findIndex(({ id }) => id === form.id) + 1;
+          if (index <= 0 || !forms[index])
+            return modal({ child: paragraph("This is the last form.") });
+          loseDataWarning(() => setForm({ form: forms[index], type }));
+        },
+        () => {
+          const index = forms.findIndex(({ id }) => id === form.id) - 1;
+          if (index < 0)
+            return modal({ child: paragraph("This is the first form.") });
+          loseDataWarning(() => setForm({ form: forms[index], type }));
+        },
+      ];
+    }
+
+    function onSubmit(
+      form,
+      onSuccess = () => undefined,
+      onFailure = () => undefined
+    ) {
+      google.script.run
+        .withFailureHandler((error) => {
+          displayErrorMessage(error.message);
+          onFailure();
+        })
+        .withSuccessHandler((response) => {
+          if (response.target === "updateForm") {
+            const updatedForm = new Form(JSON.parse(response.form));
+            state.openForms = replace(
+              state.openForms,
+              ({ id }) => id === updatedForm.id,
+              updatedForm
+            );
+            state.saved = true;
+            return setForm({ form: updatedForm });
+          }
+          if (response.target === "openForms") {
+            onSuccess();
+            return onOpenForms(response);
+          }
+          if (response.target === "collision") {
+            onFailure();
+            return onCollision(response);
+          }
+          if (response.target === "invalid") {
+            onFailure();
+            return displayErrorMessage("Form is invalid");
+          }
+        })
+        .doPost({
+          post: "updateForm",
+          form: JSON.stringify(form),
+        });
+      setForm({ form, disabled: true, waiting: true });
+    }
+
+    function onDelete(form) {
+      const onOk = () => {
+        withErrorHandler
+          .withSuccessHandler((response) => {
+            if (response.target === "openForms") {
+              state.saved = true;
+              return onOpenForms(response);
+            }
+            if (response.target === "collision") return onCollision(response);
+          })
+          .doPost({ post: "deleteForm", form: JSON.stringify(form) });
+        setForm({ form, disabled: true, waiting: true });
+      };
+      modal({
+        children: [
+          heading1("Are you sure?"),
+          paragraph("This will delete the form. You cannot undo this action."),
+        ],
+        onOk,
+        okText: "Delete this form",
+      });
+    }
+
+    function onNeedsSignature({ netId, form }) {
+      let canceled = false;
+      modal({
+        children: [heading1("Add signature"), paragraph("Please wait...")],
+        closeText: "Cancel",
+        onClose: () => (canceled = true),
+      });
+      withErrorHandler
+        .withSuccessHandler((_, context) => {
+          if (canceled) {
+            // user aborted by hitting "cancel"
+            return;
+          }
+          context.modal.remove();
+          modal({
+            children: [
+              heading1("Add signature"),
+              paragraph(
+                "Production area policy acknowledgment signature not found " +
+                  "for this person. All persons must read the policy and have " +
+                  "a signature on file. Please use the tablet to show the " +
+                  "person the policy and capture their signature. " +
+                  'Click the "Signature done" button when they are finished ' +
+                  "using the tablet."
+              ),
+            ],
+            okText: "Signature done",
+            onOk: () =>
+              withErrorHandler
+                .withSuccessHandler((response) => {
+                  onRoster(response);
+                  setForm({ form });
+                  modal({
+                    children: [
+                      heading1("Student information updated"),
+                      paragraph(
+                        "Please try scanning the ID again to continue."
+                      ),
+                    ],
+                  });
+                })
+                .doGet({ get: "students", init: false }),
+          });
+        })
+        .withUserObject({ canceled })
+        .doPost({ post: "startSignature", netid: netId });
+    }
+
+    function onNewCodabar({ netId, codabar, form }) {
+      withErrorHandler
+        .withSuccessHandler((response) => {
+          const students = tryJsonParse(response.students);
+          if (!students)
+            displayErrorMessage("Error retrieving student list from server");
+          state.roster = students.map(Object.freeze);
+          setForm({ form });
+          modal({
+            children: [
+              heading1("Student information updated"),
+              paragraph("Please try scanning the ID again to continue."),
+            ],
+          });
+        })
+        .doPost({
+          post: "codabar",
+          netId,
+          codabar,
+        });
+    }
+
+    function showLoadingPage() {
+      update(
+        pageContainer,
+        LoadingPage({
+          rosterStatus: state.roster
+            ? `${state.roster.length} people downloaded`
+            : "Loading students...",
+          inventoryStatus: state.inventory
+            ? `${state.inventory.length} items downloaded`
+            : "Loading inventory...",
+          openFormsStatus: state.openForms
+            ? `${state.openForms.length} open forms downloaded`
+            : "Loading open forms...",
+        })
+      );
+    }
+
+    /**
+     * tryUnlock controls when the loading page switches to the open forms page
+     */
+    function tryUnlock() {
+      // const rosterLength = Omnibox.getRoster().length,
+      //   inventoryLength = Omnibox.getInventory().getLength(),
+      //   stack = new Stack(), //OpenFormsPage.getStack(),
+      //   stackInit = stack.isInitialized();
+      showLoadingPage();
+      if (![state.inventory, state.roster, state.openForms].every(Boolean)) {
+        return false;
+      }
+      openFormsButton.removeAttribute("disabled");
+      newFormButton.removeAttribute("disabled");
+      showOpenFormsPage();
+      return true;
+    }
+
+    function showOpenFormsPage() {
+      update(
+        pageContainer,
+        OpenFormsPage({
+          ascending: state.openFormSortAscending,
+          itemsOutSort: state.itemsOutSort,
+          itemsOutSortAscending: state.itemsOutSortAscending,
+          onSortForms,
+          onSortItemsOut,
+          openForms: state.openForms,
+          setForm,
+          sortedBy: state.openFormSort,
+        })
+      );
+    }
+
+    function showClosedFormsPage() {
+      update(
+        pageContainer,
+        ClosedFormsPage({
+          closedForms: state.closedForms,
+          closedFormsQuery: state.closedFormsQuery,
+          setClosedFormsQuery: (query) => (state.closedFormsQuery = query),
+          setForm,
+          setOpenForms,
+        })
+      );
+    }
+
+    function setOpenForms(forms) {
+      state.openForms = forms;
+      showOpenFormsPage();
+    }
+
+    function onClosedForms(response) {
+      const closedForms = tryJsonParse(response.formList);
+      if (!closedForms)
+        return displayErrorMessage(
+          "Server was unable to retrieve the closed forms."
+        );
+      state.closedForms = closedForms.map((form) => new Form(form));
+      response.unlock && closedFormsButton.removeAttribute("disabled");
+    }
+
+    function onCollision(response) {
+      response.storedForm = tryJsonParse(response.storedForm);
+      response.submittedForm = tryJsonParse(response.submittedForm);
+      modal({
+        children: [
+          heading1("Uh-oh, your form conflicts with another form"),
+          paragraph(
+            "Unfortunately a newer version of the form has been found on the server.  In a future update you can save your work, but for now we have to destroy it.  Sorry!!"
+          ),
+        ],
+        onClose: () =>
+          alert("Whoops, forgot to implement this. Please refresh the page!"),
+      });
+    }
+
+    function onOpenForms(response) {
+      const openForms = tryJsonParse(response.formList);
+      if (!openForms)
+        return displayErrorMessage(
+          "Error: server failed to get the open forms."
+        );
+      state.openForms = openForms.map((form) => new Form(form));
+      tryUnlock();
+    }
+
+    function onRoster(response) {
+      const roster = tryJsonParse(response.students);
+      if (!roster)
+        return displayErrorMessage("Error getting roster from server.");
+      if (roster.length < 1) {
+        return displayErrorMessage("No students found");
+      }
+      state.roster = roster.map(Object.freeze);
+      if (response.unlock) tryUnlock();
+    }
+
+    function displayErrorMessage(message) {
+      modal({
+        children: [heading1("Error"), paragraph(message)],
+      });
+    }
+
+    function setForm({
+      autoFocus = true,
+      disabled = false,
+      form,
+      type = "open",
+      waiting = false,
+    }) {
+      if (state.saved) {
+        // reset undo system
+        state.undoStack = [form];
+        state.redoStack = [];
+        // reset touched inputs
+        state.formInputsTouched.clear();
+      }
+      if (type === "closed") disabled = true;
+      const [onNextForm, onPreviousForm] = makeFormNavigation({ form, type });
+      update(
+        pageContainer,
+        FormPage({
+          disabled,
+          form,
+          formIndexDisplay: `${
+            state.openForms.findIndex(({ id }) => id === form.id) + 1
+          }/${state.openForms.length}`,
+          formInputsTouched: state.formInputsTouched,
+          inventory: state.inventory,
+          itemSort: state.itemSort,
+          itemSortAscending: state.itemSortAscending,
+          onChange,
+          onDelete,
+          onNeedsSignature,
+          onNewCodabar,
+          onNextForm,
+          onPreviousForm,
+          onRedo,
+          onSortItems,
+          onSubmit,
+          onUndo,
+          roster: state.roster,
+          savable:
+            !state.saved &&
+            !!form.location &&
+            !!form.startTime &&
+            !!form.endTime &&
+            form.students.some(({ checkIn }) => checkIn),
+          saved: state.saved,
+          username: getUsername(),
+          waiting,
+        })
+      );
+      if (autoFocus) onAutoFocus();
+    }
+
+    function onAutoFocus() {
+      pageContainer.querySelector(".omnibox").focus();
+    }
+
+    function onUndo() {
+      if (state.undoStack.length === 1)
+        return modal({
+          child: paragraph("Nothing to undo."),
+        });
+      state.redoStack.push(state.undoStack.pop());
+      setForm({ form: last(state.undoStack) });
+    }
+
+    function onRedo() {
+      if (!state.redoStack.length)
+        return modal({ child: paragraph("Nothing to redo.") });
+      state.undoStack.push(state.redoStack.pop());
+      setForm({ form: last(state.undoStack) });
+    }
+
+    function onChange({
+      form,
+      change: {
+        target: { name, value },
+      },
+    }) {
+      const newForm = new Form({
+        ...form,
+        notes: [
+          ...form.notes,
+          {
+            timestamp: Date.now(),
+            author: getUsername(),
+            // body is JSON to be compatible with legacy forms
+            // if diff'ing notes vs changes can be updated, stop stringifying here
+            body: JSON.stringify([{ name, value }]),
+          },
+        ],
+      });
+      state.formInputsTouched.add(name);
+      state.undoStack.push(newForm);
+      state.redoStack = [];
+      state.saved = false;
+      setForm({ form: newForm });
+      if (["items", "students"].includes(name)) toast(value);
+    }
+
+    function getUsername() {
+      const el = document.querySelector("span.usernameDisplay");
+      return el && el.textContent ? el.textContent : "anonymous";
+    }
+
+    function loseDataWarning(onOk) {
+      if (state.saved) onOk();
+      else
+        modal({
+          children: [
+            heading1("Warning, your changes are not saved"),
+            paragraph("Are you sure?"),
+          ],
+          closeText: "Cancel",
+          okText: "Lose changes",
+          onOk: () => {
+            state.saved = true;
+            state.openForms = state.openForms.filter((form) => !form.isBlank());
+            onOk();
+          },
+        });
+    }
+
+    // all ascending
+    function getOpenFormSortByColumnName(name) {
+      return {
+        startTime: compareKey("startTime", compareDateStrings),
+        endTime: compareKey("endTime", compareDateStrings),
+        location: compareKey("location", compareStrings),
+        students: compareKey("students", (a, b) =>
+          compareStrings(minName(a), minName(b))
+        ),
+      }[name];
+      function minName(students) {
+        return students.reduce((min, { name }) => (name < min ? name : min));
+      }
+    }
+
+    function onSortForms(name) {
+      if (state.openFormSort !== name) state.openFormSort = name;
+      else state.openFormSortAscending = !state.openFormSortAscending;
+      const sorted = sort(
+        state.openForms,
+        getOpenFormSortByColumnName(state.openFormSort)
+      );
+      setOpenForms(state.openFormSortAscending ? sorted : reverse(sorted));
+    }
+
+    function onSortItemsOut(name) {
+      if (state.itemsOutSort !== name) state.itemsOutSort = name;
+      else state.itemsOutSortAscending = !state.itemsOutSortAscending;
+      showOpenFormsPage();
+    }
+
+    function onSortItems(name, form) {
+      if (state.itemSort !== name) state.itemSort = name;
+      else state.itemSortAscending = !state.itemSortAscending;
+      setForm({ form });
+    }
+  })();
+</script>

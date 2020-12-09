@@ -1,0 +1,98 @@
+<script>
+  "use strict";
+  /* global ClosedFormsTable ClosedFormsInputs HTML FormFilters */
+  /* exported ClosedFormsPage */
+  function ClosedFormsPage({
+    closedForms,
+    setForm,
+    closedFormsQuery,
+    setClosedFormsQuery,
+  }) {
+    const { createElement, getRadioValue, page, update } = HTML;
+    const checkboxKeys = [
+      "isBooked",
+      "isNotBooked",
+      "isTape",
+      "byMissingItem",
+      "byLateStudents",
+      "byNoShow",
+      "byStudentLeft",
+      "byHasNotes",
+      "byHasManual",
+    ];
+    let filteredForms = filter(closedForms, closedFormsQuery);
+    const queryCount = createElement("span", { class: "querycount" });
+
+    const closedFormsContainer = createElement("div", {
+      child: ClosedFormsTable({
+        forms: filteredForms,
+        setForm,
+      }),
+    });
+
+    return page({
+      name: "archive",
+      children: [
+        createElement("h2", { textContent: "Closed Forms" }),
+        ClosedFormsInputs({ closedFormsQuery, onSubmit }),
+        closedFormsContainer,
+      ],
+    });
+
+    // returns same object as closedFormsQuery
+    function getClosedFormsQuery(form) {
+      const query = {};
+      // these keys have .value attributes
+      ["start", "end", "location", "students", "items"].forEach(
+        (key) => (query[key] = form[key].value)
+      );
+      // these keys have .checked attributes
+      checkboxKeys.forEach((key) => (query[key] = form[key].checked));
+      // this key is a radio value
+      query.matchItems = getRadioValue(form);
+      return query;
+    }
+
+    function onSubmit(form) {
+      const query = getClosedFormsQuery(form);
+      filteredForms = filter(closedForms, query);
+      const length = filteredForms.length;
+      queryCount.textContent =
+        length == 1 ? `${length} form` : `${length} forms`;
+      setClosedFormsQuery(query);
+      update(
+        closedFormsContainer,
+        ClosedFormsTable({ forms: filteredForms, setForm })
+      );
+    }
+
+    function filter(array, query) {
+      const { start, end, location, students, items, matchItems } = query;
+      const appliedFilters = [];
+
+      appliedFilters.push(FormFilters.byTimeRange(start, end));
+
+      if (location != "All") {
+        appliedFilters.push(FormFilters.byLocation(location));
+      }
+
+      if (students) {
+        appliedFilters.push(FormFilters.byStudentName(students));
+      }
+
+      if (items && matchItems == "all") {
+        appliedFilters.push(FormFilters.byMatchAllItemID(items));
+      }
+
+      if (items && matchItems == "any") {
+        appliedFilters.push(FormFilters.byMatchAnyItemID(items));
+      }
+
+      checkboxKeys.forEach(
+        (key) => query[key] && appliedFilters.push(FormFilters[key])
+      );
+
+      return appliedFilters.reduce((forms, func) => forms.filter(func), array);
+    }
+  }
+</script>

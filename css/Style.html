@@ -1,4 +1,14 @@
 <style>
+  .itemsNotSaved {
+    background-color: papayawhip;
+  }
+  .itemsOut {
+    background-color: gainsboro;
+  }
+  .itemsIn {
+    background-color: silver;
+  }
+
   button[value="deleteForm"] {
     margin-top: 25px;
   }
@@ -23,10 +33,6 @@
     padding: 0;
   }
 
-  button > svg {
-    pointer-events: none;
-  }
-
   div.dropdown {
     position: absolute;
   }
@@ -43,6 +49,14 @@
     display: inline;
   }
 
+  .tip {
+    position: absolute;
+    z-index: 2;
+    background-color: white;
+    border: 1px solid black;
+    padding: 10px;
+  }
+
   div.modal {
     background-color: white;
     border: solid 1px black;
@@ -51,10 +65,11 @@
     max-width: 100%;
     max-height: 100%;
     position: fixed;
+    overflow: scroll;
     top: 50%;
     transform: translate(-50%, -50%);
     z-index: 2; /* Should be highest */
-    -webkit-transform-style: preserve-3d; /* trying to fix blurry text bug */
+    transform-style: preserve-3d; /* trying to fix blurry text bug */
   }
 
   div.modal div.buttonContainer {
@@ -115,9 +130,18 @@
 
   div.openFormsContainer tbody tr:not(.hoveroff):hover,
   tbody.archive tr:not(.hoveroff):hover,
-  div.modal table tr[data-id]:hover {
+  div.modal table tr.searchResults:hover {
     background-color: lightcyan;
     cursor: pointer;
+  }
+
+  .blockAround {
+    animation-duration: 1s;
+    animation-name: half-fade-in;
+    background-color: black;
+    opacity: 0.5;
+    position: absolute;
+    z-index: 1; /* Must be second highest to modal */
   }
 
   div.overlay {
@@ -131,14 +155,14 @@
     z-index: 1; /* Must be second highest to modal */
   }
 
-  div.toast {
+  .toast {
     animation-duration: 2s, 5s;
     animation-name: slide-up, fade-out;
     animation-timing-function: ease-out;
     background-color: limegreen;
     border: 1px solid black;
     border-radius: 2px;
-    bottom: 25%;
+    bottom: 10%;
     left: 50%;
     padding: 1em;
     position: fixed;
@@ -212,6 +236,8 @@
     font-weight: bold;
   }
 
+  .noPointerEvents,
+  button > svg,
   th > img,
   td > i {
     pointer-events: none;
@@ -306,8 +332,11 @@
   }
 
   thead.open th:hover,
+  thead.formItems th:hover,
+  thead.equipmentOut th:hover,
   tbody.studentList tr:hover,
-  tbody.itemList td:hover {
+  tbody.itemList td:hover,
+  td.editable:hover {
     color: blue;
     cursor: pointer;
   }
@@ -358,6 +387,15 @@
     font-style: italic;
   }
 
+  @keyframes half-fade-in {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 0.5;
+    }
+  }
+
   @keyframes fade-out {
     0% {
       opacity: 1;
@@ -375,7 +413,7 @@
       bottom: 0;
     }
     100% {
-      bottom: 25%;
+      bottom: 10%;
     }
   }
 

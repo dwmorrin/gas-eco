@@ -1,5 +1,5 @@
 <script>
-  /* global HTML */
+  "use strict";
   /* exported  Item */
   function Item({
     barcode = "",
@@ -11,174 +11,23 @@
     quantity = 1,
     notes = "",
     missing = false,
+    quantityIn = 0,
   }) {
-    if (!(this instanceof Item)) {
-      throw new Error("Item() needs to be called with `new`");
-    }
-
-    // private properties
-    /**
-     * serialized identifies non-fungible items
-     * an item is serialized if it has a barcode NOT in the range 10000-10100
-     *
-     * items with item IDs are sometimes non-serialized if they are manual entries
-     */
-    const serialized =
-      Boolean(barcode) && (+barcode < 10000 || +barcode > 10100);
-    if (isNaN(quantity) || quantity < 1) {
-      throw new Error(`invalid quantity: ${quantity}`);
-    }
-
-    // public properties
-    // enforcing input like id=null or barcode=10 are coerced into strings
-    this.barcode = barcode ? "" + barcode : "";
-    this.id = id ? "" + id : "";
+    this.barcode = String(barcode);
+    this.checkIn = String(checkIn);
+    this.checkOut = String(checkOut);
     this.checkedOut = Boolean(checkedOut);
-    this.checkIn = checkIn ? "" + checkIn : "";
-    this.checkOut = checkOut ? "" + checkOut : "";
-    this.description = description ? "" + description : "";
-    this.notes = notes ? "" + notes : "";
+    this.description = String(description);
+    this.id = String(id);
     this.missing = Boolean(missing);
+    this.notes = String(notes);
+    this.quantity = Number(quantity);
+    this.quantityIn = Number(quantityIn);
 
-    this.changeQuantity = function (integer) {
-      if (serialized) {
-        throw new Error("Cannot change quantity of a serialized item");
-      }
-      if (!isPositiveInteger(quantity + integer)) {
-        throw new Error(`Invalid quantity: ${integer}`);
-      }
-      quantity += integer;
-      return this;
-    };
-    this.setQuantity = function (integer) {
-      if (serialized) {
-        throw new Error("Cannot change quantity of a serialized item");
-      }
-      if (!isPositiveInteger(integer)) {
-        throw new Error(`Invalid quantity: ${integer}`);
-      }
-      quantity = integer;
-      return this;
-    };
-    this.getQuantity = function () {
-      return quantity;
-    };
-    this.isSerialized = function () {
-      return serialized;
-    };
-    // private helper functions
-    function isPositiveInteger(integer) {
-      return (
-        !isNaN(integer) &&
-        Math.floor(integer) === integer &&
-        Math.abs(integer) === integer &&
-        integer > 0
-      );
-    }
+    return Object.freeze(this);
   }
-  /**
-   * archive returns a plain object with the quantity made public
-   * used by Inventory when stringifying
-   */
-  Item.prototype.archive = function () {
-    const obj = Object.assign({}, this);
-    obj.quantity = this.getQuantity();
-    return obj;
-  };
 
-  /**
-   * makeCheckInButton determines what to display in the "Checked In" column
-   * @param {bool} isArchive - get different results for open vs closed forms
-   * @returns DOM node (either element node or text node)
-   */
-  Item.prototype.makeCheckInButton = function (isArchive) {
-    // this.checkedOutAgain is a special guard only applied
-    // by the app.doCommand case "checkOutAgain"
-    if (this.checkedOutAgain) {
-      return document.createTextNode("");
-    }
-    if (this.missing) {
-      return HTML.createElement("span", {
-        class: "alert",
-        textContent: "ITEM IS MISSING",
-      });
-    }
-    if (isArchive || this.checkIn) {
-      return document.createTextNode(this.checkIn);
-    }
-    if (!this.checkOut || !this.checkedOut) {
-      return HTML.createElement("button", {
-        class: "create",
-        value: "removeItem",
-        "data-id": this.id,
-        "data-barcode": this.barcode,
-        textContent: "Remove",
-      });
-    }
-    if (!this.checkIn && this.isSerialized()) {
-      return HTML.createElement("i", {
-        textContent: "Scan barcode to return",
-      });
-    }
-    const id = this.id || this.barcode;
-    const checkInButton = HTML.createElement("button", {
-      class: "action",
-      value: "checkInButton",
-      "data-itemid": id,
-      textContent: "Check In",
-    });
-    const quantity = this.getQuantity();
-    if (quantity > 1) {
-      return HTML.createElement("span", {
-        "data-id": this.id,
-        "data-barcode": this.barcode,
-        children: [
-          checkInButton,
-          HTML.createElement("select", {
-            class: "selectQuantity",
-            "data-itemid": id,
-            children: [
-              HTML.createElement("option", {
-                value: "all",
-                textContent: "All",
-              }),
-              ...Array.from({ length: quantity - 1 }).map((_, i) =>
-                HTML.createElement("option", {
-                  textContent: String(i + 1),
-                })
-              ),
-            ],
-          }),
-        ],
-      });
-    }
-    return checkInButton;
-  };
-
-  /**
-   * makeQuantityButtons determines what to display in the "Qty" column
-   * @param {bool} isArchive - get different results for open vs closed forms
-   * @returns DOM node (either element node or text node)
-   */
-  Item.prototype.makeQuantityButtons = function (isArchive) {
-    if (isArchive || this.checkIn || this.isSerialized()) {
-      return document.createTextNode(this.getQuantity());
-    }
-    return HTML.createElement("span", {
-      "data-id": this.id,
-      "data-barcode": this.barcode,
-      children: [
-        HTML.createElement("button", {
-          class: "quantity",
-          value: "itemQuantityChange",
-          textContent: this.getQuantity(),
-        }),
-        HTML.createElement("button", {
-          class: "quantity",
-          value: "itemQuantityPlusOne",
-          textContent: "+",
-        }),
-      ],
-    });
+  Item.prototype.isSerialized = function () {
+    return this.barcode && (+this.barcode < 10000 || +this.barcode > 10100);
   };
 </script>

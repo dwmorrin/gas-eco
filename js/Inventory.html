@@ -1,125 +1,79 @@
 <script>
-/* global Item */
-/* exported Inventory */
-/**
- * Inventory wraps an array with specialized functions
- * warning: array methods like slice() and filter() return Item[], not Inventory
- * warning: array methods return Item[] with **references** to Items, not copies
- * To copy an inventory: copy = new Inventory().setItems(oldInventory.slice())
- */
-function Inventory() {
-  let items = [];
-  this.setItems = function(array) {
-    if (! array) {
-      return this;
-    }
-    if (! (array instanceof Inventory) && ! Array.isArray(array)) {
-      throw new Error(`${array} (${typeof array}) is not an array`);
-    }
-    items = array.slice();
-    items.forEach(function (obj, index, array) {
-      if (obj instanceof Item) {
-        obj.quantity = obj.getQuantity();
-      }
-      array[index] = new Item(obj);
-    });
-    return this;
-  };
-
-  // getLength exposes the array length
-  this.getLength = function() { return items.length; };
-
-  // this section exposes array functions
-  this.every = function(func) {
-    items.every(func);
-  };
-  this.forEach = function(func) {
-    items.forEach(func);
-  };
-  this.filter = function(func) {
-    return items.filter(func);
-  };
-  this.find = function(func) {
-    return items.find(func);
-  };
-  this.push = function(item) {
-    items.push(item);
-  };
-  // reverse calls slice first to prevent changing internal order of items
-  this.reverse = function() {
-    return items.slice().reverse();
-  };
-  this.slice = function() {
-    return items.slice();
-  };
-  this.some = function(func) {
-    return items.some(func);
-  };
-  
-  // this section has custom methods for the Inventory array
-  this.contains = function(query) {
-    query = query.replace(/\s/g, '').replace(/-0+/, '-');
-    return items.find(item => {
-      const id = item.id.replace(/\s/g, '').replace(/-0+/, '-');
-      return query === id || item.description.toUpperCase().includes(query);
-    });
-  };
-  this.getByBarcode = function(barcode) {
-    return items.find(item => {
-      if (! item.barcode) {
-        return false;
-      }
-      return item.barcode.toLowerCase() == barcode;
-    });
-  };
-  this.getById = function(id) {
-    id = id.toLowerCase().replace(/-0+/, '-');
-    return items.find(item => {
-      if (! item.id) {
-        return false;
-      }
-      return item.id.toLowerCase().replace(/-0+/, '-') === id;
-    });
-  };
-  this.getByItem = function(item) {
-    return items.find(i => {
-      if (i.id && i.id == item.id) {
-        return true;
-      }
-      if (i.barcode && i.barcode == item.barcode) {
-        return true;
-      }
-      return false;
-    });
-  };
-  this.getStripped = function() {
-    const copy = [];
-    items.forEach(item => {
-      copy.push({
-        id: item.id,
-        description: item.description,
-        quantity: item.getQuantity(),
-        barcode: item.barcode
+  /* exported Inventory */
+  /** Utilities for Item[], all params named `items` are Item[] */
+  const Inventory = (function () {
+    return {
+      contains,
+      getByBarcode,
+      getById,
+      getByItem,
+      getStripped,
+      removeByItem,
+      archive,
+    };
+    function contains(items, query) {
+      query = query.replace(/\s/g, "").replace(/-0+/, "-");
+      return items.find((item) => {
+        const id = item.id.replace(/\s/g, "").replace(/-0+/, "-");
+        return query === id || item.description.toUpperCase().includes(query);
       });
-    });
-    return copy;
-  };
-  this.removeByItem = function({barcode, id}) {
-    const index = items.findIndex(item => {
-      if (item.id && item.id == id) {
-        return true;
-      }
-      if (item.barcode && item.barcode == barcode) {
-        return true;
-      }
-      return false;
-    });
-    return items.splice(index, 1)[0];
-  };
-  this.archive = function() {
-    const copy = [];
-    items.forEach(item => copy.push(item.archive()));
-    return copy;
-  };
-}
+    }
+    function getByBarcode(items, barcode) {
+      return items.find((item) => {
+        if (!item.barcode) {
+          return false;
+        }
+        return item.barcode.toLowerCase() == barcode;
+      });
+    }
+    function getById(items, id) {
+      id = id.toLowerCase().replace(/-0+/, "-");
+      return items.find((item) => {
+        if (!item.id) {
+          return false;
+        }
+        return item.id.toLowerCase().replace(/-0+/, "-") === id;
+      });
+    }
+    function getByItem(items, item) {
+      return items.find((i) => {
+        if (i.id && i.id == item.id) {
+          return true;
+        }
+        if (i.barcode && i.barcode == item.barcode) {
+          return true;
+        }
+        return false;
+      });
+    }
+    function getStripped(items) {
+      const copy = [];
+      items.forEach((item) => {
+        copy.push({
+          id: item.id,
+          description: item.description,
+          quantity: item.quantity,
+          barcode: item.barcode,
+        });
+      });
+      return copy;
+    }
+    function removeByItem(items, { barcode, id }) {
+      const index = items.findIndex((item) => {
+        if (item.id && item.id == id) {
+          return true;
+        }
+        if (item.barcode && item.barcode == barcode) {
+          return true;
+        }
+        return false;
+      });
+      return items.splice(index, 1)[0];
+    }
+    function archive(items) {
+      const copy = [];
+      items.forEach((item) => copy.push(item.archive()));
+      return copy;
+    }
+  })();
 </script>

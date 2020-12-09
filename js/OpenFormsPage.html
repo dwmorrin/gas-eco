@@ -1,0 +1,80 @@
+<script>
+  /* global HTML Utility OpenFormsTable EquipmentOutTable */
+  /* exported OpenFormsPage */
+  function OpenFormsPage({
+    ascending,
+    itemsOutSort,
+    itemsOutSortAscending,
+    openForms,
+    setForm,
+    sortedBy,
+    onSortForms,
+    onSortItemsOut,
+  }) {
+    const {
+      createElement,
+      documentIcon,
+      headerCell,
+      page,
+      row,
+      table,
+      tableHead,
+    } = HTML;
+    const { uncamelCase } = Utility;
+    return page({
+      name: "openForms",
+      children: [
+        createElement("h2", { textContent: "Open Forms" }),
+        createElement("h3", {
+          textContent: "click on a form to view and edit",
+        }),
+        table(
+          tableHead({
+            class: "open",
+            children: [
+              headerCell({ child: documentIcon() }),
+              ...["startTime", "endTime", "location", "students"].map((text) =>
+                headerCell({
+                  class:
+                    text === sortedBy
+                      ? `sortedBy ${ascending ? "" : "descending"}`
+                      : "",
+                  onClick: () => onSortForms(text),
+                  textContent: uncamelCase(text),
+                })
+              ),
+            ],
+          }),
+          OpenFormsTable({ openForms, setForm })
+        ),
+        createElement("h2", { textContent: "Equipment Checked Out" }),
+        table(
+          tableHead({
+            class: "equipmentOut",
+            child: row(
+              ...["description", "id", "location", "students", "endTime"].map(
+                (text) =>
+                  headerCell({
+                    textContent: uncamelCase(text),
+                    class:
+                      text === itemsOutSort
+                        ? `sortedBy ${
+                            itemsOutSortAscending ? "" : "descending"
+                          }`
+                        : "",
+                    onClick: () => onSortItemsOut(text),
+                  })
+              )
+            ),
+          }),
+          EquipmentOutTable({
+            itemsOutSort,
+            itemsOutSortAscending,
+            openForms,
+            setForm,
+          })
+        ),
+      ],
+    });
+  }
+</script>
