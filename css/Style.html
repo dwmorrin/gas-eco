@@ -49,6 +49,14 @@
     display: inline;
   }
 
+  .tip {
+    position: absolute;
+    z-index: 2;
+    background-color: white;
+    border: 1px solid black;
+    padding: 10px;
+  }
+
   div.modal {
     background-color: white;
     border: solid 1px black;
@@ -125,6 +133,13 @@
   div.modal table tr.searchResults:hover {
     background-color: lightcyan;
     cursor: pointer;
+  }
+
+  .blockAround {
+    background-color: black;
+    opacity: 0.5;
+    position: absolute;
+    z-index: 1; /* Must be second highest to modal */
   }
 
   div.overlay {

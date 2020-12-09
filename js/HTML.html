@@ -25,6 +25,7 @@
       table,
       tableBody,
       tableHead,
+      tip,
       toast,
       update,
     };
@@ -174,6 +175,52 @@
       else return createElement(tagName, attrs);
     }
 
+    function tip({ element, message, onClose }) {
+      const blockers = blockAround(element);
+      const div = createElement("p", {
+        class: "tip",
+        textContent: message,
+      });
+      document.body.appendChild(div);
+      const { top, right } = element.getBoundingClientRect();
+      div.style.top = `${top}px`;
+      div.style.left = `${right}px`;
+      const cleanup = (event) => {
+        event.preventDefault();
+        div.remove();
+        blockers.forEach((blocker) => blocker.remove());
+        window.removeEventListener("mousedown", cleanup);
+        window.removeEventListener("keydown", cleanup);
+        onClose();
+      };
+      window.addEventListener("mousedown", cleanup);
+      window.addEventListener("keydown", cleanup);
+    }
+
+    function blockAround(element) {
+      const { top, bottom, width, left } = element.getBoundingClientRect();
+      const divs = [
+        createElement("div", {
+          class: "blockAround",
+          style: `top: 0; height: ${top}px; left: ${left}px; width: ${width}px`,
+        }),
+        createElement("div", {
+          class: "blockAround",
+          style: `top: ${bottom}px; bottom: 0px; left: ${left}px; width: ${width}px`,
+        }),
+        createElement("div", {
+          class: "blockAround",
+          style: `top: 0; bottom: 0px; left: 0; width: ${left}px`,
+        }),
+        createElement("div", {
+          class: "blockAround",
+          style: `top: 0; bottom: 0px; left: ${left + width}px; right: 0px`,
+        }),
+      ];
+      divs.forEach((div) => document.body.appendChild(div));
+      return divs;
+    }
+
     function modal({
       child,
       children,
@@ -193,7 +240,6 @@
       if (innerHTML) div.innerHTML = innerHTML;
       if (child) div.appendChild(child);
       if (children) children.forEach((child) => div.appendChild(child));
-      if (blocking) div.classList.add("centered");
       const blocker = blocking
         ? createElement("div", { class: "overlay" })
         : null;

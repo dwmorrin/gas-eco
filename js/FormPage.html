@@ -58,6 +58,7 @@
       table,
       tableBody,
       tableHead,
+      tip,
     } = HTML;
     const {
       applyTo,
@@ -76,7 +77,7 @@
       tryJsonParse,
       uncamelCase,
     } = Utility;
-    const { getFormattedDateTime } = DateUtils;
+    const { addOneHour, getFormattedDateTime } = DateUtils;
 
     const omnibox = Omnibox({
       disabled,
@@ -328,7 +329,12 @@
                     class: "studentList",
                     children: form.students.length
                       ? form.students.map(StudentRow)
-                      : [row(cell("Scan ID to sign in a student"))],
+                      : [
+                          row({
+                            child: cell("Scan ID to sign in a student"),
+                            onClick: () => showOmniboxTip(),
+                          }),
+                        ],
                   })
                 ),
               ],
@@ -378,7 +384,7 @@
                             cell({
                               textContent: "Scan barcode to check out an item",
                               colspan: 5,
-                              onClick: () => flashOmnibox(),
+                              onClick: () => showOmniboxTip(),
                             })
                           ),
                         ],
@@ -431,20 +437,11 @@
     });
 
     // to show user where enter barcodes to add items
-    function flashOmnibox() {
-      const input = document.querySelector(".omnibox");
-      let count = 0;
-      const flash = () => {
-        input.classList.toggle("error");
-        ++count;
-        if (count < 12) window.setTimeout(flash, 250);
-        else input.classList.remove("error");
-      };
-      flash();
-      modal({
-        blocking: false,
-        child: paragraph("Use the text box to enter barcodes."),
-        onClose: () => input.focus(),
+    function showOmniboxTip() {
+      tip({
+        element: document.querySelector(".omnibox"),
+        message: "Use the text box to enter barcodes and scan IDs.",
+        onClose: () => document.querySelector(".omnibox").focus(),
       });
     }
 
@@ -627,10 +624,17 @@
         2
       )} ${ampm}`;
       onChange({
-        form: new Form({
-          ...form,
-          [name]: value,
-        }),
+        form: new Form(
+          form.isBlank() &&
+          name === "startTime" &&
+          !formInputsTouched.has("endTime")
+            ? {
+                ...form,
+                startTime: value,
+                endTime: getFormattedDateTime(addOneHour(new Date(value))),
+              }
+            : { ...form, [name]: value }
+        ),
         change: { target: { name, value } },
       });
     }
