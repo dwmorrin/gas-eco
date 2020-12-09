@@ -3,11 +3,20 @@
   /* global HTML Utility */
   /* exported ClosedFormsTable */
   function ClosedFormsTable({ forms, setForm }) {
-    const { cell, createElement, documentIcon, row, headerCell, table } = HTML;
+    const {
+      cell,
+      createElement,
+      documentIcon,
+      row,
+      headerCell,
+      table,
+      tableBody,
+      tableHead,
+    } = HTML;
     const { uncamelCase } = Utility;
 
     return table(
-      createElement("thead", {
+      tableHead({
         class: "archive",
         child: row(
           headerCell({ child: documentIcon() }),
@@ -26,7 +35,7 @@
           ].map((text) => headerCell({ textContent: uncamelCase(text) }))
         ),
       }),
-      createElement("tbody", {
+      tableBody({
         children: forms.length
           ? forms.map((form) =>
               createElement("tr", {

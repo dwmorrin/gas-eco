@@ -3,12 +3,15 @@
   /* exported Utility */
   const Utility = (function () {
     return {
+      applyTo,
       compareDateStrings,
       compareKey,
       compareStrings,
       copyToClipboard,
       digestMessage,
       hexString,
+      identity,
+      is,
       last,
       nullIf,
       pick,
@@ -20,6 +23,10 @@
       tryJsonParse,
       uncamelCase,
     };
+
+    function applyTo(a) {
+      return (fn) => fn(a);
+    }
 
     function compareKey(key, predicate) {
       return (a, b) => predicate(a[key], b[key]);
@@ -60,6 +67,14 @@
         return paddedHexCode;
       });
       return hexCodes.join("");
+    }
+
+    function identity(a) {
+      return a;
+    }
+
+    function is(x) {
+      return (y) => y === x;
     }
 
     function last(array) {

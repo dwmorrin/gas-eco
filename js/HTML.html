@@ -73,6 +73,14 @@
       return createElement("br");
     }
 
+    // for overloaded macros: row(HTMLEl, HTMLEl, ...) or row({class: "foo"})
+    function childrenShorthand(tagName, args) {
+      return createElement(
+        tagName,
+        args[0] instanceof HTMLElement ? { children: args } : args[0]
+      );
+    }
+
     function createElement(name, attrs) {
       return attributes(document.createElement(name), attrs);
     }
@@ -131,20 +139,20 @@
       return createElement("div", { class: "spinner" });
     }
 
-    function table(...children) {
-      return HTML.createElement("table", { children });
+    function table(...args) {
+      return childrenShorthand("table", args);
     }
 
-    function tableBody(...children) {
-      return HTML.createElement("tbody", { children });
+    function tableBody(attrs) {
+      return createElement("tbody", attrs);
     }
 
-    function tableHead(...children) {
-      return HTML.createElement("thead", { children });
+    function tableHead(attrs) {
+      return createElement("thead", attrs);
     }
 
-    function row(...cells) {
-      return HTML.createElement("tr", { children: cells });
+    function row(...args) {
+      return childrenShorthand("tr", args);
     }
 
     function headerCell(attrs) {
@@ -162,8 +170,8 @@
 
     function stringShorthand(tagName, attrs) {
       if (typeof attrs === "string")
-        return HTML.createElement(tagName, { textContent: attrs });
-      else return HTML.createElement(tagName, attrs);
+        return createElement(tagName, { textContent: attrs });
+      else return createElement(tagName, attrs);
     }
 
     function modal({

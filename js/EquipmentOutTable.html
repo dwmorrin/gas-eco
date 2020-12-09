@@ -7,7 +7,7 @@
     openForms,
     setForm,
   }) {
-    const { cell, createElement } = HTML;
+    const { cell, createElement, tableBody } = HTML;
     const {
       compareDateStrings,
       compareKey,
@@ -56,7 +56,7 @@
       : reverse(checkedOutItems)
     ).map(itemToRow);
 
-    return createElement("tbody", {
+    return tableBody({
       class: "equipmentOut",
       children,
     });

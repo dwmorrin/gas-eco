@@ -2,19 +2,20 @@
   /* global HTML */
   /* exported OpenFormsTable */
   function OpenFormsTable({ openForms, setForm }) {
-    return HTML.createElement("tbody", {
+    const { cell, documentIcon, row, tableBody } = HTML;
+    return tableBody({
       children: openForms.map((form) =>
-        HTML.createElement("tr", {
+        row({
           class: getFormStatus(form),
           children: [
-            HTML.createElement("td", { child: HTML.documentIcon() }),
+            cell({ child: documentIcon() }),
             ...[
               form.startTime,
               form.endTime,
               form.location,
               form.bookedStudents ||
                 form.students.map((student) => student.name).join(", "),
-            ].map((textContent) => HTML.createElement("td", { textContent })),
+            ].map((textContent) => cell({ textContent })),
           ],
           onClick: () => setForm({ form }),
         })

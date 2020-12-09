@@ -11,7 +11,15 @@
     onSortForms,
     onSortItemsOut,
   }) {
-    const { createElement, documentIcon, headerCell, page, row, table } = HTML;
+    const {
+      createElement,
+      documentIcon,
+      headerCell,
+      page,
+      row,
+      table,
+      tableHead,
+    } = HTML;
     const { uncamelCase } = Utility;
     return page({
       name: "openForms",
@@ -21,12 +29,12 @@
           textContent: "click on a form to view and edit",
         }),
         table(
-          createElement("thead", {
+          tableHead({
             class: "open",
             children: [
               headerCell({ child: documentIcon() }),
               ...["startTime", "endTime", "location", "students"].map((text) =>
-                createElement("th", {
+                headerCell({
                   class:
                     text === sortedBy
                       ? `sortedBy ${ascending ? "" : "descending"}`
@@ -41,12 +49,12 @@
         ),
         createElement("h2", { textContent: "Equipment Checked Out" }),
         table(
-          createElement("thead", {
+          tableHead({
             class: "equipmentOut",
             child: row(
               ...["description", "id", "location", "students", "endTime"].map(
                 (text) =>
-                  createElement("th", {
+                  headerCell({
                     textContent: uncamelCase(text),
                     class:
                       text === itemsOutSort

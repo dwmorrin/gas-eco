@@ -56,16 +56,22 @@
       select,
       spinner,
       table,
+      tableBody,
+      tableHead,
     } = HTML;
     const {
+      applyTo,
       compareDateStrings,
       compareKey,
       compareStrings,
       copyToClipboard,
+      identity,
+      is,
       nullIf,
       pick,
       remove,
       replace,
+      reverse,
       sort,
       tryJsonParse,
       uncamelCase,
@@ -82,6 +88,16 @@
     });
 
     console.log({ saved, savable, form, formInputsTouched });
+
+    // const sortedItems = applyIf(
+    //   reverse,
+    //   !itemSortAscending,
+    //   sort(form.items, getItemSortFn(itemSort))
+    // );
+
+    const sortedItems = applyTo(sort(form.items, getItemSortFn(itemSort)))(
+      itemSortAscending ? identity : reverse
+    );
 
     return page({
       name: "form",
@@ -210,7 +226,7 @@
             }),
             createElement("section", {
               children: [
-                createElement("table", {
+                table({
                   class: "staticFields",
                   children: [
                     ...[
@@ -298,7 +314,7 @@
               children: [
                 createElement("h4", { textContent: "Students" }),
                 table(
-                  createElement("thead", {
+                  tableHead({
                     class: "form formStudents",
                     children: [
                       row(
@@ -308,7 +324,7 @@
                       ),
                     ],
                   }),
-                  createElement("tbody", {
+                  tableBody({
                     class: "studentList",
                     children: form.students.length
                       ? form.students.map(StudentRow)
@@ -323,7 +339,7 @@
                   textContent: "Equipment Checked Out",
                 }),
                 table(
-                  createElement("thead", {
+                  tableHead({
                     class: "form formItems",
                     children: [
                       row(
@@ -334,7 +350,7 @@
                           ["Checked Out", "checkOut"],
                           ["Checked In", "checkIn"],
                         ].map(([textContent, key]) =>
-                          createElement("th", {
+                          headerCell({
                             textContent,
                             class:
                               key === itemSort
@@ -348,15 +364,15 @@
                       ),
                     ],
                   }),
-                  createElement("tbody", {
+                  tableBody({
                     class: "itemList itemsNotSaved",
-                    children: form.items.length
-                      ? sort(
-                          form.items.filter(
+                    children: sortedItems.length
+                      ? sortedItems
+                          .filter(
                             ({ checkIn, checkedOut }) => !checkIn && !checkedOut
-                          ),
-                          getItemSortFn(itemSort)
-                        ).map(ItemRow)
+                          )
+                          .map(ItemRow)
+                          .flat()
                       : [
                           row(
                             cell({
@@ -368,28 +384,28 @@
                         ],
                   }),
                   nullIf(
-                    !form.items.some(
+                    !sortedItems.some(
                       ({ checkOut, checkedOut }) => checkOut && checkedOut
                     ),
-                    createElement("tbody", {
+                    tableBody({
                       class: "itemList itemsOut",
-                      children: sort(
-                        form.items.filter(
+                      children: sortedItems
+                        .filter(
                           ({ checkOut, checkedOut }) => checkOut && checkedOut
-                        ),
-                        getItemSortFn(itemSort)
-                      ).map(ItemRow),
+                        )
+                        .map(ItemRow)
+                        .flat(),
                     })
                   ),
                   nullIf(
                     !form.items.length,
-                    createElement("tbody", {
+                    tableBody({
                       class: "itemList itemsIn",
-                      children: form.items.some(({ checkIn }) => checkIn)
-                        ? sort(
-                            form.items.filter(({ checkIn }) => checkIn),
-                            getItemSortFn(itemSort)
-                          ).map(ItemRow)
+                      children: sortedItems.some(({ checkIn }) => checkIn)
+                        ? sortedItems
+                            .filter(({ checkIn }) => checkIn)
+                            .map(ItemRow)
+                            .flat()
                         : [
                             row(
                               cell({
@@ -651,7 +667,7 @@
                 onOk: (value) => {
                   const items = replace(
                     form.items,
-                    (i) => i === item,
+                    is(item),
                     new Item({ ...item, quantity: value })
                   );
                   onChange({
@@ -672,7 +688,7 @@
               const quantity = item.quantity;
               const items = replace(
                 form.items,
-                (i) => i === item,
+                is(item),
                 new Item({ ...item, quantity: quantity + 1 })
               );
               onChange({
@@ -693,40 +709,68 @@
     }
 
     function ItemRow(item) {
-      return createElement("tr", {
-        class: item.isSerialized ? "serialized" : "nonserialized",
-        children: [
-          cell({ child: QuantityButtons(item, disabled) }),
-          cell(item.description),
-          cell(item.id),
-          cell(
-            item.checkOut
-              ? item.checkOut
-              : {
-                  child: createElement("i", {
-                    textContent: "Scan barcode to check out",
+      return [
+        row({
+          class: item.isSerialized ? "serialized" : "nonserialized",
+          children: [
+            cell({ child: QuantityButtons(item, disabled) }),
+            cell(item.description),
+            cell(item.id),
+            cell(
+              item.checkOut
+                ? item.checkOut
+                : {
+                    child: createElement("i", {
+                      textContent: "Scan barcode to check out",
+                    }),
+                  }
+            ),
+            cell({ child: CheckInButton(item, disabled) }),
+          ],
+          onClick: ({ metaKey, target }) => {
+            if (["button", "select"].includes(target.tagName.toLowerCase()))
+              return;
+            if (metaKey) alert("click item with meta key disabled");
+            //handlers.onItemMetaClick(item.id || item.barcode);
+            else handleClickItem(item);
+          },
+        }),
+        row({
+          child: cell({
+            colspan: 5,
+            class: "itemnotes",
+            textContent: "Notes: " + item.notes,
+            onClick: () => {
+              const input = createElement("textarea", {
+                textContent: item.notes,
+              });
+              modal({
+                children: [heading1("Add notes to item"), input],
+                okText: "Add notes",
+                onOk: () =>
+                  onChange({
+                    form: new Form({
+                      ...form,
+                      items: replace(
+                        form.items,
+                        is(item),
+                        new Item({ ...item, notes: input.value })
+                      ),
+                    }),
+                    change: {
+                      target: {
+                        name: "items",
+                        value: `${item.id || item.description} note: ${
+                          input.value
+                        }`,
+                      },
+                    },
                   }),
-                }
-          ),
-          cell({ child: CheckInButton(item, disabled) }),
-        ],
-        onClick: ({ metaKey, target }) => {
-          if (["button", "select"].includes(target.tagName.toLowerCase()))
-            return;
-          if (metaKey) alert("click item with meta key disabled");
-          //handlers.onItemMetaClick(item.id || item.barcode);
-          else handleClickItem(item);
-        },
-      });
-      // elements.itemList.appendChild(
-      //   createElement("tr", {
-      //     child: createElement("td", {
-      //       colspan: 4,
-      //       class: "itemnotes",
-      //       textContent: "Notes: " + item.notes,
-      //     }),
-      //   })
-      // );
+              });
+            },
+          }),
+        }),
+      ];
     }
 
     function CheckInButton(item, isArchive) {
@@ -750,7 +794,7 @@
             onChange({
               form: new Form({
                 ...form,
-                items: remove(form.items, (i) => i === item),
+                items: remove(form.items, is(item)),
               }),
               change: {
                 target: {
@@ -777,7 +821,7 @@
               ...form,
               items: replace(
                 form.items,
-                (i) => i === item,
+                is(item),
                 new Item({
                   ...item,
                   checkIn: getFormattedDateTime(new Date()),
@@ -951,13 +995,10 @@
               onChange({
                 form: new Form({
                   ...form,
-                  items: form.items.map((i) =>
-                    i === currentItem
-                      ? new Item({
-                          ...currentItem,
-                          quantity: quantityInput.value,
-                        })
-                      : currentItem
+                  items: replace(
+                    form.items,
+                    is(currentItem),
+                    new Item({ ...currentItem, quantity: quantityInput.value })
                   ),
                 }),
                 change,
@@ -983,13 +1024,13 @@
         return onChange({
           form: new Form({
             ...form,
-            items: form.items.map((i) =>
-              i === currentItem
-                ? new Item({
-                    ...currentItem,
-                    checkOut: getFormattedDateTime(new Date()),
-                  })
-                : currentItem
+            items: replace(
+              form.items,
+              is(currentItem),
+              new Item({
+                ...currentItem,
+                checkOut: getFormattedDateTime(new Date()),
+              })
             ),
           }),
           change,
