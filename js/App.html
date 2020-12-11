@@ -36,6 +36,7 @@
     const { addOneHour, getFormattedDateTime } = DateUtils;
     const state = {
       closedForms: null,
+      closedFormsFiltered: null,
       closedFormsQuery: {},
       formInputsTouched: new Set(),
       inventory: null,
@@ -189,7 +190,8 @@
 
     // returns [next, prev]
     function makeFormNavigation({ form, type }) {
-      const forms = type === "open" ? state.openForms : state.closedForms;
+      const forms =
+        type === "open" ? state.openForms : state.closedFormsFiltered;
       return [
         () => {
           const index = forms.findIndex(({ id }) => id === form.id) + 1;
@@ -464,10 +466,12 @@
     function setForm({
       autoFocus = true,
       disabled = false,
+      filteredForms,
       form,
       type = "open",
       waiting = false,
     }) {
+      if (filteredForms) state.closedFormsFiltered = filteredForms;
       if (state.saved) {
         // reset undo system
         state.undoStack = [form];
@@ -476,6 +480,8 @@
         state.formInputsTouched.clear();
       }
       if (type === "closed") disabled = true;
+      const forms =
+        type === "open" ? state.openForms : state.closedFormsFiltered;
       const [onNextForm, onPreviousForm] = makeFormNavigation({ form, type });
       update(
         pageContainer,
@@ -483,8 +489,8 @@
           disabled,
           form,
           formIndexDisplay: `${
-            state.openForms.findIndex(({ id }) => id === form.id) + 1
-          }/${state.openForms.length}`,
+            forms.findIndex(({ id }) => id === form.id) + 1
+          }/${forms.length}`,
           formInputsTouched: state.formInputsTouched,
           inventory: state.inventory,
           itemSort: state.itemSort,
@@ -496,7 +502,7 @@
           onNextForm,
           onPreviousForm,
           onRedo,
-          onSortItems,
+          onSortItems: makeOnSortItems(disabled),
           onSubmit,
           onUndo,
           roster: state.roster,
@@ -615,10 +621,12 @@
       showOpenFormsPage();
     }
 
-    function onSortItems(name, form) {
-      if (state.itemSort !== name) state.itemSort = name;
-      else state.itemSortAscending = !state.itemSortAscending;
-      setForm({ form });
+    function makeOnSortItems(disabled) {
+      return (name, form) => {
+        if (state.itemSort !== name) state.itemSort = name;
+        else state.itemSortAscending = !state.itemSortAscending;
+        setForm({ form, type: disabled ? "closed" : "open" });
+      };
     }
   })();
 </script>

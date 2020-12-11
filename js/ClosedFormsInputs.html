@@ -41,14 +41,10 @@
       class: "query",
       children: [
         document.createTextNode("Start Time Range (Required):"),
-        createElement("div", {
-          children: [
-            labeledDateInput("Range Start", "start", {
-              value: start,
-            }),
-            labeledDateInput("Range End", "end", { value: end }),
-          ],
+        labeledDateInput("Range Start", "start", {
+          value: start,
         }),
+        labeledDateInput("Range End", "end", { value: end }),
         createElement("label", {
           textContent: "Location",
           child: select({

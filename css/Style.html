@@ -1,4 +1,5 @@
 <style>
+  .addStudentHint,
   .itemsNotSaved {
     background-color: papayawhip;
   }
@@ -128,8 +129,8 @@
     animation: spin 2s linear infinite;
   }
 
-  div.openFormsContainer tbody tr:not(.hoveroff):hover,
-  tbody.archive tr:not(.hoveroff):hover,
+  div.openFormsContainer tbody tr:not(.hoverOff):hover,
+  tbody.archive tr:not(.hoverOff):hover,
   div.modal table tr.searchResults:hover {
     background-color: lightcyan;
     cursor: pointer;
@@ -331,12 +332,13 @@
     padding: 0;
   }
 
-  thead.open th:hover,
-  thead.formItems th:hover,
+  tbody.closedFormsList tr:hover,
+  tbody.itemList tr:not(.hoverOff):hover,
+  tbody.studentList tr:not(.hoverOff):hover,
+  td.editable:hover,
   thead.equipmentOut th:hover,
-  tbody.studentList tr:hover,
-  tbody.itemList td:hover,
-  td.editable:hover {
+  thead.formItems th:hover,
+  thead.open th:hover {
     color: blue;
     cursor: pointer;
   }
@@ -489,5 +491,19 @@
     thead.form {
       display: none;
     }
+  }
+
+  form.query {
+    display: flex;
+    flex-direction: column;
+    max-width: 300px;
+  }
+
+  form.query button {
+    max-width: 200px;
+  }
+
+  form.query label {
+    width: unset;
   }
 </style>

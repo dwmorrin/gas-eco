@@ -11,6 +11,7 @@
     const { tryJsonParse } = Utility;
     const { getByBarcode, getById } = Inventory;
     const input = createElement("input", {
+      disabled,
       type: "text",
       class: "omnibox",
       placeholder: "Scan barcode or search",

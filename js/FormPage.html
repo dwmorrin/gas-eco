@@ -89,7 +89,7 @@
       waiting,
     });
 
-    console.log({ saved, savable, form, formInputsTouched });
+    console.log({ disabled, saved, savable, form, formInputsTouched });
 
     // const sortedItems = applyIf(
     //   reverse,
@@ -151,6 +151,12 @@
                       );
                       toast("Items copied");
                     },
+                  })
+                ),
+                nullIf(
+                  !disabled && waiting,
+                  button("Duplicate this form", {
+                    onClick: () => onSubmit(form.duplicate()),
                   })
                 ),
                 nullIf(
@@ -262,7 +268,7 @@
                           })
                         : cell({
                             textContent: form.location,
-                            class: "editable",
+                            class: disabled ? "" : "editable",
                             onClick: (_, locationDisplay) => {
                               if (disabled) return;
                               locationDisplay.parentNode.appendChild(
@@ -288,7 +294,7 @@
                               value: form.startTime,
                             }),
                             textContent: form.startTime,
-                            class: "editable",
+                            class: disabled ? "" : "editable",
                           })
                     ),
                     row(
@@ -307,7 +313,7 @@
                               value: form.endTime,
                             }),
                             textContent: form.endTime,
-                            class: "editable",
+                            class: disabled ? "" : "editable",
                           })
                     ),
                   ],
@@ -333,10 +339,17 @@
                     children: form.students.length
                       ? form.students.map(StudentRow)
                       : [
-                          row({
-                            child: cell("Scan ID to sign in a student"),
-                            onClick: () => showOmniboxTip(),
-                          }),
+                          nullIf(
+                            disabled,
+                            row({
+                              class: "addStudentHint",
+                              child: cell({
+                                colspan: 4,
+                                textContent: "Scan ID to sign in a student",
+                              }),
+                              onClick: () => showOmniboxTip(),
+                            })
+                          ),
                         ],
                   })
                 ),
@@ -383,12 +396,16 @@
                           .map(ItemRow)
                           .flat()
                       : [
-                          row(
-                            cell({
-                              textContent: "Scan barcode to check out an item",
-                              colspan: 5,
-                              onClick: () => showOmniboxTip(),
-                            })
+                          nullIf(
+                            disabled,
+                            row(
+                              cell({
+                                textContent:
+                                  "Scan barcode to check out an item",
+                                colspan: 5,
+                                onClick: () => showOmniboxTip(),
+                              })
+                            )
                           ),
                         ],
                   }),
@@ -714,7 +731,10 @@
     function ItemRow(item) {
       return [
         row({
-          class: item.isSerialized ? "serialized" : "nonserialized",
+          class: [
+            item.isSerialized ? "serialized" : "nonserialized",
+            disabled ? "hoverOff" : "",
+          ].join(" "),
           children: [
             cell({ child: QuantityButtons(item, disabled) }),
             cell(item.description),
@@ -731,18 +751,23 @@
             cell({ child: CheckInButton(item, disabled) }),
           ],
           onClick: ({ metaKey, target }) => {
-            if (["button", "select"].includes(target.tagName.toLowerCase()))
+            if (
+              disabled ||
+              ["button", "select"].includes(target.tagName.toLowerCase())
+            )
               return;
             if (metaKey) handleItem(item);
             else handleClickItem(item);
           },
         }),
         row({
+          class: disabled ? "hoverOff" : "",
           child: cell({
             colspan: 5,
             class: "itemnotes",
             textContent: "Notes: " + item.notes,
             onClick: () => {
+              if (disabled) return;
               const input = createElement("textarea", {
                 textContent: item.notes,
               });
@@ -869,6 +894,7 @@
     function StudentRow(student) {
       // isArchive === disabled
       return createElement("tr", {
+        class: disabled ? "hoverOff" : "",
         children: [
           cell(student.name),
           cell(student.netId),
@@ -897,7 +923,7 @@
           }),
         ],
         onClick: ({ metaKey, target }) => {
-          if (target.tagName.toLowerCase() === "button") return;
+          if (disabled || target.tagName.toLowerCase() === "button") return;
           if (metaKey) return handleStudent(student);
           else handleStudentNote(student);
         },
@@ -948,49 +974,57 @@
       });
     }
 
-    function handleItem(item) {
-      const currentItem = form.items.find(
+    function handleItem(itemFromInventory) {
+      const itemOnForm = form.items.find(
         ({ barcode, id }) =>
-          (item.id && id === item.id) ||
-          (item.barcode && barcode === item.barcode)
+          (itemFromInventory.id && id === itemFromInventory.id) ||
+          (itemFromInventory.barcode && barcode === itemFromInventory.barcode)
       );
       const change = {
         // fake change event
         target: {
           name: "items",
           value:
-            item.id && !/^manual/i.test(item.id) ? item.id : item.description,
+            itemFromInventory.id && !/^manual/i.test(itemFromInventory.id)
+              ? itemFromInventory.id
+              : itemFromInventory.description,
         },
       };
 
-      if (!currentItem) {
+      if (!itemOnForm) {
         return onChange({
           form: new Form({
             ...form,
             items: [
               ...form.items,
-              new Item({ ...item, checkOut: getFormattedDateTime(new Date()) }),
+              new Item({
+                ...itemFromInventory,
+                checkOut: getFormattedDateTime(new Date()),
+              }),
             ],
           }),
           change,
         });
       }
-      if (currentItem.checkOut && currentItem.checkIn) {
+      if (itemOnForm.checkOut && itemOnForm.checkIn) {
         // checking out again
         return onChange({
           form: new Form({
             ...form,
             items: [
               ...form.items,
-              new Item({ ...item, checkOut: getFormattedDateTime(new Date()) }),
+              new Item({
+                ...itemOnForm,
+                checkOut: getFormattedDateTime(new Date()),
+              }),
             ],
           }),
           change,
         });
-      } else if (currentItem.checkOut) {
+      } else if (itemOnForm.checkOut) {
         // checking in OR scanning additional items
         const quantityInput = createElement("input", { type: "text" });
-        if (!item.isSerialized()) {
+        if (!itemOnForm.isSerialized()) {
           return modal({
             onOk: () =>
               onChange({
@@ -998,8 +1032,8 @@
                   ...form,
                   items: replace(
                     form.items,
-                    is(currentItem),
-                    new Item({ ...currentItem, quantity: quantityInput.value })
+                    is(itemOnForm),
+                    new Item({ ...itemOnForm, quantity: quantityInput.value })
                   ),
                 }),
                 change,
@@ -1012,7 +1046,7 @@
             items: [
               ...form.items,
               new Item({
-                ...item,
+                ...itemOnForm,
                 checkIn: getFormattedDateTime(new Date()),
                 missing: false,
               }),
@@ -1027,9 +1061,9 @@
             ...form,
             items: replace(
               form.items,
-              is(currentItem),
+              is(itemOnForm),
               new Item({
-                ...currentItem,
+                ...itemOnForm,
                 checkOut: getFormattedDateTime(new Date()),
               })
             ),
@@ -1085,34 +1119,59 @@
       });
     }
 
-    function handleStudent(student) {
+    function handleStudent(studentFromRoster) {
       const change = {
         // fake change event
         target: {
           name: "students",
-          value: student.name,
+          value: studentFromRoster.name,
         },
       };
 
       const studentOnForm = form.students.find(
-        ({ netId }) => netId === student.netId
+        ({ netId }) => netId === studentFromRoster.netId
       );
+      // adding a student for the first time
       if (!studentOnForm) {
-        if (!student.signatureOnFile)
-          return onNeedsSignature({ netId: student.netId, form });
+        if (!studentFromRoster.signatureOnFile)
+          return onNeedsSignature({ netId: studentFromRoster.netId, form });
         change.target.value += " check-in";
         return onChange({
           form: new Form({
             ...form,
             students: [
               ...form.students,
-              { ...student, checkIn: getFormattedDateTime(new Date()) },
+              {
+                ...studentFromRoster,
+                checkIn: getFormattedDateTime(new Date()),
+              },
             ],
           }),
           change,
         });
       }
+      // checking-in a student on an advance booking form
+      if (!studentOnForm.checkIn) {
+        if (!studentFromRoster.signatureOnFile)
+          return onNeedsSignature({ netId: studentFromRoster.netId, form });
+        change.target.value += " check-in";
+        return onChange({
+          form: new Form({
+            ...form,
+            students: [
+              ...form.students,
+              {
+                ...studentOnForm,
+                checkIn: getFormattedDateTime(new Date()),
+              },
+            ],
+          }),
+          change,
+        });
+      }
+      // odd case: student has checked-out.  Ask if this is to check-in again.
       if (studentOnForm.checkIn && studentOnForm.checkOut) {
+        change.target.value += " check-in again";
         return modal({
           children: [
             heading1("Check in again?"),
@@ -1126,14 +1185,16 @@
             onChange({
               form: new Form({
                 ...form,
-                students: replace(form.students, is(student), {
-                  ...student,
+                students: replace(form.students, is(studentOnForm), {
+                  ...studentOnForm,
                   checkOut: null,
                 }),
               }),
+              change,
             }),
         });
       }
+      // student is checking-out.
       if (studentOnForm.checkIn) {
         if (form.hasItemsOut()) {
           return modal({
@@ -1147,10 +1208,10 @@
         return onChange({
           form: new Form({
             ...form,
-            students: [
-              ...form.students,
-              { ...student, checkOut: getFormattedDateTime(new Date()) },
-            ],
+            students: replace(form.students, is(studentOnForm), {
+              ...studentOnForm,
+              checkOut: getFormattedDateTime(new Date()),
+            }),
           }),
           change,
         });
@@ -1160,7 +1221,9 @@
         children: [
           heading1("Error"),
           paragraph(
-            `Hmm, not sure what to do with ${student.name || student.netId}`
+            `Hmm, not sure what to do with ${
+              studentFromRoster.name || studentFromRoster.netId
+            }`
           ),
         ],
       });

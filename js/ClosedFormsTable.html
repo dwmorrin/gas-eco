@@ -36,10 +36,12 @@
         ),
       }),
       tableBody({
+        class: "closedFormsList",
         children: forms.length
           ? forms.map((form) =>
               createElement("tr", {
-                onClick: () => setForm({ form, type: "closed" }),
+                onClick: () =>
+                  setForm({ form, type: "closed", filteredForms: forms }),
                 children: [
                   cell({ child: documentIcon() }),
                   ...[
@@ -60,7 +62,7 @@
             )
           : [
               createElement("tr", {
-                class: "hoveroff",
+                class: "hoverOff",
                 child: createElement("td", {
                   textContent: "No forms matched your search.",
                   colspan: 12, // fill entire row

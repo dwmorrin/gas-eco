@@ -51,6 +51,7 @@
     return activeStudents > 1;
   };
   Form.prototype.hasItemsOut = function () {
+    if (!this.items.length) return false;
     return this.items.every((item) => {
       return item.checkOut && (!item.checkIn || !item.missing);
     });
@@ -113,6 +114,7 @@
   Form.prototype.makeAdvanceBooking = function () {
     return new Form({
       ...this,
+      id: null,
       notes: [],
       students: this.students.map((student) => ({
         ...student,
@@ -130,6 +132,7 @@
     const { copyTime, getFormattedDateTime } = DateUtils;
     return new Form({
       ...this,
+      id: null,
       startTime: getFormattedDateTime(copyTime(new Date(this.startTime))),
       endTime: getFormattedDateTime(copyTime(new Date(this.endTime))),
       notes: [],
