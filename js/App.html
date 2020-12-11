@@ -33,7 +33,7 @@
       sort,
       tryJsonParse,
     } = Utility;
-    const { addOneHour, getFormattedDateTime } = DateUtils;
+    const { addOneHour, before, getFormattedDateTime } = DateUtils;
     const state = {
       closedForms: null,
       closedFormsFiltered: null,
@@ -62,6 +62,7 @@
             endTime: getFormattedDateTime(addOneHour(new Date()), true),
           });
           state.openForms = [...state.openForms, form];
+          state.undoStack = [form];
           state.saved = false;
           setForm({ form });
         });
@@ -223,11 +224,10 @@
             const updatedForm = new Form(JSON.parse(response.form));
             state.openForms = replace(
               state.openForms,
-              ({ id }) => id === updatedForm.id,
+              (form) => form.isBlank() || form.id === updatedForm.id,
               updatedForm
             );
-            state.saved = true;
-            return setForm({ form: updatedForm });
+            reset(() => setForm({ form: updatedForm }));
           }
           if (response.target === "openForms") {
             onSuccess();
@@ -254,8 +254,7 @@
         withErrorHandler
           .withSuccessHandler((response) => {
             if (response.target === "openForms") {
-              state.saved = true;
-              return onOpenForms(response);
+              return reset(() => onOpenForms(response));
             }
             if (response.target === "collision") return onCollision(response);
           })
@@ -472,17 +471,14 @@
       waiting = false,
     }) {
       if (filteredForms) state.closedFormsFiltered = filteredForms;
-      if (state.saved) {
-        // reset undo system
-        state.undoStack = [form];
-        state.redoStack = [];
-        // reset touched inputs
-        state.formInputsTouched.clear();
-      }
       if (type === "closed") disabled = true;
       const forms =
         type === "open" ? state.openForms : state.closedFormsFiltered;
       const [onNextForm, onPreviousForm] = makeFormNavigation({ form, type });
+      const timeIntervalError =
+        !form.startTime && !form.endTime
+          ? false
+          : before(new Date(form.endTime))(new Date(form.startTime));
       update(
         pageContainer,
         FormPage({
@@ -508,11 +504,13 @@
           roster: state.roster,
           savable:
             !state.saved &&
+            !timeIntervalError &&
             !!form.location &&
             !!form.startTime &&
             !!form.endTime &&
             form.students.some(({ checkIn }) => checkIn),
           saved: state.saved,
+          timeIntervalError,
           username: getUsername(),
           waiting,
         })
@@ -582,12 +580,17 @@
           ],
           closeText: "Cancel",
           okText: "Lose changes",
-          onOk: () => {
-            state.saved = true;
-            state.openForms = state.openForms.filter((form) => !form.isBlank());
-            onOk();
-          },
+          onOk: () => reset(onOk),
         });
+    }
+
+    function reset(onSuccess) {
+      state.saved = true;
+      state.openForms = state.openForms.filter((form) => !form.isBlank());
+      state.undoStack = [];
+      state.redoStack = [];
+      state.formInputsTouched.clear();
+      onSuccess();
     }
 
     // all ascending

@@ -36,6 +36,7 @@
     roster,
     savable = false,
     saved,
+    timeIntervalError,
     username = "anonymous",
     waiting,
   }) {
@@ -90,12 +91,6 @@
     });
 
     console.log({ disabled, saved, savable, form, formInputsTouched });
-
-    // const sortedItems = applyIf(
-    //   reverse,
-    //   !itemSortAscending,
-    //   sort(form.items, getItemSortFn(itemSort))
-    // );
 
     const sortedItems = applyTo(sort(form.items, getItemSortFn(itemSort)))(
       itemSortAscending ? identity : reverse
@@ -301,6 +296,7 @@
                       headerCell("End Time"),
                       form.isBlank() || formInputsTouched.has("endTime")
                         ? cell({
+                            class: timeIntervalError ? "timeIntervalError" : "",
                             children: DateTimeInput({
                               name: "end",
                               value: form.endTime,
@@ -644,10 +640,7 @@
             ? {
                 ...form,
                 startTime: value,
-                endTime: getFormattedDateTime(
-                  addOneHour(new Date(value)),
-                  true
-                ),
+                endTime: getFormattedDateTime(addOneHour(new Date(value))),
               }
             : { ...form, [name]: value }
         ),
