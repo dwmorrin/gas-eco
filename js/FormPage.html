@@ -25,10 +25,9 @@
     itemSort,
     itemSortAscending,
     onDelete,
+    onFormNavigation,
     onNeedsSignature,
     onNewCodabar,
-    onNextForm,
-    onPreviousForm,
     onRedo,
     onSortItems,
     onSubmit,
@@ -164,11 +163,11 @@
                 ),
                 br(),
                 button("Previous form", {
-                  onClick: () => onPreviousForm(),
+                  onClick: () => onFormNavigation({ form, previous: true }),
                   disabled: waiting,
                 }),
                 button("Next form", {
-                  onClick: () => onNextForm(),
+                  onClick: () => onFormNavigation({ form }),
                   disabled: waiting,
                 }),
                 createElement("span", {
@@ -181,10 +180,11 @@
                   onClick: () => onSubmit(form),
                 }),
                 nullIf(
-                  disabled || !form.isBlank(),
+                  disabled ||
+                    (!disabled && !form.isAdvanceBooking() && !form.isBlank()),
                   button("Save as advance booking", {
                     class: "action buttonTight",
-                    disabled: !savable,
+                    disabled: !savable && !form.isAdvanceBooking(),
                     onClick: () => {
                       modal({
                         children: [
@@ -197,18 +197,23 @@
                         ],
                         closeText: "Cancel",
                         okText: "Save as advance booking",
-                        onOk: () => onSubmit(form.makeAdvanceBooking()),
+                        onOk: () =>
+                          onSubmit(
+                            form.isAdvanceBooking()
+                              ? form
+                              : form.makeAdvanceBooking()
+                          ),
                       });
                     },
                   })
                 ),
                 button("Undo", {
                   disabled,
-                  onClick: onUndo,
+                  onClick: () => onUndo(form),
                 }),
                 button("Redo", {
                   disabled,
-                  onClick: onRedo,
+                  onClick: () => onRedo(form),
                 }),
                 createElement("span", {
                   class: "updateButtonHint",
@@ -532,6 +537,9 @@
       modal({
         children: [
           heading1("Add notes to item"),
+          paragraph(
+            [item.description, item.id ? `(${item.id})` : ""].join(" ")
+          ),
           table(
             row(
               cell("Item cannot be found"),
@@ -765,7 +773,13 @@
                 textContent: item.notes,
               });
               modal({
-                children: [heading1("Add notes to item"), input],
+                children: [
+                  heading1("Add notes to item"),
+                  paragraph(
+                    [item.description, item.id ? `(${item.id})` : ""].join(" ")
+                  ),
+                  input,
+                ],
                 okText: "Add notes",
                 onOk: () =>
                   onChange({
@@ -993,6 +1007,7 @@
               new Item({
                 ...itemFromInventory,
                 checkOut: getFormattedDateTime(new Date()),
+                checkedOut: true,
               }),
             ],
           }),
@@ -1009,6 +1024,7 @@
               new Item({
                 ...itemOnForm,
                 checkOut: getFormattedDateTime(new Date()),
+                checkedOut: true,
               }),
             ],
           }),
@@ -1036,14 +1052,16 @@
         return onChange({
           form: new Form({
             ...form,
-            items: [
-              ...form.items,
+            items: replace(
+              form.items,
+              is(itemOnForm),
               new Item({
                 ...itemOnForm,
                 checkIn: getFormattedDateTime(new Date()),
+                checkedOut: false,
                 missing: false,
-              }),
-            ],
+              })
+            ),
           }),
           change,
         });
@@ -1058,6 +1076,7 @@
               new Item({
                 ...itemOnForm,
                 checkOut: getFormattedDateTime(new Date()),
+                checkedOut: true,
               })
             ),
           }),
@@ -1114,7 +1133,6 @@
 
     function handleStudent(studentFromRoster) {
       const change = {
-        // fake change event
         target: {
           name: "students",
           value: studentFromRoster.name,
@@ -1147,17 +1165,14 @@
       if (!studentOnForm.checkIn) {
         if (!studentFromRoster.signatureOnFile)
           return onNeedsSignature({ netId: studentFromRoster.netId, form });
-        change.target.value += " check-in";
+        change.target.value += " advance booking check-in";
         return onChange({
           form: new Form({
             ...form,
-            students: [
-              ...form.students,
-              {
-                ...studentOnForm,
-                checkIn: getFormattedDateTime(new Date()),
-              },
-            ],
+            students: replace(form.students, is(studentOnForm), {
+              ...studentOnForm,
+              checkIn: getFormattedDateTime(new Date()),
+            }),
           }),
           change,
         });

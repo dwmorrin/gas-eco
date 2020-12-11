@@ -116,16 +116,19 @@ Form_.prototype.getAsArray = function () {
 };
 
 Form_.prototype.isAllGearReturned = function () {
-  return this.items.every(function (item) {
-    if (item.checkOut) {
-      return item.checkIn || item.missing;
-    }
-    return true;
-  });
+  return this.items.every(
+    ({ checkOut, checkIn, missing }) => !checkOut || checkIn || missing
+  );
 };
 
-Form_.prototype.isCheckOutStudentOk = function () {
-  return this.hasActiveStudent() || this.isAllGearReturned();
+Form_.prototype.hasActiveStudent = function () {
+  return (
+    this.students.reduce(
+      (count, { checkIn, checkOut, left }) =>
+        checkIn && !(checkOut || left) ? count + 1 : count,
+      0
+    ) > 1
+  );
 };
 
 Form_.prototype.isNoShow = function () {
@@ -148,7 +151,7 @@ Form_.prototype.isNoShow = function () {
 };
 
 Form_.prototype.isReadyToClose = function () {
-  if (!this.isCheckOutStudentOk) {
+  if (this.hasActiveStudent() || !this.isAllGearReturned()) {
     return false;
   }
   var checkedIn = function (student) {
@@ -161,16 +164,6 @@ Form_.prototype.isReadyToClose = function () {
     return true;
   };
   return this.students.some(checkedIn) && this.students.every(checkedOutOrLeft);
-};
-
-Form_.prototype.isThereAnActiveStudent = function () {
-  var activeStudents = this.students.reduce(function (count, student) {
-    if (student.checkIn && !(student.checkOut || student.left)) {
-      return count + 1;
-    }
-    return count;
-  }, 0);
-  return activeStudents > 1;
 };
 
 Form_.prototype.validate = function () {

@@ -27,7 +27,6 @@
       compareDateStrings,
       compareKey,
       compareStrings,
-      last,
       replace,
       reverse,
       sort,
@@ -62,7 +61,6 @@
             endTime: getFormattedDateTime(addOneHour(new Date()), true),
           });
           state.openForms = [...state.openForms, form];
-          state.undoStack = [form];
           state.saved = false;
           setForm({ form });
         });
@@ -189,24 +187,18 @@
       }
     }
 
-    // returns [next, prev]
-    function makeFormNavigation({ form, type }) {
-      const forms =
-        type === "open" ? state.openForms : state.closedFormsFiltered;
-      return [
-        () => {
-          const index = forms.findIndex(({ id }) => id === form.id) + 1;
-          if (index <= 0 || !forms[index])
-            return modal({ child: paragraph("This is the last form.") });
-          loseDataWarning(() => setForm({ form: forms[index], type }));
-        },
-        () => {
-          const index = forms.findIndex(({ id }) => id === form.id) - 1;
-          if (index < 0)
-            return modal({ child: paragraph("This is the first form.") });
-          loseDataWarning(() => setForm({ form: forms[index], type }));
-        },
-      ];
+    function makeFormNavigation(forms, type) {
+      return ({ form, previous = false }) => {
+        const index =
+          forms.findIndex(({ id }) => id === form.id) + (previous ? -1 : 1);
+        if (index < 0 || !forms[index])
+          return modal({
+            child: paragraph(
+              `This is the ${previous ? "first" : "last"} form.`
+            ),
+          });
+        loseDataWarning(() => setForm({ form: forms[index], type }));
+      };
     }
 
     function onSubmit(
@@ -362,10 +354,6 @@
      * tryUnlock controls when the loading page switches to the open forms page
      */
     function tryUnlock() {
-      // const rosterLength = Omnibox.getRoster().length,
-      //   inventoryLength = Omnibox.getInventory().getLength(),
-      //   stack = new Stack(), //OpenFormsPage.getStack(),
-      //   stackInit = stack.isInitialized();
       showLoadingPage();
       if (![state.inventory, state.roster, state.openForms].every(Boolean)) {
         return false;
@@ -470,11 +458,11 @@
       type = "open",
       waiting = false,
     }) {
+      console.log({ state });
       if (filteredForms) state.closedFormsFiltered = filteredForms;
       if (type === "closed") disabled = true;
       const forms =
         type === "open" ? state.openForms : state.closedFormsFiltered;
-      const [onNextForm, onPreviousForm] = makeFormNavigation({ form, type });
       const timeIntervalError =
         !form.startTime && !form.endTime
           ? false
@@ -491,12 +479,11 @@
           inventory: state.inventory,
           itemSort: state.itemSort,
           itemSortAscending: state.itemSortAscending,
-          onChange,
+          onChange: makeOnChange(form),
           onDelete,
           onNeedsSignature,
           onNewCodabar,
-          onNextForm,
-          onPreviousForm,
+          onFormNavigation: makeFormNavigation(forms, type),
           onRedo,
           onSortItems: makeOnSortItems(disabled),
           onSubmit,
@@ -522,47 +509,49 @@
       pageContainer.querySelector(".omnibox").focus();
     }
 
-    function onUndo() {
-      if (state.undoStack.length === 1)
+    function onUndo(currentForm) {
+      if (!state.undoStack.length)
         return modal({
           child: paragraph("Nothing to undo."),
         });
-      state.redoStack.push(state.undoStack.pop());
-      setForm({ form: last(state.undoStack) });
+      state.redoStack.push(currentForm);
+      setForm({ form: state.undoStack.pop() });
     }
 
-    function onRedo() {
+    function onRedo(currentForm) {
       if (!state.redoStack.length)
         return modal({ child: paragraph("Nothing to redo.") });
-      state.undoStack.push(state.redoStack.pop());
-      setForm({ form: last(state.undoStack) });
+      state.undoStack.push(currentForm);
+      setForm({ form: state.redoStack.pop() });
     }
 
-    function onChange({
-      form,
-      change: {
-        target: { name, value },
-      },
-    }) {
-      const newForm = new Form({
-        ...form,
-        notes: [
-          ...form.notes,
-          {
-            timestamp: Date.now(),
-            author: getUsername(),
-            // body is JSON to be compatible with legacy forms
-            // if diff'ing notes vs changes can be updated, stop stringifying here
-            body: JSON.stringify([{ name, value }]),
-          },
-        ],
-      });
-      state.formInputsTouched.add(name);
-      state.undoStack.push(newForm);
-      state.redoStack = [];
-      state.saved = false;
-      setForm({ form: newForm });
-      if (["items", "students"].includes(name)) toast(value);
+    function makeOnChange(currentForm) {
+      return ({
+        form,
+        change: {
+          target: { name, value },
+        },
+      }) => {
+        const newForm = new Form({
+          ...form,
+          notes: [
+            ...form.notes,
+            {
+              timestamp: Date.now(),
+              author: getUsername(),
+              // body is JSON to be compatible with legacy forms
+              // if diff'ing notes vs changes can be updated, stop stringifying here
+              body: JSON.stringify([{ name, value }]),
+            },
+          ],
+        });
+        state.formInputsTouched.add(name);
+        state.undoStack.push(currentForm);
+        state.redoStack = [];
+        state.saved = false;
+        setForm({ form: newForm });
+        if (["items", "students"].includes(name)) toast(value);
+      };
     }
 
     function getUsername() {
@@ -571,7 +560,7 @@
     }
 
     function loseDataWarning(onOk) {
-      if (state.saved) onOk();
+      if (state.saved || !state.undoStack.length) reset(onOk);
       else
         modal({
           children: [

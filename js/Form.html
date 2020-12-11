@@ -52,8 +52,8 @@
   };
   Form.prototype.hasItemsOut = function () {
     if (!this.items.length) return false;
-    return this.items.every((item) => {
-      return item.checkOut && (!item.checkIn || !item.missing);
+    return this.items.every(({ checkOut, checkIn, missing }) => {
+      return checkOut && !checkIn && !missing;
     });
   };
   Form.prototype.hasStudent = function (student) {
@@ -147,5 +147,11 @@
           new Item({ ...item, checkOut: "", checkIn: "", checkedOut: false })
       ),
     });
+  };
+  Form.prototype.isAdvanceBooking = function () {
+    return (
+      this.students.length &&
+      this.students.every(({ checkIn }) => checkIn === null)
+    );
   };
 </script>
