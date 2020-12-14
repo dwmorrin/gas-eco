@@ -1,7 +1,8 @@
 <script>
-  /* global Config */
+  /* global Config Inventory */
   /* exported FormFilters */
   const FormFilters = (function () {
+    const { contains } = Inventory;
     return {
       isBooked: (form) => form.bookingId,
       isNotBooked: (form) => !form.bookingId,
@@ -17,12 +18,10 @@
         });
       },
       byMatchAllItemID: (items) => (form) => {
-        const itemQuery = items.toUpperCase().split(",");
-        return itemQuery.every(form.items.contains);
+        return items.split(",").every((item) => contains(form.items, item));
       },
       byMatchAnyItemID: (items) => (form) => {
-        const itemQuery = items.toUpperCase().split(",");
-        return itemQuery.some(form.items.contains);
+        return items.split(",").some((item) => contains(form.items, item));
       },
       byMissingItem: (form) => {
         return form.items.some((item) => item.missing);

@@ -143,10 +143,6 @@
       .withSuccessHandler(onClosedForms)
       .doGet({
         get: "archive",
-        dateRangeJSON: JSON.stringify({
-          start: getFormattedDateTime(new Date("01/01/2019")),
-          end: getFormattedDateTime(new Date()),
-        }),
       });
 
     /**
@@ -407,6 +403,7 @@
           "Server was unable to retrieve the closed forms."
         );
       state.closedForms = closedForms.map((form) => new Form(form));
+      state.lastClosedFormRow = response.firstRow;
       if (unlock) closedFormsButton.removeAttribute("disabled");
     }
 

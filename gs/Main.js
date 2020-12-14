@@ -13,7 +13,7 @@ Database
  * @see {@link https://developers.google.com/apps-script/guides/triggers/}
  */
 /* exported doGet */
-function doGet({ get, dateRangeJSON }) {
+function doGet({ get, lastClosedFormRow }) {
   if (!get) {
     return HtmlService.createTemplateFromFile("html/index")
       .evaluate()
@@ -26,11 +26,11 @@ function doGet({ get, dateRangeJSON }) {
   switch (get) {
     case "archive":
       return response({
-        formList: Database.getArchivedForms(dateRangeJSON).stringify(),
+        ...Database.getArchivedForms(lastClosedFormRow),
       });
     case "items":
       return response({
-        items: Database.getAllItems().stringify(),
+        items: JSON.stringify(Database.getAllItems()),
       });
     case "students":
       return response({
@@ -44,7 +44,7 @@ function doGet({ get, dateRangeJSON }) {
     case "openForms": // fallthrough
     case "openFormsQuiet":
       return response({
-        formList: Database.getOpenForms().stringify(),
+        formList: JSON.stringify(Database.getOpenForms()),
       });
   }
 
@@ -85,7 +85,7 @@ function doPost(request) {
       try {
         Database.writeFormToSheet(form, true);
         response.target = "openForms";
-        response.formList = Database.getOpenForms().stringify();
+        response.formList = JSON.stringify(Database.getOpenForms());
       } catch (error) {
         if (error instanceof ErrorFormCollision_) {
           Database.writeRejectedFormToSheet(form);
@@ -123,9 +123,9 @@ function doPost(request) {
         if (form.isReadyToClose() || form.isNoShow()) {
           Database.writeFormToSheet(form, true); // throws ErrorFormCollision_
           response.target = "openForms";
-          response.formList = Database.getOpenForms().stringify();
+          response.formList = JSON.stringify(Database.getOpenForms());
         } else {
-          response.form = Database.writeFormToSheet(form).stringify(); // throws ErrorFormCollision_
+          response.form = JSON.stringify(Database.writeFormToSheet(form)); // throws ErrorFormCollision_
           response.target = "updateForm";
         }
       } catch (error) {

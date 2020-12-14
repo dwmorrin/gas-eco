@@ -70,18 +70,4 @@ function Inventory_(array) {
       return item.id.toLowerCase().replace(/-0+/, "-") === id;
     });
   };
-  this.archive = function () {
-    var copy = [];
-    items.forEach(function (item) {
-      copy.push(item.archive());
-    });
-    return copy;
-  };
-  this.stringify = function () {
-    var copy = [];
-    items.forEach(function (item) {
-      copy.push(item.archive());
-    });
-    return JSON.stringify(copy);
-  };
 }

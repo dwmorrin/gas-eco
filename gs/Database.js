@@ -4,9 +4,7 @@ ErrorFormDataInvalid_
 ErrorFormInvalid_
 getUser_
 Form_
-Inventory_
 Item_
-Stack_
 Student_
 */
 /* exported Database */
@@ -113,23 +111,17 @@ var Database = (function () {
   /* ********* GETTERS *********** */
 
   function getAllItems() {
-    var sheet = SpreadsheetApp.openById(index.items.SHEET_ID).getSheetByName(
-      index.items.SHEET_NAME
-    );
-    var data = sheet.getDataRange().getValues();
-    data.shift();
-    var items = new Inventory_();
-    var itemIdregex = /[A-Za-z]+-[A-Za-z0-9]+/; // one or more letters, hyphen, one or more digits/letters
-    var itemBarcode = /^\d+$/;
-    data.forEach(function (itemData) {
-      if (
-        itemBarcode.test(itemData[index.items.BARCODE]) ||
-        itemIdregex.test(itemData[index.items.ID])
-      ) {
-        items.push(new Item_(itemData));
-      }
-    });
-    return items;
+    return SpreadsheetApp.openById(index.items.SHEET_ID)
+      .getSheetByName(index.items.SHEET_NAME)
+      .getDataRange()
+      .getValues()
+      .slice(1)
+      .filter(
+        (itemData) =>
+          /^\d+$/.test(itemData[index.items.BARCODE]) ||
+          /[A-Za-z]+-[A-Za-z0-9]+/.test(itemData[index.items.ID])
+      )
+      .map((itemData) => new Item_(itemData));
   }
 
   function getAllStudents() {
@@ -145,17 +137,19 @@ var Database = (function () {
     return students;
   }
 
-  function getArchivedForms() {
-    var sheet = SpreadsheetApp.openById(index.forms.SHEET_ID).getSheetByName(
+  function getArchivedForms(lastRow = 0) {
+    const chunkSize = 50; // each call retrieves, at most, one chunk of forms
+    const sheet = SpreadsheetApp.openById(index.forms.SHEET_ID).getSheetByName(
       index.forms.ARCHIVE_NAME
     );
-    var data = sheet.getDataRange().getValues();
-    const forms = new Stack_();
-    data.shift();
-    data.forEach(function (row) {
-      forms.push(new Form_(row));
-    });
-    return forms;
+    if (!lastRow) lastRow = sheet.getLastRow();
+    // minimum data row is #2 because #1 is the header row
+    const firstRow = lastRow - chunkSize < 2 ? 2 : lastRow - chunkSize;
+    var data = sheet.getRange(firstRow, 1, chunkSize, 13).getValues();
+    return {
+      firstRow,
+      formList: JSON.stringify(data.map((row) => new Form_(row))),
+    };
   }
 
   /** @return {[]} an array of Forms */
@@ -163,7 +157,7 @@ var Database = (function () {
     var formsSpreadSheet = SpreadsheetApp.openById(index.forms.SHEET_ID);
     var formsSheet = formsSpreadSheet.getSheetByName(index.forms.SHEET_NAME);
     var data = formsSheet.getDataRange().getValues(),
-      forms = new Stack_();
+      forms = [];
     // don't shift and start at row 1 to allow Sheet manipulation, if required
     for (var row = 1; row < data.length; ++row) {
       try {

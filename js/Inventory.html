@@ -6,10 +6,6 @@
       contains,
       getByBarcode,
       getById,
-      getByItem,
-      getStripped,
-      removeByItem,
-      archive,
     };
     function contains(items, query) {
       query = query.replace(/\s/g, "").replace(/-0+/, "-");
@@ -34,46 +30,6 @@
         }
         return item.id.toLowerCase().replace(/-0+/, "-") === id;
       });
-    }
-    function getByItem(items, item) {
-      return items.find((i) => {
-        if (i.id && i.id == item.id) {
-          return true;
-        }
-        if (i.barcode && i.barcode == item.barcode) {
-          return true;
-        }
-        return false;
-      });
-    }
-    function getStripped(items) {
-      const copy = [];
-      items.forEach((item) => {
-        copy.push({
-          id: item.id,
-          description: item.description,
-          quantity: item.quantity,
-          barcode: item.barcode,
-        });
-      });
-      return copy;
-    }
-    function removeByItem(items, { barcode, id }) {
-      const index = items.findIndex((item) => {
-        if (item.id && item.id == id) {
-          return true;
-        }
-        if (item.barcode && item.barcode == barcode) {
-          return true;
-        }
-        return false;
-      });
-      return items.splice(index, 1)[0];
-    }
-    function archive(items) {
-      const copy = [];
-      items.forEach((item) => copy.push(item.archive()));
-      return copy;
     }
   })();
 </script>
