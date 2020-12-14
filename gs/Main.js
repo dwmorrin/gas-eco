@@ -2,16 +2,7 @@
 ErrorFormCollision_
 ErrorFormInvalid_
 Form_
-clearSignatureValidation_
-getAllItems_
-getAllStudents_
-getArchivedForms_
-getOpenForms_
-startSignature_
-writeCodabar_
-writeFormToSheet_
-writeRejectedFormToSheet_
-writeSignatureToSheet_
+Database
 */
 
 /**
@@ -22,44 +13,50 @@ writeSignatureToSheet_
  * @see {@link https://developers.google.com/apps-script/guides/triggers/}
  */
 /* exported doGet */
-function doGet(request) {
-  if (!request.get) {
-    var webpage = HtmlService.createTemplateFromFile("html/index");
-    webpage = webpage.evaluate();
-    webpage
+function doGet({ get, init, dateRangeJSON }) {
+  if (!get) {
+    return HtmlService.createTemplateFromFile("html/index")
+      .evaluate()
       .setTitle("Equipment Check-Out")
       .addMetaTag("viewport", "width=device-width");
-    return webpage;
   }
 
-  var response = {};
-  switch (request.get) {
+  switch (get) {
     case "archive":
-      response.formList = getArchivedForms_(request.dateRangeJSON).stringify();
-      break;
+      return {
+        formList: Database.getArchivedForms(dateRangeJSON).stringify(),
+        target: get,
+        unlock: init || false,
+      };
     case "items":
-      response.items = getAllItems_().stringify();
-      break;
+      return {
+        items: Database.getAllItems().stringify(),
+        target: get,
+        unlock: init || false,
+      };
     case "students":
-      response.students = JSON.stringify(getAllStudents_());
-      break;
+      return {
+        students: JSON.stringify(Database.getAllStudents()),
+        target: get,
+        unlock: init || false,
+      };
     case "user":
-      response.user = getUser_();
-      break;
+      return {
+        user: getUser_(),
+        target: get,
+        unlock: init || false,
+      };
     case "checkForms": // fallthrough
     case "openForms": // fallthrough
     case "openFormsQuiet":
-      response.formList = getOpenForms_().stringify();
-      break;
+      return {
+        formList: Database.getOpenForms().stringify(),
+        target: get,
+        unlock: init || false,
+      };
   }
 
-  if (request.init) {
-    response.unlock = true;
-  }
-
-  response.target = request.get;
-
-  return response;
+  return { error: `unhandled request for ${get}` };
 }
 
 /**
@@ -87,19 +84,19 @@ function doPost(request) {
   // to update wasn't already updated by someone else.
   switch (request.post) {
     case "codabar":
-      writeCodabar_(request.netId, request.codabar);
-      response.students = JSON.stringify(getAllStudents_());
+      Database.writeCodabar(request.netId, request.codabar);
+      response.students = JSON.stringify(Database.getAllStudents());
       response.target = "codabar";
       break;
     case "deleteForm":
       var form = new Form_(JSON.parse(request.form));
       try {
-        writeFormToSheet_(form, true);
+        Database.writeFormToSheet(form, true);
         response.target = "openForms";
-        response.formList = getOpenForms_().stringify();
+        response.formList = Database.getOpenForms().stringify();
       } catch (error) {
         if (error instanceof ErrorFormCollision_) {
-          writeRejectedFormToSheet_(form);
+          Database.writeRejectedFormToSheet(form);
           lock.releaseLock();
           response.target = "collision";
           response.storedForm = JSON.stringify(error.saved);
@@ -111,20 +108,20 @@ function doPost(request) {
       }
       break;
     case "rejected":
-      writeRejectedFormToSheet_(new Form_(request.form));
+      Database.writeRejectedFormToSheet(new Form_(request.form));
       response.target = "rejected";
       break;
     case "signature":
-      writeSignatureToSheet_(request);
-      response.students = JSON.stringify(getAllStudents_());
+      Database.writeSignatureToSheet(request);
+      response.students = JSON.stringify(Database.getAllStudents());
       response.target = "signature";
       break;
     case "signatureTimeout":
-      clearSignatureValidation_();
+      Database.clearSignatureValidation();
       response.target = "signatureTimeout";
       break;
     case "startSignature":
-      startSignature_(request.netid);
+      Database.startSignature(request.netid);
       response.target = "startSignature";
       break;
     case "updateForm":
@@ -132,23 +129,23 @@ function doPost(request) {
       try {
         form.validate(); // throws ErrorFormInvalid_
         if (form.isReadyToClose() || form.isNoShow()) {
-          writeFormToSheet_(form, true); // throws ErrorFormCollision_
+          Database.writeFormToSheet(form, true); // throws ErrorFormCollision_
           response.target = "openForms";
-          response.formList = getOpenForms_().stringify();
+          response.formList = Database.getOpenForms().stringify();
         } else {
-          response.form = writeFormToSheet_(form).stringify(); // throws ErrorFormCollision_
+          response.form = Database.writeFormToSheet(form).stringify(); // throws ErrorFormCollision_
           response.target = "updateForm";
         }
       } catch (error) {
         if (error instanceof ErrorFormCollision_) {
-          writeRejectedFormToSheet_(form);
+          Database.writeRejectedFormToSheet(form);
           lock.releaseLock();
           response.target = "collision";
           response.storedForm = JSON.stringify(error.saved);
           response.submittedForm = JSON.stringify(error.submitted);
           return response;
         } else if (error instanceof ErrorFormInvalid_) {
-          writeRejectedFormToSheet_(form);
+          Database.writeRejectedFormToSheet(form);
           lock.releaseLock();
           response.target = "invalid";
           response.form = form;
@@ -169,7 +166,6 @@ function doPost(request) {
   return response;
 }
 
-/** @see doGet */
 function getUser_() {
   return Session.getActiveUser().getEmail();
 }
@@ -181,7 +177,7 @@ function getUser_() {
  */
 function handleUnload_() {
   // clear signature validation
-  clearSignatureValidation_();
+  Database.clearSignatureValidation();
   return;
 }
 
@@ -193,84 +189,3 @@ function handleUnload_() {
 function include_(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
-
-var DateUtils = {};
-
-/**
- * Utility to get 'mm/dd/yyyy hh:mm am' format
- * @param {Date} date
- * @return {string}
- */
-DateUtils.getFormattedDateTime = function (date) {
-  var year = date.getFullYear(),
-    month = date.getMonth() + 1, // zero indexed
-    day = date.getDate(),
-    hour = date.getHours(),
-    minutes = date.getMinutes(),
-    ampm = "am";
-
-  if (hour > 11) {
-    ampm = "pm";
-    hour = hour % 12;
-  }
-  if (hour == 0) {
-    hour = 12;
-  }
-  return (
-    DateUtils.zeropad(month) +
-    "/" +
-    DateUtils.zeropad(day) +
-    "/" +
-    year +
-    " " +
-    DateUtils.zeropad(hour) +
-    ":" +
-    DateUtils.zeropad(minutes) +
-    " " +
-    ampm
-  );
-};
-
-/**
- * @param {string} dateString
- * @return {Date}
- */
-DateUtils.parseFormattedDate = function (dateString) {
-  // mm/dd/yyyy hh:mm am
-  var month = dateString.slice(0, 2),
-    day = dateString.slice(3, 5),
-    year = dateString.slice(6, 10),
-    hour = dateString.slice(11, 13),
-    minutes = dateString.slice(14, 16),
-    ampm = dateString.slice(17, 19);
-  // convert ampm to 24 hour
-  if (ampm == "pm") {
-    ampm = 12;
-  } else {
-    ampm = 0;
-  }
-  hour = (hour % 12) + ampm;
-
-  return new Date(
-    year +
-      "-" +
-      DateUtils.zeropad(month) +
-      "-" +
-      DateUtils.zeropad(day) +
-      "T" +
-      DateUtils.zeropad(hour) +
-      ":" +
-      DateUtils.zeropad(minutes) +
-      ":00"
-  );
-};
-
-/** Helper function for handling date strings */
-DateUtils.zeropad = function (x) {
-  x = +x;
-  if (x < 10) {
-    return "0" + x;
-  } else {
-    return String(x);
-  }
-};
