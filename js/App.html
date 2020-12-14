@@ -124,26 +124,30 @@
     // initial server calls
     withErrorHandler
       .withSuccessHandler(onOpenForms)
-      .doGet({ get: "openForms", init: true });
+      .doGet({ get: "openForms" });
     withErrorHandler
       .withSuccessHandler(
         (response) => (usernameDisplay.textContent = response.user)
       )
       .doGet({ get: "user" });
     withErrorHandler
+      .withUserObject({ unlock: true })
       .withSuccessHandler(onRoster)
-      .doGet({ get: "students", init: true });
+      .doGet({ get: "students" });
     withErrorHandler
+      .withUserObject({ unlock: true })
       .withSuccessHandler(onInventory)
-      .doGet({ get: "items", init: true });
-    withErrorHandler.withSuccessHandler(onClosedForms).doGet({
-      get: "archive",
-      dateRangeJSON: JSON.stringify({
-        start: getFormattedDateTime(new Date("01/01/2019")),
-        end: getFormattedDateTime(new Date()),
-      }),
-      init: true,
-    });
+      .doGet({ get: "items" });
+    withErrorHandler
+      .withUserObject({ unlock: true })
+      .withSuccessHandler(onClosedForms)
+      .doGet({
+        get: "archive",
+        dateRangeJSON: JSON.stringify({
+          start: getFormattedDateTime(new Date("01/01/2019")),
+          end: getFormattedDateTime(new Date()),
+        }),
+      });
 
     /**
      * Warns user when trying to close tab and changes are not saved.
@@ -174,7 +178,7 @@
 
     //---- function definitions
 
-    function onInventory(response) {
+    function onInventory(response, { unlock } = {}) {
       const inventory = tryJsonParse(response.items);
       if (!inventory)
         return displayErrorMessage("Error getting inventory from server");
@@ -182,9 +186,7 @@
         return displayErrorMessage("Error: Server found no items!");
       }
       state.inventory = inventory.map((item) => new Item(item));
-      if (response.unlock) {
-        tryUnlock();
-      }
+      if (unlock) tryUnlock();
     }
 
     function makeFormNavigation(forms, type) {
@@ -398,14 +400,14 @@
       showOpenFormsPage();
     }
 
-    function onClosedForms(response) {
+    function onClosedForms(response, { unlock } = {}) {
       const closedForms = tryJsonParse(response.formList);
       if (!closedForms)
         return displayErrorMessage(
           "Server was unable to retrieve the closed forms."
         );
       state.closedForms = closedForms.map((form) => new Form(form));
-      response.unlock && closedFormsButton.removeAttribute("disabled");
+      if (unlock) closedFormsButton.removeAttribute("disabled");
     }
 
     function onCollision(response) {
@@ -433,7 +435,7 @@
       tryUnlock();
     }
 
-    function onRoster(response) {
+    function onRoster(response, { unlock } = {}) {
       const roster = tryJsonParse(response.students);
       if (!roster)
         return displayErrorMessage("Error getting roster from server.");
@@ -441,7 +443,7 @@
         return displayErrorMessage("No students found");
       }
       state.roster = roster.map(Object.freeze);
-      if (response.unlock) tryUnlock();
+      if (unlock) tryUnlock();
     }
 
     function displayErrorMessage(message) {

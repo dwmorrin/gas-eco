@@ -13,7 +13,7 @@ Database
  * @see {@link https://developers.google.com/apps-script/guides/triggers/}
  */
 /* exported doGet */
-function doGet({ get, init, dateRangeJSON }) {
+function doGet({ get, dateRangeJSON }) {
   if (!get) {
     return HtmlService.createTemplateFromFile("html/index")
       .evaluate()
@@ -21,39 +21,31 @@ function doGet({ get, init, dateRangeJSON }) {
       .addMetaTag("viewport", "width=device-width");
   }
 
+  const response = (data) => ({ ...data, target: get });
+
   switch (get) {
     case "archive":
-      return {
+      return response({
         formList: Database.getArchivedForms(dateRangeJSON).stringify(),
-        target: get,
-        unlock: init || false,
-      };
+      });
     case "items":
-      return {
+      return response({
         items: Database.getAllItems().stringify(),
-        target: get,
-        unlock: init || false,
-      };
+      });
     case "students":
-      return {
+      return response({
         students: JSON.stringify(Database.getAllStudents()),
-        target: get,
-        unlock: init || false,
-      };
+      });
     case "user":
-      return {
+      return response({
         user: getUser_(),
-        target: get,
-        unlock: init || false,
-      };
+      });
     case "checkForms": // fallthrough
     case "openForms": // fallthrough
     case "openFormsQuiet":
-      return {
+      return response({
         formList: Database.getOpenForms().stringify(),
-        target: get,
-        unlock: init || false,
-      };
+      });
   }
 
   return { error: `unhandled request for ${get}` };
