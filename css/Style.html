@@ -1,4 +1,10 @@
 <style>
+  .locationError::after {
+    color: red;
+    content: "Please select a location";
+    font-style: italic;
+  }
+
   .timeIntervalError::after {
     color: red;
     content: "End time is after start time.";
@@ -429,10 +435,6 @@
     }
   }
 
-  .hidden {
-    display: none !important; /* class selector is low specificity, doesn't apply to specific styles without !important */
-  }
-
   /* desktop view only */
   @media screen and (min-width: 501px) {
     div.modal textarea {
@@ -483,9 +485,7 @@
     tbody.itemList tr {
       display: grid;
     }
-    tbody.studentList tr,
-  tbody.itemList tr[data-barcode], /* avoiding item notes row */
-  tbody.itemList tr[data-id] {
+    tbody.studentList tr {
       border: 1px solid grey;
     }
     thead.archive,

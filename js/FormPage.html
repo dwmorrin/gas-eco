@@ -264,6 +264,7 @@
                       headerCell("Location"),
                       form.isBlank() || formInputsTouched.has("location")
                         ? cell({
+                            class: !form.location ? "locationError" : "",
                             child: LocationSelect(),
                           })
                         : cell({
@@ -492,8 +493,6 @@
     function getUpdateButtonHint() {
       if (waiting) return "Please wait while the form is being saved...";
       if (disabled) return "This is a closed form. You cannot edit it.";
-      if ((form.isBlank() && !savable) || (!saved && !savable))
-        return "Please enter start time, end time, location, and at least one student.";
       if (form.isBlank() && savable) return "Click submit to save this form.";
       if (!form.isBlank() && saved) return "All changes saved.";
     }
@@ -514,12 +513,12 @@
             handleChangeLocation({
               target: {
                 name: "location",
-                value: input.value || "none",
+                value: input.value.trim(),
               },
             }),
           onClose: () =>
             handleChangeLocation({
-              target: { name: "location", value: "none" },
+              target: { name: "location", value: "" },
             }),
         });
         input.focus();
