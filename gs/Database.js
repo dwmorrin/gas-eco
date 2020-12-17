@@ -224,7 +224,7 @@ var Database = (function () {
     // Note: do not shift data
     const i = data.findIndex((row) => row[0] === id);
     if (i < 0) {
-      throw "could not find form " + form;
+      throw new Error(`could not find form ID: ${id}`);
     }
     const row = i + 1;
 
@@ -267,7 +267,7 @@ var Database = (function () {
       .getValues()
       .findIndex((row) => row[index.students.NETID] === id);
     if (i < 0) {
-      throw "Could not match " + id;
+      throw new Error(`Could not match ID: ${id}`);
     }
     sheet.getRange(i + 1, index.students.SIGNATURE + 1).setValue(dataURL);
   }
