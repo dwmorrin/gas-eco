@@ -75,12 +75,10 @@ var Database = (function () {
         }
         return;
       }
-      var row = data.findRowContaining(
-        item[id],
-        index.items[id.toUpperCase()],
-        true
+      const row = data.findIndex(
+        (row) => row[index.items[id.toUpperCase()]] === item[id]
       );
-      if (row === undefined) {
+      if (row < 0) {
         throw new ErrorFormInvalid_(
           item.description + " " + item.id + " cannot be found."
         );
@@ -185,8 +183,8 @@ var Database = (function () {
       index.students.SHEET_NAME
     );
     var data = sheet.getDataRange().getValues();
-    var i = data.findRowContaining(netId, index.students.NETID, true);
-    if (typeof i == "undefined") {
+    const i = data.findIndex((row) => row[index.students.NETID] === netId);
+    if (i < 0) {
       throw new Error("Could not write codabar for " + netId);
     }
     sheet.getRange(i + 1, index.students.ID + 1).setValue(codabar);
@@ -207,11 +205,11 @@ var Database = (function () {
   }
 
   function writeFormToSheet(form, closeAndArchive) {
-    var ss = SpreadsheetApp.openById(index.forms.SHEET_ID);
-    var formSheet = ss.getSheetByName(index.forms.SHEET_NAME);
-    var data = formSheet.getDataRange().getValues();
-    var id = form.id;
-    var values = form.getAsArray();
+    const ss = SpreadsheetApp.openById(index.forms.SHEET_ID);
+    const formSheet = ss.getSheetByName(index.forms.SHEET_NAME);
+    const data = formSheet.getDataRange().getValues();
+    const id = form.id;
+    const values = form.getAsArray();
 
     if (!id) {
       // create
@@ -224,23 +222,22 @@ var Database = (function () {
     }
 
     // Note: do not shift data
-    var index_ = data.findRowContaining(id, 0, true);
-    if (typeof index_ == "undefined") {
+    const i = data.findIndex((row) => row[0] === id);
+    if (i < 0) {
       throw "could not find form " + form;
     }
-    var row = index_ + 1;
+    const row = i + 1;
 
     // Do not allow write unless user was editing most
     // recent form.  Use try/catch around call to this function
     // to handle this error
-    var storedForm = new Form_(data[index_]).setHash();
-    if (form.hash != storedForm.hash) {
+    const storedForm = new Form_(data[i]).setHash();
+    if (form.hash !== storedForm.hash) {
       throw new ErrorFormCollision_(storedForm, form);
     }
 
     if (closeAndArchive) {
-      var archive = ss.getSheetByName(index.forms.ARCHIVE_NAME);
-      archive.appendRow(values);
+      ss.getSheetByName(index.forms.ARCHIVE_NAME).appendRow(values);
       // 'Close' form by deleting from active sheet
       formSheet
         .getRange(row, 1, 1, 13)
@@ -261,18 +258,18 @@ var Database = (function () {
     return new Form_(range.getValues()[0]).setHash();
   }
 
-  function writeSignatureToSheet(request) {
-    var sheet = SpreadsheetApp.openById(index.students.SHEET_ID).getSheetByName(
-      index.students.SHEET_NAME
-    );
-    var data = sheet.getDataRange().getValues();
-    var i = data.findRowContaining(request.id, index.students.NETID, true);
-    if (typeof i == "undefined") {
-      throw "Could not match " + request.id;
+  function writeSignatureToSheet({ id, dataURL }) {
+    const sheet = SpreadsheetApp.openById(
+      index.students.SHEET_ID
+    ).getSheetByName(index.students.SHEET_NAME);
+    const i = sheet
+      .getDataRange()
+      .getValues()
+      .findIndex((row) => row[index.students.NETID] === id);
+    if (i < 0) {
+      throw "Could not match " + id;
     }
-    sheet
-      .getRange(i + 1, index.students.SIGNATURE + 1)
-      .setValue(request.dataURL);
+    sheet.getRange(i + 1, index.students.SIGNATURE + 1).setValue(dataURL);
   }
 
   // TODO don't hardcode A1; just append a row with the Net ID
@@ -284,10 +281,12 @@ var Database = (function () {
   }
 
   // TODO don't hardcode A1; search for the Net ID to clear off
+  // TODO reactivate or delete
   function clearSignatureValidation() {
-    var sheet = SpreadsheetApp.openById(index.students.SHEET_ID).getSheetByName(
-      index.students.SIGNATURE_SHEET_NAME
-    );
-    sheet.getRange("A1").clear();
+    return;
+    // var sheet = SpreadsheetApp.openById(index.students.SHEET_ID).getSheetByName(
+    //   index.students.SIGNATURE_SHEET_NAME
+    // );
+    // sheet.getRange("A1").clear();
   }
 })();

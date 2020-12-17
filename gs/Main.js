@@ -59,7 +59,6 @@ function doGet({ get, lastClosedFormRow }) {
  */
 /* exported doPost */
 function doPost(request) {
-  var response = {};
   var lock = LockService.getScriptLock();
   try {
     lock.waitLock(10000);
@@ -72,91 +71,96 @@ function doPost(request) {
         "Try refreshing the browser.  Contact admin if the problem continues.",
     };
   }
+
+  const response = (data = {}) => {
+    lock.releaseLock();
+    return data;
+  };
   // we have the lock
   // we must check that there is no collision first, i.e. that thing we are trying
   // to update wasn't already updated by someone else.
   switch (request.post) {
     case "codabar":
       Database.writeCodabar(request.netId, request.codabar);
-      response.students = JSON.stringify(Database.getAllStudents());
-      response.target = "codabar";
-      break;
-    case "deleteForm":
-      var form = new Form_(JSON.parse(request.form));
+      return response({
+        students: JSON.stringify(Database.getAllStudents()),
+        target: "codabar",
+      });
+    case "deleteForm": {
+      const form = new Form_(JSON.parse(request.form));
       try {
         Database.writeFormToSheet(form, true);
-        response.target = "openForms";
-        response.formList = JSON.stringify(Database.getOpenForms());
+        return response({
+          target: "openForms",
+          formList: JSON.stringify(Database.getOpenForms()),
+        });
       } catch (error) {
         if (error instanceof ErrorFormCollision_) {
           Database.writeRejectedFormToSheet(form);
-          lock.releaseLock();
-          response.target = "collision";
-          response.storedForm = JSON.stringify(error.saved);
-          response.submittedForm = JSON.stringify(error.submitted);
-          return response;
+          return response({
+            target: "collision",
+            storedForm: JSON.stringify(error.saved),
+            submittedForm: JSON.stringify(error.submitted),
+          });
         }
-        lock.releaseLock();
-        throw error;
+        return response({ error });
       }
-      break;
+    }
     case "rejected":
       Database.writeRejectedFormToSheet(new Form_(request.form));
-      response.target = "rejected";
-      break;
+      return response({ target: "rejected" });
     case "signature":
       Database.writeSignatureToSheet(request);
-      response.students = JSON.stringify(Database.getAllStudents());
-      response.target = "signature";
-      break;
+      return response({
+        students: JSON.stringify(Database.getAllStudents()),
+        target: "signature",
+      });
     case "signatureTimeout":
       Database.clearSignatureValidation();
-      response.target = "signatureTimeout";
-      break;
+      return response({ target: "signatureTimeout" });
     case "startSignature":
       Database.startSignature(request.netid);
-      response.target = "startSignature";
-      break;
-    case "updateForm":
-      form = new Form_(JSON.parse(request.form));
+      return response({ target: "startSignature" });
+    case "updateForm": {
+      const form = new Form_(JSON.parse(request.form));
       try {
         form.validate(); // throws ErrorFormInvalid_
         if (form.isReadyToClose() || form.isNoShow()) {
           Database.writeFormToSheet(form, true); // throws ErrorFormCollision_
-          response.target = "openForms";
-          response.formList = JSON.stringify(Database.getOpenForms());
+          return response({
+            target: "openForms",
+            formList: JSON.stringify(Database.getOpenForms()),
+          });
         } else {
-          response.form = JSON.stringify(Database.writeFormToSheet(form)); // throws ErrorFormCollision_
-          response.target = "updateForm";
+          return response({
+            form: JSON.stringify(Database.writeFormToSheet(form)), // throws ErrorFormCollision_
+            target: "updateForm",
+          });
         }
       } catch (error) {
         if (error instanceof ErrorFormCollision_) {
           Database.writeRejectedFormToSheet(form);
-          lock.releaseLock();
-          response.target = "collision";
-          response.storedForm = JSON.stringify(error.saved);
-          response.submittedForm = JSON.stringify(error.submitted);
-          return response;
+          return response({
+            target: "collision",
+            storedForm: JSON.stringify(error.saved),
+            submittedForm: JSON.stringify(error.submitted),
+          });
         } else if (error instanceof ErrorFormInvalid_) {
           Database.writeRejectedFormToSheet(form);
-          lock.releaseLock();
-          response.target = "invalid";
-          response.form = form;
-          response.message = error.message;
-          return response;
+          return response({
+            target: "invalid",
+            form: JSON.stringify(form),
+            message: error.message,
+          });
         } else {
-          lock.releaseLock();
-          throw error;
+          return response({ error });
         }
       }
-      break;
+    }
     case "unload":
       handleUnload_();
-      break;
+      return response();
   }
-  lock.releaseLock();
-
-  return response;
 }
 
 function getUser_() {
