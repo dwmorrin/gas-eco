@@ -73,7 +73,7 @@
           button.setAttribute("disabled", true);
           state.openForms = null;
           withErrorHandler
-            .withSuccessHandler(onOpenForms)
+            .withSuccessHandler(checkForError(onOpenForms))
             .doGet({ get: "openForms" });
           showLoadingPage();
         });
@@ -122,24 +122,26 @@
 
     // initial server calls
     withErrorHandler
-      .withSuccessHandler(onOpenForms)
+      .withSuccessHandler(checkForError(onOpenForms))
       .doGet({ get: "openForms" });
     withErrorHandler
       .withSuccessHandler(
-        (response) => (usernameDisplay.textContent = response.user)
+        checkForError(
+          (response) => (usernameDisplay.textContent = response.user)
+        )
       )
       .doGet({ get: "user" });
     withErrorHandler
       .withUserObject({ unlock: true })
-      .withSuccessHandler(onRoster)
+      .withSuccessHandler(checkForError(onRoster))
       .doGet({ get: "students" });
     withErrorHandler
       .withUserObject({ unlock: true })
-      .withSuccessHandler(onInventory)
+      .withSuccessHandler(checkForError(onInventory))
       .doGet({ get: "items" });
     withErrorHandler
       .withUserObject({ unlock: true })
-      .withSuccessHandler(onClosedForms)
+      .withSuccessHandler(checkForError(onClosedForms))
       .doGet({
         get: "archive",
       });
@@ -208,29 +210,31 @@
           displayErrorMessage(error.message);
           onFailure();
         })
-        .withSuccessHandler((response) => {
-          if (response.target === "updateForm") {
-            const updatedForm = new Form(JSON.parse(response.form));
-            state.openForms = replace(
-              state.openForms,
-              (form) => form.isBlank() || form.id === updatedForm.id,
-              updatedForm
-            );
-            reset(() => setForm({ form: updatedForm }));
-          }
-          if (response.target === "openForms") {
-            onSuccess();
-            return onOpenForms(response);
-          }
-          if (response.target === "collision") {
-            onFailure();
-            return onCollision(response);
-          }
-          if (response.target === "invalid") {
-            onFailure();
-            return displayErrorMessage("Form is invalid");
-          }
-        })
+        .withSuccessHandler(
+          checkForError((response) => {
+            if (response.target === "updateForm") {
+              const updatedForm = new Form(JSON.parse(response.form));
+              state.openForms = replace(
+                state.openForms,
+                (form) => form.isBlank() || form.id === updatedForm.id,
+                updatedForm
+              );
+              reset(() => setForm({ form: updatedForm }));
+            }
+            if (response.target === "openForms") {
+              onSuccess();
+              return onOpenForms(response);
+            }
+            if (response.target === "collision") {
+              onFailure();
+              return onCollision(response);
+            }
+            if (response.target === "invalid") {
+              onFailure();
+              return displayErrorMessage("Form is invalid");
+            }
+          })
+        )
         .doPost({
           post: "updateForm",
           form: JSON.stringify(form),
@@ -240,14 +244,14 @@
 
     function onDelete(form) {
       const onOk = () => {
-        withErrorHandler
-          .withSuccessHandler((response) => {
+        withErrorHandler.withSuccessHandler(
+          checkForError((response) => {
             if (response.target === "openForms") {
               return reset(() => onOpenForms(response));
             }
             if (response.target === "collision") return onCollision(response);
-          })
-          .doPost({ post: "deleteForm", form: JSON.stringify(form) });
+          }).doPost({ post: "deleteForm", form: JSON.stringify(form) })
+        );
         setForm({ form, disabled: true, waiting: true });
       };
       modal({
@@ -268,61 +272,67 @@
         onClose: () => (canceled = true),
       });
       withErrorHandler
-        .withSuccessHandler((_, context) => {
-          if (canceled) {
-            // user aborted by hitting "cancel"
-            return;
-          }
-          context.modal.remove();
-          modal({
-            children: [
-              heading1("Add signature"),
-              paragraph(
-                "Production area policy acknowledgment signature not found " +
-                  "for this person. All persons must read the policy and have " +
-                  "a signature on file. Please use the tablet to show the " +
-                  "person the policy and capture their signature. " +
-                  'Click the "Signature done" button when they are finished ' +
-                  "using the tablet."
-              ),
-            ],
-            okText: "Signature done",
-            onOk: () =>
-              withErrorHandler
-                .withSuccessHandler((response) => {
-                  onRoster(response);
-                  setForm({ form });
-                  modal({
-                    children: [
-                      heading1("Student information updated"),
-                      paragraph(
-                        "Please try scanning the ID again to continue."
-                      ),
-                    ],
-                  });
-                })
-                .doGet({ get: "students", init: false }),
-          });
-        })
+        .withSuccessHandler(
+          checkForError((_, context) => {
+            if (canceled) {
+              // user aborted by hitting "cancel"
+              return;
+            }
+            context.modal.remove();
+            modal({
+              children: [
+                heading1("Add signature"),
+                paragraph(
+                  "Production area policy acknowledgment signature not found " +
+                    "for this person. All persons must read the policy and have " +
+                    "a signature on file. Please use the tablet to show the " +
+                    "person the policy and capture their signature. " +
+                    'Click the "Signature done" button when they are finished ' +
+                    "using the tablet."
+                ),
+              ],
+              okText: "Signature done",
+              onOk: () =>
+                withErrorHandler
+                  .withSuccessHandler(
+                    checkForError((response) => {
+                      onRoster(response);
+                      setForm({ form });
+                      modal({
+                        children: [
+                          heading1("Student information updated"),
+                          paragraph(
+                            "Please try scanning the ID again to continue."
+                          ),
+                        ],
+                      });
+                    })
+                  )
+                  .doGet({ get: "students", init: false }),
+            });
+          })
+        )
         .withUserObject({ canceled })
         .doPost({ post: "startSignature", netid: netId });
     }
 
     function onNewCodabar({ netId, codabar, form }) {
       withErrorHandler
-        .withSuccessHandler((response) => {
-          const students = tryJsonParse(response.students);
-          if (!students)
-            displayErrorMessage("Error retrieving student list from server");
-          state.roster = students.map(Object.freeze);
-          setForm({ form });
-          modal({
-            children: [
-              heading1("Student information updated"),
-              paragraph("Please try scanning the ID again to continue."),
-            ],
-          });
-        })
+        .withSuccessHandler(
+          checkForError((response) => {
+            const students = tryJsonParse(response.students);
+            if (!students)
+              displayErrorMessage("Error retrieving student list from server");
+            state.roster = students.map(Object.freeze);
+            setForm({ form });
+            modal({
+              children: [
+                heading1("Student information updated"),
+                paragraph("Please try scanning the ID again to continue."),
+              ],
+            });
+          })
+        )
         .doPost({
           post: "codabar",
           netId,
@@ -616,6 +626,16 @@
         if (state.itemSort !== name) state.itemSort = name;
         else state.itemSortAscending = !state.itemSortAscending;
         setForm({ form, type: disabled ? "closed" : "open" });
+      };
+    }
+
+    function checkForError(onSuccess, onFailure = () => undefined) {
+      return (...args) => {
+        if (args[0].error) {
+          displayErrorMessage(args[0].error.message);
+          return onFailure(...args);
+        }
+        return onSuccess(...args);
       };
     }
   })();

@@ -48,7 +48,7 @@ function doGet({ get, lastClosedFormRow }) {
       });
   }
 
-  return { error: `unhandled request for ${get}` };
+  return { error: { message: `unhandled request for ${get}` } };
 }
 
 /**
@@ -66,10 +66,11 @@ function doPost(request) {
   } catch (lockError) {
     // eslint-disable-next-line no-console
     console.error(lockError);
-    throw new Error(
-      "Whoops, the database is unavailable at the moment. " +
-        "You may have to refresh the browser."
-    );
+    return {
+      error:
+        "Oops, the database is unavailable at the moment. " +
+        "Try refreshing the browser.  Contact admin if the problem continues.",
+    };
   }
   // we have the lock
   // we must check that there is no collision first, i.e. that thing we are trying
