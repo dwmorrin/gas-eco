@@ -43,7 +43,7 @@ var Database = (function () {
     clearSignatureValidation,
     getAllItems,
     getAllStudents,
-    getArchivedForms,
+    getClosedForms,
     getOpenForms,
     startSignature,
     writeCodabar,
@@ -135,7 +135,7 @@ var Database = (function () {
     return students;
   }
 
-  function getArchivedForms(lastRow = 0) {
+  function getClosedForms(lastRow = 0) {
     const chunkSize = 50; // each call retrieves, at most, one chunk of forms
     const sheet = SpreadsheetApp.openById(index.forms.SHEET_ID).getSheetByName(
       index.forms.ARCHIVE_NAME
@@ -204,7 +204,7 @@ var Database = (function () {
     formSheet.appendRow(values);
   }
 
-  function writeFormToSheet(form, closeAndArchive) {
+  function writeFormToSheet(form, close) {
     const ss = SpreadsheetApp.openById(index.forms.SHEET_ID);
     const formSheet = ss.getSheetByName(index.forms.SHEET_NAME);
     const data = formSheet.getDataRange().getValues();
@@ -236,7 +236,7 @@ var Database = (function () {
       throw new ErrorFormCollision_(storedForm, form);
     }
 
-    if (closeAndArchive) {
+    if (close) {
       ss.getSheetByName(index.forms.ARCHIVE_NAME).appendRow(values);
       // 'Close' form by deleting from active sheet
       formSheet

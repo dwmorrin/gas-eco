@@ -33,16 +33,20 @@
       tryJsonParse,
     } = Utility;
     const { addOneHour, before, getFormattedDateTime } = DateUtils;
-    const state = {
+    // seal forces all properties to be declared here
+    const state = Object.seal({
       closedForms: null,
       closedFormsFiltered: null,
       closedFormsQuery: {},
+      closedFormsSort: "startTime",
+      closedFormsSortAscending: true,
       formInputsTouched: new Set(),
       inventory: null,
       itemSort: "checkOut",
       itemSortAscending: true,
       itemsOutSort: "description",
       itemsOutSortAscending: true,
+      lastClosedFormRow: -1,
       openFormSort: "startTime",
       openFormSortAscending: true,
       openForms: null,
@@ -50,7 +54,7 @@
       roster: null,
       saved: true,
       undoStack: /* Form */ [], // each change pushes the old Form here
-    };
+    });
     const newFormButton = button("New Form", {
       class: "share",
       disabled: true,
@@ -143,7 +147,7 @@
       .withUserObject({ unlock: true })
       .withSuccessHandler(checkForError(onClosedForms))
       .doGet({
-        get: "archive",
+        get: "closedForms",
       });
 
     /**
@@ -393,9 +397,14 @@
         ClosedFormsPage({
           closedForms: state.closedForms,
           closedFormsQuery: state.closedFormsQuery,
+          closedFormsSort: state.closedFormsSort,
+          closedFormsSortAscending: state.closedFormsSortAscending,
           setClosedFormsQuery: (query) => (state.closedFormsQuery = query),
+          setClosedFormsSort: (sort, ascending) => {
+            state.closedFormsSort = sort;
+            state.closedFormsSortAscending = ascending;
+          },
           setForm,
-          setOpenForms,
         })
       );
     }
@@ -405,14 +414,17 @@
       showOpenFormsPage();
     }
 
-    function onClosedForms(response, { unlock } = {}) {
-      const closedForms = tryJsonParse(response.formList);
+    function onClosedForms({ formList, firstRow }, { unlock } = {}) {
+      const closedForms = tryJsonParse(formList);
       if (!closedForms)
         return displayErrorMessage(
           "Server was unable to retrieve the closed forms."
         );
-      state.closedForms = closedForms.map((form) => new Form(form));
-      state.lastClosedFormRow = response.firstRow;
+      state.closedForms = sort(
+        closedForms.map((form) => new Form(form)),
+        compareKey("startTime", compareDateStrings)
+      );
+      state.lastClosedFormRow = firstRow;
       if (unlock) closedFormsButton.removeAttribute("disabled");
     }
 
@@ -590,29 +602,26 @@
       onSuccess();
     }
 
-    // all ascending
-    function getOpenFormSortByColumnName(name) {
-      return {
-        startTime: compareKey("startTime", compareDateStrings),
-        endTime: compareKey("endTime", compareDateStrings),
-        location: compareKey("location", compareStrings),
-        students: compareKey("students", (a, b) =>
-          compareStrings(minName(a), minName(b))
-        ),
-      }[name];
-      function minName(students) {
-        return students.reduce((min, { name }) => (name < min ? name : min));
-      }
-    }
-
     function onSortForms(name) {
       if (state.openFormSort !== name) state.openFormSort = name;
       else state.openFormSortAscending = !state.openFormSortAscending;
       const sorted = sort(
         state.openForms,
-        getOpenFormSortByColumnName(state.openFormSort)
+        compareKey(
+          name,
+          {
+            startTime: compareDateStrings,
+            endTime: compareDateStrings,
+            location: compareStrings,
+            students: (a, b) => compareStrings(minName(a), minName(b)),
+          }[name]
+        )
       );
       setOpenForms(state.openFormSortAscending ? sorted : reverse(sorted));
+
+      function minName(students) {
+        return students.reduce((min, { name }) => (name < min ? name : min));
+      }
     }
 
     function onSortItemsOut(name) {

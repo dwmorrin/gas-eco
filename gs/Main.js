@@ -24,9 +24,9 @@ function doGet({ get, lastClosedFormRow }) {
   const response = (data) => ({ ...data, target: get });
 
   switch (get) {
-    case "archive":
+    case "closedForms":
       return response({
-        ...Database.getArchivedForms(lastClosedFormRow),
+        ...Database.getClosedForms(lastClosedFormRow),
       });
     case "items":
       return response({

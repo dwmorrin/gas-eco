@@ -673,8 +673,8 @@
       });
     }
 
-    function QuantityButtons(item, isArchive) {
-      if (isArchive || item.checkIn || item.isSerialized()) {
+    function QuantityButtons(item, closed) {
+      if (closed || item.checkIn || item.isSerialized()) {
         return document.createTextNode(item.quantity);
       }
       return createElement("span", {
@@ -806,7 +806,7 @@
       ];
     }
 
-    function CheckInButton(item, isArchive) {
+    function CheckInButton(item, closed) {
       if (item.checkedOutAgain) {
         return document.createTextNode("");
       }
@@ -816,7 +816,7 @@
           textContent: "ITEM IS MISSING",
         });
       }
-      if (isArchive || item.checkIn) {
+      if (closed || item.checkIn) {
         return document.createTextNode(item.checkIn);
       }
       if (!item.checkOut || !item.checkedOut) {
@@ -898,7 +898,7 @@
     }
 
     function StudentRow(student) {
-      // isArchive === disabled
+      // closed === disabled
       return createElement("tr", {
         class: disabled ? "hoverOff" : "",
         children: [

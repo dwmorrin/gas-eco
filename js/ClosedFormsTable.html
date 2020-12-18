@@ -2,7 +2,7 @@
   "use strict";
   /* global HTML Utility */
   /* exported ClosedFormsTable */
-  function ClosedFormsTable({ forms, setForm }) {
+  function ClosedFormsTable({ forms, onSort, setForm }) {
     const {
       cell,
       createElement,
@@ -32,7 +32,12 @@
             "project",
             "tape",
             "overnight",
-          ].map((text) => headerCell({ textContent: uncamelCase(text) }))
+          ].map((text) =>
+            headerCell({
+              textContent: uncamelCase(text),
+              onClick: () => onSort(text),
+            })
+          )
         ),
       }),
       tableBody({
