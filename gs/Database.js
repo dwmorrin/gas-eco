@@ -178,11 +178,11 @@ var Database = (function () {
 
   /* ********* WRITERS *********** */
 
-  function writeCodabar(netId, codabar) {
-    var sheet = SpreadsheetApp.openById(index.students.SHEET_ID).getSheetByName(
-      index.students.SHEET_NAME
-    );
-    var data = sheet.getDataRange().getValues();
+  function writeCodabar({ netId, codabar }) {
+    const sheet = SpreadsheetApp.openById(
+      index.students.SHEET_ID
+    ).getSheetByName(index.students.SHEET_NAME);
+    const data = sheet.getDataRange().getValues();
     const i = data.findIndex((row) => row[index.students.NETID] === netId);
     if (i < 0) {
       throw new Error("Could not write codabar for " + netId);

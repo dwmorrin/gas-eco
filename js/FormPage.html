@@ -36,7 +36,7 @@
     savable = false,
     saved,
     timeIntervalError,
-    username = "anonymous",
+    userName = "anonymous",
     waiting,
   }) {
     const {
@@ -659,7 +659,7 @@
       if (body.length < 1) {
         return;
       }
-      const author = username;
+      const author = userName;
       form.notes.push({
         timestamp: Date.now(),
         author,

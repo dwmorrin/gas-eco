@@ -4,6 +4,15 @@ ErrorFormInvalid_
 Form_
 Database
 */
+/* exported doGet */
+
+/**
+ * @typedef {Object} Action
+ * @property {string} type identifies the action
+ * @property {*=} payload data the receiver consumes to complete the action
+ * @property {*=} meta additional info that is neither type nor payload
+ * @property {boolean=} error if and only if true, there is an error
+ */
 
 /**
  * Runs on HTTP GET request.
@@ -12,43 +21,44 @@ Database
  * External programs can access this function with HTTP GET as an API.
  * @see {@link https://developers.google.com/apps-script/guides/triggers/}
  */
-/* exported doGet */
-function doGet({ get, lastClosedFormRow }) {
-  if (!get) {
+function doGet({ type, payload = {} }) {
+  if (!type) {
     return HtmlService.createTemplateFromFile("html/index")
       .evaluate()
       .setTitle("Equipment Check-Out")
       .addMetaTag("viewport", "width=device-width");
   }
 
-  const response = (data) => ({ ...data, target: get });
+  const response = (payload) => ({ payload, type });
 
-  switch (get) {
+  switch (type) {
     case "closedForms":
       return response({
-        ...Database.getClosedForms(lastClosedFormRow),
+        ...Database.getClosedForms(payload.lastClosedFormRow),
       });
     case "items":
       return response({
         items: JSON.stringify(Database.getAllItems()),
       });
+    case "openForms":
+      return response({
+        formList: JSON.stringify(Database.getOpenForms()),
+      });
     case "students":
       return response({
         students: JSON.stringify(Database.getAllStudents()),
       });
-    case "user":
+    case "userName":
       return response({
-        user: getUser_(),
-      });
-    case "checkForms": // fallthrough
-    case "openForms": // fallthrough
-    case "openFormsQuiet":
-      return response({
-        formList: JSON.stringify(Database.getOpenForms()),
+        userName: getUserName_(),
       });
   }
 
-  return { error: { message: `unhandled request for ${get}` } };
+  return {
+    error: true,
+    type,
+    payload: { message: `unhandled request for ${type}` },
+  };
 }
 
 /**
@@ -58,112 +68,115 @@ function doGet({ get, lastClosedFormRow }) {
  * @see {@link https://developers.google.com/apps-script/guides/triggers/}
  */
 /* exported doPost */
-function doPost(request) {
+function doPost({ type, payload }) {
   var lock = LockService.getScriptLock();
   try {
     lock.waitLock(10000);
   } catch (lockError) {
-    // eslint-disable-next-line no-console
     console.error(lockError);
     return {
-      error:
-        "Oops, the database is unavailable at the moment. " +
-        "Try refreshing the browser.  Contact admin if the problem continues.",
+      error: true,
+      payload: {
+        message:
+          "Oops, the database is unavailable at the moment. " +
+          "Try refreshing the browser. Contact admin if the problem continues.",
+      },
     };
   }
 
-  const response = (data = {}) => {
+  const response = (action) => {
     lock.releaseLock();
-    return data;
+    return action;
   };
-  // we have the lock
-  // we must check that there is no collision first, i.e. that thing we are trying
-  // to update wasn't already updated by someone else.
-  switch (request.post) {
+
+  switch (type) {
     case "codabar":
-      Database.writeCodabar(request.netId, request.codabar);
+      Database.writeCodabar(payload);
       return response({
+        type: "codabar",
         students: JSON.stringify(Database.getAllStudents()),
-        target: "codabar",
       });
     case "deleteForm": {
-      const form = new Form_(JSON.parse(request.form));
+      const form = new Form_(JSON.parse(payload));
       try {
         Database.writeFormToSheet(form, true);
         return response({
-          target: "openForms",
-          formList: JSON.stringify(Database.getOpenForms()),
+          type: "openForms",
+          payload: { formList: JSON.stringify(Database.getOpenForms()) },
         });
       } catch (error) {
         if (error instanceof ErrorFormCollision_) {
           Database.writeRejectedFormToSheet(form);
           return response({
-            target: "collision",
-            storedForm: JSON.stringify(error.saved),
-            submittedForm: JSON.stringify(error.submitted),
+            type: "collision",
+            payload: {
+              storedForm: JSON.stringify(error.saved),
+              submittedForm: JSON.stringify(error.submitted),
+            },
           });
         }
-        return response({ error });
+        return response({ error: true, payload: error });
       }
     }
-    case "rejected":
-      Database.writeRejectedFormToSheet(new Form_(request.form));
-      return response({ target: "rejected" });
-    case "signature":
-      Database.writeSignatureToSheet(request);
+    case "rejected": // NOT USED BY CLIENT
+      Database.writeRejectedFormToSheet(new Form_(payload));
+      return response({ type: "rejected" });
+    case "signature": // NOT USED BY CLIENT
+      Database.writeSignatureToSheet(payload);
       return response({
-        students: JSON.stringify(Database.getAllStudents()),
-        target: "signature",
+        payload: { students: JSON.stringify(Database.getAllStudents()) },
+        type: "signature",
       });
-    case "signatureTimeout":
+    case "signatureTimeout": // NOT USED BY CLIENT
       Database.clearSignatureValidation();
-      return response({ target: "signatureTimeout" });
+      return response({ type: "signatureTimeout" });
     case "startSignature":
-      Database.startSignature(request.netid);
-      return response({ target: "startSignature" });
+      Database.startSignature(payload);
+      return response({ type: "startSignature" });
     case "updateForm": {
-      const form = new Form_(JSON.parse(request.form));
+      const form = new Form_(JSON.parse(payload));
       try {
         form.validate(); // throws ErrorFormInvalid_
         if (form.isReadyToClose() || form.isNoShow()) {
           Database.writeFormToSheet(form, true); // throws ErrorFormCollision_
           return response({
-            target: "openForms",
-            formList: JSON.stringify(Database.getOpenForms()),
+            type: "openForms",
+            payload: { formList: JSON.stringify(Database.getOpenForms()) },
           });
         } else {
           return response({
-            form: JSON.stringify(Database.writeFormToSheet(form)), // throws ErrorFormCollision_
-            target: "updateForm",
+            type: "updateForm",
+            payload: JSON.stringify(Database.writeFormToSheet(form)), // throws ErrorFormCollision_
           });
         }
       } catch (error) {
         if (error instanceof ErrorFormCollision_) {
           Database.writeRejectedFormToSheet(form);
           return response({
-            target: "collision",
-            storedForm: JSON.stringify(error.saved),
-            submittedForm: JSON.stringify(error.submitted),
+            type: "collision",
+            payload: {
+              storedForm: JSON.stringify(error.saved),
+              submittedForm: JSON.stringify(error.submitted),
+            },
           });
         } else if (error instanceof ErrorFormInvalid_) {
           Database.writeRejectedFormToSheet(form);
           return response({
-            target: "invalid",
-            form: JSON.stringify(form),
-            message: error.message,
+            type: "invalid",
+            payload: { form: JSON.stringify(form), message: error.message },
           });
         } else {
-          return response({ error });
+          return response({ error: true, payload: error });
         }
       }
     }
-    case "unload":
+    case "unload": // NOT USED BY CLIENT
       handleUnload_();
       return response();
   }
 }
 
-function getUser_() {
+function getUserName_() {
   return Session.getActiveUser().getEmail();
 }
 
