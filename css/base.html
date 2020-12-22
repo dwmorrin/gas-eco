@@ -1,0 +1,70 @@
+<style>
+  html {
+    max-width: 900px;
+  }
+
+  header h1 {
+    display: inline-block;
+  }
+
+  label {
+    float: left;
+    width: 200px;
+  }
+
+  section {
+    border: 1px solid black;
+    margin: 2px;
+  }
+
+  section h4 {
+    margin: 2px 0 7px 5px;
+  }
+
+  table {
+    table-layout: fixed;
+    width: 99%;
+    margin-left: 5px;
+  }
+
+  td {
+    padding: 1px;
+  }
+
+  th {
+    font-weight: bold;
+  }
+
+  /* desktop view only */
+  @media screen and (min-width: 501px) {
+    button {
+      margin: 2px;
+    }
+
+    label {
+      margin-right: 10px;
+      text-align: right;
+    }
+
+    header {
+      /* required for .userNameContainer position absolute */
+      position: relative;
+    }
+
+    .userNameContainer {
+      position: absolute;
+      right: 0;
+    }
+  }
+
+  /* mobile view only */
+  @media screen and (max-width: 500px) {
+    button {
+      margin: 5px;
+    }
+
+    .userNameContainer {
+      display: block;
+    }
+  }
+</style>

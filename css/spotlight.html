@@ -1,0 +1,27 @@
+<style>
+  .blockAround {
+    animation-duration: 1s;
+    animation-name: half-fade-in;
+    background-color: black;
+    opacity: 0.5;
+    position: absolute;
+    z-index: 1;
+  }
+
+  .tip {
+    position: absolute;
+    z-index: 2;
+    background-color: white;
+    border: 1px solid black;
+    padding: 10px;
+  }
+
+  @keyframes half-fade-in {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 0.5;
+    }
+  }
+</style>

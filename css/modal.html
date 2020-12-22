@@ -1,0 +1,94 @@
+<style>
+  .modal {
+    background-color: white;
+    border: solid 1px black;
+    font-size: larger;
+    left: 50%;
+    max-width: 100%;
+    max-height: 100%;
+    position: fixed;
+    overflow: scroll;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2; /* Should be highest */
+    transform-style: preserve-3d; /* trying to fix blurry text bug */
+  }
+
+  .modal .buttonContainer {
+    bottom: 0;
+    position: absolute;
+    right: 0;
+  }
+
+  .modal a {
+    display: block;
+    margin-left: 20px;
+    font-size: smaller;
+  }
+
+  .modal h1 {
+    margin: 10px;
+    white-space: pre; /* forces single line, fixes wordwrap causing overlap */
+  }
+
+  .modal input {
+    margin: 5px;
+    margin-left: 20px;
+  }
+
+  .modal p {
+    height: 100%;
+    margin: 0;
+    min-width: 300px;
+    overflow: auto;
+    padding: 20px 20px 5px 20px;
+    width: 90%;
+  }
+
+  .modal table {
+    display: block;
+    max-height: 300px;
+    overflow: auto;
+  }
+
+  .modal table tr.searchResults:hover {
+    background-color: lightcyan;
+    cursor: pointer;
+  }
+
+  .modal textarea {
+    height: 50px;
+  }
+
+  .modal td,
+  .modal th {
+    padding: 10px;
+  }
+
+  .overlay {
+    background-color: black;
+    height: 100%;
+    left: 0;
+    opacity: 0.5;
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 1; /* Must be second highest to modal */
+  }
+
+  @media screen and (min-width: 501px) {
+    .modal textarea {
+      width: 500px;
+    }
+  }
+
+  @media screen and (max-width: 500px) {
+    .modal h1 {
+      font-size: medium;
+    }
+
+    .modal textarea {
+      width: 300px;
+    }
+  }
+</style>

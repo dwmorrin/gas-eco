@@ -1,0 +1,162 @@
+<style>
+  .alert {
+    color: red;
+    font-weight: bold;
+  }
+
+  button[value="deleteForm"] {
+    margin-top: 25px;
+  }
+
+  .buttonTight {
+    margin-left: 0;
+  }
+
+  .form th {
+    /*font: normal 14px Arial;*/
+    border-bottom: 1px solid grey;
+  }
+
+  .locationError::after {
+    color: red;
+    content: "Please select a location";
+    font-style: italic;
+  }
+
+  .timeIntervalError::after {
+    color: red;
+    content: "End time is after start time.";
+    font-style: italic;
+  }
+  .addStudentHint,
+  .itemsNotSaved {
+    background-color: papayawhip;
+  }
+
+  .itemsOut {
+    background-color: gainsboro;
+  }
+
+  .itemsIn {
+    background-color: silver;
+  }
+
+  .quantity {
+    border-radius: 0;
+    cursor: inherit;
+    float: left;
+    margin: 0;
+    min-width: 25px;
+    padding: 0;
+  }
+
+  .globalnotes p {
+    font-weight: bold;
+  }
+
+  .updateButtonHint {
+    color: grey;
+    font-style: italic;
+  }
+
+  td.editable:hover,
+  .itemList tr:not(.hoverOff):hover,
+  .studentList tr:not(.hoverOff):hover,
+  .formItems th:hover {
+    color: blue;
+    cursor: pointer;
+  }
+
+  .formItems th:nth-child(1) {
+    width: 10%;
+  }
+
+  .formItems th:nth-child(2) {
+    width: 30%;
+  }
+
+  .formItems th:nth-child(3) {
+    width: 20%;
+  }
+
+  .formItems th:nth-child(4) {
+    width: 20%;
+  }
+
+  .formItems th:nth-child(5) {
+    width: 20%;
+  }
+
+  .formStudents th:nth-child(1) {
+    width: 40%;
+  }
+
+  .formStudents th:nth-child(2) {
+    width: 20%;
+  }
+
+  .formStudents th:nth-child(3) {
+    width: 20%;
+  }
+
+  .formStudents th:nth-child(4) {
+    width: 20%;
+  }
+
+  .staticFields td {
+    border: none;
+    padding-bottom: 0;
+    width: 70%;
+  }
+
+  .staticFields th {
+    border: none;
+    font: bold 14px Arial;
+    padding-bottom: 0;
+    padding-top: 9px;
+    width: 20%;
+  }
+
+  .itemnotes {
+    padding: 0;
+    /* cursor: pointer; */
+  }
+
+  .itemnotes > input {
+    width: 100%;
+  }
+
+  .serialized td:first-child:hover {
+    cursor: default;
+    color: black;
+  }
+
+  @media screen and (max-width: 500px) {
+    .currentFormstackDisplay {
+      text-align: center;
+    }
+
+    button[value="changeLog"] {
+      display: none;
+    }
+
+    .formControls {
+      display: grid;
+    }
+
+    .staticFields tr,
+    .staticFields td,
+    .studentList tr,
+    .itemList tr {
+      display: grid;
+    }
+
+    .studentList tr {
+      border: 1px solid grey;
+    }
+
+    .form {
+      display: none;
+    }
+  }
+</style>
