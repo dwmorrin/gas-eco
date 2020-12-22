@@ -6,7 +6,7 @@
     return tableBody({
       children: openForms.map((form) =>
         row({
-          class: getFormStatus(form),
+          class: `${getFormStatus(form)} hoverBackgroundCyan`,
           children: [
             cell({ child: documentIcon() }),
             ...[

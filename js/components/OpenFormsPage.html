@@ -32,13 +32,17 @@
           tableHead({
             class: "open",
             children: [
-              headerCell({ child: documentIcon() }),
+              headerCell({
+                class: "documentIconHeader",
+                child: documentIcon(),
+              }),
               ...["startTime", "endTime", "location", "students"].map((text) =>
                 headerCell({
                   class:
-                    text === sortedBy
-                      ? `sortedBy ${ascending ? "" : "descending"}`
-                      : "",
+                    "hoverBlue" +
+                    (text === sortedBy
+                      ? ` sortedBy ${ascending ? "" : "descending"}`
+                      : ""),
                   onClick: () => onSortForms(text),
                   textContent: uncamelCase(text),
                 })
@@ -50,7 +54,7 @@
         createElement("h2", { textContent: "Equipment Checked Out" }),
         table(
           tableHead({
-            class: "equipmentOut",
+            class: "hoverBlue",
             child: row(
               ...["description", "id", "location", "students", "endTime"].map(
                 (text) =>

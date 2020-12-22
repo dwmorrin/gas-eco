@@ -17,9 +17,11 @@
 
     return table(
       tableHead({
-        class: "closedFormsHead",
         child: row(
-          headerCell({ child: documentIcon() }),
+          headerCell({
+            class: "closedFormsHeader documentIconHeader",
+            child: documentIcon(),
+          }),
           ...[
             "startTime",
             "endTime",
@@ -34,6 +36,7 @@
             "overnight",
           ].map((text) =>
             headerCell({
+              class: "closedFormsHeader hoverBlue",
               textContent: uncamelCase(text),
               onClick: () => onSort(text),
             })
@@ -41,10 +44,10 @@
         ),
       }),
       tableBody({
-        class: "closedFormsList",
         children: forms.length
           ? forms.map((form) =>
               createElement("tr", {
+                class: "hoverBackgroundCyan",
                 onClick: () =>
                   setForm({ form, type: "closed", filteredForms: forms }),
                 children: [

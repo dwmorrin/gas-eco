@@ -57,7 +57,6 @@
     ).map(itemToRow);
 
     return tableBody({
-      class: "equipmentOut",
       children,
     });
 
@@ -71,6 +70,7 @@
       formId,
     }) {
       return createElement("tr", {
+        class: "hoverBackgroundCyan",
         onClick: () =>
           setForm({ form: openForms.find(({ id }) => id === formId) }),
         children: [
