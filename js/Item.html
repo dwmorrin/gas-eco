@@ -1,33 +1,35 @@
 <script>
   "use strict";
   /* exported  Item */
-  function Item({
-    barcode = "",
-    id = "",
-    checkedOut = false,
-    checkIn = "",
-    checkOut = "",
-    description = "",
-    quantity = 1,
-    notes = "",
-    missing = false,
-    quantityIn = 0,
-  }) {
-    this.barcode = String(barcode);
-    this.checkIn = String(checkIn);
-    this.checkOut = String(checkOut);
-    this.checkedOut = Boolean(checkedOut);
-    this.description = String(description);
-    this.id = String(id);
-    this.missing = Boolean(missing);
-    this.notes = String(notes);
-    this.quantity = Number(quantity);
-    this.quantityIn = Number(quantityIn);
+  class Item {
+    constructor({
+      barcode = "",
+      id = "",
+      checkedOut = false,
+      checkIn = "",
+      checkOut = "",
+      description = "",
+      quantity = 1,
+      notes = "",
+      missing = false,
+      quantityIn = 0,
+    }) {
+      this.barcode = String(barcode);
+      this.checkIn = String(checkIn);
+      this.checkOut = String(checkOut);
+      this.checkedOut = Boolean(checkedOut);
+      this.description = String(description);
+      this.id = String(id);
+      this.missing = Boolean(missing);
+      this.notes = String(notes);
+      this.quantity = Number(quantity);
+      this.quantityIn = Number(quantityIn);
 
-    return Object.freeze(this);
+      return Object.freeze(this);
+    }
+
+    isSerialized() {
+      return this.barcode && (+this.barcode < 10000 || +this.barcode > 10100);
+    }
   }
-
-  Item.prototype.isSerialized = function () {
-    return this.barcode && (+this.barcode < 10000 || +this.barcode > 10100);
-  };
 </script>

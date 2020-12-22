@@ -1,18 +1,24 @@
 /* exported
-ErrorFormCollision_
-ErrorFormDataInvalid_
-ErrorFormInvalid_
+ErrorFormCollision
+ErrorFormDataInvalid
+ErrorFormInvalid
 */
 
-function ErrorFormCollision_(saved, submitted) {
-  this.saved = saved;
-  this.submitted = submitted;
+class ErrorFormCollision {
+  constructor(saved, submitted) {
+    this.saved = saved;
+    this.submitted = submitted;
+  }
 }
 
-function ErrorFormDataInvalid_(data) {
-  this.data = data;
+class ErrorFormDataInvalid {
+  constructor(data) {
+    this.data = data;
+  }
 }
 
-function ErrorFormInvalid_(message) {
-  this.message = message;
+class ErrorFormInvalid {
+  constructor(message) {
+    this.message = message;
+  }
 }

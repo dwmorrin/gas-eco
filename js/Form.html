@@ -1,157 +1,141 @@
 <script>
+  "use strict";
   /* global DateUtils Item */
   /* exported Form */
-  function Form({
-    bookedStudents = "",
-    bookingId = null,
-    contact = "",
-    endTime = "",
-    id = null,
-    location = "",
-    overnight = false,
-    project = "",
-    startTime = "",
-    tape = false,
-    hash = "",
-    items = [],
-    notes = [],
-    students = [],
-  }) {
-    this.items = Object.freeze(items.map((item) => new Item(item)));
-    this.bookedStudents = String(bookedStudents);
-    this.bookingId = bookingId;
-    this.contact = String(contact);
-    this.endTime = String(endTime);
-    this.id = id;
-    this.location = String(location);
-    this.project = String(project);
-    this.overnight = Boolean(overnight);
-    this.startTime = String(startTime);
-    this.tape = Boolean(tape);
-    this.hash = hash;
-    this.notes = Object.freeze(
-      notes.map((note) => (typeof note === "object" ? { ...note } : note))
-    );
-    this.students = Object.freeze(
-      students.slice().map((student) => ({ ...student }))
-    );
+  class Form {
+    constructor({
+      bookedStudents = "",
+      bookingId = null,
+      contact = "",
+      endTime = "",
+      id = null,
+      location = "",
+      overnight = false,
+      project = "",
+      startTime = "",
+      tape = false,
+      hash = "",
+      items = [],
+      notes = [],
+      students = [],
+    }) {
+      this.items = Object.freeze(items.map((item) => new Item(item)));
+      this.bookedStudents = String(bookedStudents);
+      this.bookingId = bookingId;
+      this.contact = String(contact);
+      this.endTime = String(endTime);
+      this.id = id;
+      this.location = String(location);
+      this.project = String(project);
+      this.overnight = Boolean(overnight);
+      this.startTime = String(startTime);
+      this.tape = Boolean(tape);
+      this.hash = hash;
+      this.notes = Object.freeze(
+        notes.map((note) => (typeof note === "object" ? { ...note } : note))
+      );
+      this.students = Object.freeze(
+        students.slice().map((student) => ({ ...student }))
+      );
 
-    return Object.freeze(this);
-  }
+      return Object.freeze(this);
+    }
 
-  Form.prototype.hasActiveStudent = function () {
-    const studentCounter = function (count, student) {
-      if (student.checkIn && !(student.checkOut || student.left)) {
-        return count + 1;
-      } else {
-        return count;
-      }
-    };
-    const activeStudents = this.students.reduce(studentCounter, 0);
-    return activeStudents > 1;
-  };
-  Form.prototype.hasItemsOut = function () {
-    if (!this.items.length) return false;
-    return this.items.every(({ checkOut, checkIn, missing }) => {
-      return checkOut && !checkIn && !missing;
-    });
-  };
-  Form.prototype.hasStudent = function (student) {
-    return Boolean(this.students.find((s) => s.id == student.id));
-  };
-  /**
-   * isBlank determines if a form is a new, blank form (could be called `isNew`)
-   */
-  Form.prototype.isBlank = function () {
-    return this.id === null;
-  };
-  Form.prototype.isNoShow = function () {
-    if (!this.id) return false;
-    const gracePeriod = 30, // minutes
-      start = new Date(this.startTime),
-      now = Date.now();
+    duplicate() {
+      const { copyTime, getFormattedDateTime } = DateUtils;
+      return new Form({
+        ...this,
+        id: null,
+        startTime: getFormattedDateTime(copyTime(new Date(this.startTime))),
+        endTime: getFormattedDateTime(copyTime(new Date(this.endTime))),
+        notes: [],
+        students: this.students.map((student) => ({
+          ...student,
+          checkIn: null,
+          checkOut: null,
+          left: false,
+        })),
+        items: this.items.map(
+          (item) =>
+            new Item({ ...item, checkOut: "", checkIn: "", checkedOut: false })
+        ),
+      });
+    }
 
-    start.setMinutes(start.getMinutes() + gracePeriod);
-
-    return (
-      now > start.getTime() && !this.students.some((student) => student.checkIn)
-    );
-  };
-  Form.prototype.isReadyToClose = function () {
-    // Need at least 1 check-in, and everyone checked-in must be checked-out
-    return (
-      this.students.some((student) => student.checkIn) &&
-      this.students.every((student) => {
-        if (student.checkIn) {
-          return student.checkOut || student.left;
+    hasActiveStudent() {
+      const studentCounter = function (count, student) {
+        if (student.checkIn && !(student.checkOut || student.left)) {
+          return count + 1;
+        } else {
+          return count;
         }
-        return true;
-      })
-    );
-  };
-  Form.prototype.isReadyToPost = function () {
-    if (!this.location) {
-      return false;
+      };
+      const activeStudents = this.students.reduce(studentCounter, 0);
+      return activeStudents > 1;
     }
-    if (this.startTime === this.endTime) {
-      return false;
+
+    hasItemsOut() {
+      if (!this.items.length) return false;
+      return this.items.every(({ checkOut, checkIn, missing }) => {
+        return checkOut && !checkIn && !missing;
+      });
     }
-    const someStudentsAreActive = this.students.some(
-      (s) => s.checkIn && !(s.checkOut || s.left)
-    );
-    const someItemsAreOut = this.items.some(
-      (i) => i.checkOut && !(i.checkIn || i.missing)
-    );
-    if (someItemsAreOut && !someStudentsAreActive) {
-      return false;
+
+    hasStudent(student) {
+      return Boolean(this.students.find((s) => s.id == student.id));
     }
-    if (this.students.length == 0) {
-      // finally, is anybody on the form?
-      return false;
+
+    isAdvanceBooking() {
+      return (
+        this.students.length &&
+        this.students.every(({ checkIn }) => checkIn === null)
+      );
     }
-    return true;
-  };
-  Form.prototype.makeAdvanceBooking = function () {
-    return new Form({
-      ...this,
-      id: null,
-      notes: [],
-      students: this.students.map((student) => ({
-        ...student,
-        checkIn: null,
-        checkOut: null,
-        left: false,
-      })),
-      items: this.items.map(
-        (item) =>
-          new Item({ ...item, checkOut: "", checkIn: "", checkedOut: false })
-      ),
-    });
-  };
-  Form.prototype.duplicate = function () {
-    const { copyTime, getFormattedDateTime } = DateUtils;
-    return new Form({
-      ...this,
-      id: null,
-      startTime: getFormattedDateTime(copyTime(new Date(this.startTime))),
-      endTime: getFormattedDateTime(copyTime(new Date(this.endTime))),
-      notes: [],
-      students: this.students.map((student) => ({
-        ...student,
-        checkIn: null,
-        checkOut: null,
-        left: false,
-      })),
-      items: this.items.map(
-        (item) =>
-          new Item({ ...item, checkOut: "", checkIn: "", checkedOut: false })
-      ),
-    });
-  };
-  Form.prototype.isAdvanceBooking = function () {
-    return (
-      this.students.length &&
-      this.students.every(({ checkIn }) => checkIn === null)
-    );
-  };
+
+    // is this a new, unsaved (in Sheets) form?
+    isBlank() {
+      return this.id === null;
+    }
+
+    isNoShow() {
+      if (!this.id) return false;
+      const gracePeriod = 30, // minutes
+        start = new Date(this.startTime),
+        now = Date.now();
+
+      start.setMinutes(start.getMinutes() + gracePeriod);
+
+      return (
+        now > start.getTime() && !this.students.some(({ checkIn }) => checkIn)
+      );
+    }
+
+    isReadyToClose() {
+      // Need at least 1 check-in, and everyone checked-in must be checked-out
+      return (
+        this.students.some(({ checkIn }) => checkIn) &&
+        this.students.every(
+          ({ checkIn, checkOut, left }) => !checkIn || checkOut || left
+        )
+      );
+    }
+
+    makeAdvanceBooking() {
+      return new Form({
+        ...this,
+        id: null,
+        notes: [],
+        students: this.students.map((student) => ({
+          ...student,
+          checkIn: null,
+          checkOut: null,
+          left: false,
+        })),
+        items: this.items.map(
+          (item) =>
+            new Item({ ...item, checkOut: "", checkIn: "", checkedOut: false })
+        ),
+      });
+    }
+  }
 </script>

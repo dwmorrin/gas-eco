@@ -1,11 +1,10 @@
 /* global
-ErrorFormCollision_
-ErrorFormDataInvalid_
-ErrorFormInvalid_
+ErrorFormCollision
+ErrorFormDataInvalid
 getUser_
-Form_
-Item_
-Student_
+Form
+Item
+Student
 */
 /* exported Database */
 var Database = (function () {
@@ -52,60 +51,6 @@ var Database = (function () {
     writeSignatureToSheet,
   };
 
-  /**
-   * TODO debug and reactivate
-   * turned off!
-   */
-  function checkItems_(form) {
-    var sheet = SpreadsheetApp.openById(index.items.SHEET_ID).getSheetByName(
-      index.items.SHEET_NAME
-    );
-    var data = sheet.getDataRange().getValues();
-    form.items.forEach(function (item) {
-      var id = item.id ? "id" : "barcode";
-      var requestingCheckout =
-        item.checkOut && !item.checkIn && !item.checkedOut;
-      var requestingCheckIn = item.checkIn && item.checkedOut;
-      if (!item.isSerialized()) {
-        if (requestingCheckout) {
-          item.checkedOut = true;
-        }
-        if (requestingCheckIn) {
-          item.checkedOut = false;
-        }
-        return;
-      }
-      const row = data.findIndex(
-        (row) => row[index.items[id.toUpperCase()]] === item[id]
-      );
-      if (row < 0) {
-        throw new ErrorFormInvalid_(
-          item.description + " " + item.id + " cannot be found."
-        );
-      }
-      if (requestingCheckout) {
-        if (!data[row][index.items.CHECKED_OUT]) {
-          sheet.getRange(row + 1, index.items.CHECKED_OUT + 1).setValue(true);
-          item.checkedOut = true;
-          return;
-        }
-        throw new ErrorFormInvalid_(
-          item.description + item.id + " is already checked out"
-        );
-      }
-      if (requestingCheckIn) {
-        if (data[row][index.items.CHECKED_OUT]) {
-          sheet.getRange(row + 1, index.items.CHECKED_OUT + 1).clear();
-          item.checkedOut = false;
-          return;
-        }
-        throw new ErrorFormInvalid_(
-          item.description + item.id + " is already checked in"
-        );
-      }
-    });
-  }
-
   /* ********* GETTERS *********** */
 
   function getAllItems() {
@@ -119,20 +64,16 @@ var Database = (function () {
           /^\d+$/.test(itemData[index.items.BARCODE]) ||
           /[A-Za-z]+-[A-Za-z0-9]+/.test(itemData[index.items.ID])
       )
-      .map((itemData) => new Item_(itemData));
+      .map((itemData) => new Item(itemData));
   }
 
   function getAllStudents() {
-    var sheet = SpreadsheetApp.openById(index.students.SHEET_ID).getSheetByName(
-      index.students.SHEET_NAME
-    );
-    var data = sheet.getDataRange().getValues();
-    data.shift();
-    var students = [];
-    data.forEach(function getArrayOfStudents(studentData) {
-      students.push(new Student_(studentData));
-    });
-    return students;
+    return SpreadsheetApp.openById(index.students.SHEET_ID)
+      .getSheetByName(index.students.SHEET_NAME)
+      .getDataRange()
+      .getValues()
+      .slice(1)
+      .map((studentData) => new Student(studentData));
   }
 
   function getClosedForms(lastRow = 0) {
@@ -143,34 +84,35 @@ var Database = (function () {
     if (!lastRow) lastRow = sheet.getLastRow();
     // minimum data row is #2 because #1 is the header row
     const firstRow = lastRow - chunkSize < 2 ? 2 : lastRow - chunkSize;
-    var data = sheet.getRange(firstRow, 1, chunkSize, 13).getValues();
     return {
       firstRow,
-      formList: JSON.stringify(data.map((row) => new Form_(row))),
+      formList: JSON.stringify(
+        sheet
+          .getRange(firstRow, 1, chunkSize, 13)
+          .getValues()
+          .map((row) => new Form(row))
+      ),
     };
   }
 
   /** @return {[]} an array of Forms */
   function getOpenForms() {
-    var formsSpreadSheet = SpreadsheetApp.openById(index.forms.SHEET_ID);
-    var formsSheet = formsSpreadSheet.getSheetByName(index.forms.SHEET_NAME);
-    var data = formsSheet.getDataRange().getValues(),
-      forms = [];
+    const formsSpreadSheet = SpreadsheetApp.openById(index.forms.SHEET_ID);
+    const formsSheet = formsSpreadSheet.getSheetByName(index.forms.SHEET_NAME);
+    const data = formsSheet.getDataRange().getValues();
+    const forms = [];
     // don't shift and start at row 1 to allow Sheet manipulation, if required
-    for (var row = 1; row < data.length; ++row) {
+    for (let row = 1; row < data.length; ++row) {
       try {
-        forms.push(new Form_(data[row]).setHash());
+        forms.push(new Form(data[row]).setHash());
       } catch (error) {
-        if (error instanceof ErrorFormDataInvalid_) {
-          var rejectedSheet = formsSpreadSheet.getSheetByName(
-            index.forms.REJECTED_NAME
-          );
-          rejectedSheet.appendRow(data[row]);
+        if (error instanceof ErrorFormDataInvalid) {
+          formsSpreadSheet
+            .getSheetByName(index.forms.REJECTED_NAME)
+            .appendRow(data[row]);
           formsSheet.deleteRow(row + 1);
           data.splice(row, 1);
-        } else {
-          throw error;
-        }
+        } else throw error;
       }
     }
     return forms;
@@ -197,9 +139,9 @@ var Database = (function () {
    *   Users can access their own rejected forms to view and delete them.
    */
   function writeRejectedFormToSheet(form) {
-    var ss = SpreadsheetApp.openById(index.forms.SHEET_ID);
-    var formSheet = ss.getSheetByName(index.forms.REJECTED_NAME);
-    var values = form.getAsArray();
+    const ss = SpreadsheetApp.openById(index.forms.SHEET_ID);
+    const formSheet = ss.getSheetByName(index.forms.REJECTED_NAME);
+    const values = form.toArray();
     values.push(getUser_());
     formSheet.appendRow(values);
   }
@@ -209,14 +151,14 @@ var Database = (function () {
     const formSheet = ss.getSheetByName(index.forms.SHEET_NAME);
     const data = formSheet.getDataRange().getValues();
     const id = form.id;
-    const values = form.getAsArray();
+    const values = form.toArray();
 
     if (!id) {
       // create
       values[0] = form.createId();
       formSheet.appendRow(values);
       // see TODO below for more info on why this is necessary
-      return new Form_(
+      return new Form(
         formSheet.getRange(formSheet.getLastRow(), 1, 1, 13).getValues()[0]
       ).setHash();
     }
@@ -231,9 +173,9 @@ var Database = (function () {
     // Do not allow write unless user was editing most
     // recent form.  Use try/catch around call to this function
     // to handle this error
-    const storedForm = new Form_(data[i]).setHash();
+    const storedForm = new Form(data[i]).setHash();
     if (form.hash !== storedForm.hash) {
-      throw new ErrorFormCollision_(storedForm, form);
+      throw new ErrorFormCollision(storedForm, form);
     }
 
     if (close) {
@@ -245,17 +187,10 @@ var Database = (function () {
       return;
     }
 
-    var column = 1,
-      numRows = 1,
-      numColumns = 13,
-      range;
-    range = formSheet.getRange(row, column, numRows, numColumns);
+    const range = formSheet.getRange(row, 1, 1, 13);
     range.setValues([values]);
-    // TODO this retrieves the correct hash.  Trying to skip a step and hash the
-    //   `values` variable directly comes up with a different hash due to
-    //   Sheet converting numbers and dates. Consider plain text format to eliminate
-    //   the extra retrieval step.
-    return new Form_(range.getValues()[0]).setHash();
+    // must retrieve values from Sheet to get correct hash
+    return new Form(range.getValues()[0]).setHash();
   }
 
   function writeSignatureToSheet({ id, dataURL }) {
@@ -274,19 +209,19 @@ var Database = (function () {
 
   // TODO don't hardcode A1; just append a row with the Net ID
   function startSignature(netid) {
-    var sheet = SpreadsheetApp.openById(index.students.SHEET_ID).getSheetByName(
-      index.students.SIGNATURE_SHEET_NAME
-    );
-    sheet.getRange("A1").setValue(netid);
+    SpreadsheetApp.openById(index.students.SHEET_ID)
+      .getSheetByName(index.students.SIGNATURE_SHEET_NAME)
+      .getRange("A1")
+      .setValue(netid);
   }
 
   // TODO don't hardcode A1; search for the Net ID to clear off
   // TODO reactivate or delete
   function clearSignatureValidation() {
     return;
-    // var sheet = SpreadsheetApp.openById(index.students.SHEET_ID).getSheetByName(
-    //   index.students.SIGNATURE_SHEET_NAME
-    // );
-    // sheet.getRange("A1").clear();
+    // SpreadsheetApp.openById(index.students.SHEET_ID)
+    //   .getSheetByName(index.students.SIGNATURE_SHEET_NAME)
+    //   .getRange("A1")
+    //   .clear();
   }
 })();

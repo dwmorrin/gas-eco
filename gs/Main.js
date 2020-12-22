@@ -1,7 +1,7 @@
 /* global
-ErrorFormCollision_
-ErrorFormInvalid_
-Form_
+ErrorFormCollision
+ErrorFormInvalid
+Form
 Database
 */
 /* exported doGet */
@@ -97,7 +97,7 @@ function doPost({ type, payload }) {
         students: JSON.stringify(Database.getAllStudents()),
       });
     case "deleteForm": {
-      const form = new Form_(JSON.parse(payload));
+      const form = new Form(JSON.parse(payload));
       try {
         Database.writeFormToSheet(form, true);
         return response({
@@ -105,7 +105,7 @@ function doPost({ type, payload }) {
           payload: { formList: JSON.stringify(Database.getOpenForms()) },
         });
       } catch (error) {
-        if (error instanceof ErrorFormCollision_) {
+        if (error instanceof ErrorFormCollision) {
           Database.writeRejectedFormToSheet(form);
           return response({
             type: "collision",
@@ -119,7 +119,7 @@ function doPost({ type, payload }) {
       }
     }
     case "rejected": // NOT USED BY CLIENT
-      Database.writeRejectedFormToSheet(new Form_(payload));
+      Database.writeRejectedFormToSheet(new Form(payload));
       return response({ type: "rejected" });
     case "signature": // NOT USED BY CLIENT
       Database.writeSignatureToSheet(payload);
@@ -134,11 +134,11 @@ function doPost({ type, payload }) {
       Database.startSignature(payload);
       return response({ type: "startSignature" });
     case "updateForm": {
-      const form = new Form_(JSON.parse(payload));
+      const form = new Form(JSON.parse(payload));
       try {
-        form.validate(); // throws ErrorFormInvalid_
+        form.validate(); // throws ErrorFormInvalid
         if (form.isReadyToClose() || form.isNoShow()) {
-          Database.writeFormToSheet(form, true); // throws ErrorFormCollision_
+          Database.writeFormToSheet(form, true); // throws ErrorFormCollision
           return response({
             type: "openForms",
             payload: { formList: JSON.stringify(Database.getOpenForms()) },
@@ -146,11 +146,11 @@ function doPost({ type, payload }) {
         } else {
           return response({
             type: "updateForm",
-            payload: JSON.stringify(Database.writeFormToSheet(form)), // throws ErrorFormCollision_
+            payload: JSON.stringify(Database.writeFormToSheet(form)), // throws ErrorFormCollision
           });
         }
       } catch (error) {
-        if (error instanceof ErrorFormCollision_) {
+        if (error instanceof ErrorFormCollision) {
           Database.writeRejectedFormToSheet(form);
           return response({
             type: "collision",
@@ -159,7 +159,7 @@ function doPost({ type, payload }) {
               submittedForm: JSON.stringify(error.submitted),
             },
           });
-        } else if (error instanceof ErrorFormInvalid_) {
+        } else if (error instanceof ErrorFormInvalid) {
           Database.writeRejectedFormToSheet(form);
           return response({
             type: "invalid",
