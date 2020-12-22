@@ -1,48 +1,63 @@
 # Equipment Check Out
 
-Google Apps Script inventory management program.
+Google Apps Script (GAS) inventory management program.
 
 ## Features
 
 - Uses Sheets as a database to track inventory checked out to users
-- web app UI set up for use with barcode scanners
-
-## Non-features
-
-- Currently tailored for a specific use case (generalizing is on the todo list)
+- Point-of-sale web app UI (barcode-scanning driven)
 
 ## Code organization
 
-### Client-side
+### Server
 
-#### JavaScript
+#### HTTP
 
-All the visible HTML is created via JavaScript.
+GAS requires `doGet()` be the entry point for a web app. When a client sends
+a HTTP GET request to the published URL, `doGet()` is invoked, evaluates the
+HTML template `index.html` and returns the web page.
 
-- Config is an environment file containing a list of preset locations
-  to check equipment out to.
-- Item, Inventory, Form, and Stack are classes
-- App is the entry file.
+All client requests are funnelled through `doGet()` and `doPost()` using
+[Flux Standard Action](https://github.com/redux-utilities/flux-standard-action)
+syntax for the request body.
 
-(At this point, basically just rewriting this to be a poor imitation of a well-known library)
+### Database: Sheets
+
+The primary motivation of the app: using Sheets as a database.
+Equipment is stored in an "inventory" Sheet, people who can check-out equipment
+are in a "students" Sheet, and the records of who-checked-out-what is stored in
+a "forms" Sheet.
+
+### Client
 
 #### HTML
 
-- html/index: point of entry, just serves as a container for JS and CSS
+The CSS and JS files are declared in `index.html`.
+In the main entry point, `doGet()`, the GAS built-in `HtmlService`
+module concatenates all the CSS and JS files together and sends the resulting
+HTML to the client.
+
+Note there is no visible HTML in `index.html`. The body only contains script
+tags.
+
+#### JavaScript
+
+The visible document is created via JavaScript.
+
+The `js` directory contains HTML files because this is what GAS demands, however
+they contain no HTML, just inline JavaScript.
+
+At the top level of `js` are various utility modules, the point of entry file
+(`App.html`), and a `components` directory.
+
+Files in the `components` directory are analogous to React Function Components:
+each function receives properties and returns an `HTMLElement` (the return type
+of `document.createElement()`).
+
+The module `HTML` provides `document.createElement()` wrappers to facilitate
+declarative style HTML-in-JS programming.
 
 #### CSS
 
-- css/Style: stylesheet
-
-### Server-side
-
-#### Models
-
-- gs/Form
-- gs/Note
-- gs/Student
-
-#### Controllers
-
-- gs/Main: implementation agnostic router of requests, responses
-- gs/Sheets: the Sheets implementation specific code
+Like the `js` directory, the `css` directory contains HTML files to satisfy GAS.
+The files only contain inline stylesheets.
