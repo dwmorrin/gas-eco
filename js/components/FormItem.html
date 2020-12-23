@@ -1,0 +1,75 @@
+<script>
+  /* global CheckInButton Form HTML Item QuantityButtons Utility */
+  /* exported FormItem */
+  function FormItem({ disabled, form, item, onChange, onClick }) {
+    const { cell, createElement, heading1, modal, paragraph, row } = HTML;
+    const { is, replace } = Utility;
+    return [
+      row({
+        class: [
+          item.isSerialized ? "serialized" : "nonserialized",
+          disabled ? "" : "hoverBlue",
+        ].join(" "),
+        children: [
+          cell({ child: QuantityButtons({ form, item, disabled, onChange }) }),
+          cell(item.description),
+          cell(item.id),
+          cell(
+            item.checkOut
+              ? item.checkOut
+              : {
+                  child: createElement("i", {
+                    textContent: "Scan barcode to check out",
+                  }),
+                }
+          ),
+          cell({ child: CheckInButton({ form, item, disabled, onChange }) }),
+        ],
+        onClick,
+      }),
+      row({
+        class: disabled ? "" : "hoverBlue",
+        child: cell({
+          colspan: 5,
+          class: "itemnotes",
+          textContent: "Notes: " + item.notes,
+          onClick: () => {
+            if (disabled) return;
+            const input = createElement("textarea", {
+              textContent: item.notes,
+            });
+            modal({
+              children: [
+                heading1("Add notes to item"),
+                paragraph(
+                  [item.description, item.id ? `(${item.id})` : ""].join(" ")
+                ),
+                input,
+              ],
+              okText: "Add notes",
+              onOk: () =>
+                onChange({
+                  form: new Form({
+                    ...form,
+                    items: replace(
+                      form.items,
+                      is(item),
+                      new Item({ ...item, notes: input.value })
+                    ),
+                  }),
+                  change: {
+                    target: {
+                      name: "items",
+                      value: `${item.id || item.description} note: ${
+                        input.value
+                      }`,
+                    },
+                  },
+                }),
+            });
+          },
+        }),
+      }),
+    ];
+  }
+</script>

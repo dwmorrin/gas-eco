@@ -1,0 +1,60 @@
+<script>
+  /* global Form HTML Item ModalQuantityChange Utility */
+  /* exported QuantityButtons */
+  function QuantityButtons({ form, item, disabled, onChange }) {
+    const { button, createElement } = HTML;
+    const { is, replace } = Utility;
+    if (disabled || item.checkIn || item.isSerialized()) {
+      return document.createTextNode(item.quantity);
+    }
+    return createElement("span", {
+      children: [
+        button(String(item.quantity), {
+          class: "quantity",
+          onClick: () =>
+            ModalQuantityChange({
+              item,
+              onOk: (value) => {
+                const items = replace(
+                  form.items,
+                  is(item),
+                  new Item({ ...item, quantity: value })
+                );
+                onChange({
+                  form: new Form({ ...form, items }),
+                  change: {
+                    target: {
+                      name: "items",
+                      value: `${item.description} qty to ${value}`,
+                    },
+                  },
+                });
+              },
+            }),
+        }),
+        button("+", {
+          class: "quantity",
+          onClick: () => {
+            const quantity = item.quantity;
+            const items = replace(
+              form.items,
+              is(item),
+              new Item({ ...item, quantity: quantity + 1 })
+            );
+            onChange({
+              form: new Form({ ...form, items }),
+              change: {
+                target: {
+                  name: "items",
+                  value: `${item.description} quantity ${quantity} to ${
+                    quantity + 1
+                  }`,
+                },
+              },
+            });
+          },
+        }),
+      ],
+    });
+  }
+</script>

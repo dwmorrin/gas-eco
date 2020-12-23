@@ -1,0 +1,97 @@
+<script>
+  /* global DateUtils Form HTML Item Utility */
+  /* exported CheckInButton */
+  function CheckInButton({ form, item, disabled, onChange }) {
+    const { createElement } = HTML;
+    const { is, remove, replace } = Utility;
+    const { getFormattedDateTime } = DateUtils;
+    if (item.checkedOutAgain) {
+      return document.createTextNode("");
+    }
+    if (item.missing) {
+      return createElement("span", {
+        class: "alert",
+        textContent: "ITEM IS MISSING",
+      });
+    }
+    if (disabled || item.checkIn) {
+      return document.createTextNode(item.checkIn);
+    }
+    if (!item.checkOut || !item.checkedOut) {
+      return createElement("button", {
+        class: "create",
+        textContent: "Remove",
+        onClick: () => {
+          onChange({
+            form: new Form({
+              ...form,
+              items: remove(form.items, is(item)),
+            }),
+            change: {
+              target: {
+                name: "items",
+                value: item.description + " removed",
+              },
+            },
+          });
+        },
+      });
+    }
+    if (!item.checkIn && item.isSerialized()) {
+      return createElement("i", {
+        textContent: "Scan barcode to return",
+      });
+    }
+    const id = item.id || item.barcode;
+    const checkInButton = createElement("button", {
+      class: "action",
+      textContent: "Check In",
+      onClick: () =>
+        onChange({
+          form: new Form({
+            ...form,
+            items: replace(
+              form.items,
+              is(item),
+              new Item({
+                ...item,
+                checkIn: getFormattedDateTime(new Date()),
+              })
+            ),
+          }),
+          change: {
+            target: {
+              name: "items",
+              value: `${item.id || item.description} check-in`,
+            },
+          },
+        }),
+    });
+    const quantity = item.quantity;
+    if (quantity > 1) {
+      return createElement("span", {
+        "data-id": item.id,
+        "data-barcode": item.barcode,
+        children: [
+          checkInButton,
+          createElement("select", {
+            class: "selectQuantity",
+            "data-itemid": id,
+            children: [
+              createElement("option", {
+                value: "all",
+                textContent: "All",
+              }),
+              ...Array.from({ length: quantity - 1 }).map((_, i) =>
+                createElement("option", {
+                  textContent: String(i + 1),
+                })
+              ),
+            ],
+          }),
+        ],
+      });
+    }
+    return checkInButton;
+  }
+</script>

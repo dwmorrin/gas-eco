@@ -5,11 +5,11 @@
     DateTimeInput
     DateUtils
     Form
+    FormItem
     HTML
     Item
     ModalManualEntry
     ModalNewCodabar
-    ModalQuantityChange
     Omnibox
     Utility
     searchResources
@@ -71,7 +71,6 @@
       is,
       nullIf,
       pick,
-      remove,
       replace,
       reverse,
       sort,
@@ -397,7 +396,15 @@
                           .filter(
                             ({ checkIn, checkedOut }) => !checkIn && !checkedOut
                           )
-                          .map(ItemRow)
+                          .map((item) =>
+                            FormItem({
+                              disabled,
+                              form,
+                              item,
+                              onChange,
+                              onClick: onClickItem,
+                            })
+                          )
                           .flat()
                       : [
                           nullIf(
@@ -423,7 +430,15 @@
                         .filter(
                           ({ checkOut, checkedOut }) => checkOut && checkedOut
                         )
-                        .map(ItemRow)
+                        .map((item) =>
+                          FormItem({
+                            disabled,
+                            form,
+                            item,
+                            onChange,
+                            onClick: onClickItem,
+                          })
+                        )
                         .flat(),
                     })
                   ),
@@ -434,7 +449,15 @@
                       children: sortedItems.some(({ checkIn }) => checkIn)
                         ? sortedItems
                             .filter(({ checkIn }) => checkIn)
-                            .map(ItemRow)
+                            .map((item) =>
+                              FormItem({
+                                disabled,
+                                form,
+                                item,
+                                onChange,
+                                onClick: onClickItem,
+                              })
+                            )
                             .flat()
                         : [
                             row(
@@ -532,7 +555,13 @@
       });
     }
 
-    function handleClickItem(item) {
+    function onClickItem({ metaKey, target }, item) {
+      if (
+        disabled ||
+        ["button", "select"].includes(target.tagName.toLowerCase())
+      )
+        return;
+      if (metaKey) return handleItem(item);
       const optionRadio = radio("itemOptions");
       const input = createElement("textarea");
       modal({
@@ -673,230 +702,6 @@
           value: body.length > 10 ? body.slice(0, 10) + "..." : body,
         },
       });
-    }
-
-    function QuantityButtons(item, closed) {
-      if (closed || item.checkIn || item.isSerialized()) {
-        return document.createTextNode(item.quantity);
-      }
-      return createElement("span", {
-        children: [
-          button(String(item.quantity), {
-            class: "quantity",
-            onClick: () =>
-              ModalQuantityChange({
-                item,
-                onOk: (value) => {
-                  const items = replace(
-                    form.items,
-                    is(item),
-                    new Item({ ...item, quantity: value })
-                  );
-                  onChange({
-                    form: new Form({ ...form, items }),
-                    change: {
-                      target: {
-                        name: "items",
-                        value: `${item.description} qty to ${value}`,
-                      },
-                    },
-                  });
-                },
-              }),
-          }),
-          button("+", {
-            class: "quantity",
-            onClick: () => {
-              const quantity = item.quantity;
-              const items = replace(
-                form.items,
-                is(item),
-                new Item({ ...item, quantity: quantity + 1 })
-              );
-              onChange({
-                form: new Form({ ...form, items }),
-                change: {
-                  target: {
-                    name: "items",
-                    value: `${item.description} quantity ${quantity} to ${
-                      quantity + 1
-                    }`,
-                  },
-                },
-              });
-            },
-          }),
-        ],
-      });
-    }
-
-    function ItemRow(item) {
-      return [
-        row({
-          class: [
-            item.isSerialized ? "serialized" : "nonserialized",
-            disabled ? "" : "hoverBlue",
-          ].join(" "),
-          children: [
-            cell({ child: QuantityButtons(item, disabled) }),
-            cell(item.description),
-            cell(item.id),
-            cell(
-              item.checkOut
-                ? item.checkOut
-                : {
-                    child: createElement("i", {
-                      textContent: "Scan barcode to check out",
-                    }),
-                  }
-            ),
-            cell({ child: CheckInButton(item, disabled) }),
-          ],
-          onClick: ({ metaKey, target }) => {
-            if (
-              disabled ||
-              ["button", "select"].includes(target.tagName.toLowerCase())
-            )
-              return;
-            if (metaKey) handleItem(item);
-            else handleClickItem(item);
-          },
-        }),
-        row({
-          class: disabled ? "" : "hoverBlue",
-          child: cell({
-            colspan: 5,
-            class: "itemnotes",
-            textContent: "Notes: " + item.notes,
-            onClick: () => {
-              if (disabled) return;
-              const input = createElement("textarea", {
-                textContent: item.notes,
-              });
-              modal({
-                children: [
-                  heading1("Add notes to item"),
-                  paragraph(
-                    [item.description, item.id ? `(${item.id})` : ""].join(" ")
-                  ),
-                  input,
-                ],
-                okText: "Add notes",
-                onOk: () =>
-                  onChange({
-                    form: new Form({
-                      ...form,
-                      items: replace(
-                        form.items,
-                        is(item),
-                        new Item({ ...item, notes: input.value })
-                      ),
-                    }),
-                    change: {
-                      target: {
-                        name: "items",
-                        value: `${item.id || item.description} note: ${
-                          input.value
-                        }`,
-                      },
-                    },
-                  }),
-              });
-            },
-          }),
-        }),
-      ];
-    }
-
-    function CheckInButton(item, closed) {
-      if (item.checkedOutAgain) {
-        return document.createTextNode("");
-      }
-      if (item.missing) {
-        return createElement("span", {
-          class: "alert",
-          textContent: "ITEM IS MISSING",
-        });
-      }
-      if (closed || item.checkIn) {
-        return document.createTextNode(item.checkIn);
-      }
-      if (!item.checkOut || !item.checkedOut) {
-        return createElement("button", {
-          class: "create",
-          textContent: "Remove",
-          onClick: () => {
-            onChange({
-              form: new Form({
-                ...form,
-                items: remove(form.items, is(item)),
-              }),
-              change: {
-                target: {
-                  name: "items",
-                  value: item.description + " removed",
-                },
-              },
-            });
-          },
-        });
-      }
-      if (!item.checkIn && item.isSerialized()) {
-        return createElement("i", {
-          textContent: "Scan barcode to return",
-        });
-      }
-      const id = item.id || item.barcode;
-      const checkInButton = createElement("button", {
-        class: "action",
-        textContent: "Check In",
-        onClick: () =>
-          onChange({
-            form: new Form({
-              ...form,
-              items: replace(
-                form.items,
-                is(item),
-                new Item({
-                  ...item,
-                  checkIn: getFormattedDateTime(new Date()),
-                })
-              ),
-            }),
-            change: {
-              target: {
-                name: "items",
-                value: `${item.id || item.description} check-in`,
-              },
-            },
-          }),
-      });
-      const quantity = item.quantity;
-      if (quantity > 1) {
-        return createElement("span", {
-          "data-id": item.id,
-          "data-barcode": item.barcode,
-          children: [
-            checkInButton,
-            createElement("select", {
-              class: "selectQuantity",
-              "data-itemid": id,
-              children: [
-                createElement("option", {
-                  value: "all",
-                  textContent: "All",
-                }),
-                ...Array.from({ length: quantity - 1 }).map((_, i) =>
-                  createElement("option", {
-                    textContent: String(i + 1),
-                  })
-                ),
-              ],
-            }),
-          ],
-        });
-      }
-      return checkInButton;
     }
 
     function StudentRow(student) {
