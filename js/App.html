@@ -41,16 +41,16 @@
       sort,
       tryJsonParse,
     } = Utility;
-    const { addOneHour, before, getFormattedDateTime } = DateUtils;
+    const { addOneHour, before, getFormattedDateTime, minutes } = DateUtils;
     // seal forces all properties to be declared here
     const state = Object.seal({
-      closedForms: null,
-      closedFormsFiltered: null,
+      closedForms: /* Form[] | null */ null,
+      closedFormsFiltered: /* Form[] | null */ null,
       closedFormsQuery: {},
       closedFormsSort: "startTime",
       closedFormsSortAscending: true,
       formInputsTouched: new Set(),
-      inventory: null,
+      inventory: /* Item[] | null */ null,
       itemSort: "checkOut",
       itemSortAscending: true,
       itemsOutSort: "description",
@@ -58,7 +58,8 @@
       lastClosedFormRow: -1,
       openFormSort: "startTime",
       openFormSortAscending: true,
-      openForms: null,
+      openForms: /* Form[] | null */ null,
+      openFormsModifiedTime: 0,
       redoStack: /* Form */ [], // each undo is pushed into here
       roster: null,
       saved: true,
@@ -83,12 +84,15 @@
       disabled: true,
       onClick: (_, button) => {
         loseDataWarning(() => {
-          button.setAttribute("disabled", true);
-          state.openForms = null;
-          withErrorHandler
-            .withSuccessHandler(checkForError(onOpenForms))
-            .doGet({ type: "openForms" });
-          showLoadingPage();
+          // prevent unnecessary server call if quickly switching pages
+          if (Date.now() - state.openFormsModifiedTime > minutes(2)) {
+            button.setAttribute("disabled", true);
+            state.openForms = null;
+            withErrorHandler
+              .withSuccessHandler(checkForError(onOpenForms))
+              .doGet({ type: "openForms" });
+            showLoadingPage();
+          } else showOpenFormsPage();
         });
       },
     });
@@ -431,6 +435,7 @@
           "Error: server failed to get the open forms."
         );
       state.openForms = openForms.map((form) => new Form(form));
+      state.openFormsModifiedTime = Date.now();
       tryUnlock();
     }
 

@@ -8,6 +8,7 @@
       copyTime,
       formatDashedDate,
       getFormattedDateTime,
+      minutes,
     };
 
     function addOneHour(date) {
@@ -61,6 +62,14 @@
       return `${zeropad(month)}/${zeropad(day)}/${year} ${zeropad(
         hour
       )}:${zeropad(minutes)} ${ampm}`;
+    }
+
+    /**
+     * @param {number} minutes
+     * @returns {number} n minutes in milliseconds
+     */
+    function minutes(n) {
+      return n * 60e3;
     }
 
     function roundMinutes(minutes) {
