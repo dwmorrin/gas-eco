@@ -38,11 +38,12 @@
               }),
               ...["startTime", "endTime", "location", "students"].map((text) =>
                 headerCell({
-                  class:
-                    "hoverBlue" +
-                    (text === sortedBy
+                  class: [
+                    "hoverBlue",
+                    text === sortedBy
                       ? ` sortedBy ${ascending ? "" : "descending"}`
-                      : ""),
+                      : "",
+                  ].join(" "),
                   onClick: () => onSortForms(text),
                   textContent: uncamelCase(text),
                 })

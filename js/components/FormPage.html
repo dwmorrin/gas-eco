@@ -269,7 +269,7 @@
                           })
                         : cell({
                             textContent: form.location,
-                            class: disabled ? "" : "editable",
+                            class: disabled ? "" : "editable hoverBlue",
                             onClick: (_, locationDisplay) => {
                               if (disabled) return;
                               locationDisplay.parentNode.appendChild(
@@ -295,7 +295,7 @@
                               value: form.startTime,
                             }),
                             textContent: form.startTime,
-                            class: disabled ? "" : "editable",
+                            class: disabled ? "" : "editable hoverBlue",
                           })
                     ),
                     row(
@@ -315,7 +315,7 @@
                               value: form.endTime,
                             }),
                             textContent: form.endTime,
-                            class: disabled ? "" : "editable",
+                            class: disabled ? "" : "editable hoverBlue",
                           })
                     ),
                   ],
@@ -376,12 +376,14 @@
                         ].map(([textContent, key]) =>
                           headerCell({
                             textContent,
-                            class:
+                            class: [
+                              "hoverBlue",
                               key === itemSort
                                 ? `sortedBy ${
                                     itemSortAscending ? "" : "descending"
                                   }`
                                 : "",
+                            ].join(" "),
                             onClick: () => onSortItems(key, form),
                           })
                         )
@@ -733,7 +735,7 @@
         row({
           class: [
             item.isSerialized ? "serialized" : "nonserialized",
-            disabled ? "hoverOff" : "",
+            disabled ? "" : "hoverBlue",
           ].join(" "),
           children: [
             cell({ child: QuantityButtons(item, disabled) }),
@@ -761,7 +763,7 @@
           },
         }),
         row({
-          class: disabled ? "hoverOff" : "",
+          class: disabled ? "" : "hoverBlue",
           child: cell({
             colspan: 5,
             class: "itemnotes",
@@ -900,7 +902,7 @@
     function StudentRow(student) {
       // closed === disabled
       return createElement("tr", {
-        class: disabled ? "hoverOff" : "",
+        class: disabled ? "" : "hoverBlue",
         children: [
           cell(student.name),
           cell(student.netId),
