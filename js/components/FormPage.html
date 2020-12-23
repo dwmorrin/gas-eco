@@ -917,25 +917,40 @@
         barcode === item.barcode &&
         description === item.description &&
         id === item.id;
-      const verified = items.filter((item) =>
-        inventory.find(compareItem(item))
+      const rejected = items.filter(
+        (item) =>
+          !/^manual/i.test(item.id) && !inventory.find(compareItem(item))
       );
-      if (!verified.length) {
+      if (rejected.length) {
         return modal({
-          child: paragraph(
-            "Data corrupted: could not find one or more items in inventory. Please manually enter your items."
-          ),
+          children: [
+            paragraph(
+              [
+                "Data corrupted: could not find one or more items in inventory",
+                "(listed below). Please manually enter your items.",
+              ].join(" ")
+            ),
+            table(...rejected.map(({ description }) => row(cell(description)))),
+          ],
         });
       }
-      if (verified.some((item) => form.items.find(compareItem(item)))) {
+      const alreadyOnForm = items.filter((item) =>
+        form.items.find(compareItem(item))
+      );
+      if (alreadyOnForm.length) {
         return modal({
-          child: paragraph(
-            [
-              "Some items entered are already on this form.",
-              "Not sure if you want to check in or out these items.",
-              "Please manually enter your items instead.",
-            ].join(" ")
-          ),
+          children: [
+            paragraph(
+              [
+                "Some items entered are already on this form (listed below).",
+                "Not sure if you want to check in or out these items.",
+                "Please manually enter your items instead.",
+              ].join(" ")
+            ),
+            table(
+              ...alreadyOnForm.map(({ description }) => row(cell(description)))
+            ),
+          ],
         });
       }
       onChange({
@@ -943,7 +958,7 @@
           ...form,
           items: [
             ...form.items,
-            ...verified.map(
+            ...items.map(
               (item) =>
                 new Item({
                   ...item,
