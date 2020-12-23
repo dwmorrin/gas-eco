@@ -108,7 +108,7 @@
                 button("Add item without barcode or ID", {
                   class: "action",
                   disabled,
-                  onClick: () => ModalManualEntry({ onSubmit: handleItem }),
+                  onClick: () => ModalManualEntry({ onSubmit: onManualEntry }),
                 }),
                 button("New note", {
                   class: "action",
@@ -402,7 +402,7 @@
                               form,
                               item,
                               onChange,
-                              onClick: onClickItem,
+                              onClickItem,
                             })
                           )
                           .flat()
@@ -436,7 +436,7 @@
                             form,
                             item,
                             onChange,
-                            onClick: onClickItem,
+                            onClickItem,
                           })
                         )
                         .flat(),
@@ -455,7 +455,7 @@
                                 form,
                                 item,
                                 onChange,
-                                onClick: onClickItem,
+                                onClickItem,
                               })
                             )
                             .flat()
@@ -561,7 +561,7 @@
         ["button", "select"].includes(target.tagName.toLowerCase())
       )
         return;
-      if (metaKey) return handleItem(item);
+      if (metaKey) return handleItemOnForm(item);
       const optionRadio = radio("itemOptions");
       const input = createElement("textarea");
       modal({
@@ -787,40 +787,61 @@
       });
     }
 
+    function onManualEntry(item) {
+      const exists = form.items.find(({ id }) => id === item.id);
+      if (exists) return alert("You already have that item on the form!");
+      onChange({
+        form: new Form({
+          ...form,
+          items: [
+            ...form.items,
+            new Item({
+              ...item,
+              checkOut: getFormattedDateTime(new Date()),
+              checkedOut: true,
+            }),
+          ],
+        }),
+      });
+    }
+
     function handleItem(itemFromInventory) {
       const itemOnForm = form.items.find(
         ({ barcode, id }) =>
           (itemFromInventory.id && id === itemFromInventory.id) ||
           (itemFromInventory.barcode && barcode === itemFromInventory.barcode)
       );
+      if (itemOnForm) handleItemOnForm(itemOnForm);
+
+      return onChange({
+        form: new Form({
+          ...form,
+          items: [
+            ...form.items,
+            new Item({
+              ...itemFromInventory,
+              checkOut: getFormattedDateTime(new Date()),
+              checkedOut: true,
+            }),
+          ],
+        }),
+        change: {
+          target: {
+            name: "items",
+            value: itemFromInventory.id || itemFromInventory.description,
+          },
+        },
+      });
+    }
+
+    function handleItemOnForm(item) {
       const change = {
-        // fake change event
         target: {
           name: "items",
-          value:
-            itemFromInventory.id && !/^manual/i.test(itemFromInventory.id)
-              ? itemFromInventory.id
-              : itemFromInventory.description,
+          value: item.id || item.description,
         },
       };
-
-      if (!itemOnForm) {
-        return onChange({
-          form: new Form({
-            ...form,
-            items: [
-              ...form.items,
-              new Item({
-                ...itemFromInventory,
-                checkOut: getFormattedDateTime(new Date()),
-                checkedOut: true,
-              }),
-            ],
-          }),
-          change,
-        });
-      }
-      if (itemOnForm.checkOut && itemOnForm.checkIn) {
+      if (item.checkOut && item.checkIn) {
         // checking out again
         return onChange({
           form: new Form({
@@ -828,7 +849,7 @@
             items: [
               ...form.items,
               new Item({
-                ...itemOnForm,
+                ...item,
                 checkOut: getFormattedDateTime(new Date()),
                 checkedOut: true,
               }),
@@ -836,10 +857,10 @@
           }),
           change,
         });
-      } else if (itemOnForm.checkOut) {
+      } else if (item.checkOut) {
         // checking in OR scanning additional items
         const quantityInput = createElement("input", { type: "text" });
-        if (!itemOnForm.isSerialized()) {
+        if (!item.isSerialized()) {
           return modal({
             onOk: () =>
               onChange({
@@ -847,8 +868,8 @@
                   ...form,
                   items: replace(
                     form.items,
-                    is(itemOnForm),
-                    new Item({ ...itemOnForm, quantity: quantityInput.value })
+                    is(item),
+                    new Item({ ...item, quantity: quantityInput.value })
                   ),
                 }),
                 change,
@@ -860,9 +881,9 @@
             ...form,
             items: replace(
               form.items,
-              is(itemOnForm),
+              is(item),
               new Item({
-                ...itemOnForm,
+                ...item,
                 checkIn: getFormattedDateTime(new Date()),
                 checkedOut: false,
                 missing: false,
@@ -878,9 +899,9 @@
             ...form,
             items: replace(
               form.items,
-              is(itemOnForm),
+              is(item),
               new Item({
-                ...itemOnForm,
+                ...item,
                 checkOut: getFormattedDateTime(new Date()),
                 checkedOut: true,
               })
@@ -1059,7 +1080,7 @@
               onNewCodabar({ netId, codabar, form }),
           });
         case "manualEntry":
-          return ModalManualEntry({ onSubmit: handleItem });
+          return ModalManualEntry({ onSubmit: onManualEntry });
         case "query":
           return searchResources({
             inventory,

@@ -1,7 +1,7 @@
 <script>
   /* global CheckInButton Form HTML Item QuantityButtons Utility */
   /* exported FormItem */
-  function FormItem({ disabled, form, item, onChange, onClick }) {
+  function FormItem({ disabled, form, item, onChange, onClickItem }) {
     const { cell, createElement, heading1, modal, paragraph, row } = HTML;
     const { is, replace } = Utility;
     return [
@@ -25,7 +25,7 @@
           ),
           cell({ child: CheckInButton({ form, item, disabled, onChange }) }),
         ],
-        onClick,
+        onClick: (event) => onClickItem(event, item),
       }),
       row({
         class: disabled ? "" : "hoverBlue",
