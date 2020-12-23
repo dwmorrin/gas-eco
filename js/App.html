@@ -570,6 +570,7 @@
           onUndo,
           roster: state.roster,
           savable:
+            state.undoStack.length &&
             !state.saved &&
             !timeIntervalError &&
             !!form.location &&
