@@ -42,8 +42,59 @@
         textContent: "Scan barcode to return",
       });
     }
-    const id = item.id || item.barcode;
-    const checkInButton = createElement("button", {
+
+    if (item.quantity > 1) {
+      const quantitySelect = createElement("select", {
+        class: "selectQuantity",
+        children: [
+          createElement("option", {
+            value: "all",
+            textContent: "All",
+          }),
+          ...Array.from({ length: item.quantity - 1 }).map((_, i) =>
+            createElement("option", {
+              textContent: String(i + 1),
+            })
+          ),
+        ],
+      });
+      return createElement("span", {
+        children: [
+          createElement("button", {
+            class: "action",
+            textContent: "Check In",
+            onClick: () =>
+              onChange({
+                form: new Form({
+                  ...form,
+                  items: replace(
+                    form.items,
+                    is(item),
+                    new Item({
+                      ...item,
+                      quantityIn:
+                        quantitySelect.value === "all"
+                          ? item.quantity
+                          : +quantitySelect.value,
+                      checkIn: getFormattedDateTime(new Date()),
+                    })
+                  ),
+                }),
+                change: {
+                  target: {
+                    name: "items",
+                    value: `${item.id || item.description} check-in ${
+                      quantitySelect.value
+                    }`,
+                  },
+                },
+              }),
+          }),
+          quantitySelect,
+        ],
+      });
+    }
+    return createElement("button", {
       class: "action",
       textContent: "Check In",
       onClick: () =>
@@ -67,31 +118,5 @@
           },
         }),
     });
-    const quantity = item.quantity;
-    if (quantity > 1) {
-      return createElement("span", {
-        "data-id": item.id,
-        "data-barcode": item.barcode,
-        children: [
-          checkInButton,
-          createElement("select", {
-            class: "selectQuantity",
-            "data-itemid": id,
-            children: [
-              createElement("option", {
-                value: "all",
-                textContent: "All",
-              }),
-              ...Array.from({ length: quantity - 1 }).map((_, i) =>
-                createElement("option", {
-                  textContent: String(i + 1),
-                })
-              ),
-            ],
-          }),
-        ],
-      });
-    }
-    return checkInButton;
   }
 </script>
