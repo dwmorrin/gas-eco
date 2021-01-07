@@ -35,9 +35,7 @@
     const {
       compareDateStrings,
       compareKey,
-      compareStrings,
       replace,
-      reverse,
       sort,
       tryJsonParse,
     } = Utility;
@@ -461,6 +459,7 @@
       else state.itemsOutSortAscending = !state.itemsOutSortAscending;
       showOpenFormsPage();
     }
+
     /** * @param {Action} response */
     function onStudents({ payload: { students } }, { unlock } = {}) {
       const roster = tryJsonParse(students);
@@ -577,11 +576,6 @@
         })
       );
       if (autoFocus) onAutoFocus();
-    }
-
-    function setOpenForms(forms) {
-      state.openForms = forms;
-      showOpenFormsPage();
     }
 
     function showClosedFormsPage() {
