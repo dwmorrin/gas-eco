@@ -453,23 +453,7 @@
     function onSortForms(name) {
       if (state.openFormSort !== name) state.openFormSort = name;
       else state.openFormSortAscending = !state.openFormSortAscending;
-      const sorted = sort(
-        state.openForms,
-        compareKey(
-          name,
-          {
-            startTime: compareDateStrings,
-            endTime: compareDateStrings,
-            location: compareStrings,
-            students: (a, b) => compareStrings(minName(a), minName(b)),
-          }[name]
-        )
-      );
-      setOpenForms(state.openFormSortAscending ? sorted : reverse(sorted));
-
-      function minName(students) {
-        return students.reduce((min, { name }) => (name < min ? name : min));
-      }
+      showOpenFormsPage();
     }
 
     function onSortItemsOut(name) {

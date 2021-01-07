@@ -20,7 +20,15 @@
       table,
       tableHead,
     } = HTML;
-    const { uncamelCase } = Utility;
+    const {
+      compareDateStrings,
+      compareKey,
+      compareStrings,
+      reverse,
+      sort,
+      uncamelCase,
+    } = Utility;
+
     return page({
       name: "openForms",
       children: [
@@ -50,7 +58,10 @@
               ),
             ],
           }),
-          OpenFormsTable({ openForms, setForm })
+          OpenFormsTable({
+            openForms: sortForms(openForms, sortedBy, ascending),
+            setForm,
+          })
         ),
         createElement("h2", { textContent: "Equipment Checked Out" }),
         table(
@@ -81,5 +92,25 @@
         ),
       ],
     });
+
+    function sortForms(forms, sortBy, ascending) {
+      const result = sort(
+        forms,
+        compareKey(
+          sortBy,
+          {
+            startTime: compareDateStrings,
+            endTime: compareDateStrings,
+            location: compareStrings,
+            students: (a, b) => compareStrings(minName(a), minName(b)),
+          }[sortBy]
+        )
+      );
+      return ascending ? result : reverse(result);
+
+      function minName(students) {
+        return students.reduce((min, { name }) => (name < min ? name : min));
+      }
+    }
   }
 </script>
