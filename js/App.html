@@ -230,6 +230,10 @@
         });
     }
 
+    function isLoaded() {
+      return [state.inventory, state.roster, state.openForms].every(Boolean);
+    }
+
     function makeFormNavigation(forms, type) {
       return ({ form, previous = false }) => {
         const index =
@@ -300,7 +304,7 @@
         compareKey("startTime", compareDateStrings)
       );
       state.lastClosedFormRow = firstRow;
-      if (unlock) closedFormsButton.removeAttribute("disabled");
+      if (unlock && isLoaded()) closedFormsButton.removeAttribute("disabled");
     }
 
     function onCollision({ payload: { storedForm, submittedForm } }) {
@@ -652,11 +656,12 @@
      */
     function tryUnlock() {
       showLoadingPage();
-      if (![state.inventory, state.roster, state.openForms].every(Boolean)) {
+      if (!isLoaded()) {
         return false;
       }
       openFormsButton.removeAttribute("disabled");
       newFormButton.removeAttribute("disabled");
+      if (state.closedForms) closedFormsButton.removeAttribute("disabled");
       showOpenFormsPage();
       return true;
     }
