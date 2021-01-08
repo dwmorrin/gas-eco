@@ -1,6 +1,6 @@
 <script>
   "use strict";
-  /* global DateUtils Item */
+  /* global DateUtils Item FormItem */
   /* exported Form */
   class Form {
     constructor({
@@ -15,11 +15,11 @@
       startTime = "",
       tape = false,
       hash = "",
-      items = [],
+      items = [], // FormItem[], **not atomic Item[]**
       notes = [],
       students = [],
     }) {
-      this.items = Object.freeze(items.map((item) => new Item(item)));
+      this.items = Object.freeze(items.map((item) => new FormItem(item)));
       this.bookedStudents = String(bookedStudents);
       this.bookingId = bookingId;
       this.contact = String(contact);
@@ -43,29 +43,11 @@
 
     duplicate() {
       const { copyTime, getFormattedDateTime } = DateUtils;
+      const copy = this.makeAdvanceBooking();
       return new Form({
-        ...this,
-        id: null,
+        ...copy,
         startTime: getFormattedDateTime(copyTime(new Date(this.startTime))),
         endTime: getFormattedDateTime(copyTime(new Date(this.endTime))),
-        notes: [],
-        students: this.students.map((student) => ({
-          ...student,
-          checkIn: null,
-          checkOut: null,
-          left: false,
-        })),
-        items: this.items.map(
-          (item) =>
-            new Item({
-              ...item,
-              missing: false,
-              timeCheckedInByClient: "",
-              timeCheckedInByServer: "",
-              timeCheckedOutByClient: "",
-              timeCheckedOutByServer: "",
-            })
-        ),
       });
     }
 
@@ -130,6 +112,20 @@
     }
 
     makeAdvanceBooking() {
+      const copyItem = (item) =>
+        new Item({
+          ...item,
+          missing: false,
+          timeCheckedInByClient: "",
+          timeCheckedInByServer: "",
+          timeCheckedOutByClient: "",
+          timeCheckedOutByServer: "",
+        });
+      const copyFormItem = (formItem) =>
+        new FormItem({
+          ...formItem,
+          items: formItem.items.map(copyItem),
+        });
       return new Form({
         ...this,
         id: null,
@@ -140,17 +136,25 @@
           checkOut: null,
           left: false,
         })),
-        items: this.items.map(
-          (item) =>
-            new Item({
-              ...item,
-              missing: false,
-              timeCheckedInByClient: "",
-              timeCheckedInByServer: "",
-              timeCheckedOutByClient: "",
-              timeCheckedOutByServer: "",
-            })
-        ),
+        items: this.items.reduce((resetFormItems, formItem) => {
+          if (!resetFormItems.length) return [copyFormItem(formItem)];
+          const index = resetFormItems.findIndex(
+            ({ barcode, description, id }) =>
+              barcode === formItem.barcode &&
+              description === formItem.description &&
+              id === formItem.id
+          );
+          if (!index) return [...resetFormItems, copyFormItem(formItem)];
+          const existing = resetFormItems.splice(index, 1);
+          return [
+            ...resetFormItems,
+            new FormItem({
+              ...existing,
+              // merge items
+              items: [...existing.items, ...formItem.items.map(copyItem)],
+            }),
+          ];
+        }, []),
       });
     }
   }

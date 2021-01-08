@@ -1,0 +1,32 @@
+<script>
+  "use strict";
+  /* exported FormItem */
+  class FormItem {
+    constructor(item) {
+      const { barcode, description, id, quantity, notes, items } = item;
+      this.barcode = String(barcode);
+      this.description = String(description);
+      this.id = String(id);
+      this.quantity = Number(quantity || 1);
+      this.notes = String(notes);
+      this.items = Object.freeze(items || [item]);
+      return Object.freeze(this);
+    }
+
+    get missing() {
+      return this.items[0].missing;
+    }
+    get timeCheckedInByClient() {
+      return this.items[0].timeCheckedInByClient;
+    }
+    get timeCheckedInByServer() {
+      return this.items[0].timeCheckedInByServer;
+    }
+    get timeCheckedOutByClient() {
+      return this.items[0].timeCheckedOutByClient;
+    }
+    get timeCheckedOutByServer() {
+      return this.items[0].timeCheckedOutByServer;
+    }
+  }
+</script>

@@ -6,6 +6,7 @@
     DateUtils
     Form
     FormItem
+    FormItemRow
     HTML
     Item
     ModalManualEntry
@@ -89,6 +90,10 @@
     });
 
     console.log({ disabled, saved, savable, form, formInputsTouched });
+
+    const groupedItems = form.items.reduce((grouped, item) => {
+      if (!grouped.length) return [item];
+    }, []);
 
     const sortedItems = applyTo(sort(form.items, getItemSortFn(itemSort)))(
       itemSortAscending ? identity : reverse
@@ -397,7 +402,7 @@
                             ({ checkIn, checkedOut }) => !checkIn && !checkedOut
                           )
                           .map((item) =>
-                            FormItem({
+                            FormItemRow({
                               disabled,
                               form,
                               item,
@@ -435,7 +440,7 @@
                           }) => timeCheckedOutByClient && timeCheckedOutByServer
                         )
                         .map((item) =>
-                          FormItem({
+                          FormItemRow({
                             disabled,
                             form,
                             item,
@@ -454,7 +459,7 @@
                         ? sortedItems
                             .filter(({ checkIn }) => checkIn)
                             .map((item) =>
-                              FormItem({
+                              FormItemRow({
                                 disabled,
                                 form,
                                 item,
@@ -799,9 +804,14 @@
           ...form,
           items: [
             ...form.items,
-            new Item({
+            new FormItem({
               ...item,
-              timeCheckedOutByClient: getFormattedDateTime(new Date()),
+              items: [
+                new Item({
+                  ...item,
+                  timeCheckedOutByClient: getFormattedDateTime(new Date()),
+                }),
+              ],
             }),
           ],
         }),
@@ -827,7 +837,7 @@
           ...form,
           items: [
             ...form.items,
-            new Item({
+            new FormItem({
               ...itemFromInventory,
               timeCheckedOutByClient: getFormattedDateTime(new Date()),
             }),
