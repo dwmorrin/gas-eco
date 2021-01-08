@@ -4,26 +4,24 @@
   class Item {
     constructor({
       barcode = "",
-      id = "",
-      checkedOut = false,
-      checkIn = "",
-      checkOut = "",
       description = "",
-      quantity = 1,
-      notes = "",
+      id = "",
       missing = false,
-      quantityIn = 0,
+      notes = "",
+      timeCheckedInByClient = "",
+      timeCheckedInByServer = "",
+      timeCheckedOutByClient = "",
+      timeCheckedOutByServer = "",
     }) {
       this.barcode = String(barcode);
-      this.checkIn = String(checkIn);
-      this.checkOut = String(checkOut);
-      this.checkedOut = Boolean(checkedOut);
       this.description = String(description);
       this.id = String(id);
       this.missing = Boolean(missing);
       this.notes = String(notes);
-      this.quantity = Number(quantity);
-      this.quantityIn = Number(quantityIn);
+      this.timeCheckedInByClient = timeCheckedInByClient;
+      this.timeCheckedInByServer = timeCheckedInByServer;
+      this.timeCheckedOutByClient = timeCheckedOutByClient;
+      this.timeCheckedOutByServer = timeCheckedOutByServer;
 
       return Object.freeze(this);
     }

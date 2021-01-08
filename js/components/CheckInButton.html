@@ -14,10 +14,10 @@
         textContent: "ITEM IS MISSING",
       });
     }
-    if (disabled || item.checkIn) {
-      return document.createTextNode(item.checkIn);
+    if (disabled || item.timeCheckedInByClient) {
+      return document.createTextNode(item.timeCheckedInByClient);
     }
-    if (!item.checkOut || !item.checkedOut) {
+    if (!item.timeCheckedOutByServer) {
       return createElement("button", {
         class: "create",
         textContent: "Remove",
@@ -37,7 +37,7 @@
         },
       });
     }
-    if (!item.checkIn && item.isSerialized()) {
+    if (!item.timeCheckedInByClient && item.isSerialized()) {
       return createElement("i", {
         textContent: "Scan barcode to return",
       });

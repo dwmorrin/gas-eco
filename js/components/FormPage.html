@@ -370,8 +370,8 @@
                           ["Qty", "quantity"],
                           ["Items", "description"],
                           ["Item ID", "id"],
-                          ["Checked Out", "checkOut"],
-                          ["Checked In", "checkIn"],
+                          ["Checked Out", "timeCheckedOutByClient"],
+                          ["Checked In", "timeCheckedInByClient"],
                         ].map(([textContent, key]) =>
                           headerCell({
                             textContent,
@@ -422,13 +422,17 @@
                   }),
                   nullIf(
                     !sortedItems.some(
-                      ({ checkOut, checkedOut }) => checkOut && checkedOut
+                      ({ timeCheckedOutByClient, timeCheckedOutByServer }) =>
+                        timeCheckedOutByClient && timeCheckedOutByServer
                     ),
                     tableBody({
                       class: "itemList itemsOut",
                       children: sortedItems
                         .filter(
-                          ({ checkOut, checkedOut }) => checkOut && checkedOut
+                          ({
+                            timeCheckedOutByClient,
+                            timeCheckedOutByServer,
+                          }) => timeCheckedOutByClient && timeCheckedOutByServer
                         )
                         .map((item) =>
                           FormItem({
@@ -494,8 +498,8 @@
 
     function getItemSortFn(name) {
       return {
-        checkOut: compareKey(name, compareDateStrings),
-        checkIn: compareKey(name, compareDateStrings),
+        timeCheckedOutByClient: compareKey(name, compareDateStrings),
+        timeCheckedInByClient: compareKey(name, compareDateStrings),
         id: compareKey(name, compareStrings),
         quantity: compareKey(name, compareStrings),
         description: compareKey(name, compareStrings),
@@ -797,8 +801,7 @@
             ...form.items,
             new Item({
               ...item,
-              checkOut: getFormattedDateTime(new Date()),
-              checkedOut: true,
+              timeCheckedOutByClient: getFormattedDateTime(new Date()),
             }),
           ],
         }),
@@ -820,8 +823,7 @@
             ...form.items,
             new Item({
               ...itemFromInventory,
-              checkOut: getFormattedDateTime(new Date()),
-              checkedOut: true,
+              timeCheckedOutByClient: getFormattedDateTime(new Date()),
             }),
           ],
         }),
@@ -841,7 +843,7 @@
           value: item.id || item.description,
         },
       };
-      if (item.checkOut && item.checkIn) {
+      if (item.timeCheckedOutByServer && item.timeCheckedInByServer) {
         // checking out again
         return onChange({
           form: new Form({
@@ -850,48 +852,54 @@
               ...form.items,
               new Item({
                 ...item,
-                checkOut: getFormattedDateTime(new Date()),
-                checkedOut: true,
+                timeCheckedOutByClient: getFormattedDateTime(new Date()),
               }),
             ],
           }),
           change,
         });
-      } else if (item.checkOut) {
-        // checking in OR scanning additional items
-        const quantityInput = createElement("input", { type: "text" });
-        if (!item.isSerialized()) {
-          return modal({
-            onOk: () =>
-              onChange({
-                form: new Form({
-                  ...form,
-                  items: replace(
-                    form.items,
-                    is(item),
-                    new Item({ ...item, quantity: quantityInput.value })
-                  ),
+      } else if (item.timeCheckedOutByClient && !item.timeCheckedOutByServer) {
+        if (!item.timeCheckedOutByServer) {
+          // scanning additional items
+          const quantityInput = createElement("input", { type: "text" });
+          if (!item.isSerialized()) {
+            return modal({
+              onOk: () =>
+                onChange({
+                  form: new Form({
+                    ...form,
+                    items: replace(
+                      form.items,
+                      is(item),
+                      new Item({ ...item, quantity: quantityInput.value })
+                    ),
+                  }),
+                  change,
                 }),
-                change,
-              }),
+            });
+          } else {
+            return modal({
+              children: [paragraph("You already have that item on the form.")],
+            });
+          }
+        } else {
+          // checking in
+          return onChange({
+            form: new Form({
+              ...form,
+              items: replace(
+                form.items,
+                is(item),
+                new Item({
+                  ...item,
+                  timeCheckedInByClient: getFormattedDateTime(new Date()),
+                  missing: false,
+                })
+              ),
+            }),
+            change,
           });
         }
-        return onChange({
-          form: new Form({
-            ...form,
-            items: replace(
-              form.items,
-              is(item),
-              new Item({
-                ...item,
-                checkIn: getFormattedDateTime(new Date()),
-                checkedOut: false,
-                missing: false,
-              })
-            ),
-          }),
-          change,
-        });
       } else {
         // Its a check-out for reserved gear
         return onChange({
@@ -902,8 +910,7 @@
               is(item),
               new Item({
                 ...item,
-                checkOut: getFormattedDateTime(new Date()),
-                checkedOut: true,
+                timeCheckedOutByClient: getFormattedDateTime(new Date()),
               })
             ),
           }),
@@ -962,7 +969,7 @@
               (item) =>
                 new Item({
                   ...item,
-                  checkOut: getFormattedDateTime(new Date()),
+                  timeCheckedOutByClient: getFormattedDateTime(new Date()),
                 })
             ),
           ],

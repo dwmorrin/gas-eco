@@ -15,8 +15,8 @@
           cell(item.description),
           cell(item.id),
           cell(
-            item.checkOut
-              ? item.checkOut
+            item.timeCheckedOutByClient
+              ? item.timeCheckedOutByClient
               : {
                   child: createElement("i", {
                     textContent: "Scan barcode to check out",

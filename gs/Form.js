@@ -1,45 +1,40 @@
-/* global ErrorFormDataInvalid ErrorFormInvalid DateUtils */
+/* global ErrorFormInvalid Database DateUtils Item Utility */
 /* exported Form */
 class Form {
   constructor(form) {
-    const dataIndex = {
-      ID: 0,
-      START_TIME: 1,
-      END_TIME: 2,
-      LOCATION: 3,
-      BOOKING_ID: 4,
-      BOOKED_STUDENTS: 5,
-      CONTACT: 6,
-      PROJECT: 7,
-      TAPE: 8,
-      OVERNIGHT: 9,
-      STUDENTS: 10,
-      ITEMS: 11,
-      NOTES: 12,
-    };
     if (Array.isArray(form)) {
-      try {
-        this.bookedStudents = form[dataIndex.BOOKED_STUDENTS] || "";
-        this.bookingId = form[dataIndex.BOOKING_ID] || "";
-        this.contact = form[dataIndex.CONTACT] || "";
-        this.endTime =
-          DateUtils.getFormattedDateTime(form[dataIndex.END_TIME]) || "";
-        this.id = form[dataIndex.ID] || "";
-        this.location = form[dataIndex.LOCATION] || "";
-        this.project = form[dataIndex.PROJECT] || "";
-        this.overnight = form[dataIndex.OVERNIGHT] || false;
-        this.startTime =
-          DateUtils.getFormattedDateTime(form[dataIndex.START_TIME]) || "";
-        this.tape = form[dataIndex.TAPE] || false;
-        this.hash = "";
+      const { tryJsonParse } = Utility;
+      const {
+        ID,
+        START_TIME,
+        END_TIME,
+        LOCATION,
+        BOOKING_ID,
+        BOOKED_STUDENTS,
+        CONTACT,
+        PROJECT,
+        TAPE,
+        OVERNIGHT,
+        STUDENTS,
+        ITEMS,
+        NOTES,
+      } = Database.index.forms;
+      this.bookedStudents = String(form[BOOKED_STUDENTS]);
+      this.bookingId = String(form[BOOKING_ID]);
+      this.contact = String(form[CONTACT]);
+      this.endTime = String(DateUtils.getFormattedDateTime(form[END_TIME]));
+      this.id = String(form[ID]);
+      this.location = String(form[LOCATION]);
+      this.project = String(form[PROJECT]);
+      this.overnight = Boolean(form[OVERNIGHT]);
+      this.startTime = String(DateUtils.getFormattedDateTime(form[START_TIME]));
+      this.tape = Boolean(form[TAPE]);
+      this.hash = "";
 
-        // Dynamic properties
-        this.items = JSON.parse(form[dataIndex.ITEMS]);
-        this.notes = JSON.parse(form[dataIndex.NOTES]) || []; // []Note
-        this.students = JSON.parse(form[dataIndex.STUDENTS]) || []; // []Student
-      } catch (error) {
-        throw new ErrorFormDataInvalid(form);
-      }
+      // Dynamic properties
+      this.items = tryJsonParse(form[ITEMS]) || [];
+      this.notes = tryJsonParse(form[NOTES]) || [];
+      this.students = tryJsonParse(form[STUDENTS]) || [];
     } else {
       // Static properties
       this.bookedStudents = form.bookedStudents || "";
@@ -101,7 +96,8 @@ class Form {
 
   isAllGearReturned() {
     return this.items.every(
-      ({ checkOut, checkIn, missing }) => !checkOut || checkIn || missing
+      ({ timeCheckedInByServer, timeCheckedOutByServer, missing }) =>
+        !timeCheckedOutByServer || timeCheckedInByServer || missing
     );
   }
 
@@ -142,17 +138,20 @@ class Form {
 
   validate() {
     if (this.items) {
-      // TODO validate with the actual inventory
-      this.items.forEach(function (item) {
-        const requestingCheckout =
-          item.checkOut && !item.checkIn && !item.checkedOut;
-        if (requestingCheckout) {
-          item.checkedOut = true;
+      this.items = this.items.map(function (item) {
+        if (item.timeCheckedOutByClient && !item.timeCheckedOutByServer) {
+          return new Item({
+            ...item,
+            timeCheckedOutByServer: DateUtils.getFormattedDateTime(new Date()),
+          });
         }
-        const requestingCheckIn = item.checkIn && item.checkedOut;
-        if (requestingCheckIn) {
-          item.checkedOut = false;
+        if (item.timeCheckedInByClient && !item.timeCheckedInByServer) {
+          return new Item({
+            ...item,
+            timeCheckedInByServer: DateUtils.getFormattedDateTime(new Date()),
+          });
         }
+        return item;
       });
     }
     [
