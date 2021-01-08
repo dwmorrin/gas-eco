@@ -57,7 +57,14 @@
         })),
         items: this.items.map(
           (item) =>
-            new Item({ ...item, checkOut: "", checkIn: "", checkedOut: false })
+            new Item({
+              ...item,
+              missing: false,
+              timeCheckedInByClient: "",
+              timeCheckedInByServer: "",
+              timeCheckedOutByClient: "",
+              timeCheckedOutByServer: "",
+            })
         ),
       });
     }
@@ -76,9 +83,11 @@
 
     hasItemsOut() {
       if (!this.items.length) return false;
-      return this.items.every(({ checkOut, checkIn, missing }) => {
-        return checkOut && !checkIn && !missing;
-      });
+      return this.items.every(
+        ({ timeCheckedOutByServer, timeCheckedInByClient, missing }) => {
+          return timeCheckedOutByServer && !timeCheckedInByClient && !missing;
+        }
+      );
     }
 
     hasStudent(student) {
@@ -133,7 +142,14 @@
         })),
         items: this.items.map(
           (item) =>
-            new Item({ ...item, checkOut: "", checkIn: "", checkedOut: false })
+            new Item({
+              ...item,
+              missing: false,
+              timeCheckedInByClient: "",
+              timeCheckedInByServer: "",
+              timeCheckedOutByClient: "",
+              timeCheckedOutByServer: "",
+            })
         ),
       });
     }
