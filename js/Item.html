@@ -44,5 +44,13 @@
     static getManualEntryId(hash) {
       return Item.getManualPrefix() + Utility.hexString(hash).substring(0, 5);
     }
+
+    static similar(a, b) {
+      return (
+        a.barcode === b.barcode &&
+        a.id === b.id &&
+        a.description === b.description
+      );
+    }
   }
 </script>

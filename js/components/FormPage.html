@@ -812,10 +812,8 @@
     }
 
     function handleItem(itemFromInventory) {
-      const itemOnForm = form.items.find(
-        ({ barcode, id }) =>
-          (itemFromInventory.id && id === itemFromInventory.id) ||
-          (itemFromInventory.barcode && barcode === itemFromInventory.barcode)
+      const itemOnForm = form.items.find((item) =>
+        Item.similar(item, itemFromInventory)
       );
       if (itemOnForm) return handleItemOnForm(itemOnForm);
 
@@ -919,10 +917,7 @@
     }
 
     function handleItemArray(items) {
-      const compareItem = (item) => ({ barcode, description, id }) =>
-        barcode === item.barcode &&
-        description === item.description &&
-        id === item.id;
+      const compareItem = (itemA) => (itemB) => Item.similar(itemA, itemB);
       const rejected = items.filter(
         (item) =>
           !Item.isManualEntryId(item.id) && !inventory.find(compareItem(item))
