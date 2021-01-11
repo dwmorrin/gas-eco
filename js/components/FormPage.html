@@ -817,7 +817,7 @@
           (itemFromInventory.id && id === itemFromInventory.id) ||
           (itemFromInventory.barcode && barcode === itemFromInventory.barcode)
       );
-      if (itemOnForm) handleItemOnForm(itemOnForm);
+      if (itemOnForm) return handleItemOnForm(itemOnForm);
 
       return onChange({
         form: new Form({
