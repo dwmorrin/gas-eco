@@ -1,6 +1,7 @@
 <script>
   "use strict";
-  /* exported  Item */
+  /* global Utility */
+  /* exported Item */
   class Item {
     constructor({
       barcode = "",
@@ -30,6 +31,18 @@
 
     isSerialized() {
       return this.barcode && (+this.barcode < 10000 || +this.barcode > 10100);
+    }
+
+    static getManualPrefix() {
+      return "MANUAL-";
+    }
+
+    static isManualEntryId(id) {
+      return new RegExp("^" + Item.getManualPrefix()).test(id);
+    }
+
+    static getManualEntryId(hash) {
+      return Item.getManualPrefix() + Utility.hexString(hash).substring(0, 5);
     }
   }
 </script>

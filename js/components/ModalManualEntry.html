@@ -3,7 +3,7 @@
   /* exported ModalManualEntry */
   function ModalManualEntry({ onSubmit }) {
     const { createElement, heading1, paragraph, modal } = HTML;
-    const { digestMessage, hexString } = Utility;
+    const { digestMessage } = Utility;
     const input = createElement("input", { type: "text" });
     modal({
       children: [
@@ -23,7 +23,7 @@
         digestMessage(description).then((hash) =>
           onSubmit(
             new Item({
-              id: `MANUAL-${hexString(hash).substring(0, 5)}`,
+              id: Item.getManualEntryId(hash),
               description,
             })
           )

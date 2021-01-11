@@ -925,7 +925,7 @@
         id === item.id;
       const rejected = items.filter(
         (item) =>
-          !/^manual/i.test(item.id) && !inventory.find(compareItem(item))
+          !Item.isManualEntryId(item.id) && !inventory.find(compareItem(item))
       );
       if (rejected.length) {
         return modal({
