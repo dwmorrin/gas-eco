@@ -9,6 +9,7 @@
       copyToClipboard,
       digestMessage,
       hexString,
+      groupBy,
       identity,
       is,
       last,
@@ -55,6 +56,20 @@
       const encoder = new TextEncoder();
       const data = encoder.encode(message);
       return window.crypto.subtle.digest("SHA-1", data);
+    }
+
+    function groupBy(predicate, keyMaker = JSON.stringify) {
+      return (array) => {
+        return Object.values(
+          array.reduce((groups, el) => {
+            if (!predicate(el)) return groups;
+            const key = keyMaker(el);
+            if (key in groups)
+              return { ...groups, [key]: [...groups[key], el] };
+            return { ...groups, [key]: [el] };
+          }, {})
+        );
+      };
     }
 
     function hexString(buffer) {

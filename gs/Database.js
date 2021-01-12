@@ -176,7 +176,7 @@ var Database = (function () {
     }
 
     // Note: do not shift data
-    const i = data.findIndex((row) => row[0] === id);
+    const i = data.findIndex((row) => String(row[0]) === id);
     if (i < 0) {
       throw new Error(`could not find form ID: ${id}`);
     }

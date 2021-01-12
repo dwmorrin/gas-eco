@@ -1,6 +1,6 @@
 <script>
   "use strict";
-  /* global DateUtils Item */
+  /* global DateUtils Item Utility */
   /* exported Form */
   class Form {
     constructor({
@@ -152,6 +152,34 @@
             })
         ),
       });
+    }
+
+    getItemsStagedForOut() {
+      return Utility.groupBy(
+        (item) => item.isStagedForOut(),
+        (item) => item.key
+      )(this.items);
+    }
+
+    getItemsOut() {
+      return Utility.groupBy(
+        (item) => item.isOut(),
+        (item) => item.key
+      )(this.items);
+    }
+
+    getItemsStagedForIn() {
+      return Utility.groupBy(
+        (item) => item.isStagedForIn(),
+        (item) => item.key
+      )(this.items);
+    }
+
+    getItemsIn() {
+      return Utility.groupBy(
+        (item) => item.isIn(),
+        (item) => item.key
+      )(this.items);
     }
   }
 </script>

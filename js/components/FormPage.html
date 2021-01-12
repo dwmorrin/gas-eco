@@ -818,7 +818,8 @@
       const itemOnForm = form.items.find((item) =>
         Item.similar(item, itemFromInventory)
       );
-      if (itemOnForm) return handleItemOnForm(itemOnForm);
+      if (itemOnForm && itemOnForm.isSerialized() && !itemOnForm.isIn())
+        return handleItemOnForm(itemOnForm);
 
       return onChange({
         form: new Form({
@@ -840,6 +841,7 @@
       });
     }
 
+    // only for serialized items that are not checked-in
     function handleItemOnForm(item) {
       const change = {
         target: {
@@ -847,65 +849,8 @@
           value: item.id || item.description,
         },
       };
-      if (item.timeCheckedOutByServer && item.timeCheckedInByServer) {
-        // checking out again
-        return onChange({
-          form: new Form({
-            ...form,
-            items: [
-              ...form.items,
-              new Item({
-                ...item,
-                timeCheckedOutByClient: getFormattedDateTime(new Date()),
-              }),
-            ],
-          }),
-          change,
-        });
-      } else if (item.timeCheckedOutByClient && !item.timeCheckedOutByServer) {
-        if (!item.timeCheckedOutByServer) {
-          // scanning additional items
-          const quantityInput = createElement("input", { type: "text" });
-          if (!item.isSerialized()) {
-            return modal({
-              onOk: () =>
-                onChange({
-                  form: new Form({
-                    ...form,
-                    items: replace(
-                      form.items,
-                      is(item),
-                      new Item({ ...item, quantity: quantityInput.value })
-                    ),
-                  }),
-                  change,
-                }),
-            });
-          } else {
-            return modal({
-              children: [paragraph("You already have that item on the form.")],
-            });
-          }
-        } else {
-          // checking in
-          return onChange({
-            form: new Form({
-              ...form,
-              items: replace(
-                form.items,
-                is(item),
-                new Item({
-                  ...item,
-                  timeCheckedInByClient: getFormattedDateTime(new Date()),
-                  missing: false,
-                })
-              ),
-            }),
-            change,
-          });
-        }
-      } else {
-        // Its a check-out for reserved gear
+
+      if (item.isReserved())
         return onChange({
           form: new Form({
             ...form,
@@ -920,7 +865,28 @@
           }),
           change,
         });
-      }
+
+      if (item.isStagedForOut() || item.isStagedForIn())
+        return modal({
+          children: [paragraph("You already have that item on the form.")],
+        });
+
+      if (item.isOut())
+        return onChange({
+          form: new Form({
+            ...form,
+            items: replace(
+              form.items,
+              is(item),
+              new Item({
+                ...item,
+                timeCheckedInByClient: getFormattedDateTime(new Date()),
+                missing: false,
+              })
+            ),
+          }),
+          change,
+        });
     }
 
     function handleItemArray(items) {

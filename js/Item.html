@@ -52,6 +52,14 @@
       return this.timeCheckedInByServer;
     }
 
+    get key() {
+      return (
+        this.barcode +
+        this.id +
+        (this.isSerialized() ? this.timeCheckedInByClient : "")
+      );
+    }
+
     static getManualPrefix() {
       return "MANUAL-";
     }

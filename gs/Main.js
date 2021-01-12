@@ -165,9 +165,8 @@ function doPost({ type, payload }) {
             type: "invalid",
             payload: { form: JSON.stringify(form), message: error.message },
           });
-        } else {
-          return response({ error: true, payload: error });
         }
+        throw error;
       }
     }
     case "unload": // NOT USED BY CLIENT

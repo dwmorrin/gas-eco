@@ -197,6 +197,7 @@
           if (args[0].payload && args[0].payload.message)
             displayErrorMessage(args[0].payload.message);
           else displayErrorMessage("Uh-oh, we have an error.");
+          console.error(...args);
           return onFailure(...args);
         }
         return onSuccess(...args);

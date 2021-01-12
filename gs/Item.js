@@ -10,7 +10,6 @@ class Item {
       this.description = "";
       this.notes = "";
       this.missing = false; // true if item cannot be found when form is closed
-      this.quantity = 1;
       this.timeCheckedInByClient = "";
       this.timeCheckedInByServer = "";
       this.timeCheckedOutByClient = "";
@@ -26,7 +25,6 @@ class Item {
       this.description = String(itemData.description);
       this.notes = String(itemData.notes);
       this.missing = Boolean(itemData.missing);
-      this.quantity = Number(itemData.quantity || 1);
       this.timeCheckedInByClient = String(itemData.timeCheckedInByClient);
       this.timeCheckedInByServer = String(itemData.timeCheckedInByServer);
       this.timeCheckedOutByClient = String(itemData.timeCheckedOutByClient);
