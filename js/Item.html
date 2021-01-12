@@ -31,6 +31,27 @@
       return this.barcode && (+this.barcode < 10000 || +this.barcode > 10100);
     }
 
+    // item has been reserved in advance on the form, it has no time info
+    isReserved() {
+      return !this.timeCheckedOutByClient;
+    }
+
+    isStagedForOut() {
+      return this.timeCheckedOutByClient && !this.timeCheckedOutByServer;
+    }
+
+    isOut() {
+      return this.timeCheckedOutByServer && !this.timeCheckedInByClient;
+    }
+
+    isStagedForIn() {
+      return this.timeCheckedInByClient && !this.timeCheckedInByServer;
+    }
+
+    isIn() {
+      return this.timeCheckedInByServer;
+    }
+
     static getManualPrefix() {
       return "MANUAL-";
     }
