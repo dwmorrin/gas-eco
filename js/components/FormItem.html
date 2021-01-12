@@ -1,17 +1,31 @@
 <script>
-  /* global CheckInButton Form HTML Item QuantityButtons Utility */
+  /* global CheckInButton Form HTML Item QuantityButtons */
   /* exported FormItem */
-  function FormItem({ disabled, form, item, onChange, onClickItem }) {
+  /**
+   * FormItem can represent a single item or a collection of nonserialized items
+   * It takes an array of items that are assumed to be similar
+   */
+  function FormItem({ disabled, form, items, onChange, onClickItem }) {
     const { cell, createElement, heading1, modal, paragraph, row } = HTML;
-    const { is, replace } = Utility;
+    // take the first item as the representative slice for detail info
+    const [item] = items;
+    const quantity = items.length;
     return [
       row({
         class: [
-          item.isSerialized ? "serialized" : "nonserialized",
+          item.isSerialized() ? "serialized" : "nonserialized",
           disabled ? "" : "hoverBlue",
         ].join(" "),
         children: [
-          cell({ child: QuantityButtons({ form, item, disabled, onChange }) }),
+          cell({
+            child: QuantityButtons({
+              form,
+              item,
+              disabled,
+              onChange,
+              quantity,
+            }),
+          }),
           cell(item.description),
           cell(item.id),
           cell(
@@ -23,7 +37,9 @@
                   }),
                 }
           ),
-          cell({ child: CheckInButton({ form, item, disabled, onChange }) }),
+          cell({
+            child: CheckInButton({ form, item, disabled, onChange, quantity }),
+          }),
         ],
         onClick: (event) => onClickItem(event, item),
       }),
@@ -51,10 +67,10 @@
                 onChange({
                   form: new Form({
                     ...form,
-                    items: replace(
-                      form.items,
-                      is(item),
-                      new Item({ ...item, notes: input.value })
+                    items: items.map((i) =>
+                      Item.similar(i, item)
+                        ? new Item({ ...item, notes: input.value })
+                        : i
                     ),
                   }),
                   change: {
