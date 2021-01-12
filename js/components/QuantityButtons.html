@@ -1,60 +1,100 @@
 <script>
-  /* global Form HTML Item ModalQuantityChange Utility */
+  /* global DateUtils Form HTML Item ModalQuantityChange Utility */
   /* exported QuantityButtons */
-  function QuantityButtons({ form, item, disabled, onChange }) {
+  function QuantityButtons({ form, item, disabled, onChange, quantity }) {
+    const { getFormattedDateTime } = DateUtils;
     const { button, createElement } = HTML;
-    const { is, replace } = Utility;
-    if (disabled || item.checkIn || item.isSerialized()) {
-      return document.createTextNode(item.quantity);
-    }
-    return createElement("span", {
-      children: [
-        button(String(item.quantity), {
-          class: "quantity",
-          onClick: () =>
-            ModalQuantityChange({
-              item,
-              onOk: (value) => {
-                const items = replace(
-                  form.items,
-                  is(item),
-                  new Item({ ...item, quantity: value })
-                );
+    const { range, remove } = Utility;
+    return disabled || !item.isStagedForOut() || item.isSerialized()
+      ? // just print the quantity
+        document.createTextNode(quantity)
+      : // give the user [+][1][-] buttons to adjust the quantity
+        createElement("span", {
+          children: [
+            button("+", {
+              class: "quantity",
+              onClick: () => {
                 onChange({
-                  form: new Form({ ...form, items }),
+                  form: new Form({
+                    ...form,
+                    items: [
+                      ...form.items,
+                      new Item({
+                        ...item,
+                        timeCheckedOutByClient: getFormattedDateTime(
+                          new Date()
+                        ),
+                      }),
+                    ],
+                  }),
                   change: {
                     target: {
                       name: "items",
-                      value: `${item.description} qty to ${value}`,
+                      value: `${item.description} quantity ${quantity} to ${
+                        quantity + 1
+                      }`,
                     },
                   },
                 });
               },
             }),
-        }),
-        button("+", {
-          class: "quantity",
-          onClick: () => {
-            const quantity = item.quantity;
-            const items = replace(
-              form.items,
-              is(item),
-              new Item({ ...item, quantity: quantity + 1 })
-            );
-            onChange({
-              form: new Form({ ...form, items }),
-              change: {
-                target: {
-                  name: "items",
-                  value: `${item.description} quantity ${quantity} to ${
-                    quantity + 1
-                  }`,
-                },
+            button(String(quantity), {
+              class: "quantity",
+              onClick: () =>
+                ModalQuantityChange({
+                  item,
+                  onOk: (newQuantity) => {
+                    onChange({
+                      form: new Form({
+                        ...form,
+                        items: [
+                          ...form.items.filter(
+                            (i) => !i.isStagedForOut() || !Item.similar(i, item)
+                          ),
+                          ...range(newQuantity).map(
+                            () =>
+                              new Item({
+                                ...item,
+                                timeCheckedOutByClient: getFormattedDateTime(
+                                  new Date()
+                                ),
+                              })
+                          ),
+                        ],
+                      }),
+                      change: {
+                        target: {
+                          name: "items",
+                          value: `${item.description} qty to ${newQuantity}`,
+                        },
+                      },
+                    });
+                  },
+                }),
+            }),
+            button("-", {
+              class: "quantity",
+              onClick: () => {
+                onChange({
+                  form: new Form({
+                    ...form,
+                    items: remove(
+                      form.items,
+                      (i) => Item.similar(i, item) && i.isStagedForOut()
+                    ),
+                  }),
+                  change: {
+                    target: {
+                      name: "items",
+                      value: `${item.description} quantity ${quantity} to ${
+                        quantity - 1
+                      }`,
+                    },
+                  },
+                });
               },
-            });
-          },
-        }),
-      ],
-    });
+            }),
+          ],
+        });
   }
 </script>
