@@ -26,7 +26,7 @@
             form: new Form({
               ...form,
               items: form.items.filter(
-                (i) => i.isStagedForOut() && Item.similar(item, i)
+                (i) => !i.isStagedForOut() || !Item.similar(item, i)
               ),
             }),
             change: {
@@ -41,12 +41,12 @@
     }
 
     // item must be checked out
-    if (item.quantity > 1) {
+    if (quantity > 1) {
       const quantitySelect = createElement("select", {
         class: "selectQuantity",
         children: [
           createElement("option", {
-            value: "all",
+            value: quantity,
             textContent: "All",
           }),
           ...Array.from({ length: quantity - 1 }).map((_, i) =>
@@ -66,9 +66,15 @@
                 form: new Form({
                   ...form,
                   items: [
+                    // all the not similar items
                     ...form.items.filter(
                       (i) => !i.isOut() || !Item.similar(i, item)
                     ),
+                    // similar items NOT being returned
+                    ...range(quantity - quantitySelect.value).map(
+                      () => new Item(item)
+                    ),
+                    // items being returned
                     ...range(+quantitySelect.value).map(
                       () =>
                         new Item({

@@ -4,17 +4,17 @@
   /**
    * onOk receives the input value.
    */
-  function ModalQuantityChange({ item, onOk }) {
+  function ModalQuantityChange({ item, onOk, quantity }) {
     const { modal, heading1, paragraph } = HTML;
     const newQuantityInput = HTML.createElement("input", {
       class: "newQuantity",
     });
+    const { description, id } = item;
     return modal({
       children: [
         heading1("Change quantity"),
-        paragraph(
-          `Enter the new quantity: (current quantity: ${item.quantity})`
-        ),
+        paragraph(description + (id ? `(${id})` : "")),
+        paragraph(`Enter the new quantity: (current quantity: ${quantity})`),
         newQuantityInput,
       ],
       okText: "Ok",

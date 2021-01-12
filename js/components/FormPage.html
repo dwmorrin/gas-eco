@@ -90,9 +90,13 @@
 
     console.log({ disabled, saved, savable, form, formInputsTouched });
 
-    const sortedItems = applyTo(sort(form.items, getItemSortFn(itemSort)))(
-      itemSortAscending ? identity : reverse
-    );
+    // const sortedItems = applyTo(sort(form.items, getItemSortFn(itemSort)))(
+    //   itemSortAscending ? identity : reverse
+    // );
+    const itemsStagedForOut = form.getItemsStagedForOut();
+    const itemsOut = form.getItemsOut();
+    const itemsStagedForIn = form.getItemsStagedForIn();
+    const itemsIn = form.getItemsIn();
 
     return page({
       name: "form",
@@ -389,18 +393,16 @@
                       ),
                     ],
                   }),
+                  // items staged for check-out and check-in
                   tableBody({
                     class: "itemList itemsNotSaved",
-                    children: sortedItems.length
-                      ? sortedItems
-                          .filter(
-                            ({ checkIn, checkedOut }) => !checkIn && !checkedOut
-                          )
-                          .map((item) =>
+                    children: itemsStagedForOut.length
+                      ? itemsStagedForOut
+                          .map((items) =>
                             FormItem({
                               disabled,
                               form,
-                              item,
+                              items,
                               onChange,
                               onClickItem,
                             })
@@ -421,24 +423,15 @@
                         ],
                   }),
                   nullIf(
-                    !sortedItems.some(
-                      ({ timeCheckedOutByClient, timeCheckedOutByServer }) =>
-                        timeCheckedOutByClient && timeCheckedOutByServer
-                    ),
+                    !itemsOut.length,
                     tableBody({
                       class: "itemList itemsOut",
-                      children: sortedItems
-                        .filter(
-                          ({
-                            timeCheckedOutByClient,
-                            timeCheckedOutByServer,
-                          }) => timeCheckedOutByClient && timeCheckedOutByServer
-                        )
-                        .map((item) =>
+                      children: itemsOut
+                        .map((items) =>
                           FormItem({
                             disabled,
                             form,
-                            item,
+                            items,
                             onChange,
                             onClickItem,
                           })
@@ -447,30 +440,37 @@
                     })
                   ),
                   nullIf(
-                    !form.items.length,
+                    !itemsStagedForIn.length,
                     tableBody({
                       class: "itemList itemsIn",
-                      children: sortedItems.some(({ checkIn }) => checkIn)
-                        ? sortedItems
-                            .filter(({ checkIn }) => checkIn)
-                            .map((item) =>
-                              FormItem({
-                                disabled,
-                                form,
-                                item,
-                                onChange,
-                                onClickItem,
-                              })
-                            )
-                            .flat()
-                        : [
-                            row(
-                              cell({
-                                textContent: "Scan barcode to check in an item",
-                                colspan: 5,
-                              })
-                            ),
-                          ],
+                      children: itemsStagedForIn
+                        .map((items) =>
+                          FormItem({
+                            disabled,
+                            form,
+                            items,
+                            onChange,
+                            onClickItem,
+                          })
+                        )
+                        .flat(),
+                    })
+                  ),
+                  nullIf(
+                    !itemsIn.length,
+                    tableBody({
+                      class: "itemList itemsIn",
+                      children: itemsIn
+                        .map((items) =>
+                          FormItem({
+                            disabled,
+                            form,
+                            items,
+                            onChange,
+                            onClickItem,
+                          })
+                        )
+                        .flat(),
                     })
                   )
                 ),
