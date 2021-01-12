@@ -1,23 +1,23 @@
 <script>
   /* global DateUtils Form HTML Item Utility */
   /* exported CheckInButton */
-  function CheckInButton({ form, item, disabled, onChange }) {
+  function CheckInButton({ form, item, disabled, onChange, quantity }) {
     const { createElement } = HTML;
-    const { is, remove, replace } = Utility;
+    const { is, range, replace } = Utility;
     const { getFormattedDateTime } = DateUtils;
-    if (item.checkedOutAgain) {
-      return document.createTextNode("");
-    }
+
     if (item.missing) {
       return createElement("span", {
         class: "alert",
         textContent: "ITEM IS MISSING",
       });
     }
-    if (disabled || item.timeCheckedInByClient) {
+
+    if (disabled || item.isStagedForIn() || item.isIn()) {
       return document.createTextNode(item.timeCheckedInByClient);
     }
-    if (!item.timeCheckedOutByServer) {
+
+    if (item.isStagedForOut() || item.isReserved()) {
       return createElement("button", {
         class: "create",
         textContent: "Remove",
@@ -25,7 +25,9 @@
           onChange({
             form: new Form({
               ...form,
-              items: remove(form.items, is(item)),
+              items: form.items.filter(
+                (i) => i.isStagedForOut() && Item.similar(item, i)
+              ),
             }),
             change: {
               target: {
@@ -37,12 +39,8 @@
         },
       });
     }
-    if (!item.timeCheckedInByClient && item.isSerialized()) {
-      return createElement("i", {
-        textContent: "Scan barcode to return",
-      });
-    }
 
+    // item must be checked out
     if (item.quantity > 1) {
       const quantitySelect = createElement("select", {
         class: "selectQuantity",
@@ -51,7 +49,7 @@
             value: "all",
             textContent: "All",
           }),
-          ...Array.from({ length: item.quantity - 1 }).map((_, i) =>
+          ...Array.from({ length: quantity - 1 }).map((_, i) =>
             createElement("option", {
               textContent: String(i + 1),
             })
@@ -67,18 +65,20 @@
               onChange({
                 form: new Form({
                   ...form,
-                  items: replace(
-                    form.items,
-                    is(item),
-                    new Item({
-                      ...item,
-                      quantityIn:
-                        quantitySelect.value === "all"
-                          ? item.quantity
-                          : +quantitySelect.value,
-                      checkIn: getFormattedDateTime(new Date()),
-                    })
-                  ),
+                  items: [
+                    ...form.items.filter(
+                      (i) => !i.isOut() || !Item.similar(i, item)
+                    ),
+                    ...range(+quantitySelect.value).map(
+                      () =>
+                        new Item({
+                          ...item,
+                          timeCheckedInByClient: getFormattedDateTime(
+                            new Date()
+                          ),
+                        })
+                    ),
+                  ],
                 }),
                 change: {
                   target: {
@@ -106,7 +106,7 @@
               is(item),
               new Item({
                 ...item,
-                checkIn: getFormattedDateTime(new Date()),
+                timeCheckedInByClient: getFormattedDateTime(new Date()),
               })
             ),
           }),
