@@ -5,12 +5,12 @@
    * onOk receives the input value.
    */
   function ModalQuantityChange({ item, onOk, quantity }) {
-    const { modal, heading1, paragraph } = HTML;
-    const newQuantityInput = HTML.createElement("input", {
+    const { createElement, modal, heading1, paragraph } = HTML;
+    const newQuantityInput = createElement("input", {
       class: "newQuantity",
     });
     const { description, id } = item;
-    return modal({
+    modal({
       children: [
         heading1("Change quantity"),
         paragraph(description + (id ? `(${id})` : "")),
@@ -20,5 +20,6 @@
       okText: "Ok",
       onOk: () => onOk(newQuantityInput.value),
     });
+    newQuantityInput.focus();
   }
 </script>
