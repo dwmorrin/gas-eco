@@ -167,7 +167,7 @@ var Database = (function () {
 
     if (!id) {
       // create
-      values[0] = form.createId();
+      values[0] = Form.createId();
       formSheet.appendRow(values);
       // see TODO below for more info on why this is necessary
       return new Form(

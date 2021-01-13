@@ -323,14 +323,16 @@
 
     function onDelete(form) {
       const onOk = () => {
-        withErrorHandler.withSuccessHandler(
-          checkForError(({ type, payload }) => {
-            if (type === "openForms") {
-              return reset(() => onOpenForms({ payload }));
-            }
-            if (type === "collision") return onCollision({ payload });
-          }).doPost({ type: "deleteForm", payload: JSON.stringify(form) })
-        );
+        withErrorHandler
+          .withSuccessHandler(
+            checkForError(({ type, payload }) => {
+              if (type === "openForms") {
+                return reset(() => onOpenForms({ payload }));
+              }
+              if (type === "collision") return onCollision({ payload });
+            })
+          )
+          .doPost({ type: "deleteForm", payload: JSON.stringify(form) });
         setForm({ form, disabled: true, waiting: true });
       };
       modal({
@@ -482,7 +484,7 @@
               const updatedForm = new Form(JSON.parse(payload));
               state.openForms = replace(
                 state.openForms,
-                (form) => form.isBlank() || form.id === updatedForm.id,
+                (form) => form.isBlank || form.id === updatedForm.id,
                 updatedForm
               );
               return reset(() => setForm({ form: updatedForm }));
@@ -516,7 +518,7 @@
 
     function reset(onSuccess) {
       state.saved = true;
-      state.openForms = state.openForms.filter((form) => !form.isBlank());
+      state.openForms = state.openForms.filter((form) => !form.isBlank);
       state.undoStack = [];
       state.redoStack = [];
       state.formInputsTouched.clear();

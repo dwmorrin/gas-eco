@@ -93,10 +93,7 @@
     // const sortedItems = applyTo(sort(form.items, getItemSortFn(itemSort)))(
     //   itemSortAscending ? identity : reverse
     // );
-    const itemsStagedForOut = form.getItemsStagedForOut();
-    const itemsOut = form.getItemsOut();
-    const itemsStagedForIn = form.getItemsStagedForIn();
-    const itemsIn = form.getItemsIn();
+    const { itemsStagedForOut, itemsOut, itemsStagedForIn, itemsIn } = form;
 
     return page({
       name: "form",
@@ -184,10 +181,10 @@
                 }),
                 nullIf(
                   disabled ||
-                    (!disabled && !form.isAdvanceBooking() && !form.isBlank()),
+                    (!disabled && !form.isAdvanceBooking && !form.isBlank),
                   button("Save as advance booking", {
                     class: "action buttonTight",
-                    disabled: !savable && !form.isAdvanceBooking(),
+                    disabled: !savable && !form.isAdvanceBooking,
                     onClick: () => {
                       modal({
                         children: [
@@ -202,7 +199,7 @@
                         okText: "Save as advance booking",
                         onOk: () =>
                           onSubmit(
-                            form.isAdvanceBooking()
+                            form.isAdvanceBooking
                               ? form
                               : form.makeAdvanceBooking()
                           ),
@@ -265,7 +262,7 @@
                     ),
                     row(
                       headerCell("Location"),
-                      form.isBlank() || formInputsTouched.has("location")
+                      form.isBlank || formInputsTouched.has("location")
                         ? cell({
                             class: !form.location ? "locationError" : "",
                             child: LocationSelect(),
@@ -284,7 +281,7 @@
                     ),
                     row(
                       headerCell("Start Time"),
-                      form.isBlank() || formInputsTouched.has("startTime")
+                      form.isBlank || formInputsTouched.has("startTime")
                         ? cell({
                             children: DateTimeInput({
                               name: "start",
@@ -303,7 +300,7 @@
                     ),
                     row(
                       headerCell("End Time"),
-                      form.isBlank() || formInputsTouched.has("endTime")
+                      form.isBlank || formInputsTouched.has("endTime")
                         ? cell({
                             class: timeIntervalError ? "timeIntervalError" : "",
                             children: DateTimeInput({
@@ -522,8 +519,8 @@
     function getUpdateButtonHint() {
       if (waiting) return "Please wait while the form is being saved...";
       if (disabled) return "This is a closed form. You cannot edit it.";
-      if (form.isBlank() && savable) return "Click submit to save this form.";
-      if (!form.isBlank() && saved) return "All changes saved.";
+      if (form.isBlank && savable) return "Click submit to save this form.";
+      if (!form.isBlank && saved) return "All changes saved.";
     }
 
     function handleChangeLocation(change) {
@@ -676,7 +673,7 @@
       )} ${ampm}`;
       onChange({
         form: new Form(
-          form.isBlank() &&
+          form.isBlank &&
           name === "startTime" &&
           !formInputsTouched.has("endTime")
             ? {
@@ -792,8 +789,6 @@
     }
 
     function onManualEntry(item) {
-      const exists = form.items.find(({ id }) => id === item.id);
-      if (exists) return alert("You already have that item on the form!");
       onChange({
         form: new Form({
           ...form,
@@ -818,7 +813,7 @@
       const itemOnForm = form.items.find((item) =>
         Item.similar(item, itemFromInventory)
       );
-      if (itemOnForm && itemOnForm.isSerialized() && !itemOnForm.isIn())
+      if (itemOnForm && itemOnForm.serialized && !itemOnForm.isIn)
         return handleItemOnForm(itemOnForm);
 
       return onChange({
@@ -850,7 +845,7 @@
         },
       };
 
-      if (item.isReserved())
+      if (item.reserved)
         return onChange({
           form: new Form({
             ...form,
@@ -866,12 +861,12 @@
           change,
         });
 
-      if (item.isStagedForOut() || item.isStagedForIn())
+      if (item.stagedForOut || item.stagedForIn)
         return modal({
           children: [paragraph("You already have that item on the form.")],
         });
 
-      if (item.isOut())
+      if (item.isOut)
         return onChange({
           form: new Form({
             ...form,
@@ -1020,7 +1015,7 @@
       }
       // student is checking-out.
       if (studentOnForm.checkIn) {
-        if (form.hasItemsOut()) {
+        if (form.hasItemsOut) {
           return modal({
             children: [
               heading1("Items are still checked out"),

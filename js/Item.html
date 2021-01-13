@@ -27,28 +27,28 @@
       return Object.freeze(this);
     }
 
-    isSerialized() {
+    get serialized() {
       return this.barcode && (+this.barcode < 10000 || +this.barcode > 10100);
     }
 
     // item has been reserved in advance on the form, it has no time info
-    isReserved() {
+    get reserved() {
       return !this.timeCheckedOutByClient;
     }
 
-    isStagedForOut() {
+    get stagedForOut() {
       return this.timeCheckedOutByClient && !this.timeCheckedOutByServer;
     }
 
-    isOut() {
+    get isOut() {
       return this.timeCheckedOutByServer && !this.timeCheckedInByClient;
     }
 
-    isStagedForIn() {
+    get stagedForIn() {
       return this.timeCheckedInByClient && !this.timeCheckedInByServer;
     }
 
-    isIn() {
+    get isIn() {
       return this.timeCheckedInByServer;
     }
 
@@ -56,7 +56,7 @@
       return (
         this.barcode +
         this.id +
-        (this.isSerialized() ? this.timeCheckedInByClient : "")
+        (this.serialized ? this.timeCheckedInByClient : "")
       );
     }
 

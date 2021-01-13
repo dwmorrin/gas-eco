@@ -137,7 +137,7 @@ function doPost({ type, payload }) {
       const form = new Form(JSON.parse(payload));
       try {
         form.validate(); // throws ErrorFormInvalid
-        if (form.isReadyToClose() || form.isNoShow()) {
+        if (form.isReadyToClose || form.isNoShow) {
           Database.writeFormToSheet(form, true); // throws ErrorFormCollision
           return response({
             type: "openForms",

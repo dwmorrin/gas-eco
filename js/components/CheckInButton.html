@@ -13,11 +13,11 @@
       });
     }
 
-    if (disabled || item.isStagedForIn() || item.isIn()) {
+    if (disabled || item.stagedForIn || item.isIn) {
       return document.createTextNode(item.timeCheckedInByClient);
     }
 
-    if (item.isStagedForOut() || item.isReserved()) {
+    if (item.stagedForOut || item.reserved) {
       return createElement("button", {
         class: "create",
         textContent: "Remove",
@@ -26,7 +26,7 @@
             form: new Form({
               ...form,
               items: form.items.filter(
-                (i) => !i.isStagedForOut() || !Item.similar(item, i)
+                (i) => !i.stagedForOut || !Item.similar(item, i)
               ),
             }),
             change: {
@@ -68,7 +68,7 @@
                   items: [
                     // all the not similar items
                     ...form.items.filter(
-                      (i) => !i.isOut() || !Item.similar(i, item)
+                      (i) => !i.isOut || !Item.similar(i, item)
                     ),
                     // similar items NOT being returned
                     ...range(quantity - quantitySelect.value).map(

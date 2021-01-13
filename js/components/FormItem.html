@@ -13,7 +13,7 @@
     return [
       row({
         class: [
-          item.isSerialized() ? "serialized" : "nonserialized",
+          item.serialized ? "serialized" : "nonserialized",
           disabled ? "" : "hoverBlue",
         ].join(" "),
         children: [

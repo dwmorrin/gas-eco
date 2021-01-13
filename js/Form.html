@@ -41,47 +41,9 @@
       return Object.freeze(this);
     }
 
-    duplicate() {
-      const { copyTime, getFormattedDateTime } = DateUtils;
-      return new Form({
-        ...this,
-        id: null,
-        startTime: getFormattedDateTime(copyTime(new Date(this.startTime))),
-        endTime: getFormattedDateTime(copyTime(new Date(this.endTime))),
-        notes: [],
-        students: this.students.map((student) => ({
-          ...student,
-          checkIn: null,
-          checkOut: null,
-          left: false,
-        })),
-        items: this.items.map(
-          (item) =>
-            new Item({
-              ...item,
-              missing: false,
-              timeCheckedInByClient: "",
-              timeCheckedInByServer: "",
-              timeCheckedOutByClient: "",
-              timeCheckedOutByServer: "",
-            })
-        ),
-      });
-    }
+    //------ getters (computed properties)
 
-    hasActiveStudent() {
-      const studentCounter = function (count, student) {
-        if (student.checkIn && !(student.checkOut || student.left)) {
-          return count + 1;
-        } else {
-          return count;
-        }
-      };
-      const activeStudents = this.students.reduce(studentCounter, 0);
-      return activeStudents > 1;
-    }
-
-    hasItemsOut() {
+    get hasItemsOut() {
       if (!this.items.length) return false;
       return this.items.every(
         ({ timeCheckedOutByServer, timeCheckedInByClient, missing }) => {
@@ -90,11 +52,35 @@
       );
     }
 
-    hasStudent(student) {
-      return Boolean(this.students.find((s) => s.id == student.id));
+    get itemsIn() {
+      return Utility.groupBy(
+        (item) => item.isIn,
+        (item) => item.key
+      )(this.items);
     }
 
-    isAdvanceBooking() {
+    get itemsOut() {
+      return Utility.groupBy(
+        (item) => item.isOut,
+        (item) => item.key
+      )(this.items);
+    }
+
+    get itemsStagedForIn() {
+      return Utility.groupBy(
+        (item) => item.stagedForIn,
+        (item) => item.key
+      )(this.items);
+    }
+
+    get itemsStagedForOut() {
+      return Utility.groupBy(
+        (item) => item.stagedForOut,
+        (item) => item.key
+      )(this.items);
+    }
+
+    get isAdvanceBooking() {
       return (
         this.students.length &&
         this.students.every(({ checkIn }) => checkIn === null)
@@ -102,11 +88,11 @@
     }
 
     // is this a new, unsaved (in Sheets) form?
-    isBlank() {
+    get isBlank() {
       return this.id === null;
     }
 
-    isNoShow() {
+    get isNoShow() {
       if (!this.id) return false;
       const gracePeriod = 30, // minutes
         start = new Date(this.startTime),
@@ -119,7 +105,7 @@
       );
     }
 
-    isReadyToClose() {
+    get isReadyToClose() {
       // Need at least 1 check-in, and everyone checked-in must be checked-out
       return (
         this.students.some(({ checkIn }) => checkIn) &&
@@ -127,6 +113,21 @@
           ({ checkIn, checkOut, left }) => !checkIn || checkOut || left
         )
       );
+    }
+
+    //------ methods
+
+    duplicate() {
+      const { copyTime, getFormattedDateTime } = DateUtils;
+      return new Form({
+        ...this.makeAdvanceBooking(),
+        startTime: getFormattedDateTime(copyTime(new Date(this.startTime))),
+        endTime: getFormattedDateTime(copyTime(new Date(this.endTime))),
+      });
+    }
+
+    hasStudent(student) {
+      return Boolean(this.students.find((s) => s.id == student.id));
     }
 
     makeAdvanceBooking() {
@@ -152,34 +153,6 @@
             })
         ),
       });
-    }
-
-    getItemsStagedForOut() {
-      return Utility.groupBy(
-        (item) => item.isStagedForOut(),
-        (item) => item.key
-      )(this.items);
-    }
-
-    getItemsOut() {
-      return Utility.groupBy(
-        (item) => item.isOut(),
-        (item) => item.key
-      )(this.items);
-    }
-
-    getItemsStagedForIn() {
-      return Utility.groupBy(
-        (item) => item.isStagedForIn(),
-        (item) => item.key
-      )(this.items);
-    }
-
-    getItemsIn() {
-      return Utility.groupBy(
-        (item) => item.isIn(),
-        (item) => item.key
-      )(this.items);
     }
   }
 </script>

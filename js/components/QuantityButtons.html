@@ -5,7 +5,7 @@
     const { getFormattedDateTime } = DateUtils;
     const { button, createElement } = HTML;
     const { range, remove } = Utility;
-    return disabled || !item.isStagedForOut() || item.isSerialized()
+    return disabled || !item.stagedForOut || item.serialized
       ? // just print the quantity
         document.createTextNode(quantity)
       : // give the user [+][1][-] buttons to adjust the quantity
@@ -50,7 +50,7 @@
                         ...form,
                         items: [
                           ...form.items.filter(
-                            (i) => !i.isStagedForOut() || !Item.similar(i, item)
+                            (i) => !i.stagedForOut || !Item.similar(i, item)
                           ),
                           ...range(newQuantity).map(
                             () =>
@@ -81,7 +81,7 @@
                     ...form,
                     items: remove(
                       form.items,
-                      (i) => Item.similar(i, item) && i.isStagedForOut()
+                      (i) => Item.similar(i, item) && i.stagedForOut
                     ),
                   }),
                   change: {

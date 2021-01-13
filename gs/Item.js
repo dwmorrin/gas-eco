@@ -34,7 +34,7 @@ class Item {
     return Object.freeze(this);
   }
 
-  isSerialized() {
+  get serialized() {
     return this.barcode && (+this.barcode < 10000 || +this.barcode > 10100);
   }
 }
