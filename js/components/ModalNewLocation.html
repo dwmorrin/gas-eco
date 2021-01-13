@@ -1,7 +1,7 @@
 <script>
   /* global HTML */
   /* exported ModalNewLocation */
-  function ModalNewLocation({ handleChangeLocation }) {
+  function ModalNewLocation({ onChangeLocation }) {
     const { createElement, modal, heading1, paragraph } = HTML;
     const input = createElement("input", { type: "text" });
     modal({
@@ -14,14 +14,14 @@
       ],
       okText: "Set location",
       onOk: () =>
-        handleChangeLocation({
+        onChangeLocation({
           target: {
             name: "location",
             value: input.value.trim(),
           },
         }),
       onClose: () =>
-        handleChangeLocation({
+        onChangeLocation({
           target: { name: "location", value: "" },
         }),
     });

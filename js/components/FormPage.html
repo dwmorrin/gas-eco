@@ -89,13 +89,6 @@
       waiting,
     });
 
-    console.log({ disabled, saved, savable, form, formInputsTouched });
-
-    const applySort = (items) =>
-      applyTo(sort(items, getItemSortFn(itemSort)))(
-        itemSortAscending ? identity : reverse
-      );
-
     const {
       itemsIn,
       itemsOut,
@@ -264,7 +257,7 @@
                             class: !form.location ? "locationError" : "",
                             child: LocationSelect({
                               form,
-                              onChange: handleChangeLocation,
+                              onChange: onChangeLocation,
                             }),
                           })
                         : cell({
@@ -275,7 +268,7 @@
                               locationDisplay.parentNode.appendChild(
                                 LocationSelect({
                                   form,
-                                  onChange: handleChangeLocation,
+                                  onChange: onChangeLocation,
                                 })
                               );
                               locationDisplay.remove();
@@ -293,7 +286,7 @@
                             }),
                           })
                         : cell({
-                            onClick: handleClickTimeDisplay({
+                            onClick: onClickTimeDisplay({
                               name: "start",
                               value: form.startTime,
                             }),
@@ -313,7 +306,7 @@
                             }),
                           })
                         : cell({
-                            onClick: handleClickTimeDisplay({
+                            onClick: onClickTimeDisplay({
                               name: "end",
                               value: form.endTime,
                             }),
@@ -517,13 +510,12 @@
       },
     });
 
-    // to show user where enter barcodes to add items
-    function showOmniboxTip() {
-      tip({
-        element: document.querySelector(".omnibox"),
-        message: "Use the text box to enter barcodes and scan IDs.",
-        onClose: () => document.querySelector(".omnibox").focus(),
-      });
+    //---- Functions
+
+    function applySort(items) {
+      return applyTo(sort(items, getItemSortFn(itemSort)))(
+        itemSortAscending ? identity : reverse
+      );
     }
 
     function getItemSortFn(name) {
@@ -536,88 +528,11 @@
       }[name];
     }
 
-    function handleClickTimeDisplay({ name, value }) {
-      return (_, timeDisplay) => {
-        if (disabled) return;
-        timeDisplay.textContent = "";
-        DateTimeInput({
-          name,
-          value,
-          onChange: onChangeTime,
-        }).forEach((el) => timeDisplay.parentNode.appendChild(el));
-        timeDisplay.remove();
-      };
-    }
-
     function getUpdateButtonHint() {
       if (waiting) return "Please wait while the form is being saved...";
       if (disabled) return "This is a closed form. You cannot edit it.";
       if (form.isBlank && savable) return "Click submit to save this form.";
       if (!form.isBlank && saved) return "All changes saved.";
-    }
-
-    function handleChangeLocation(change) {
-      if (change.target.value === "Other")
-        return ModalNewLocation({ handleChangeLocation });
-      onChange({
-        form: new Form({ ...form, location: change.target.value }),
-        change,
-      });
-    }
-
-    function onClickItem({ metaKey, target }, item) {
-      if (
-        disabled ||
-        ["button", "select"].includes(target.tagName.toLowerCase())
-      )
-        return;
-      if (metaKey) return handleItemOnForm(item);
-      ModalItemNotes({ form, item, onChange });
-    }
-
-    function onChangeTime({ name, values }) {
-      name = `${name}Time`;
-      const { date, hour, minutes, ampm } = values;
-      const [year, month, day] = date.split("-");
-      const value = `${month}/${day}/${year} ${hour}:${String(minutes).padStart(
-        "0",
-        2
-      )} ${ampm}`;
-      onChange({
-        form: new Form(
-          form.isBlank &&
-          name === "startTime" &&
-          !formInputsTouched.has("endTime")
-            ? {
-                ...form,
-                startTime: value,
-                endTime: getFormattedDateTime(addOneHour(new Date(value))),
-              }
-            : { ...form, [name]: value }
-        ),
-        change: { target: { name, value } },
-      });
-    }
-
-    function onManualEntry(item) {
-      onChange({
-        form: new Form({
-          ...form,
-          items: [
-            ...form.items,
-            new Item({
-              ...item,
-              timeCheckedOutByClient: getFormattedDateTime(new Date()),
-            }),
-          ],
-        }),
-        change: {
-          target: {
-            name: "items",
-            value: item.description,
-          },
-        },
-      });
     }
 
     function handleItem(itemFromInventory) {
@@ -645,54 +560,6 @@
           },
         },
       });
-    }
-
-    // only for serialized items that are not checked-in
-    function handleItemOnForm(item) {
-      const change = {
-        target: {
-          name: "items",
-          value: item.id || item.description,
-        },
-      };
-
-      if (item.reserved)
-        return onChange({
-          form: new Form({
-            ...form,
-            items: replace(
-              form.items,
-              is(item),
-              new Item({
-                ...item,
-                timeCheckedOutByClient: getFormattedDateTime(new Date()),
-              })
-            ),
-          }),
-          change,
-        });
-
-      if (item.stagedForOut || item.stagedForIn)
-        return modal({
-          children: [paragraph("You already have that item on the form.")],
-        });
-
-      if (item.isOut)
-        return onChange({
-          form: new Form({
-            ...form,
-            items: replace(
-              form.items,
-              is(item),
-              new Item({
-                ...item,
-                timeCheckedInByClient: getFormattedDateTime(new Date()),
-                missing: false,
-              })
-            ),
-          }),
-          change,
-        });
     }
 
     function handleItemArray(items) {
@@ -751,6 +618,54 @@
           target: { name: "items", value: "bulk entry" },
         },
       });
+    }
+
+    // only for serialized items that are not checked-in
+    function handleItemOnForm(item) {
+      const change = {
+        target: {
+          name: "items",
+          value: item.id || item.description,
+        },
+      };
+
+      if (item.reserved)
+        return onChange({
+          form: new Form({
+            ...form,
+            items: replace(
+              form.items,
+              is(item),
+              new Item({
+                ...item,
+                timeCheckedOutByClient: getFormattedDateTime(new Date()),
+              })
+            ),
+          }),
+          change,
+        });
+
+      if (item.stagedForOut || item.stagedForIn)
+        return modal({
+          children: [paragraph("You already have that item on the form.")],
+        });
+
+      if (item.isOut)
+        return onChange({
+          form: new Form({
+            ...form,
+            items: replace(
+              form.items,
+              is(item),
+              new Item({
+                ...item,
+                timeCheckedInByClient: getFormattedDateTime(new Date()),
+                missing: false,
+              })
+            ),
+          }),
+          change,
+        });
     }
 
     function handleStudent(studentFromRoster) {
@@ -817,7 +732,7 @@
                 ...form,
                 students: replace(form.students, is(studentOnForm), {
                   ...studentOnForm,
-                  checkOut: null,
+                  checkOut: "",
                 }),
               }),
               change,
@@ -859,6 +774,83 @@
       });
     }
 
+    function onChangeLocation(change) {
+      if (change.target.value === "Other")
+        return ModalNewLocation({ onChangeLocation });
+      onChange({
+        form: new Form({ ...form, location: change.target.value }),
+        change,
+      });
+    }
+
+    function onChangeTime({ name, values }) {
+      name = `${name}Time`;
+      const { date, hour, minutes, ampm } = values;
+      const [year, month, day] = date.split("-");
+      const value = `${month}/${day}/${year} ${hour}:${String(minutes).padStart(
+        "0",
+        2
+      )} ${ampm}`;
+      onChange({
+        form: new Form(
+          form.isBlank &&
+          name === "startTime" &&
+          !formInputsTouched.has("endTime")
+            ? {
+                ...form,
+                startTime: value,
+                endTime: getFormattedDateTime(addOneHour(new Date(value))),
+              }
+            : { ...form, [name]: value }
+        ),
+        change: { target: { name, value } },
+      });
+    }
+
+    function onClickItem({ metaKey, target }, item) {
+      if (
+        disabled ||
+        ["button", "select"].includes(target.tagName.toLowerCase())
+      )
+        return;
+      if (metaKey) return handleItemOnForm(item);
+      ModalItemNotes({ form, item, onChange });
+    }
+
+    function onClickTimeDisplay({ name, value }) {
+      return (_, timeDisplay) => {
+        if (disabled) return;
+        timeDisplay.textContent = "";
+        DateTimeInput({
+          name,
+          value,
+          onChange: onChangeTime,
+        }).forEach((el) => timeDisplay.parentNode.appendChild(el));
+        timeDisplay.remove();
+      };
+    }
+
+    function onManualEntry(item) {
+      onChange({
+        form: new Form({
+          ...form,
+          items: [
+            ...form.items,
+            new Item({
+              ...item,
+              timeCheckedOutByClient: getFormattedDateTime(new Date()),
+            }),
+          ],
+        }),
+        change: {
+          target: {
+            name: "items",
+            value: item.description,
+          },
+        },
+      });
+    }
+
     function onOmniboxSubmit({ type, value, onOmniboxSubmit }) {
       switch (type) {
         case "itemArray":
@@ -888,6 +880,15 @@
             children: [heading1("Error"), paragraph(`Unknown type: ${type}`)],
           });
       }
+    }
+
+    // to show user where enter barcodes to add items
+    function showOmniboxTip() {
+      tip({
+        element: document.querySelector(".omnibox"),
+        message: "Use the text box to enter barcodes and scan IDs.",
+        onClose: () => document.querySelector(".omnibox").focus(),
+      });
     }
   }
 </script>
