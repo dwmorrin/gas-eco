@@ -26,7 +26,10 @@
             form: new Form({
               ...form,
               items: form.items.filter(
-                (i) => !i.stagedForOut || !Item.similar(item, i)
+                (i) =>
+                  (item.stagedForOut && !i.stagedForOut) ||
+                  (item.reserved && !i.reserved) ||
+                  !Item.similar(item, i)
               ),
             }),
             change: {
