@@ -93,7 +93,13 @@
     // const sortedItems = applyTo(sort(form.items, getItemSortFn(itemSort)))(
     //   itemSortAscending ? identity : reverse
     // );
-    const { itemsStagedForOut, itemsOut, itemsStagedForIn, itemsIn } = form;
+    const {
+      itemsIn,
+      itemsOut,
+      itemsReserved,
+      itemsStagedForIn,
+      itemsStagedForOut,
+    } = form;
 
     return page({
       name: "form",
@@ -390,6 +396,23 @@
                       ),
                     ],
                   }),
+                  // items reserved
+                  nullIf(
+                    !itemsReserved.length,
+                    tableBody({
+                      children: itemsReserved
+                        .map((items) =>
+                          FormItem({
+                            disabled,
+                            form,
+                            items,
+                            onChange,
+                            onClickItem,
+                          })
+                        )
+                        .flat(),
+                    })
+                  ),
                   // items staged for check-out and check-in
                   tableBody({
                     class: "itemList itemsNotSaved",

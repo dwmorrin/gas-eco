@@ -66,6 +66,13 @@
       )(this.items);
     }
 
+    get itemsReserved() {
+      return Utility.groupBy(
+        (item) => item.reserved,
+        (item) => item.key
+      )(this.items);
+    }
+
     get itemsStagedForIn() {
       return Utility.groupBy(
         (item) => item.stagedForIn,

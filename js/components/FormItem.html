@@ -1,5 +1,5 @@
 <script>
-  /* global CheckInButton Form HTML Item QuantityButtons */
+  /* global CheckInButton CheckOutButton Form HTML Item QuantityButtons */
   /* exported FormItem */
   /**
    * FormItem can represent a single item or a collection of nonserialized items
@@ -32,9 +32,11 @@
             item.timeCheckedOutByClient
               ? item.timeCheckedOutByClient
               : {
-                  child: createElement("i", {
-                    textContent: "Scan barcode to check out",
-                  }),
+                  child: item.serialized
+                    ? createElement("i", {
+                        textContent: "Scan barcode to check out",
+                      })
+                    : CheckOutButton({ form, item, onChange }),
                 }
           ),
           cell({
