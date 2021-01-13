@@ -91,9 +91,11 @@
 
     console.log({ disabled, saved, savable, form, formInputsTouched });
 
-    // const sortedItems = applyTo(sort(form.items, getItemSortFn(itemSort)))(
-    //   itemSortAscending ? identity : reverse
-    // );
+    const applySort = (items) =>
+      applyTo(sort(items, getItemSortFn(itemSort)))(
+        itemSortAscending ? identity : reverse
+      );
+
     const {
       itemsIn,
       itemsOut,
@@ -401,7 +403,7 @@
                   nullIf(
                     !itemsReserved.length,
                     tableBody({
-                      children: itemsReserved
+                      children: applySort(itemsReserved)
                         .map((items) =>
                           FormItem({
                             disabled,
@@ -418,7 +420,7 @@
                   tableBody({
                     class: "itemList itemsNotSaved",
                     children: itemsStagedForOut.length
-                      ? itemsStagedForOut
+                      ? applySort(itemsStagedForOut)
                           .map((items) =>
                             FormItem({
                               disabled,
@@ -447,7 +449,7 @@
                     !itemsOut.length,
                     tableBody({
                       class: "itemList itemsOut",
-                      children: itemsOut
+                      children: applySort(itemsOut)
                         .map((items) =>
                           FormItem({
                             disabled,
@@ -464,7 +466,7 @@
                     !itemsStagedForIn.length,
                     tableBody({
                       class: "itemList itemsIn",
-                      children: itemsStagedForIn
+                      children: applySort(itemsStagedForIn)
                         .map((items) =>
                           FormItem({
                             disabled,
@@ -481,7 +483,7 @@
                     !itemsIn.length,
                     tableBody({
                       class: "itemList itemsIn",
-                      children: itemsIn
+                      children: applySort(itemsIn)
                         .map((items) =>
                           FormItem({
                             disabled,
