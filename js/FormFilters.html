@@ -82,7 +82,7 @@
           form.students.some(checkedOutLate)
         );
       },
-      byNoShow: (form) => form.students.every((s) => s.checkIn == null),
+      byNoShow: (form) => form.students.every(({ checkIn }) => !checkIn),
       byTimeRange: (start, end) => {
         const startTime = new Date(start + "T00:00:00").getTime(),
           endTime = new Date(end + "T23:59:59").getTime();

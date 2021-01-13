@@ -9,8 +9,8 @@ class Student {
       SIGNATURE: 4,
     };
     this.id = studentData[dataIndex.ID] || ""; // {string} ID barcode or RFID
-    this.checkIn = null; // {string} formatted date
-    this.checkOut = null; // {string} formatted date
+    this.checkIn = ""; // {string} formatted date
+    this.checkOut = ""; // {string} formatted date
     this.contact = studentData[dataIndex.CONTACT] || ""; // {string} phone number
     this.name = studentData[dataIndex.NAME] || ""; // {string}
     this.netId = studentData[dataIndex.NETID] || ""; // {string}

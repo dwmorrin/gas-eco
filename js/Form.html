@@ -32,10 +32,12 @@
       this.tape = Boolean(tape);
       this.hash = hash;
       this.notes = Object.freeze(
-        notes.map((note) => (typeof note === "object" ? { ...note } : note))
+        notes.map((note) =>
+          typeof note === "object" ? Object.freeze({ ...note }) : note
+        )
       );
       this.students = Object.freeze(
-        students.slice().map((student) => ({ ...student }))
+        students.slice().map((student) => Object.freeze({ ...student }))
       );
 
       return Object.freeze(this);
@@ -89,8 +91,7 @@
 
     get isAdvanceBooking() {
       return (
-        this.students.length &&
-        this.students.every(({ checkIn }) => checkIn === null)
+        this.students.length && this.students.every(({ checkIn }) => !checkIn)
       );
     }
 
@@ -144,8 +145,8 @@
         notes: [],
         students: this.students.map((student) => ({
           ...student,
-          checkIn: null,
-          checkOut: null,
+          checkIn: "",
+          checkOut: "",
           left: false,
         })),
         items: this.items.map(

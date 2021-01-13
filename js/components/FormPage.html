@@ -13,6 +13,8 @@
     ModalManualEntry
     ModalNewCodabar
     ModalNewLocation
+    ModalNotes
+    ModalStudentNotes
     Omnibox
     Utility
     searchResources
@@ -47,14 +49,12 @@
       button,
       cell,
       createElement,
-      getRadioValue,
       headerCell,
       heading1,
       modal,
       option,
       page,
       paragraph,
-      radio,
       row,
       select,
       spinner,
@@ -125,19 +125,7 @@
                 button("New note", {
                   class: "action",
                   disabled,
-                  onClick: () => {
-                    const input = createElement("textarea");
-                    modal({
-                      children: [
-                        heading1("New note"),
-                        paragraph("Enter a note"),
-                        input,
-                      ],
-                      okText: "Save note",
-                      onOk: () => saveNote(input.value),
-                    });
-                    input.focus();
-                  },
+                  onClick: () => ModalNotes({ form, onChange, userName }),
                 }),
                 button("Change log", {
                   onClick: onChangeLog,
@@ -354,7 +342,13 @@
                           FormStudent({
                             disabled,
                             handleStudent,
-                            handleStudentNote,
+                            handleStudentNote: () =>
+                              ModalStudentNotes({
+                                form,
+                                student,
+                                onChange,
+                                userName,
+                              }),
                             student,
                           })
                         )
@@ -577,62 +571,6 @@
       ModalItemNotes({ form, item, onChange });
     }
 
-    function handleStudentNote(student) {
-      const optionRadio = radio("studentOptions");
-      const input = createElement("textarea");
-      modal({
-        children: [
-          heading1("Add notes to student"),
-          table(
-            row(
-              cell("Student never showed up."),
-              cell({ child: optionRadio("no show") })
-            ),
-            row(
-              cell("Student left without checking out."),
-              cell({ child: optionRadio("left") })
-            ),
-            row(
-              cell("Other (please specify below)"),
-              cell({ child: optionRadio("other", true) })
-            )
-          ),
-          input,
-        ],
-        okText: "Submit",
-        onOk: ({ modal }) => {
-          const choice = getRadioValue(modal);
-          const textValue = input.value;
-
-          if (choice === "left") {
-            student.left = true;
-            onChange({
-              form,
-              change: {
-                target: {
-                  name: "students",
-                  value: `${student.name} left without checking out`,
-                },
-              },
-            });
-          } else if (choice === "no show") {
-            onChange({
-              form,
-              change: {
-                target: {
-                  name: "students",
-                  value: `${student.name} did not show up`,
-                },
-              },
-            });
-          } else if (choice === "other") {
-            saveNote(`${student.name}: ${textValue}`);
-          }
-        },
-      });
-      input.focus();
-    }
-
     function onChangeTime({ name, values }) {
       name = `${name}Time`;
       const { date, hour, minutes, ampm } = values;
@@ -654,24 +592,6 @@
             : { ...form, [name]: value }
         ),
         change: { target: { name, value } },
-      });
-    }
-
-    function saveNote(body) {
-      if (body.length < 1) {
-        return;
-      }
-      const author = userName;
-      form.notes.push({
-        timestamp: Date.now(),
-        author,
-        body,
-      });
-      onChange({
-        target: {
-          name: "notes",
-          value: body.length > 10 ? body.slice(0, 10) + "..." : body,
-        },
       });
     }
 

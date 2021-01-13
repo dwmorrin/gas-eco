@@ -78,7 +78,9 @@
     function childrenShorthand(tagName, args) {
       return createElement(
         tagName,
-        args[0] instanceof HTMLElement ? { children: args } : args[0]
+        args[0] instanceof HTMLElement || args[0] === null
+          ? { children: args }
+          : args[0]
       );
     }
 

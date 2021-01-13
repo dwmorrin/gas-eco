@@ -40,7 +40,7 @@
       onClick: ({ metaKey, target }) => {
         if (disabled || target.tagName.toLowerCase() === "button") return;
         if (metaKey) return handleStudent(student);
-        else handleStudentNote(student);
+        else handleStudentNote();
       },
     });
   }
