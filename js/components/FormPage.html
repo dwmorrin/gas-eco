@@ -1,7 +1,6 @@
 <script>
   "use strict";
   /* global
-    Config
     DateTimeInput
     DateUtils
     Form
@@ -10,6 +9,7 @@
     HTML
     Item
     LocationSelect
+    ModalChangeLog
     ModalItemNotes
     ModalManualEntry
     ModalNewCodabar
@@ -77,7 +77,6 @@
       reverse,
       sort,
       tryJsonParse,
-      uncamelCase,
     } = Utility;
     const { addOneHour, getFormattedDateTime } = DateUtils;
 
@@ -127,7 +126,7 @@
                   onClick: () => ModalNotes({ form, onChange, userName }),
                 }),
                 button("Change log", {
-                  onClick: onChangeLog,
+                  onClick: () => ModalChangeLog({ form }),
                   disabled: waiting,
                 }),
                 nullIf(
@@ -597,33 +596,6 @@
             : { ...form, [name]: value }
         ),
         change: { target: { name, value } },
-      });
-    }
-
-    function onChangeLog() {
-      const changes = [
-        ...form.notes.reduce((areChanges, note) => {
-          const change = tryJsonParse(note.body);
-          if (!Array.isArray(change)) return areChanges;
-          change.forEach((entry) => {
-            entry.author = note.author;
-            if (!entry.timestamp) entry.timestamp = note.timestamp;
-          });
-          return [...areChanges, ...change];
-        }, []),
-      ];
-      modal({
-        children: [
-          table(row(...["Time", "User", "Field", "Value"].map(cell))),
-          ...changes.map(({ timestamp, author, name, value }) =>
-            row(
-              cell(DateUtils.getFormattedDateTime(new Date(timestamp))),
-              cell(author),
-              cell(uncamelCase(name)),
-              cell(value)
-            )
-          ),
-        ],
       });
     }
 
