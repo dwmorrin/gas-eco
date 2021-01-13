@@ -1,0 +1,47 @@
+<script>
+  /* global HTML */
+  /* exported FormStudent */
+  function FormStudent({
+    disabled,
+    handleStudent,
+    handleStudentNote,
+    student,
+  }) {
+    const { cell, createElement } = HTML;
+    return createElement("tr", {
+      class: disabled ? "" : "hoverBlue",
+      children: [
+        cell(student.name),
+        cell(student.netId),
+        createElement("td", {
+          child: student.checkIn
+            ? document.createTextNode(student.checkIn)
+            : disabled
+            ? document.createTextNode("")
+            : createElement("i", {
+                textContent: "Scan ID to sign in",
+              }),
+        }),
+        createElement("td", {
+          child: student.left
+            ? createElement("span", {
+                class: "alert",
+                textContent: "DID NOT CHECK OUT",
+              })
+            : student.checkOut
+            ? document.createTextNode(student.checkOut)
+            : disabled || !student.checkIn
+            ? document.createTextNode("")
+            : createElement("i", {
+                textContent: "Scan ID to sign out",
+              }),
+        }),
+      ],
+      onClick: ({ metaKey, target }) => {
+        if (disabled || target.tagName.toLowerCase() === "button") return;
+        if (metaKey) return handleStudent(student);
+        else handleStudentNote(student);
+      },
+    });
+  }
+</script>
