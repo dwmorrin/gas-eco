@@ -1,12 +1,12 @@
 <script>
-  /* global CheckInButton CheckOutButton Form HTML Item QuantityButtons */
+  /* global CheckInButton CheckOutButton HTML QuantityButtons */
   /* exported FormItem */
   /**
    * FormItem can represent a single item or a collection of nonserialized items
    * It takes an array of items that are assumed to be similar
    */
   function FormItem({ disabled, form, items, onChange, onClickItem }) {
-    const { cell, createElement, heading1, modal, paragraph, row } = HTML;
+    const { cell, createElement, row } = HTML;
     // take the first item as the representative slice for detail info
     const [item] = items;
     const quantity = items.length;
@@ -51,41 +51,7 @@
           colspan: 5,
           class: "itemnotes",
           textContent: "Notes: " + item.notes,
-          onClick: () => {
-            if (disabled) return;
-            const input = createElement("textarea", {
-              textContent: item.notes,
-            });
-            modal({
-              children: [
-                heading1("Add notes to item"),
-                paragraph(
-                  [item.description, item.id ? `(${item.id})` : ""].join(" ")
-                ),
-                input,
-              ],
-              okText: "Add notes",
-              onOk: () =>
-                onChange({
-                  form: new Form({
-                    ...form,
-                    items: items.map((i) =>
-                      Item.similar(i, item)
-                        ? new Item({ ...item, notes: input.value })
-                        : i
-                    ),
-                  }),
-                  change: {
-                    target: {
-                      name: "items",
-                      value: `${item.id || item.description} note: ${
-                        input.value
-                      }`,
-                    },
-                  },
-                }),
-            });
-          },
+          onClick: (event) => onClickItem(event, item),
         }),
       }),
     ];

@@ -8,6 +8,7 @@
     FormItem
     HTML
     Item
+    ModalItemNotes
     ModalManualEntry
     ModalNewCodabar
     Omnibox
@@ -586,48 +587,7 @@
       )
         return;
       if (metaKey) return handleItemOnForm(item);
-      const optionRadio = radio("itemOptions");
-      const input = createElement("textarea");
-      modal({
-        children: [
-          heading1("Add notes to item"),
-          paragraph(
-            [item.description, item.id ? `(${item.id})` : ""].join(" ")
-          ),
-          table(
-            row(
-              cell("Item cannot be found"),
-              cell({ child: optionRadio("missing") })
-            ),
-            row(
-              cell("Other (please specifiy below"),
-              cell({ child: optionRadio("other") })
-            )
-          ),
-          input,
-        ],
-        okText: "Add note",
-        onOk: ({ modal }) => {
-          const choice = getRadioValue(modal);
-          let value = "";
-          if (choice === "missing") {
-            item.missing = true;
-            value = `${item.description} marked as missing`;
-          } else if (choice === "other") {
-            item.notes = [item.notes, input.value].filter((s) => s).join(", ");
-          }
-          onChange({
-            form,
-            change: {
-              target: {
-                name: "items",
-                value,
-              },
-            },
-          });
-        },
-      });
-      input.focus();
+      ModalItemNotes({ form, item, onChange });
     }
 
     function handleStudentNote(student) {

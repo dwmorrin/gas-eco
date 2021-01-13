@@ -268,9 +268,13 @@
         });
         buttonDiv.appendChild(okButton);
       }
-      div.addEventListener("keydown", ({ key }) => {
-        if (key === "Escape") cleanup();
-        if (key === "Enter") {
+      div.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          cleanup();
+        }
+        if (event.key === "Enter") {
+          event.preventDefault();
           onOk({ modal: div });
           cleanup();
         }

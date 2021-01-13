@@ -33,23 +33,35 @@
 
     // item has been reserved in advance on the form, it has no time info
     get reserved() {
-      return !this.timeCheckedOutByClient;
+      return !this.missing && !this.timeCheckedOutByClient;
     }
 
     get stagedForOut() {
-      return this.timeCheckedOutByClient && !this.timeCheckedOutByServer;
+      return (
+        !this.missing &&
+        this.timeCheckedOutByClient &&
+        !this.timeCheckedOutByServer
+      );
     }
 
     get isOut() {
-      return this.timeCheckedOutByServer && !this.timeCheckedInByClient;
+      return (
+        !this.missing &&
+        this.timeCheckedOutByServer &&
+        !this.timeCheckedInByClient
+      );
     }
 
     get stagedForIn() {
-      return this.timeCheckedInByClient && !this.timeCheckedInByServer;
+      return (
+        !this.missing &&
+        this.timeCheckedInByClient &&
+        !this.timeCheckedInByServer
+      );
     }
 
     get isIn() {
-      return this.timeCheckedInByServer;
+      return this.missing || this.timeCheckedInByServer;
     }
 
     get key() {
