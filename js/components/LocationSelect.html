@@ -1,0 +1,23 @@
+<script>
+  /* global Config HTML Utility */
+  /* exported LocationSelect */
+  function LocationSelect({ form, onChange }) {
+    const { option, select } = HTML;
+    const { nullIf } = Utility;
+
+    return select({
+      name: "location",
+      value: form.location,
+      onChange,
+      children: [
+        option("please select", ""),
+        ...Array.from(Config.locations).map((location) => option(location)),
+        nullIf(
+          !form.location || Config.locations.has(form.location),
+          option(form.location)
+        ),
+        option("Other"),
+      ],
+    });
+  }
+</script>

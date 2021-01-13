@@ -9,6 +9,7 @@
     FormStudent
     HTML
     Item
+    LocationSelect
     ModalItemNotes
     ModalManualEntry
     ModalNewCodabar
@@ -52,11 +53,9 @@
       headerCell,
       heading1,
       modal,
-      option,
       page,
       paragraph,
       row,
-      select,
       spinner,
       table,
       tableBody,
@@ -264,7 +263,10 @@
                       form.isBlank || formInputsTouched.has("location")
                         ? cell({
                             class: !form.location ? "locationError" : "",
-                            child: LocationSelect(),
+                            child: LocationSelect({
+                              form,
+                              onChange: handleChangeLocation,
+                            }),
                           })
                         : cell({
                             textContent: form.location,
@@ -272,7 +274,10 @@
                             onClick: (_, locationDisplay) => {
                               if (disabled) return;
                               locationDisplay.parentNode.appendChild(
-                                LocationSelect()
+                                LocationSelect({
+                                  form,
+                                  onChange: handleChangeLocation,
+                                })
                               );
                               locationDisplay.remove();
                             },
@@ -618,23 +623,6 @@
               cell(value)
             )
           ),
-        ],
-      });
-    }
-
-    function LocationSelect() {
-      return select({
-        name: "location",
-        value: form.location,
-        onChange: handleChangeLocation,
-        children: [
-          option("please select", ""),
-          ...Array.from(Config.locations).map((location) => option(location)),
-          nullIf(
-            !form.location || Config.locations.has(form.location),
-            option(form.location)
-          ),
-          option("Other"),
         ],
       });
     }
