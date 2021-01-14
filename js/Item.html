@@ -65,11 +65,7 @@
     }
 
     get key() {
-      return (
-        this.barcode +
-        this.id +
-        (this.serialized ? this.timeCheckedInByClient : "")
-      );
+      return this.barcode + this.id + (this.serialized ? Math.random() : "");
     }
 
     static getManualPrefix() {

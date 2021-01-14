@@ -22,7 +22,7 @@
           ...openFormItems,
           ...form.items.reduce(
             (items, item) =>
-              item.checkedOut
+              item.serialized && item.isOut
                 ? [
                     ...items,
                     {

@@ -35,6 +35,7 @@
     onFormNavigation,
     onNeedsSignature,
     onNewCodabar,
+    onNewForm,
     onRedo,
     onSortItems,
     onSubmit,
@@ -453,12 +454,12 @@
                         ],
                   }),
                   nullIf(
-                    !itemsOut.length,
+                    !itemsStagedForIn.length,
                     tableBody({
-                      class: "itemList itemsOut",
+                      class: "itemList itemsNotSaved",
                       children: [
-                        FormItemSectionHeader("Checked out"),
-                        ...applySort(itemsOut)
+                        FormItemSectionHeader("Checking In"),
+                        ...applySort(itemsStagedForIn)
                           .map((items) =>
                             FormItem({
                               disabled,
@@ -473,12 +474,12 @@
                     })
                   ),
                   nullIf(
-                    !itemsStagedForIn.length,
+                    !itemsOut.length,
                     tableBody({
-                      class: "itemList itemsIn",
+                      class: "itemList itemsOut",
                       children: [
-                        FormItemSectionHeader("Checking In"),
-                        ...applySort(itemsStagedForIn)
+                        FormItemSectionHeader("Checked out"),
+                        ...applySort(itemsOut)
                           .map((items) =>
                             FormItem({
                               disabled,
@@ -529,9 +530,9 @@
     //---- Functions
 
     function applySort(items) {
-      return applyTo(sort(items, getItemSortFn(itemSort)))(
-        itemSortAscending ? identity : reverse
-      );
+      return applyTo(
+        sort(items, (a, b) => getItemSortFn(itemSort)(a[0], b[0]))
+      )(itemSortAscending ? identity : reverse);
     }
 
     function getItemSortFn(name) {
