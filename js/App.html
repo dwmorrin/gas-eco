@@ -40,6 +40,7 @@
       tryJsonParse,
     } = Utility;
     const { addOneHour, before, getFormattedDateTime, minutes } = DateUtils;
+
     // seal forces all properties to be declared here
     const state = Object.seal({
       closedForms: /* Form[] | null */ null,
@@ -63,21 +64,13 @@
       saved: true,
       undoStack: /* Form */ [], // each change pushes the old Form here
     });
+
     const newFormButton = button("New Form", {
       class: "share",
       disabled: true,
-      onClick: () => {
-        loseDataWarning(() => {
-          const form = new Form({
-            startTime: getFormattedDateTime(new Date(), true),
-            endTime: getFormattedDateTime(addOneHour(new Date()), true),
-          });
-          state.openForms = [...state.openForms, form];
-          state.saved = false;
-          setForm({ form });
-        });
-      },
+      onClick: () => onNewForm(),
     });
+
     const openFormsButton = button("View Open Forms", {
       disabled: true,
       onClick: (_, button) => {
@@ -94,13 +87,17 @@
         });
       },
     });
+
     const closedFormsButton = button("View Closed Forms", {
       disabled: true,
       onClick: () => {
         loseDataWarning(() => showClosedFormsPage());
       },
     });
+
     const userNameDisplay = createElement("span", { class: "userNameDisplay" });
+
+    // sets up page to initially show loading indicators
     const pageContainer = createElement("div", {
       child: LoadingPage({
         rosterStatus: "Loading students...",
@@ -108,6 +105,8 @@
         openFormsStatus: "Loading open forms...",
       }),
     });
+
+    // Render initial view
     document.body.appendChild(
       page({
         name: "app",
@@ -432,6 +431,19 @@
         });
     }
 
+    function onNewForm(form) {
+      loseDataWarning(() => {
+        if (!form)
+          form = new Form({
+            startTime: getFormattedDateTime(new Date(), true),
+            endTime: getFormattedDateTime(addOneHour(new Date()), true),
+          });
+        state.openForms = [...state.openForms, form];
+        state.saved = false;
+        setForm({ form });
+      });
+    }
+
     /** * @param {Action} response */
     function onOpenForms({ payload: { formList } }) {
       const openForms = tryJsonParse(formList);
@@ -557,6 +569,7 @@
           onDelete,
           onNeedsSignature,
           onNewCodabar,
+          onNewForm,
           onFormNavigation: makeFormNavigation(forms, type),
           onRedo,
           onSortItems: makeOnSortItems(disabled),

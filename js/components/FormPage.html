@@ -141,7 +141,7 @@
                 nullIf(
                   !disabled && waiting,
                   button("Duplicate this form", {
-                    onClick: () => onSubmit(form.duplicate()),
+                    onClick: () => onNewForm(form.duplicate()),
                   })
                 ),
                 nullIf(
