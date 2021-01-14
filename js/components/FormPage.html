@@ -5,6 +5,7 @@
     DateUtils
     Form
     FormItem
+    FormItemSectionHeader
     FormStudent
     HTML
     Item
@@ -403,24 +404,9 @@
                   nullIf(
                     !itemsReserved.length,
                     tableBody({
-                      children: applySort(itemsReserved)
-                        .map((items) =>
-                          FormItem({
-                            disabled,
-                            form,
-                            items,
-                            onChange,
-                            onClickItem,
-                          })
-                        )
-                        .flat(),
-                    })
-                  ),
-                  // items staged for check-out and check-in
-                  tableBody({
-                    class: "itemList itemsNotSaved",
-                    children: itemsStagedForOut.length
-                      ? applySort(itemsStagedForOut)
+                      children: [
+                        FormItemSectionHeader("Reserved items"),
+                        ...applySort(itemsReserved)
                           .map((items) =>
                             FormItem({
                               disabled,
@@ -430,7 +416,28 @@
                               onClickItem,
                             })
                           )
-                          .flat()
+                          .flat(),
+                      ],
+                    })
+                  ),
+                  // items staged for check-out
+                  tableBody({
+                    class: "itemList itemsNotSaved",
+                    children: itemsStagedForOut.length
+                      ? [
+                          FormItemSectionHeader("Checking out"),
+                          ...applySort(itemsStagedForOut)
+                            .map((items) =>
+                              FormItem({
+                                disabled,
+                                form,
+                                items,
+                                onChange,
+                                onClickItem,
+                              })
+                            )
+                            .flat(),
+                        ]
                       : [
                           nullIf(
                             disabled,
@@ -449,51 +456,60 @@
                     !itemsOut.length,
                     tableBody({
                       class: "itemList itemsOut",
-                      children: applySort(itemsOut)
-                        .map((items) =>
-                          FormItem({
-                            disabled,
-                            form,
-                            items,
-                            onChange,
-                            onClickItem,
-                          })
-                        )
-                        .flat(),
+                      children: [
+                        FormItemSectionHeader("Checked out"),
+                        ...applySort(itemsOut)
+                          .map((items) =>
+                            FormItem({
+                              disabled,
+                              form,
+                              items,
+                              onChange,
+                              onClickItem,
+                            })
+                          )
+                          .flat(),
+                      ],
                     })
                   ),
                   nullIf(
                     !itemsStagedForIn.length,
                     tableBody({
                       class: "itemList itemsIn",
-                      children: applySort(itemsStagedForIn)
-                        .map((items) =>
-                          FormItem({
-                            disabled,
-                            form,
-                            items,
-                            onChange,
-                            onClickItem,
-                          })
-                        )
-                        .flat(),
+                      children: [
+                        FormItemSectionHeader("Checking In"),
+                        ...applySort(itemsStagedForIn)
+                          .map((items) =>
+                            FormItem({
+                              disabled,
+                              form,
+                              items,
+                              onChange,
+                              onClickItem,
+                            })
+                          )
+                          .flat(),
+                      ],
                     })
                   ),
                   nullIf(
                     !itemsIn.length,
                     tableBody({
                       class: "itemList itemsIn",
-                      children: applySort(itemsIn)
-                        .map((items) =>
-                          FormItem({
-                            disabled,
-                            form,
-                            items,
-                            onChange,
-                            onClickItem,
-                          })
-                        )
-                        .flat(),
+                      children: [
+                        FormItemSectionHeader("Checked In"),
+                        ...applySort(itemsIn)
+                          .map((items) =>
+                            FormItem({
+                              disabled,
+                              form,
+                              items,
+                              onChange,
+                              onClickItem,
+                            })
+                          )
+                          .flat(),
+                      ],
                     })
                   )
                 ),
