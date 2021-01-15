@@ -1,6 +1,6 @@
 <script>
   "use strict";
-  /* global Config DateUtils HTML */
+  /* global env DateUtils HTML */
   /* exported ClosedFormsInputs */
   function ClosedFormsInputs({
     closedFormsQuery = {},
@@ -49,7 +49,7 @@
           textContent: "Location",
           child: select({
             name: "location",
-            children: ["All", ...Config.locations, "Other"].map((location) =>
+            children: ["All", ...env.locations, "Other"].map((location) =>
               option(location)
             ),
             value: location,

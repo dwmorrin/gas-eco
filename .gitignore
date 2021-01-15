@@ -1,2 +1,3 @@
 .clasp*
 node_modules
+env.*

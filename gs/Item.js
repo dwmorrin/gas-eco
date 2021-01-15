@@ -1,10 +1,10 @@
-/* global Database */
+/* global env */
 /* exported  Item */
 class Item {
   constructor(itemData) {
     // Initially created from String[] from Google Sheets
     if (Array.isArray(itemData)) {
-      const { BARCODE, ID, MAKE, MODEL, DESCRIPTION } = Database.index.items;
+      const { BARCODE, ID, MAKE, MODEL, DESCRIPTION } = env.items;
       this.barcode = String(itemData[BARCODE]);
       this.id = String(itemData[ID]);
       this.description = "";

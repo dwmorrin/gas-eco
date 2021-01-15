@@ -1,5 +1,5 @@
 <script>
-  /* global Config Inventory */
+  /* global env Inventory */
   /* exported FormFilters */
   const FormFilters = (function () {
     const { contains } = Inventory;
@@ -98,7 +98,7 @@
             return false;
           }
         } else {
-          if (Config.locations.has(form.location)) {
+          if (env.locations.has(form.location)) {
             return false;
           }
         }

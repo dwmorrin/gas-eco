@@ -1,4 +1,4 @@
-/* global ErrorFormInvalid Database DateUtils Item Utility */
+/* global ErrorFormInvalid env DateUtils Item Utility */
 /* exported Form */
 class Form {
   constructor(form) {
@@ -18,7 +18,7 @@ class Form {
         STUDENTS,
         ITEMS,
         NOTES,
-      } = Database.index.forms;
+      } = env.forms;
       this.bookedStudents = String(form[BOOKED_STUDENTS]);
       this.bookingId = String(form[BOOKING_ID]);
       this.contact = String(form[CONTACT]);
