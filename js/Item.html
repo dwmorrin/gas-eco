@@ -64,8 +64,13 @@
       return this.missing || this.timeCheckedInByServer;
     }
 
+    // sequential number keeps serialized items separate (unique)
     get key() {
-      return this.barcode + this.id + (this.serialized ? Math.random() : "");
+      return (
+        this.barcode +
+        this.id +
+        (this.serialized ? Utility.getSequentialNumber() : "")
+      );
     }
 
     static getManualPrefix() {

@@ -1,6 +1,11 @@
 <script>
   /* exported Utility */
   const Utility = (function () {
+    const sequentialGenerator = (function* () {
+      let n = 0;
+      while (true) yield ++n;
+    })();
+
     return {
       applyTo,
       compareDateStrings,
@@ -8,8 +13,9 @@
       compareStrings,
       copyToClipboard,
       digestMessage,
-      hexString,
+      getSequentialNumber,
       groupBy,
+      hexString,
       identity,
       is,
       last,
@@ -56,6 +62,11 @@
       const encoder = new TextEncoder();
       const data = encoder.encode(message);
       return window.crypto.subtle.digest("SHA-1", data);
+    }
+
+    // resets each time app restarts, just for temporary sequencing
+    function getSequentialNumber() {
+      return sequentialGenerator.next().value;
     }
 
     function groupBy(predicate, keyMaker = JSON.stringify) {
