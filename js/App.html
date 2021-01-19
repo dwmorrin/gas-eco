@@ -55,6 +55,8 @@
       itemsOutSort: "description",
       itemsOutSortAscending: true,
       lastClosedFormRow: -1,
+      notLoading: false,
+      notLoadingTimeoutId: 0,
       openFormSort: "startTime",
       openFormSortAscending: true,
       openForms: /* Form[] | null */ null,
@@ -128,6 +130,13 @@
         ],
       })
     );
+
+    // Trigger a friendly message if app gets stuck at the loading page
+    state.notLoadingTimeoutId = window.setTimeout(() => {
+      state.notLoadingTimeoutId = 0;
+      state.notLoading = true;
+      showLoadingPage();
+    }, minutes(0.75));
 
     const withErrorHandler = google.script.run.withFailureHandler((error) => {
       console.error(error);
@@ -624,6 +633,7 @@
           openFormsStatus: state.openForms
             ? `${state.openForms.length} open forms downloaded`
             : "Loading open forms...",
+          timedOut: state.notLoading,
         })
       );
     }
@@ -652,6 +662,9 @@
       if (!isLoaded()) {
         return false;
       }
+      state.notLoadingTimeoutId &&
+        window.clearTimeout(state.notLoadingTimeoutId);
+      state.notLoading = false;
       openFormsButton.removeAttribute("disabled");
       newFormButton.removeAttribute("disabled");
       if (state.closedForms) closedFormsButton.removeAttribute("disabled");
