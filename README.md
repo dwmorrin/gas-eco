@@ -28,6 +28,12 @@ Equipment is stored in an "inventory" Sheet, people who can check-out equipment
 are in a "students" Sheet, and the records of who-checked-out-what is stored in
 a "forms" Sheet.
 
+### env.js
+
+Copy `gs/env_sample.js` to `gs/env.js` and enter in the sheet IDs and adjust
+sheet names and column numbers as needed. git should ignore the `env.js` file
+and `clasp` should ignore the `env_sample.js` file.
+
 ### Client
 
 #### HTML
@@ -56,6 +62,12 @@ of `document.createElement()`).
 
 The module `HTML` provides `document.createElement()` wrappers to facilitate
 declarative style HTML-in-JS programming.
+
+### env.html
+
+Copy `js/env_sample.html` to `js/env.html` and enter in the specifics for your
+application. git should ignore the `env.js` file and `clasp` should ignore the
+`env_sample.js` file.
 
 #### CSS
 
