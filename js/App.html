@@ -43,6 +43,7 @@
 
     // seal forces all properties to be declared here
     const state = Object.seal({
+      autosaveTimeoutId: 0,
       closedForms: /* Form[] | null */ null,
       closedFormsFiltered: /* Form[] | null */ null,
       closedFormsQuery: {},
@@ -99,16 +100,10 @@
 
     const userNameDisplay = createElement("span", { class: "userNameDisplay" });
 
-    // sets up page to initially show loading indicators
-    const pageContainer = createElement("div", {
-      child: LoadingPage({
-        rosterStatus: "Loading students...",
-        inventoryStatus: "Loading inventory...",
-        openFormsStatus: "Loading open forms...",
-      }),
-    });
+    // need reference so we can update this to change views
+    const pageContainer = createElement("div");
 
-    // Render initial view
+    // Render static elements
     document.body.appendChild(
       page({
         name: "app",
@@ -131,12 +126,8 @@
       })
     );
 
-    // Trigger a friendly message if app gets stuck at the loading page
-    state.notLoadingTimeoutId = window.setTimeout(() => {
-      state.notLoadingTimeoutId = 0;
-      state.notLoading = true;
-      showLoadingPage();
-    }, minutes(0.75));
+    // Render initial view: loading page
+    showLoadingPage();
 
     const withErrorHandler = google.script.run.withFailureHandler((error) => {
       console.error(error);
@@ -210,6 +201,21 @@
         }
         return onSuccess(...args);
       };
+    }
+
+    function clearAutosave() {
+      if (state.autosaveTimeoutId) {
+        window.clearTimeout(state.autosaveTimeoutId);
+        state.autosaveTimeoutId = 0;
+      }
+    }
+
+    function clearNotLoading() {
+      if (state.notLoadingTimeoutId) {
+        window.clearTimeout(state.notLoadingTimeoutId);
+        state.notLoadingTimeoutId = 0;
+      }
+      state.notLoading = false;
     }
 
     function displayErrorMessage(message) {
@@ -538,12 +544,30 @@
     }
 
     function reset(onSuccess) {
+      clearAutosave();
       state.saved = true;
       state.openForms = state.openForms.filter((form) => !form.isBlank);
       state.undoStack = [];
       state.redoStack = [];
       state.formInputsTouched.clear();
       onSuccess();
+    }
+
+    function setAutosave(form) {
+      clearAutosave();
+      state.autosaveTimeoutId = window.setTimeout(() => {
+        state.autosaveTimeoutId = 0;
+        onSubmit(form);
+      }, minutes(1));
+    }
+
+    function setNotLoadingTimeout() {
+      clearNotLoading();
+      state.notLoadingTimeoutId = window.setTimeout(() => {
+        state.notLoadingTimeoutId = 0;
+        state.notLoading = true;
+        showLoadingPage();
+      }, minutes(0.75));
     }
 
     function setForm({
@@ -562,6 +586,17 @@
         !form.startTime && !form.endTime
           ? false
           : before(new Date(form.endTime))(new Date(form.startTime));
+      const savable =
+        state.undoStack.length &&
+        !state.saved &&
+        !timeIntervalError &&
+        !!form.location &&
+        !!form.startTime &&
+        !!form.endTime &&
+        form.students.some(({ checkIn }) => checkIn);
+
+      if (savable) setAutosave(form);
+
       update(
         pageContainer,
         FormPage({
@@ -585,14 +620,7 @@
           onSubmit,
           onUndo,
           roster: state.roster,
-          savable:
-            state.undoStack.length &&
-            !state.saved &&
-            !timeIntervalError &&
-            !!form.location &&
-            !!form.startTime &&
-            !!form.endTime &&
-            form.students.some(({ checkIn }) => checkIn),
+          savable,
           saved: state.saved,
           timeIntervalError,
           userName: getUsername(),
@@ -621,6 +649,7 @@
     }
 
     function showLoadingPage() {
+      if (!state.notLoading) setNotLoadingTimeout();
       update(
         pageContainer,
         LoadingPage({
@@ -658,13 +687,10 @@
      * tryUnlock controls when the loading page switches to the open forms page
      */
     function tryUnlock() {
-      showLoadingPage();
       if (!isLoaded()) {
-        return false;
+        return showLoadingPage();
       }
-      state.notLoadingTimeoutId &&
-        window.clearTimeout(state.notLoadingTimeoutId);
-      state.notLoading = false;
+      clearNotLoading();
       openFormsButton.removeAttribute("disabled");
       newFormButton.removeAttribute("disabled");
       if (state.closedForms) closedFormsButton.removeAttribute("disabled");
