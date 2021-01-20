@@ -1,5 +1,5 @@
 <script>
-  /* global HTML Item */
+  /* global HTML Item Utility */
   /* exported ModalQuery */
   function ModalQuery({ value, inventory, roster, onOmniboxSubmit }) {
     const { cell, createElement, modal, heading1, paragraph, table } = HTML;
@@ -47,7 +47,7 @@
     // QUERY FUNCTIONS
 
     function searchResources({ value, inventory, roster }) {
-      return _query(
+      return query(
         value.replace(/'/g, ""),
         (obj) => {
           if (obj instanceof Item) {
@@ -70,10 +70,67 @@
       ).filter((result) => result.weight < 4);
     }
 
+    function partiallyIncludes(terms, keys) {
+      for (const term of terms) {
+        for (let i = 3; i <= term.length; ++i) {
+          for (const key of keys) {
+            if (key.includes(term.slice(0, i))) {
+              return true;
+            }
+          }
+        }
+      }
+      return false;
+    }
+
+    function workBackwards(expression, keys, score) {
+      let minWeight = score.BAD;
+      for (
+        let str = expression;
+        str.length > 2;
+        str = str.slice(0, str.length - 1)
+      ) {
+        for (const key of keys) {
+          if (key.includes(str)) {
+            if (key === str || key.startsWith(str)) {
+              const weight = score.BEST + expression.length - str.length;
+              minWeight = weight < minWeight ? weight : minWeight;
+              str = "";
+              break;
+            }
+          }
+        }
+      }
+      return minWeight;
+    }
+
+    function matchTerms(terms, keys, score) {
+      const termScores = [];
+      for (let i = 0; i < terms.length; ++i) {
+        for (
+          let str = terms[i];
+          str.length > 2;
+          str = str.slice(0, str.length - 1)
+        ) {
+          for (const key of keys) {
+            if (key.includes(str)) {
+              termScores.push(score.GOOD + terms[i].length - str.length);
+              str = "";
+              break;
+            }
+          }
+        }
+        if (termScores.length === i) {
+          // implies we didn't push a good score
+          termScores.push(score.BAD);
+        }
+      }
+      return termScores;
+    }
     /**
      * query searches through the supplied arrays inspected keys, as found with
      *   the supplied key making function, and returns a weighted result array.
-     * The preliminary search filters inventory and roster for anything that
+     * The preliminary search filters the arrays for anything that
      *   seems to include the query expression.  As a simple misspelling aid,
      *   the expression is tokenized and matching starts from truncated strings
      *   and grows until a match might be found.
@@ -86,81 +143,25 @@
      * @param {{}[]} arrays - arrays to query
      * @returns {{value: {}, weight: number}[]}
      */
-    function _query(q, keyMaker, ...arrays) {
-      const expression = q.trim().toLowerCase();
-      const sep = /[\s\W]+/;
-      const terms = expression.split(sep);
-      // reduce the large set of possibilities to a narrow set of possibilities
-      const preliminary = function (obj) {
-        const keys = keyMaker(obj);
-        for (const term of terms) {
-          if (term.length < 3) {
-            continue;
-          }
-          for (let i = 3; i <= term.length; ++i) {
-            for (const key of keys) {
-              if (key.includes(term.slice(0, i))) {
-                return true;
-              }
-            }
-          }
-        }
-      };
-      const results = arrays
-        .reduce((reduced, arr) => reduced.concat(arr), [])
-        .filter(preliminary);
-
-      // examine the subset and score how good the result appears to be
+    function query(q, keyMaker, ...arrays) {
       const score = { BEST: 0, GOOD: 1, BAD: 10 };
-      const weigh = (value) => {
-        const keys = keyMaker(value);
-        let minWeight = score.BAD;
-        for (
-          let str = expression;
-          str.length > 2;
-          str = str.slice(0, str.length - 1)
-        ) {
-          for (const key of keys) {
-            if (key.includes(str)) {
-              if (key === str || key.startsWith(str)) {
-                const weight = score.BEST + expression.length - str.length;
-                minWeight = weight < minWeight ? weight : minWeight;
-                str = "";
-                break;
-              }
-            }
-          }
-        }
-        // term by term matching: these results are averaged
-        // we want results that match all of the user's input to get the best scores
-        const termScores = [];
-        for (let i = 0; i < terms.length; ++i) {
-          for (
-            let str = terms[i];
-            str.length > 2;
-            str = str.slice(0, str.length - 1)
-          ) {
-            for (const key of keys) {
-              if (key.includes(str)) {
-                termScores.push(score.GOOD + terms[i].length - str.length);
-                str = "";
-                break;
-              }
-            }
-          }
-          if (termScores.length === i) {
-            // implies we didn't push a good score
-            termScores.push(score.BAD);
-          }
-        }
-        const average =
-          termScores.reduce((sum, val) => sum + val) / termScores.length;
-        minWeight = average < minWeight ? average : minWeight;
-        return { value, weight: minWeight };
-      };
-      const weightedResults = results.map(weigh);
-      weightedResults.sort((a, b) => a.weight - b.weight);
-      return weightedResults;
+      const expression = q.trim().toLowerCase();
+      const terms = expression.split(/[\s\W]+/).filter((s) => s.length > 2);
+
+      return Utility.sort(
+        arrays
+          .reduce((reduced, arr) => reduced.concat(arr), [])
+          .filter((obj) => partiallyIncludes(terms, keyMaker(obj)))
+          .map((value) => {
+            const keys = keyMaker(value);
+            const minWeight = workBackwards(expression, keys, score);
+            const termScores = matchTerms(terms, keys, score);
+            const average =
+              termScores.reduce((sum, val) => sum + val) / termScores.length;
+            return { value, weight: average < minWeight ? average : minWeight };
+          }),
+        (a, b) => a.weight - b.weight
+      );
     }
   }
 </script>
