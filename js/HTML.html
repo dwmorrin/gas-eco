@@ -228,9 +228,7 @@
       children,
       innerHTML,
       onClick,
-      onClose = () => {
-        return;
-      },
+      onClose = () => undefined,
       closeText = "Close",
       onOk = null,
       okText = "Ok",
@@ -249,15 +247,16 @@
         div.remove();
         blocker && blocker.remove();
       };
+      const remove = () => {
+        onClose();
+        cleanup();
+      };
       if (onClick)
         // for children to determine when cleanup occurs
         div.addEventListener("click", (event) => onClick({ event, cleanup }));
       const closeButton = createElement("button", {
         textContent: closeText,
-        onClick: () => {
-          onClose();
-          cleanup();
-        },
+        onClick: remove,
       });
       if (typeof onOk === "function") {
         const okButton = createElement("button", {
@@ -286,7 +285,7 @@
       blocker && document.body.appendChild(blocker);
       appendToBody && document.body.appendChild(div);
       closeButton.focus();
-      return div;
+      return { element: div, remove };
     }
 
     function heading1(textContent, attrs = {}) {

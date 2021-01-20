@@ -93,7 +93,7 @@ function doPost({ type, payload }) {
     case "codabar":
       Database.writeCodabar(payload);
       return response({
-        type: "codabar",
+        type,
         students: JSON.stringify(Database.getAllStudents()),
       });
     case "deleteForm": {
@@ -120,19 +120,13 @@ function doPost({ type, payload }) {
     }
     case "rejected": // NOT USED BY CLIENT
       Database.writeRejectedFormToSheet(new Form(payload));
-      return response({ type: "rejected" });
-    case "signature": // NOT USED BY CLIENT
-      Database.writeSignatureToSheet(payload);
-      return response({
-        payload: { students: JSON.stringify(Database.getAllStudents()) },
-        type: "signature",
-      });
-    case "signatureTimeout": // NOT USED BY CLIENT
-      Database.clearSignatureValidation();
-      return response({ type: "signatureTimeout" });
-    case "startSignature":
-      Database.startSignature(payload);
-      return response({ type: "startSignature" });
+      return response({ type });
+    case "signatureEnd":
+      Database.signatureEnd(payload);
+      return response({ type });
+    case "signatureStart":
+      Database.signatureStart(payload);
+      return response({ type });
     case "updateForm": {
       const form = new Form(JSON.parse(payload));
       try {
@@ -145,7 +139,7 @@ function doPost({ type, payload }) {
           });
         } else {
           return response({
-            type: "updateForm",
+            type,
             payload: JSON.stringify(Database.writeFormToSheet(form)), // throws ErrorFormCollision
           });
         }
@@ -169,25 +163,11 @@ function doPost({ type, payload }) {
         throw error;
       }
     }
-    case "unload": // NOT USED BY CLIENT
-      handleUnload_();
-      return response();
   }
 }
 
 function getUserName_() {
   return Session.getActiveUser().getEmail();
-}
-
-/**
- * This is called when the user closes the page in their browser.
- * Any clean up functions can be called from here.
- * @see doPost
- */
-function handleUnload_() {
-  // clear signature validation
-  Database.clearSignatureValidation();
-  return;
 }
 
 /**

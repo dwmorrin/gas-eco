@@ -699,7 +699,11 @@
       // adding a student for the first time
       if (!studentOnForm) {
         if (!studentFromRoster.signatureOnFile)
-          return onNeedsSignature({ netId: studentFromRoster.netId, form });
+          return onNeedsSignature({
+            handleStudent,
+            form,
+            netId: studentFromRoster.netId,
+          });
         change.target.value += " check-in";
         return onChange({
           form: new Form({

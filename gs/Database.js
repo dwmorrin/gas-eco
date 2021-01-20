@@ -10,16 +10,15 @@ Student
 /* exported Database */
 var Database = (function () {
   return {
-    clearSignatureValidation,
     getAllItems,
     getAllStudents,
     getClosedForms,
     getOpenForms,
-    startSignature,
+    signatureEnd,
+    signatureStart,
     writeCodabar,
     writeFormToSheet,
     writeRejectedFormToSheet,
-    writeSignatureToSheet,
   };
 
   /* ********* GETTERS *********** */
@@ -164,35 +163,21 @@ var Database = (function () {
     return new Form(range.getValues()[0]).setHash();
   }
 
-  function writeSignatureToSheet({ id, dataURL }) {
-    const sheet = SpreadsheetApp.openById(env.students.SHEET_ID).getSheetByName(
-      env.students.SHEET_NAME
-    );
-    const i = sheet
-      .getDataRange()
-      .getValues()
-      .findIndex((row) => row[env.students.NETID] === id);
-    if (i < 0) {
-      throw new Error(`Could not match ID: ${id}`);
-    }
-    sheet.getRange(i + 1, env.students.SIGNATURE + 1).setValue(dataURL);
-  }
-
-  // TODO don't hardcode A1; just append a row with the Net ID
-  function startSignature(netid) {
+  function signatureStart(netId) {
     SpreadsheetApp.openById(env.students.SHEET_ID)
       .getSheetByName(env.students.SIGNATURE_SHEET_NAME)
-      .getRange("A1")
-      .setValue(netid);
+      .appendRow([netId]);
   }
 
-  // TODO don't hardcode A1; search for the Net ID to clear off
-  // TODO reactivate or delete
-  function clearSignatureValidation() {
-    return;
-    // SpreadsheetApp.openById(env.students.SHEET_ID)
-    //   .getSheetByName(env.students.SIGNATURE_SHEET_NAME)
-    //   .getRange("A1")
-    //   .clear();
+  function signatureEnd(netId) {
+    const sheet = SpreadsheetApp.openById(env.students.SHEET_ID).getSheetByName(
+      env.students.SIGNATURE_SHEET_NAME
+    );
+    const rows = sheet
+      .getDataRange()
+      .getValues()
+      .filter(([id]) => id !== netId);
+    sheet.clear();
+    if (rows.length) sheet.getRange(1, 1, rows.length, 1).setValues(rows);
   }
 })();

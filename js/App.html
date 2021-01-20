@@ -10,6 +10,7 @@
   LoadingPage
   OpenFormsPage
   Utility
+  env
   google
   */
 
@@ -76,11 +77,10 @@
 
     const openFormsButton = button("View Open Forms", {
       disabled: true,
-      onClick: (_, button) => {
+      onClick: () => {
         loseDataWarning(() => {
           // prevent unnecessary server call if quickly switching pages
           if (Date.now() - state.openFormsModifiedTime > minutes(2)) {
-            button.setAttribute("disabled", true);
             state.openForms = null;
             withErrorHandler
               .withSuccessHandler(checkForError(onOpenForms))
@@ -95,6 +95,12 @@
       disabled: true,
       onClick: () => loseDataWarning(showClosedFormsPage),
     });
+
+    const navigationButtons = [
+      newFormButton,
+      openFormsButton,
+      closedFormsButton,
+    ];
 
     const userNameDisplay = createElement("span", { class: "userNameDisplay" });
 
@@ -117,7 +123,7 @@
             ],
           }),
           createElement("nav", {
-            children: [newFormButton, openFormsButton, closedFormsButton],
+            children: navigationButtons,
           }),
           pageContainer,
         ],
@@ -214,6 +220,12 @@
         state.notLoadingTimeoutId = 0;
       }
       state.notLoading = false;
+    }
+
+    function disableButtons() {
+      navigationButtons.forEach((button) =>
+        button.setAttribute("disabled", true)
+      );
     }
 
     function displayErrorMessage(message) {
@@ -369,56 +381,52 @@
       if (unlock) tryUnlock();
     }
 
-    function onNeedsSignature({ netId, form }) {
+    function onNeedsSignature({ form, handleStudent, netId }) {
       let canceled = false;
-      modal({
+
+      const { remove } = modal({
         children: [heading1("Add signature"), paragraph("Please wait...")],
         closeText: "Cancel",
         onClose: () => (canceled = true),
       });
+
+      const onSignatureEnd = () =>
+        google.script.run.doPost({
+          type: "signatureEnd",
+          payload: netId,
+        });
+
       withErrorHandler
         .withSuccessHandler(
-          checkForError((_, context) => {
-            if (canceled) {
-              // user aborted by hitting "cancel"
-              return;
-            }
-            context.modal.remove();
+          checkForError(() => {
+            if (canceled) return;
+            remove();
             modal({
               children: [
                 heading1("Add signature"),
-                paragraph(
-                  "Production area policy acknowledgment signature not found " +
-                    "for this person. All persons must read the policy and have " +
-                    "a signature on file. Please use the tablet to show the " +
-                    "person the policy and capture their signature. " +
-                    'Click the "Signature done" button when they are finished ' +
-                    "using the tablet."
-                ),
+                paragraph(env.needsSignatureMessage || "Signature not found."),
               ],
               okText: "Signature done",
-              onOk: () =>
+              onClose: onSignatureEnd,
+              onOk: () => {
+                setForm({ form, waiting: true });
+                onSignatureEnd();
                 withErrorHandler
                   .withSuccessHandler(
                     checkForError((response) => {
                       onStudents(response);
-                      setForm({ form });
-                      modal({
-                        children: [
-                          heading1("Student information updated"),
-                          paragraph(
-                            "Please try scanning the ID again to continue."
-                          ),
-                        ],
-                      });
+                      // automatically try to update the form
+                      handleStudent(
+                        state.roster.find((s) => s.netId === netId)
+                      );
                     })
                   )
-                  .doGet({ type: "students" }),
+                  .doGet({ type: "students" });
+              },
             });
           })
         )
-        .withUserObject({ canceled })
-        .doPost({ type: "startSignature", payload: netId });
+        .doPost({ type: "signatureStart", payload: netId });
     }
 
     function onNewCodabar({ netId, codabar, form }) {
@@ -647,6 +655,7 @@
     }
 
     function showLoadingPage() {
+      disableButtons();
       if (!state.notLoading) setNotLoadingTimeout();
       update(
         pageContainer,
@@ -691,6 +700,7 @@
       clearNotLoading();
       openFormsButton.removeAttribute("disabled");
       newFormButton.removeAttribute("disabled");
+      // separating this last one allows closed forms to lag if needed
       if (state.closedForms) closedFormsButton.removeAttribute("disabled");
       showOpenFormsPage();
       return true;
