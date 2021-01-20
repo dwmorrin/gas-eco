@@ -93,9 +93,7 @@
 
     const closedFormsButton = button("View Closed Forms", {
       disabled: true,
-      onClick: () => {
-        loseDataWarning(() => showClosedFormsPage());
-      },
+      onClick: () => loseDataWarning(showClosedFormsPage),
     });
 
     const userNameDisplay = createElement("span", { class: "userNameDisplay" });
