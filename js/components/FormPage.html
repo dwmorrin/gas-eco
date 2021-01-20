@@ -16,10 +16,10 @@
     ModalNewCodabar
     ModalNewLocation
     ModalNotes
+    ModalQuery
     ModalStudentNotes
     Omnibox
     Utility
-    searchResources
     */
   /* exported FormPage */
   function FormPage({
@@ -890,7 +890,7 @@
         case "manualEntry":
           return ModalManualEntry({ onSubmit: onManualEntry });
         case "query":
-          return searchResources({
+          return ModalQuery({
             inventory,
             onOmniboxSubmit,
             roster,
