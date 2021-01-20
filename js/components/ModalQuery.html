@@ -46,21 +46,25 @@
 
     // QUERY FUNCTIONS
 
+    function clean(s) {
+      return s.trim().replace(/['-]/g, "").toLowerCase();
+    }
+
     function searchResources({ value, inventory, roster }) {
       return query(
-        value.replace(/'/g, ""),
+        clean(value),
         (obj) => {
           if (obj instanceof Item) {
             const keys = [];
             if (typeof obj.description === "string" && obj.description) {
-              keys.push(obj.description.trim().toLowerCase());
+              keys.push(clean(obj.description));
             }
             if (typeof obj.id === "string" && obj.id) {
-              keys.push(obj.id.trim().toLowerCase());
+              keys.push(clean(obj.id));
             }
             return keys;
           } else if (typeof obj.name === "string" && obj.name)
-            return [obj.name.trim().toLowerCase().replace(/'/g, "")];
+            return [clean(obj.name)];
           else {
             return [];
           }

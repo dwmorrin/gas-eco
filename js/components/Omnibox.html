@@ -119,7 +119,7 @@
         getById(inventory, value) || getByBarcode(inventory, value);
       if (foundItem) return { type: "item", value: foundItem };
 
-      return { type: "query", value };
+      return { type: "query", value: element.value };
     }
   }
 </script>
