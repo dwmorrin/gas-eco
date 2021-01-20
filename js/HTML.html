@@ -84,7 +84,7 @@
       );
     }
 
-    function createElement(name, attrs) {
+    function createElement(name, attrs = {}) {
       return attributes(document.createElement(name), attrs);
     }
 
