@@ -616,7 +616,7 @@
         !!form.location &&
         !!form.startTime &&
         !!form.endTime &&
-        form.students.some(({ checkIn }) => checkIn);
+        form.students.some(({ timeSignedInByClient }) => timeSignedInByClient);
 
       if (savable) setAutosave(form);
 

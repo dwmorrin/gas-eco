@@ -172,8 +172,7 @@
                   onClick: () => onSubmit(form),
                 }),
                 nullIf(
-                  disabled ||
-                    (!disabled && !form.isAdvanceBooking && !form.isBlank),
+                  disabled || (!form.isAdvanceBooking && !form.isBlank),
                   button("Save as advance booking", {
                     class: "action buttonTight",
                     disabled: !savable && !form.isAdvanceBooking,
@@ -182,19 +181,15 @@
                         children: [
                           heading1("Save for later?"),
                           paragraph(
-                            "All sign-in and check-out info will be removed. " +
-                              "Add all people and items before saving. " +
-                              "You can only do this once."
+                            [
+                              "All sign-in and check-out info will be removed. ",
+                              "You can only do this with a new form.",
+                            ].join(" ")
                           ),
                         ],
                         closeText: "Cancel",
                         okText: "Save as advance booking",
-                        onOk: () =>
-                          onSubmit(
-                            form.isAdvanceBooking
-                              ? form
-                              : form.makeAdvanceBooking()
-                          ),
+                        onOk: () => onSubmit(form.makeAdvanceBooking()),
                       });
                     },
                   })
@@ -712,7 +707,7 @@
               ...form.students,
               {
                 ...studentFromRoster,
-                checkIn: getFormattedDateTime(new Date()),
+                timeSignedInByClient: getFormattedDateTime(new Date()),
               },
             ],
           }),
@@ -720,7 +715,7 @@
         });
       }
       // checking-in a student on an advance booking form
-      if (!studentOnForm.checkIn) {
+      if (!studentOnForm.timeSignedInByClient) {
         if (!studentFromRoster.signatureOnFile)
           return onNeedsSignature({ netId: studentFromRoster.netId, form });
         change.target.value += " advance booking check-in";
@@ -729,14 +724,17 @@
             ...form,
             students: replace(form.students, is(studentOnForm), {
               ...studentOnForm,
-              checkIn: getFormattedDateTime(new Date()),
+              timeSignedInByClient: getFormattedDateTime(new Date()),
             }),
           }),
           change,
         });
       }
       // odd case: student has checked-out.  Ask if this is to check-in again.
-      if (studentOnForm.checkIn && studentOnForm.checkOut) {
+      if (
+        studentOnForm.timeSignedInByClient &&
+        studentOnForm.timeSignedOutByClient
+      ) {
         change.target.value += " check-in again";
         return modal({
           children: [
@@ -753,7 +751,7 @@
                 ...form,
                 students: replace(form.students, is(studentOnForm), {
                   ...studentOnForm,
-                  checkOut: "",
+                  timeSignedOutByClient: "",
                 }),
               }),
               change,
@@ -761,7 +759,7 @@
         });
       }
       // student is checking-out.
-      if (studentOnForm.checkIn) {
+      if (studentOnForm.timeSignedInByClient) {
         if (form.hasItemsOut) {
           return modal({
             children: [
@@ -776,7 +774,7 @@
             ...form,
             students: replace(form.students, is(studentOnForm), {
               ...studentOnForm,
-              checkOut: getFormattedDateTime(new Date()),
+              timeSignedOutByClient: getFormattedDateTime(new Date()),
             }),
           }),
           change,

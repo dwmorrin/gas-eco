@@ -91,7 +91,8 @@
 
     get isAdvanceBooking() {
       return (
-        this.students.length && this.students.every(({ checkIn }) => !checkIn)
+        this.students.length &&
+        this.students.every(({ timeSignedInByServer }) => !timeSignedInByServer)
       );
     }
 
@@ -109,16 +110,20 @@
       start.setMinutes(start.getMinutes() + gracePeriod);
 
       return (
-        now > start.getTime() && !this.students.some(({ checkIn }) => checkIn)
+        now > start.getTime() &&
+        !this.students.some(({ timeSignedInByClient }) => timeSignedInByClient)
       );
     }
 
     get isReadyToClose() {
       // Need at least 1 check-in, and everyone checked-in must be checked-out
       return (
-        this.students.some(({ checkIn }) => checkIn) &&
+        this.students.some(
+          ({ timeSignedInByClient }) => timeSignedInByClient
+        ) &&
         this.students.every(
-          ({ checkIn, checkOut, left }) => !checkIn || checkOut || left
+          ({ timeSignedInByClient, timeSignedOutByClient, left }) =>
+            !timeSignedInByClient || timeSignedOutByClient || left
         )
       );
     }
@@ -129,6 +134,7 @@
       const { copyTime, getFormattedDateTime } = DateUtils;
       return new Form({
         ...this.makeAdvanceBooking(),
+        id: null,
         startTime: getFormattedDateTime(copyTime(new Date(this.startTime))),
         endTime: getFormattedDateTime(copyTime(new Date(this.endTime))),
       });
@@ -141,13 +147,14 @@
     makeAdvanceBooking() {
       return new Form({
         ...this,
-        id: null,
         notes: [],
         students: this.students.map((student) => ({
           ...student,
-          checkIn: "",
-          checkOut: "",
           left: false,
+          timeSignedInByClient: "",
+          timeSignedInByServer: "",
+          timeSignedOutByClient: "",
+          timeSignedOutByServer: "",
         })),
         items: this.items.map(
           (item) =>

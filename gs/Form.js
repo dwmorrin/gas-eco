@@ -63,8 +63,10 @@ class Form {
   get hasActiveStudent() {
     return (
       this.students.reduce(
-        (count, { checkIn, checkOut, left }) =>
-          checkIn && !(checkOut || left) ? count + 1 : count,
+        (count, { timeSignedInByClient, timeSignedOutByClient, left }) =>
+          timeSignedInByClient && !(timeSignedOutByClient || left)
+            ? count + 1
+            : count,
         0
       ) > 1
     );
@@ -79,7 +81,8 @@ class Form {
     start.setMinutes(start.getMinutes() + gracePeriod);
 
     return (
-      now > start.getTime() && !this.students.some(({ checkIn }) => checkIn)
+      now > start.getTime() &&
+      !this.students.some(({ timeSignedInByClient }) => timeSignedInByClient)
     );
   }
 
@@ -87,9 +90,12 @@ class Form {
     if (this.hasActiveStudent || !this.allGearReturned) {
       return false;
     }
-    const checkedIn = (student) => student.checkIn;
-    const checkedOutOrLeft = ({ checkIn, checkOut, left }) =>
-      !checkIn || checkOut || left;
+    const checkedIn = (student) => student.timeSignedInByClient;
+    const checkedOutOrLeft = ({
+      timeSignedInByClient,
+      timeSignedOutByClient,
+      left,
+    }) => !timeSignedInByClient || timeSignedOutByClient || left;
     return (
       this.students.some(checkedIn) && this.students.every(checkedOutOrLeft)
     );
@@ -131,6 +137,19 @@ class Form {
   }
 
   validate() {
+    this.students = this.students.map((student) => {
+      if (student.timeSignedInByClient && !student.timeSignedInByServer)
+        return {
+          ...student,
+          timeSignedInByServer: DateUtils.getFormattedDateTime(new Date()),
+        };
+      if (student.timeSignedOutByClient && !student.timeSignedOutByServer)
+        return {
+          ...student,
+          timeSignedOutByServer: DateUtils.getFormattedDateTime(new Date()),
+        };
+      return student;
+    });
     if (this.items) {
       this.items = this.items.map(function (item) {
         if (item.timeCheckedOutByClient && !item.timeCheckedOutByServer) {

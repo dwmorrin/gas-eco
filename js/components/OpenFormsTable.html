@@ -27,7 +27,7 @@
         fifteenMinutes = 15 * 60 * 1000, // milliseconds
         now = Date.now();
       // determine if active, ending soon, or late (green, yellow, red)
-      if (form.students.some((student) => student.checkIn)) {
+      if (form.students.some((student) => student.timeSignedInByClient)) {
         if (now > endTime) {
           return "late";
         }

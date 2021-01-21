@@ -65,24 +65,27 @@
         end.setMinutes(end.getMinutes() + outGracePeriod);
 
         const checkedInOnTime = (student) =>
-          !student.checkIn ||
-          new Date(student.checkIn).getTime() <= start.getTime();
+          !student.timeSignedInByClient ||
+          new Date(student.timeSignedInByClient).getTime() <= start.getTime();
 
         const studentIncompleteHTML = "DID NOT CHECK OUT";
         const checkedOutLate = (student) =>
-          (student.checkIn &&
-            (!student.checkOut ||
-              student.checkOut === studentIncompleteHTML)) ||
-          (student.checkOut &&
-            student.checkOut !== studentIncompleteHTML &&
-            new Date(student.checkOut).getTime() > end.getTime());
+          (student.timeSignedInByClient &&
+            (!student.timeSignedOutByClient ||
+              student.timeSignedOutByClient === studentIncompleteHTML)) ||
+          (student.timeSignedOutByClient &&
+            student.timeSignedOutByClient !== studentIncompleteHTML &&
+            new Date(student.timeSignedOutByClient).getTime() > end.getTime());
 
         return (
           !form.students.some(checkedInOnTime) ||
           form.students.some(checkedOutLate)
         );
       },
-      byNoShow: (form) => form.students.every(({ checkIn }) => !checkIn),
+      byNoShow: (form) =>
+        form.students.every(
+          ({ timeSignedInByClient }) => !timeSignedInByClient
+        ),
       byTimeRange: (start, end) => {
         const startTime = new Date(start + "T00:00:00").getTime(),
           endTime = new Date(end + "T23:59:59").getTime();

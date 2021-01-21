@@ -22,14 +22,14 @@
         heading1("Add notes"),
         table(
           nullIf(
-            student.checkIn,
+            student.timeSignedInByClient,
             row(
               cell("Student never showed up."),
               cell({ child: optionRadio("no show") })
             )
           ),
           nullIf(
-            !student.checkIn || student.checkOut,
+            !student.timeSignedInByClient || student.timeSignedOutByClient,
             row(
               cell("Student left without checking out."),
               cell({ child: optionRadio("left") })

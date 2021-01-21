@@ -14,8 +14,8 @@
         cell(student.name),
         cell(student.netId),
         createElement("td", {
-          child: student.checkIn
-            ? document.createTextNode(student.checkIn)
+          child: student.timeSignedInByClient
+            ? document.createTextNode(student.timeSignedInByClient)
             : disabled
             ? document.createTextNode("")
             : createElement("i", {
@@ -28,9 +28,9 @@
                 class: "alert",
                 textContent: "DID NOT CHECK OUT",
               })
-            : student.checkOut
-            ? document.createTextNode(student.checkOut)
-            : disabled || !student.checkIn
+            : student.timeSignedOutByClient
+            ? document.createTextNode(student.timeSignedOutByClient)
+            : disabled || !student.timeSignedInByClient
             ? document.createTextNode("")
             : createElement("i", {
                 textContent: "Scan ID to sign out",
