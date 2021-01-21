@@ -176,7 +176,6 @@
         start: new Date(b.startTime),
         end: new Date(b.endTime),
       };
-      console.log({ intervalA, intervalB });
       if (intervalA.start.valueOf() === intervalB.start.valueOf()) return true;
       const [earlier, later] =
         intervalA.start.valueOf() < intervalB.start.valueOf()
