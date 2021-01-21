@@ -619,6 +619,7 @@
         form.students.some(({ timeSignedInByClient }) => timeSignedInByClient);
 
       if (savable) setAutosave(form);
+      else clearAutosave();
 
       update(
         pageContainer,
