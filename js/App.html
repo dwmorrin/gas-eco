@@ -234,6 +234,12 @@
       });
     }
 
+    function getOverlappingForms(form) {
+      return state.openForms === null
+        ? []
+        : state.openForms.filter((f) => Form.overlap(form, f));
+    }
+
     function getUsername() {
       const el = document.querySelector("span.userNameDisplay");
       return el && el.textContent ? el.textContent : "anonymous";
@@ -278,6 +284,17 @@
           target: { name, value },
         },
       }) => {
+        if (getOverlappingForms(form).length) {
+          modal({
+            children: [
+              heading1("Overlapping form found"),
+              paragraph(
+                "Warning: there is already a form in this location during the same time period."
+              ),
+            ],
+          });
+        }
+
         const newForm = new Form({
           ...form,
           notes: [
