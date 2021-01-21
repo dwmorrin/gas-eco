@@ -167,7 +167,7 @@
 
     // considers both location and start/end times to find overlap
     static overlap(a, b) {
-      if (a.location !== b.location) return false;
+      if (a.id === b.id || a.location !== b.location) return false;
       const intervalA = {
         start: new Date(a.startTime),
         end: new Date(a.endTime),
