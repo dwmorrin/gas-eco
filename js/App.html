@@ -36,6 +36,7 @@
     const {
       compareDateStrings,
       compareKey,
+      getSequentialNumber,
       replace,
       sort,
       tryJsonParse,
@@ -63,6 +64,8 @@
       openFormSortAscending: true,
       openForms: /* Form[] | null */ null,
       openFormsModifiedTime: 0,
+      openFormsTimeoutContext: 0,
+      openFormsTimeoutId: 0,
       redoStack: /* Form */ [], // each undo is pushed into here
       roster: null,
       saved: true,
@@ -82,9 +85,11 @@
           // prevent unnecessary server call if quickly switching pages
           if (Date.now() - state.openFormsModifiedTime > minutes(2)) {
             state.openForms = null;
-            withErrorHandler
-              .withSuccessHandler(checkForError(onOpenForms))
-              .doGet({ type: "openForms" });
+            fetch({
+              type: "openForms",
+              onSuccess: checkForError(onOpenForms),
+              unlock: true,
+            });
             showLoadingPage();
           } else showOpenFormsPage();
         });
@@ -133,37 +138,30 @@
     // Render initial view: loading page
     showLoadingPage();
 
-    const withErrorHandler = google.script.run.withFailureHandler((error) => {
-      console.error(error);
-      displayErrorMessage(error.message);
-    });
-
     // initial server calls
-    withErrorHandler
-      .withSuccessHandler(checkForError(onOpenForms))
-      .doGet({ type: "openForms" });
-    withErrorHandler
-      .withSuccessHandler(
-        checkForError(
-          ({ payload: { userName } }) =>
-            (userNameDisplay.textContent = userName)
-        )
-      )
-      .doGet({ type: "userName" });
-    withErrorHandler
-      .withUserObject({ unlock: true })
-      .withSuccessHandler(checkForError(onStudents))
-      .doGet({ type: "students" });
-    withErrorHandler
-      .withUserObject({ unlock: true })
-      .withSuccessHandler(checkForError(onItems))
-      .doGet({ type: "items" });
-    withErrorHandler
-      .withUserObject({ unlock: true })
-      .withSuccessHandler(checkForError(onClosedForms))
-      .doGet({
-        type: "closedForms",
-      });
+    fetch({
+      type: "openForms",
+      onSuccess: checkForError(onOpenForms),
+      unlock: true,
+    });
+    fetch({
+      type: "userName",
+      onSuccess: checkForError(
+        ({ payload: { userName } }) => (userNameDisplay.textContent = userName)
+      ),
+      unlock: true,
+    });
+    fetch({
+      type: "students",
+      onSuccess: checkForError(onStudents),
+      unlock: true,
+    });
+    fetch({ type: "items", onSuccess: checkForError(onItems), unlock: true });
+    fetch({
+      type: "closedForms",
+      onSuccess: checkForError(onClosedForms),
+      unlock: true,
+    });
 
     /**
      * Warns user when trying to close tab and changes are not saved.
@@ -214,6 +212,14 @@
       }
     }
 
+    function clearOpenFormsTimeout() {
+      state.openFormsTimeoutContext = 0;
+      if (state.openFormsTimeoutId) {
+        window.clearTimeout(state.openFormsTimeoutId);
+        state.openFormsTimeoutId = 0;
+      }
+    }
+
     function clearNotLoading() {
       if (state.notLoadingTimeoutId) {
         window.clearTimeout(state.notLoadingTimeoutId);
@@ -232,6 +238,24 @@
       modal({
         children: [heading1("Error"), paragraph(message)],
       });
+    }
+
+    function fetch({
+      context,
+      method = "get",
+      onFailure = onError,
+      onSuccess = () => undefined,
+      payload,
+      type = "",
+      unlock = false,
+    }) {
+      const runner = google.script.run
+        .withFailureHandler(onFailure)
+        .withSuccessHandler(onSuccess)
+        .withUserObject({ context, unlock });
+      if (method === "get") return runner.doGet({ type });
+      if (method === "post") return runner.doPost({ type, payload });
+      console.error(`unknown method: ${method}`);
     }
 
     function getOverlappingForms(form) {
@@ -364,18 +388,20 @@
 
     function onDelete(form) {
       const onOk = () => {
-        withErrorHandler
-          .withSuccessHandler(
-            checkForError(({ type, payload }) => {
-              if (type === "openForms") {
-                return reset(() => onOpenForms({ payload }));
-              }
-              if (type === "collision") return onCollision({ payload });
-            })
-          )
-          .doPost({ type: "deleteForm", payload: JSON.stringify(form) });
+        fetch({
+          method: "post",
+          type: "deleteForm",
+          payload: JSON.stringify(form),
+          onSuccess: checkForError(({ type, payload }) => {
+            if (type === "openForms") {
+              return reset(() => onOpenForms({ payload }));
+            }
+            if (type === "collision") return onCollision({ payload });
+          }),
+        });
         setForm({ form, disabled: true, waiting: true });
       };
+
       modal({
         children: [
           heading1("Are you sure?"),
@@ -384,6 +410,11 @@
         onOk,
         okText: "Delete this form",
       });
+    }
+
+    function onError(error) {
+      console.error(error);
+      displayErrorMessage(error.message);
     }
 
     /** * @param {Action} response */
@@ -408,65 +439,62 @@
       });
 
       const onSignatureEnd = () =>
-        google.script.run.doPost({
+        fetch({
+          method: "post",
           type: "signatureEnd",
           payload: netId,
         });
 
-      withErrorHandler
-        .withSuccessHandler(
-          checkForError(() => {
-            if (canceled) return;
-            remove();
-            modal({
-              children: [
-                heading1("Add signature"),
-                paragraph(env.needsSignatureMessage || "Signature not found."),
-              ],
-              okText: "Signature done",
-              onClose: onSignatureEnd,
-              onOk: () => {
-                setForm({ form, waiting: true });
-                onSignatureEnd();
-                withErrorHandler
-                  .withSuccessHandler(
-                    checkForError((response) => {
-                      onStudents(response);
-                      // automatically try to update the form
-                      handleStudent(
-                        state.roster.find((s) => s.netId === netId)
-                      );
-                    })
-                  )
-                  .doGet({ type: "students" });
-              },
-            });
-          })
-        )
-        .doPost({ type: "signatureStart", payload: netId });
+      fetch({
+        method: "post",
+        type: "signatureStart",
+        payload: netId,
+        onSuccess: checkForError(() => {
+          if (canceled) return;
+          remove();
+          modal({
+            children: [
+              heading1("Add signature"),
+              paragraph(env.needsSignatureMessage || "Signature not found."),
+            ],
+            okText: "Signature done",
+            onClose: onSignatureEnd,
+            onOk: () => {
+              setForm({ form, waiting: true });
+              onSignatureEnd();
+              fetch({
+                type: "students",
+                onSuccess: checkForError((response) => {
+                  onStudents(response);
+                  // automatically try to update the form
+                  handleStudent(state.roster.find((s) => s.netId === netId));
+                }),
+              });
+            },
+          });
+        }),
+      });
     }
 
     function onNewCodabar({ netId, codabar, form }) {
-      withErrorHandler
-        .withSuccessHandler(
-          checkForError((response) => {
-            const students = tryJsonParse(response.students);
-            if (!students)
-              displayErrorMessage("Error retrieving student list from server");
-            state.roster = students.map(Object.freeze);
-            setForm({ form });
-            modal({
-              children: [
-                heading1("Student information updated"),
-                paragraph("Please try scanning the ID again to continue."),
-              ],
-            });
-          })
-        )
-        .doPost({
-          type: "codabar",
-          payload: { netId, codabar },
-        });
+      fetch({
+        method: "post",
+        type: "codabar",
+        payload: { netId, codabar },
+        onSuccess: checkForError((response) => {
+          const students = tryJsonParse(response.students);
+          if (!students)
+            displayErrorMessage("Error retrieving student list from server");
+          state.roster = students.map(Object.freeze);
+          setForm({ form });
+          modal({
+            children: [
+              heading1("Student information updated"),
+              paragraph("Please try scanning the ID again to continue."),
+            ],
+          });
+        }),
+      });
     }
 
     function onNewForm(form) {
@@ -483,7 +511,7 @@
     }
 
     /** * @param {Action} response */
-    function onOpenForms({ payload: { formList } }) {
+    function onOpenForms({ payload: { formList } }, { unlock } = {}) {
       const openForms = tryJsonParse(formList);
       if (!openForms)
         return displayErrorMessage(
@@ -491,7 +519,8 @@
         );
       state.openForms = openForms.map((form) => new Form(form));
       state.openFormsModifiedTime = Date.now();
-      tryUnlock();
+      if (unlock) tryUnlock();
+      else showOpenFormsPage();
     }
 
     function onRedo(currentForm) {
@@ -526,34 +555,31 @@
     }
 
     function onSubmit(form) {
-      google.script.run
-        .withFailureHandler((error) => displayErrorMessage(error.message))
-        .withSuccessHandler(
-          checkForError(({ type, payload }) => {
-            if (type === "updateForm") {
-              const updatedForm = new Form(JSON.parse(payload));
-              state.openForms = replace(
-                state.openForms,
-                (form) => form.isBlank || form.id === updatedForm.id,
-                updatedForm
-              );
-              return reset(() => setForm({ form: updatedForm }));
-            }
-            if (type === "openForms") {
-              return reset(() => onOpenForms({ payload }));
-            }
-            if (type === "collision") {
-              return onCollision({ payload });
-            }
-            if (type === "invalid") {
-              return displayErrorMessage("Form is invalid");
-            }
-          })
-        )
-        .doPost({
-          type: "updateForm",
-          payload: JSON.stringify(form),
-        });
+      fetch({
+        method: "post",
+        type: "updateForm",
+        payload: JSON.stringify(form),
+        onSuccess: checkForError(({ type, payload }) => {
+          if (type === "updateForm") {
+            const updatedForm = new Form(JSON.parse(payload));
+            state.openForms = replace(
+              state.openForms,
+              (form) => form.isBlank || form.id === updatedForm.id,
+              updatedForm
+            );
+            return reset(() => setForm({ form: updatedForm }));
+          }
+          if (type === "openForms") {
+            return reset(() => onOpenForms({ payload }));
+          }
+          if (type === "collision") {
+            return onCollision({ payload });
+          }
+          if (type === "invalid") {
+            return displayErrorMessage("Form is invalid");
+          }
+        }),
+      });
       setForm({ form, disabled: true, waiting: true });
     }
 
@@ -584,6 +610,27 @@
       }, minutes(1));
     }
 
+    function setOpenFormsTimeout() {
+      clearOpenFormsTimeout();
+      const n = getSequentialNumber();
+      state.openFormsTimeoutContext = n;
+      state.openFormsTimeoutId = window.setTimeout(
+        () =>
+          fetch({
+            type: "openForms",
+            onSuccess: checkForError((response, { context }) => {
+              // if these are not equal, then the user has switched context
+              if (context !== state.openFormsTimeoutContext) return;
+              state.openFormsTimeoutId = 0;
+              state.openFormsTimeoutContext = 0;
+              onOpenForms(response);
+            }),
+            context: n,
+          }),
+        minutes(2)
+      );
+    }
+
     function setNotLoadingTimeout() {
       clearNotLoading();
       state.notLoadingTimeoutId = window.setTimeout(() => {
@@ -601,6 +648,7 @@
       type = "open",
       waiting = false,
     }) {
+      clearOpenFormsTimeout();
       if (filteredForms) state.closedFormsFiltered = filteredForms;
       if (type === "closed") disabled = true;
       const forms =
@@ -655,6 +703,7 @@
     }
 
     function showClosedFormsPage() {
+      clearOpenFormsTimeout();
       update(
         pageContainer,
         ClosedFormsPage({
@@ -693,6 +742,7 @@
     }
 
     function showOpenFormsPage() {
+      setOpenFormsTimeout();
       update(
         pageContainer,
         OpenFormsPage({
