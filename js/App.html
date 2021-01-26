@@ -57,7 +57,7 @@
       itemSortAscending: true,
       itemsOutSort: "description",
       itemsOutSortAscending: true,
-      lastClosedFormRow: -1,
+      lastClosedFormRow: 0,
       notLoading: false,
       notLoadingTimeoutId: 0,
       openFormSort: "startTime",
@@ -159,6 +159,7 @@
     fetch({ type: "items", onSuccess: checkForError(onItems), unlock: true });
     fetch({
       type: "closedForms",
+      payload: { lastClosedFormRow: state.lastClosedFormRow },
       onSuccess: checkForError(onClosedForms),
       unlock: true,
     });
@@ -245,7 +246,7 @@
       method = "get",
       onFailure = onError,
       onSuccess = () => undefined,
-      payload,
+      payload = {},
       type = "",
       unlock = false,
     }) {
@@ -253,7 +254,7 @@
         .withFailureHandler(onFailure)
         .withSuccessHandler(onSuccess)
         .withUserObject({ context, unlock });
-      if (method === "get") return runner.doGet({ type });
+      if (method === "get") return runner.doGet({ type, payload });
       if (method === "post") return runner.doPost({ type, payload });
       console.error(`unknown method: ${method}`);
     }
@@ -355,7 +356,7 @@
 
     /** * @param {Action} response */
     function onClosedForms(
-      { payload: { formList, firstRow } },
+      { payload: { done, firstRow, formList } },
       { unlock } = {}
     ) {
       const closedForms = tryJsonParse(formList);
@@ -363,12 +364,19 @@
         return displayErrorMessage(
           "Server was unable to retrieve the closed forms."
         );
+      const currentForms = state.closedForms || [];
       state.closedForms = sort(
-        closedForms.map((form) => new Form(form)),
+        [...currentForms, ...closedForms.map((form) => new Form(form))],
         compareKey("startTime", compareDateStrings)
       );
       state.lastClosedFormRow = firstRow;
       if (unlock && isLoaded()) closedFormsButton.removeAttribute("disabled");
+      if (!done)
+        fetch({
+          type: "closedForms",
+          onSuccess: checkForError(onClosedForms),
+          payload: { lastClosedFormRow: state.lastClosedFormRow },
+        });
     }
 
     function onCollision({ payload: { storedForm, submittedForm } }) {

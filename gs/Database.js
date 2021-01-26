@@ -47,18 +47,27 @@ var Database = (function () {
   }
 
   function getClosedForms(lastRow = 0) {
-    const chunkSize = 50; // each call retrieves, at most, one chunk of forms
+    const chunkSize = 500; // each call retrieves, at most, one chunk of forms
     const sheet = SpreadsheetApp.openById(env.forms.SHEET_ID).getSheetByName(
       env.forms.ARCHIVE_NAME
     );
     if (!lastRow) lastRow = sheet.getLastRow();
-    // minimum data row is #2 because #1 is the header row
-    const firstRow = lastRow - chunkSize < 2 ? 2 : lastRow - chunkSize;
+    // assumes minimum data row is #2 because #1 is the header row
+    // if there are not any closed forms available
+    if (lastRow < 2)
+      return {
+        done: true,
+        firstRow: 0,
+        formList: JSON.stringify([]),
+      };
+    // else return a chunk of forms and let client know if more are available
+    const firstRow = lastRow + 1 - chunkSize < 2 ? 2 : lastRow + 1 - chunkSize;
     return {
+      done: firstRow === 2,
       firstRow,
       formList: JSON.stringify(
         sheet
-          .getRange(firstRow, 1, chunkSize, 13)
+          .getRange(firstRow, 1, lastRow + 1 - firstRow, 13)
           .getValues()
           .map((row) => new Form(row))
       ),
