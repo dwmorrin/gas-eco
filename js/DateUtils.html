@@ -4,7 +4,6 @@
   const DateUtils = (function () {
     return {
       addOneHour,
-      before,
       copyTime,
       formatDashedDate,
       getFormattedDateTime,
@@ -15,10 +14,6 @@
       const result = new Date(date);
       result.setHours(date.getHours() + 1);
       return result;
-    }
-
-    function before(date) {
-      return (anotherDate) => date.valueOf() < anotherDate.valueOf();
     }
 
     function copyTime(date) {

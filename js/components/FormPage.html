@@ -43,7 +43,6 @@
     roster,
     savable = false,
     saved,
-    timeIntervalError,
     userName = "anonymous",
     waiting,
   }) {
@@ -176,7 +175,9 @@
                   button("Save as advance booking", {
                     class: "action buttonTight",
                     disabled:
-                      (!savable && !form.isAdvanceBooking) || form.isNoShow,
+                      (!savable && !form.isAdvanceBooking) ||
+                      form.isNoShow ||
+                      !form.validTime,
                     onClick: () =>
                       modal({
                         children: [
@@ -295,7 +296,7 @@
                       headerCell("End Time"),
                       form.isBlank || formInputsTouched.has("endTime")
                         ? cell({
-                            class: timeIntervalError ? "timeIntervalError" : "",
+                            class: form.validTime ? "validTimeError" : "",
                             children: DateTimeInput({
                               name: "end",
                               value: form.endTime,
@@ -308,7 +309,10 @@
                               value: form.endTime,
                             }),
                             textContent: form.endTime,
-                            class: disabled ? "" : "editable hoverBlue",
+                            class: [
+                              form.validTime ? "validTimeError" : "",
+                              disabled ? "" : "editable hoverBlue",
+                            ].join(" "),
                           })
                     ),
                   ],

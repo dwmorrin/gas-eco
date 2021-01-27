@@ -101,6 +101,14 @@ class Form {
     );
   }
 
+  get validTime() {
+    if (!this.startTime || !this.endTime) return false;
+    const start = new Date(this.start);
+    const end = new Date(this.end);
+    if (isNaN(start.valueOf()) || isNaN(end.valueOf())) return false;
+    return start.valueOf() < end.valueOf();
+  }
+
   // methods
 
   setHash(hash) {

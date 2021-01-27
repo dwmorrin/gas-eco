@@ -41,7 +41,7 @@
       sort,
       tryJsonParse,
     } = Utility;
-    const { addOneHour, before, getFormattedDateTime, minutes } = DateUtils;
+    const { addOneHour, getFormattedDateTime, minutes } = DateUtils;
 
     // enum to keep track of which page the user is currently viewing
     const pages = {
@@ -700,17 +700,11 @@
       if (type === "closed") disabled = true;
       const forms =
         type === "open" ? state.openForms : state.closedFormsFiltered;
-      const timeIntervalError =
-        !form.startTime && !form.endTime
-          ? false
-          : before(new Date(form.endTime))(new Date(form.startTime));
       const savable =
         state.undoStack.length &&
         !state.saved &&
-        !timeIntervalError &&
         !!form.location &&
-        !!form.startTime &&
-        !!form.endTime &&
+        form.validTime &&
         form.students.some(({ timeSignedInByClient }) => timeSignedInByClient);
 
       if (savable) setAutosave(form);
@@ -741,7 +735,6 @@
           roster: state.roster,
           savable,
           saved: state.saved,
-          timeIntervalError,
           userName: getUsername(),
           waiting,
         })
