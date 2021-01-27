@@ -1,7 +1,7 @@
 <script>
   /* global HTML */
   /* exported OpenFormsTable */
-  function OpenFormsTable({ openForms, setForm }) {
+  function OpenFormsTable({ openForms, showFormPage }) {
     const { cell, documentIcon, row, tableBody } = HTML;
     return tableBody({
       children: openForms.map((form) =>
@@ -17,7 +17,7 @@
                 form.students.map((student) => student.name).join(", "),
             ].map((textContent) => cell({ textContent })),
           ],
-          onClick: () => setForm({ form }),
+          onClick: () => showFormPage({ form }),
         })
       ),
     });

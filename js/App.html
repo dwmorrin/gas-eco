@@ -43,14 +43,24 @@
     } = Utility;
     const { addOneHour, before, getFormattedDateTime, minutes } = DateUtils;
 
+    // enum to keep track of which page the user is currently viewing
+    const pages = {
+      loading: 0,
+      openForms: 1,
+      closedForms: 2,
+      form: 3,
+    };
+
     // seal forces all properties to be declared here
     const state = Object.seal({
       autosaveTimeoutId: 0,
       closedForms: /* Form[] | null */ null,
       closedFormsFiltered: /* Form[] | null */ null,
+      closedFormsDownloading: true,
       closedFormsQuery: {},
       closedFormsSort: "startTime",
       closedFormsSortAscending: true,
+      currentPage: pages.loading,
       formInputsTouched: new Set(),
       inventory: /* Item[] | null */ null,
       itemSort: "timeCheckedOutByClient",
@@ -298,7 +308,7 @@
               `This is the ${previous ? "first" : "last"} form.`
             ),
           });
-        loseDataWarning(() => setForm({ form: forms[index], type }));
+        loseDataWarning(() => showFormPage({ form: forms[index], type }));
       };
     }
 
@@ -337,7 +347,7 @@
         state.undoStack.push(currentForm);
         state.redoStack = [];
         state.saved = false;
-        setForm({ form: newForm });
+        showFormPage({ form: newForm });
         if (["items", "students"].includes(name)) toast(value);
       };
     }
@@ -346,7 +356,7 @@
       return (name, form) => {
         if (state.itemSort !== name) state.itemSort = name;
         else state.itemSortAscending = !state.itemSortAscending;
-        setForm({ form, type: disabled ? "closed" : "open" });
+        showFormPage({ form, type: disabled ? "closed" : "open" });
       };
     }
 
@@ -370,13 +380,17 @@
         compareKey("startTime", compareDateStrings)
       );
       state.lastClosedFormRow = firstRow;
-      if (unlock && isLoaded()) closedFormsButton.removeAttribute("disabled");
+
       if (!done)
         fetch({
           type: "closedForms",
           onSuccess: checkForError(onClosedForms),
           payload: { lastClosedFormRow: state.lastClosedFormRow },
         });
+      else state.closedFormsDownloading = false;
+
+      if (unlock && isLoaded()) closedFormsButton.removeAttribute("disabled");
+      else if (state.currentPage === pages.closedForms) updateClosedFormsPage();
     }
 
     function onCollision({ payload: { storedForm, submittedForm } }) {
@@ -407,7 +421,7 @@
             if (type === "collision") return onCollision({ payload });
           }),
         });
-        setForm({ form, disabled: true, waiting: true });
+        showFormPage({ form, disabled: true, waiting: true });
       };
 
       modal({
@@ -468,7 +482,7 @@
             okText: "Signature done",
             onClose: onSignatureEnd,
             onOk: () => {
-              setForm({ form, waiting: true });
+              showFormPage({ form, waiting: true });
               onSignatureEnd();
               fetch({
                 type: "students",
@@ -494,7 +508,7 @@
           if (!students)
             displayErrorMessage("Error retrieving student list from server");
           state.roster = students.map(Object.freeze);
-          setForm({ form });
+          showFormPage({ form });
           modal({
             children: [
               heading1("Student information updated"),
@@ -514,7 +528,7 @@
           });
         state.openForms = [...state.openForms, form];
         state.saved = false;
-        setForm({ form });
+        showFormPage({ form });
       });
     }
 
@@ -535,7 +549,7 @@
       if (!state.redoStack.length)
         return modal({ child: paragraph("Nothing to redo.") });
       state.undoStack.push(currentForm);
-      setForm({ form: state.redoStack.pop() });
+      showFormPage({ form: state.redoStack.pop() });
     }
 
     function onSortForms(name) {
@@ -575,7 +589,7 @@
               (form) => form.isBlank || form.id === updatedForm.id,
               updatedForm
             );
-            return reset(() => setForm({ form: updatedForm }));
+            return reset(() => showFormPage({ form: updatedForm }));
           }
           if (type === "openForms") {
             return reset(() => onOpenForms({ payload }));
@@ -588,7 +602,7 @@
           }
         }),
       });
-      setForm({ form, disabled: true, waiting: true });
+      showFormPage({ form, disabled: true, waiting: true });
     }
 
     function onUndo(currentForm) {
@@ -597,7 +611,7 @@
           child: paragraph("Nothing to undo."),
         });
       state.redoStack.push(currentForm);
-      setForm({ form: state.undoStack.pop() });
+      showFormPage({ form: state.undoStack.pop() });
     }
 
     function reset(onSuccess) {
@@ -648,7 +662,28 @@
       }, minutes(0.75));
     }
 
-    function setForm({
+    function showClosedFormsPage() {
+      state.currentPage = pages.closedForms;
+      clearOpenFormsTimeout();
+      update(
+        pageContainer,
+        ClosedFormsPage({
+          closedForms: state.closedForms,
+          closedFormsQuery: state.closedFormsQuery,
+          closedFormsSort: state.closedFormsSort,
+          closedFormsSortAscending: state.closedFormsSortAscending,
+          setClosedFormsQuery: (query) => (state.closedFormsQuery = query),
+          setClosedFormsSort: (sort, ascending) => {
+            state.closedFormsSort = sort;
+            state.closedFormsSortAscending = ascending;
+          },
+          showFormPage,
+          status: ClosedFormsStatus(),
+        })
+      );
+    }
+
+    function showFormPage({
       autoFocus = true,
       disabled = false,
       filteredForms,
@@ -656,6 +691,7 @@
       type = "open",
       waiting = false,
     }) {
+      state.currentPage = pages.form;
       clearOpenFormsTimeout();
       if (filteredForms) state.closedFormsFiltered = filteredForms;
       if (type === "closed") disabled = true;
@@ -710,26 +746,8 @@
       if (autoFocus) onAutoFocus();
     }
 
-    function showClosedFormsPage() {
-      clearOpenFormsTimeout();
-      update(
-        pageContainer,
-        ClosedFormsPage({
-          closedForms: state.closedForms,
-          closedFormsQuery: state.closedFormsQuery,
-          closedFormsSort: state.closedFormsSort,
-          closedFormsSortAscending: state.closedFormsSortAscending,
-          setClosedFormsQuery: (query) => (state.closedFormsQuery = query),
-          setClosedFormsSort: (sort, ascending) => {
-            state.closedFormsSort = sort;
-            state.closedFormsSortAscending = ascending;
-          },
-          setForm,
-        })
-      );
-    }
-
     function showLoadingPage() {
+      state.currentPage = pages.loading;
       disableButtons();
       if (!state.notLoading) setNotLoadingTimeout();
       update(
@@ -750,6 +768,7 @@
     }
 
     function showOpenFormsPage() {
+      state.currentPage = pages.openForms;
       setOpenFormsTimeout();
       update(
         pageContainer,
@@ -760,9 +779,24 @@
           onSortForms,
           onSortItemsOut,
           openForms: state.openForms,
-          setForm,
+          showFormPage,
           sortedBy: state.openFormSort,
         })
+      );
+    }
+
+    function ClosedFormsStatus() {
+      return paragraph(
+        `Oldest form: ${state.closedForms[0].startTime}${
+          state.closedFormsDownloading ? ". Still downloading..." : ""
+        }`
+      );
+    }
+
+    function updateClosedFormsPage() {
+      update(
+        pageContainer.querySelector(".closedFormsStatus"),
+        ClosedFormsStatus()
       );
     }
 

@@ -9,7 +9,8 @@
     closedFormsSortAscending,
     setClosedFormsQuery,
     setClosedFormsSort,
-    setForm,
+    showFormPage,
+    status,
   }) {
     const { createElement, getRadioValue, page, update } = HTML;
     const {
@@ -38,7 +39,7 @@
     const closedFormsContainer = createElement("div", {
       child: ClosedFormsTable({
         forms: filteredForms,
-        setForm,
+        showFormPage,
         onSort,
       }),
     });
@@ -47,6 +48,10 @@
       name: "archive",
       children: [
         createElement("h2", { textContent: "Closed Forms" }),
+        createElement("div", {
+          class: "closedFormsStatus",
+          child: status,
+        }),
         ClosedFormsInputs({ closedFormsQuery, onSubmit }),
         closedFormsContainer,
       ],
@@ -64,7 +69,7 @@
       )(closedFormsSortAscending ? identity : reverse);
       update(
         closedFormsContainer,
-        ClosedFormsTable({ forms: filteredForms, onSort, setForm })
+        ClosedFormsTable({ forms: filteredForms, onSort, showFormPage })
       );
     }
 
@@ -121,7 +126,7 @@
       setClosedFormsQuery(query);
       update(
         closedFormsContainer,
-        ClosedFormsTable({ forms: filteredForms, onSort, setForm })
+        ClosedFormsTable({ forms: filteredForms, onSort, showFormPage })
       );
     }
 

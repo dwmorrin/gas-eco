@@ -149,7 +149,7 @@
                   disabled && !waiting,
                   button("Delete this form", {
                     class: "create",
-                    disabled: disabled || waiting,
+                    disabled: disabled || waiting || form.isBlank,
                     onClick: () => onDelete(form),
                   })
                 ),

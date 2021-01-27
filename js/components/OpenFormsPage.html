@@ -6,7 +6,7 @@
     itemsOutSort,
     itemsOutSortAscending,
     openForms,
-    setForm,
+    showFormPage,
     sortedBy,
     onSortForms,
     onSortItemsOut,
@@ -60,7 +60,7 @@
           }),
           OpenFormsTable({
             openForms: sortForms(openForms, sortedBy, ascending),
-            setForm,
+            showFormPage,
           })
         ),
         createElement("h2", { textContent: "Equipment Checked Out" }),
@@ -87,7 +87,7 @@
             itemsOutSort,
             itemsOutSortAscending,
             openForms,
-            setForm,
+            showFormPage,
           })
         ),
       ],

@@ -2,7 +2,7 @@
   "use strict";
   /* global HTML Utility */
   /* exported ClosedFormsTable */
-  function ClosedFormsTable({ forms, onSort, setForm }) {
+  function ClosedFormsTable({ forms, onSort, showFormPage }) {
     const {
       cell,
       createElement,
@@ -49,7 +49,7 @@
               createElement("tr", {
                 class: "hoverBackgroundCyan",
                 onClick: () =>
-                  setForm({ form, type: "closed", filteredForms: forms }),
+                  showFormPage({ form, type: "closed", filteredForms: forms }),
                 children: [
                   cell({ child: documentIcon() }),
                   ...[
