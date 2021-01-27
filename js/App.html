@@ -76,6 +76,7 @@
       openFormsModifiedTime: 0,
       openFormsTimeoutContext: 0,
       openFormsTimeoutId: 0,
+      overlapWarningGiven: false,
       redoStack: /* Form */ [], // each undo is pushed into here
       roster: null,
       saved: true,
@@ -319,7 +320,8 @@
           target: { name, value },
         },
       }) => {
-        if (getOverlappingForms(form).length) {
+        if (!state.overlapWarningGiven && getOverlappingForms(form).length) {
+          state.overlapWarningGiven = true;
           modal({
             children: [
               heading1("Overlapping form found"),
@@ -621,6 +623,7 @@
       state.undoStack = [];
       state.redoStack = [];
       state.formInputsTouched.clear();
+      state.overlapWarningGiven = false;
       onSuccess();
     }
 
