@@ -175,8 +175,9 @@
                   disabled || (!form.isAdvanceBooking && !form.isBlank),
                   button("Save as advance booking", {
                     class: "action buttonTight",
-                    disabled: !savable && !form.isAdvanceBooking,
-                    onClick: () => {
+                    disabled:
+                      (!savable && !form.isAdvanceBooking) || form.isNoShow,
+                    onClick: () =>
                       modal({
                         children: [
                           heading1("Save for later?"),
@@ -190,8 +191,7 @@
                         closeText: "Cancel",
                         okText: "Save as advance booking",
                         onOk: () => onSubmit(form.makeAdvanceBooking()),
-                      });
-                    },
+                      }),
                   })
                 ),
                 button("Undo", {
