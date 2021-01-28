@@ -296,7 +296,7 @@
                       headerCell("End Time"),
                       form.isBlank || formInputsTouched.has("endTime")
                         ? cell({
-                            class: form.validTime ? "validTimeError" : "",
+                            class: form.validTime ? "" : "validTimeError",
                             children: DateTimeInput({
                               name: "end",
                               value: form.endTime,
@@ -310,7 +310,7 @@
                             }),
                             textContent: form.endTime,
                             class: [
-                              form.validTime ? "validTimeError" : "",
+                              form.validTime ? "" : "validTimeError",
                               disabled ? "" : "editable hoverBlue",
                             ].join(" "),
                           })

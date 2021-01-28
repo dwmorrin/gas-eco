@@ -395,18 +395,27 @@
       else if (state.currentPage === pages.closedForms) updateClosedFormsPage();
     }
 
-    function onCollision({ payload: { storedForm, submittedForm } }) {
-      tryJsonParse(storedForm);
-      tryJsonParse(submittedForm);
+    function onCollision() {
       modal({
         children: [
           heading1("Uh-oh, your form conflicts with another form"),
           paragraph(
-            "Unfortunately a newer version of the form has been found on the server.  In a future update you can save your work, but for now we have to destroy it.  Sorry!!"
+            [
+              "A newer version of the form has been found on the server.",
+              "In a future update you can save your work,",
+              "but currently we have no way to combine your local work",
+              "with what is on the server. Your local work will be lost.",
+            ].join(" ")
           ),
         ],
-        onClose: () =>
-          alert("Whoops, forgot to implement this. Please refresh the page!"),
+        onClose: () => {
+          fetch({
+            type: "openForms",
+            onSuccess: checkForError(onOpenForms),
+            unlock: true,
+          });
+          reset(() => showLoadingPage());
+        },
       });
     }
 

@@ -2,7 +2,7 @@
 env
 ErrorFormCollision
 ErrorFormDataInvalid
-getUser_
+getUserName_
 Form
 Item
 Student
@@ -121,7 +121,7 @@ var Database = (function () {
     const ss = SpreadsheetApp.openById(env.forms.SHEET_ID);
     const formSheet = ss.getSheetByName(env.forms.REJECTED_NAME);
     const values = form.toArray();
-    values.push(getUser_());
+    values.push(getUserName_());
     formSheet.appendRow(values);
   }
 
