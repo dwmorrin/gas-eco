@@ -312,7 +312,9 @@
                             class: [
                               form.validTime ? "" : "validTimeError",
                               disabled ? "" : "editable hoverBlue",
-                            ].join(" "),
+                            ]
+                              .filter(String)
+                              .join(" "),
                           })
                     ),
                   ],
