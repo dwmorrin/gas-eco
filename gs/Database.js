@@ -82,6 +82,8 @@ var Database = (function () {
     const forms = [];
     // don't shift and start at row 1 to allow Sheet manipulation, if required
     for (let row = 1; row < data.length; ++row) {
+      // ignore blank entries
+      if (!data[row][0]) continue;
       try {
         forms.push(new Form(data[row]).setHash());
       } catch (error) {
