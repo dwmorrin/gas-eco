@@ -1,9 +1,12 @@
-/* global ErrorFormInvalid env DateUtils Item Utility */
-/* exported Form */
-class Form {
+import { ErrorFormInvalid } from "./Errors";
+import env from "./env";
+import { getFormattedDateTime } from "./DateUtils";
+import Item from "./Item";
+import { tryJsonParse } from "./Utility";
+
+export default class Form {
   constructor(form) {
     if (Array.isArray(form)) {
-      const { tryJsonParse } = Utility;
       const {
         ID,
         START_TIME,
@@ -22,7 +25,7 @@ class Form {
       this.bookedStudents = String(form[BOOKED_STUDENTS]);
       this.bookingId = String(form[BOOKING_ID]);
       this.contact = String(form[CONTACT]);
-      this.endTime = String(DateUtils.getFormattedDateTime(form[END_TIME]));
+      this.endTime = String(getFormattedDateTime(form[END_TIME]));
       this.hash = "";
       this.id = String(form[ID]);
       this.items = tryJsonParse(form[ITEMS]) || [];
@@ -30,7 +33,7 @@ class Form {
       this.notes = tryJsonParse(form[NOTES]) || [];
       this.overnight = Boolean(form[OVERNIGHT]);
       this.project = String(form[PROJECT]);
-      this.startTime = String(DateUtils.getFormattedDateTime(form[START_TIME]));
+      this.startTime = String(getFormattedDateTime(form[START_TIME]));
       this.students = tryJsonParse(form[STUDENTS]) || [];
       this.tape = Boolean(form[TAPE]);
     } else {
@@ -149,12 +152,12 @@ class Form {
       if (student.timeSignedInByClient && !student.timeSignedInByServer)
         return {
           ...student,
-          timeSignedInByServer: DateUtils.getFormattedDateTime(new Date()),
+          timeSignedInByServer: getFormattedDateTime(new Date()),
         };
       if (student.timeSignedOutByClient && !student.timeSignedOutByServer)
         return {
           ...student,
-          timeSignedOutByServer: DateUtils.getFormattedDateTime(new Date()),
+          timeSignedOutByServer: getFormattedDateTime(new Date()),
         };
       return student;
     });
@@ -163,13 +166,13 @@ class Form {
         if (item.timeCheckedOutByClient && !item.timeCheckedOutByServer) {
           return new Item({
             ...item,
-            timeCheckedOutByServer: DateUtils.getFormattedDateTime(new Date()),
+            timeCheckedOutByServer: getFormattedDateTime(new Date()),
           });
         }
         if (item.timeCheckedInByClient && !item.timeCheckedInByServer) {
           return new Item({
             ...item,
-            timeCheckedInByServer: DateUtils.getFormattedDateTime(new Date()),
+            timeCheckedInByServer: getFormattedDateTime(new Date()),
           });
         }
         return item;

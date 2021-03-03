@@ -1,9 +1,4 @@
-/* exported
-ErrorFormCollision
-ErrorFormDataInvalid
-ErrorFormInvalid
-*/
-
+export { ErrorFormCollision, ErrorFormInvalid, ErrorFormDataInvalid };
 class ErrorFormCollision {
   constructor(saved, submitted) {
     this.saved = saved;

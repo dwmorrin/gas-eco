@@ -1,3 +1,7 @@
 .clasp.json
 node_modules
 env.*
+build/*.js
+build/*.html
+bundle.js
+push

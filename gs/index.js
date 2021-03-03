@@ -1,10 +1,19 @@
-/* global
-ErrorFormCollision
-ErrorFormInvalid
-Form
-Database
-*/
-/* exported doGet */
+import { ErrorFormCollision, ErrorFormInvalid } from "./Errors";
+import { getUserName } from "./User";
+import Form from "./Form";
+import {
+  getAllItems,
+  getAllStudents,
+  getClosedForms,
+  getOpenForms,
+  signatureEnd,
+  signatureStart,
+  writeCodabar,
+  writeFormToSheet,
+  writeRejectedFormToSheet,
+} from "./Database";
+
+export { doGet, doPost, include_ };
 
 /**
  * @typedef {Object} Action
@@ -23,7 +32,7 @@ Database
  */
 function doGet({ type, payload = {} }) {
   if (!type) {
-    return HtmlService.createTemplateFromFile("html/index")
+    return HtmlService.createTemplateFromFile("index")
       .evaluate()
       .setTitle("Equipment Check-Out")
       .addMetaTag("viewport", "width=device-width");
@@ -34,23 +43,23 @@ function doGet({ type, payload = {} }) {
   switch (type) {
     case "closedForms":
       return response({
-        ...Database.getClosedForms(payload.lastClosedFormRow),
+        ...getClosedForms(payload.lastClosedFormRow),
       });
     case "items":
       return response({
-        items: JSON.stringify(Database.getAllItems()),
+        items: JSON.stringify(getAllItems()),
       });
     case "openForms":
       return response({
-        formList: JSON.stringify(Database.getOpenForms()),
+        formList: JSON.stringify(getOpenForms()),
       });
     case "students":
       return response({
-        students: JSON.stringify(Database.getAllStudents()),
+        students: JSON.stringify(getAllStudents()),
       });
     case "userName":
       return response({
-        userName: getUserName_(),
+        userName: getUserName(),
       });
   }
 
@@ -67,7 +76,6 @@ function doGet({ type, payload = {} }) {
  * External programs can access this function with HTTP POST as an API.
  * @see {@link https://developers.google.com/apps-script/guides/triggers/}
  */
-/* exported doPost */
 function doPost({ type, payload }) {
   var lock = LockService.getScriptLock();
   try {
@@ -91,22 +99,22 @@ function doPost({ type, payload }) {
 
   switch (type) {
     case "codabar":
-      Database.writeCodabar(payload);
+      writeCodabar(payload);
       return response({
         type,
-        students: JSON.stringify(Database.getAllStudents()),
+        students: JSON.stringify(getAllStudents()),
       });
     case "deleteForm": {
       const form = new Form(JSON.parse(payload));
       try {
-        Database.writeFormToSheet(form, true);
+        writeFormToSheet(form, true);
         return response({
           type: "openForms",
-          payload: { formList: JSON.stringify(Database.getOpenForms()) },
+          payload: { formList: JSON.stringify(getOpenForms()) },
         });
       } catch (error) {
         if (error instanceof ErrorFormCollision) {
-          Database.writeRejectedFormToSheet(form);
+          writeRejectedFormToSheet(form);
           return response({
             type: "collision",
             payload: {
@@ -119,33 +127,33 @@ function doPost({ type, payload }) {
       }
     }
     case "rejected": // NOT USED BY CLIENT
-      Database.writeRejectedFormToSheet(new Form(payload));
+      writeRejectedFormToSheet(new Form(payload));
       return response({ type });
     case "signatureEnd":
-      Database.signatureEnd(payload);
+      signatureEnd(payload);
       return response({ type });
     case "signatureStart":
-      Database.signatureStart(payload);
+      signatureStart(payload);
       return response({ type });
     case "updateForm": {
       const form = new Form(JSON.parse(payload));
       try {
         form.validate(); // throws ErrorFormInvalid
         if (form.isReadyToClose || form.isNoShow) {
-          Database.writeFormToSheet(form, true); // throws ErrorFormCollision
+          writeFormToSheet(form, true); // throws ErrorFormCollision
           return response({
             type: "openForms",
-            payload: { formList: JSON.stringify(Database.getOpenForms()) },
+            payload: { formList: JSON.stringify(getOpenForms()) },
           });
         } else {
           return response({
             type,
-            payload: JSON.stringify(Database.writeFormToSheet(form)), // throws ErrorFormCollision
+            payload: JSON.stringify(writeFormToSheet(form)), // throws ErrorFormCollision
           });
         }
       } catch (error) {
         if (error instanceof ErrorFormCollision) {
-          Database.writeRejectedFormToSheet(form);
+          writeRejectedFormToSheet(form);
           return response({
             type: "collision",
             payload: {
@@ -154,7 +162,7 @@ function doPost({ type, payload }) {
             },
           });
         } else if (error instanceof ErrorFormInvalid) {
-          Database.writeRejectedFormToSheet(form);
+          writeRejectedFormToSheet(form);
           return response({
             type: "invalid",
             payload: { form: JSON.stringify(form), message: error.message },
@@ -166,15 +174,10 @@ function doPost({ type, payload }) {
   }
 }
 
-function getUserName_() {
-  return Session.getActiveUser().getEmail();
-}
-
 /**
  * Utility function to keep separate HTML, CSS, and JS files
  * @see {@link https://developers.google.com/apps-script/guides/html/best-practices}
  */
-/* exported include_ */
 function include_(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }

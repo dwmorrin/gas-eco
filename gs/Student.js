@@ -1,6 +1,6 @@
-/* global env */
-/* exported Student */
-class Student {
+import env from "./env";
+
+export default class Student {
   constructor(studentData) {
     const { ID, NAME, NETID, CONTACT, SIGNATURE } = env.students;
     this.contact = studentData[CONTACT] || ""; // {string} phone number

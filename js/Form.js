@@ -1,6 +1,6 @@
 import Item from "./Item";
-import Utility from "./Utility";
-import DateUtils from "./DateUtils";
+import { groupBy } from "./Utility";
+import { copyTime, getFormattedDateTime } from "./DateUtils";
 
 export default class Form {
   constructor({
@@ -55,35 +55,35 @@ export default class Form {
   }
 
   get itemsIn() {
-    return Utility.groupBy(
+    return groupBy(
       (item) => item.isIn,
       (item) => item.key
     )(this.items);
   }
 
   get itemsOut() {
-    return Utility.groupBy(
+    return groupBy(
       (item) => item.isOut,
       (item) => item.key
     )(this.items);
   }
 
   get itemsReserved() {
-    return Utility.groupBy(
+    return groupBy(
       (item) => item.reserved,
       (item) => item.key
     )(this.items);
   }
 
   get itemsStagedForIn() {
-    return Utility.groupBy(
+    return groupBy(
       (item) => item.stagedForIn,
       (item) => item.key
     )(this.items);
   }
 
   get itemsStagedForOut() {
-    return Utility.groupBy(
+    return groupBy(
       (item) => item.stagedForOut,
       (item) => item.key
     )(this.items);
@@ -137,7 +137,6 @@ export default class Form {
   //------ methods
 
   duplicate() {
-    const { copyTime, getFormattedDateTime } = DateUtils;
     return new Form({
       ...this.makeAdvanceBooking(),
       id: null,

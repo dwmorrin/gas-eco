@@ -1,4 +1,4 @@
-import Utility from "./Utility";
+import { hexString, getSequentialNumber } from "./Utility";
 
 export default class Item {
   constructor({
@@ -63,9 +63,7 @@ export default class Item {
   // sequential number keeps serialized items separate (unique)
   get key() {
     return (
-      this.barcode +
-      this.id +
-      (this.serialized ? Utility.getSequentialNumber() : "")
+      this.barcode + this.id + (this.serialized ? getSequentialNumber() : "")
     );
   }
 
@@ -78,7 +76,7 @@ export default class Item {
   }
 
   static getManualEntryId(hash) {
-    return Item.getManualPrefix() + Utility.hexString(hash).substring(0, 5);
+    return Item.getManualPrefix() + hexString(hash).substring(0, 5);
   }
 
   static similar(a, b) {

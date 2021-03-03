@@ -6,66 +6,19 @@
       rel="stylesheet"
       href="https://ssl.gstatic.com/docs/script/css/add-ons1.css"
     />
-    <?!= include_('css/base'); ?>
-    <?!= include_('css/closedForms'); ?>
-    <?!= include_('css/form'); ?>
-    <?!= include_('css/modal'); ?>
-    <?!= include_('css/omnibox'); ?>
-    <?!= include_('css/openForms'); ?>
-    <?!= include_('css/sortedBy'); ?>
-    <?!= include_('css/spinner'); ?>
-    <?!= include_('css/spotlight'); ?>
-    <?!= include_('css/toast'); ?>
+    <link inline rel="stylesheet" href="base.css" />
+    <link inline rel="stylesheet" href="closedForms.css" />
+    <link inline rel="stylesheet" href="form.css" />
+    <link inline rel="stylesheet" href="modal.css" />
+    <link inline rel="stylesheet" href="omnibox.css" />
+    <link inline rel="stylesheet" href="openForms.css" />
+    <link inline rel="stylesheet" href="sortedBy.css" />
+    <link inline rel="stylesheet" href="spinner.css" />
+    <link inline rel="stylesheet" href="spotlight.css" />
+    <link inline rel="stylesheet" href="toast.css" />
   </head>
 
   <body>
-    <!-- independent utilities -->
-    <?!= include_('js/DateUtils'); ?>
-    <?!= include_('js/HTML'); ?>
-    <?!= include_('js/Utility'); ?>
-
-    <!-- environment -->
-    <?!= include_('js/env') ?>
-
-    <!-- classes -->
-    <?!= include_('js/Item'); ?>
-    <?!= include_('js/Inventory'); ?>
-    <?!= include_('js/Form'); ?>
-
-    <!-- requires env Inventory -->
-    <?!= include_('js/FormFilters'); ?>
-
-    <!-- page components -->
-    <?!= include_('js/components/CheckInButton') ?>
-    <?!= include_('js/components/CheckOutButton') ?>
-    <?!= include_('js/components/ClosedFormsInputs') ?>
-    <?!= include_('js/components/ClosedFormsTable') ?>
-    <?!= include_('js/components/DateTimeInput') ?>
-    <?!= include_('js/components/EquipmentOutTable') ?>
-    <?!= include_('js/components/FormItem') ?>
-    <?!= include_('js/components/FormItemSectionHeader') ?>
-    <?!= include_('js/components/FormStudent') ?>
-    <?!= include_('js/components/LocationSelect') ?>
-    <?!= include_('js/components/ModalChangeLog') ?>
-    <?!= include_('js/components/ModalItemNotes') ?>
-    <?!= include_('js/components/ModalManualEntry') ?>
-    <?!= include_('js/components/ModalNewCodabar') ?>
-    <?!= include_('js/components/ModalNewLocation') ?>
-    <?!= include_('js/components/ModalNotes') ?>
-    <?!= include_('js/components/ModalQuantityChange') ?>
-    <?!= include_('js/components/ModalQuery') ?>
-    <?!= include_('js/components/ModalStudentNotes') ?>
-    <?!= include_('js/components/Omnibox') ?>
-    <?!= include_('js/components/OpenFormsTable') ?>
-    <?!= include_('js/components/QuantityButtons') ?>
-
-    <!-- pages -->
-    <?!= include_('js/components/OpenFormsPage') ?>
-    <?!= include_('js/components/FormPage') ?>
-    <?!= include_('js/components/ClosedFormsPage') ?>
-    <?!= include_('js/components/LoadingPage'); ?>
-
-    <!-- entry -->
-    <?!= include_('js/App'); ?>
+    <script inline src="bundle.js"></script>
   </body>
 </html>

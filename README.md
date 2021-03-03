@@ -7,6 +7,29 @@ Google Apps Script (GAS) inventory management program.
 - Uses Sheets as a database to track inventory checked out to users
 - Point-of-sale web app UI (barcode-scanning driven)
 
+## Dependencies
+
+A couple of npm packages are assumed to be globally installed:
+
+- [`clasp`](https://github.com/google/clasp)
+- `rollup`
+
+Build process uses `make` and a python script of my own called
+[`inline`](https://github.com/dwmorrin/py-inline-html).
+
+The `inline` script is used because it will inline JS and CSS into HTML without
+commenting out any templating tags (e.g. `<?= scriplet ?>`) in the HTML. I
+found that the popular JS HTML parsers on npm will automatically comment out such tags.
+I almost had htmlparser2 working with this task, but it wasn't easy (lack of documentation),
+so I went with the python script (uses beautiful soup for parsing) instead.
+
+## Build
+
+`make` will build the server code from the `gs` directory and the client app
+from the `css`, `html`, and `js` directories.
+
+`make push` builds and then runs `clasp push` to sync with script.google.com.
+
 ## Code organization
 
 ### Server
@@ -38,7 +61,13 @@ and `clasp` should ignore the `env_sample.js` file.
 
 #### HTML
 
-The CSS and JS files are declared in `index.html`.
+Google Apps Script requires that all the JS and CSS be inlined into HTML files.
+
+The CSS stylesheets are declared individually in `html/index.html`.
+
+The JavaScript uses `rollup` to produce a single `bundle.js` file, so
+`index.html` only needs to find that one JS bundle.
+
 In the main entry point, `doGet()`, the GAS built-in `HtmlService`
 module concatenates all the CSS and JS files together and sends the resulting
 HTML to the client.
@@ -50,11 +79,11 @@ tags.
 
 The visible document is created via JavaScript.
 
-The `js` directory contains HTML files because this is what GAS demands, however
-they contain no HTML, just inline JavaScript.
+The `js` directory contains all the client-side Javascript. This gets bundled
+by `rollup` and inlined by into `./build/index.html` by `inline`.
 
 At the top level of `js` are various utility modules, the point of entry file
-(`App.html`), and a `components` directory.
+(`index.js`), and a `components` directory.
 
 Files in the `components` directory are analogous to React Function Components:
 each function receives properties and returns an `HTMLElement` (the return type
@@ -63,13 +92,13 @@ of `document.createElement()`).
 The module `HTML` provides `document.createElement()` wrappers to facilitate
 declarative style HTML-in-JS programming.
 
-### env.html
+### env.js
 
-Copy `js/env_sample.html` to `js/env.html` and enter in the specifics for your
+Copy `js/env_sample.js` to `js/env.js` and enter in the specifics for your
 application. git should ignore the `env.js` file and `clasp` should ignore the
 `env_sample.js` file.
 
 #### CSS
 
-Like the `js` directory, the `css` directory contains HTML files to satisfy GAS.
-The files only contain inline stylesheets.
+There is no bundler for the CSS files. These are just inlined into
+`./build/index.html` by `inline`.

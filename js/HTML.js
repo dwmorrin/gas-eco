@@ -1,357 +1,353 @@
-export default (function () {
-  return {
-    br,
-    button,
-    cell,
-    createElement,
-    documentIcon,
-    getRadioValue,
-    headerCell,
-    heading1,
-    labeledCheckbox,
-    labeledDateInput,
-    labeledInput,
-    labeledRadio,
-    modal,
-    option,
-    page,
-    paragraph,
-    radio,
-    row,
-    select,
-    spinner,
-    table,
-    tableBody,
-    tableHead,
-    tip,
-    toast,
-    update,
-  };
-
-  /**
-   * event handling:
-   *   attrs["onX"], where "X" is some event name (e.g. "onClick")
-   *   accepts a function that will receive the event object as argument 1
-   *   and the HTMLElement as argument 2.
-   *
-   * children:
-   *   any falsy value will be skipped (for conditional rendering)
-   */
-  function attributes(el, attrs) {
-    try {
-      for (const key in attrs) {
-        if (key === "class")
-          attrs[key] && el.classList.add(...attrs[key].trim().split(/\s+/));
-        else if (key === "child") el.appendChild(attrs[key]);
-        else if (key === "children")
-          attrs[key].forEach((child) => child && el.appendChild(child));
-        else if (key === "innerHTML") el.innerHTML = attrs[key];
-        else if (key === "textContent") el.textContent = attrs[key];
-        else if (/^on[A-Z]/.test(key))
-          // onClick, onKeydown, etc
-          attrs[key] &&
-            el.addEventListener(
-              key.replace(/^on([A-Z])/, (_, c) => c.toLowerCase()),
-              (event) => attrs[key](event, el)
-            );
-        else if (["selected", "checked", "disabled"].includes(key))
-          // only create attribute if true
-          attrs[key] && el.setAttribute(key, attrs[key]);
-        else el.setAttribute(key, attrs[key]);
-      }
-      return el;
-    } catch (error) {
-      console.group();
-      console.log("Hit an error while making an element");
-      console.log({ error, el, attrs });
-      console.groupEnd();
+/**
+ * event handling:
+ *   attrs["onX"], where "X" is some event name (e.g. "onClick")
+ *   accepts a function that will receive the event object as argument 1
+ *   and the HTMLElement as argument 2.
+ *
+ * children:
+ *   any falsy value will be skipped (for conditional rendering)
+ */
+function attributes(el, attrs) {
+  try {
+    for (const key in attrs) {
+      if (key === "class")
+        attrs[key] && el.classList.add(...attrs[key].trim().split(/\s+/));
+      else if (key === "child") el.appendChild(attrs[key]);
+      else if (key === "children")
+        attrs[key].forEach((child) => child && el.appendChild(child));
+      else if (key === "innerHTML") el.innerHTML = attrs[key];
+      else if (key === "textContent") el.textContent = attrs[key];
+      else if (/^on[A-Z]/.test(key))
+        // onClick, onKeydown, etc
+        attrs[key] &&
+          el.addEventListener(
+            key.replace(/^on([A-Z])/, (_, c) => c.toLowerCase()),
+            (event) => attrs[key](event, el)
+          );
+      else if (["selected", "checked", "disabled"].includes(key))
+        // only create attribute if true
+        attrs[key] && el.setAttribute(key, attrs[key]);
+      else el.setAttribute(key, attrs[key]);
     }
+    return el;
+  } catch (error) {
+    console.group();
+    console.log("Hit an error while making an element");
+    console.log({ error, el, attrs });
+    console.groupEnd();
   }
+}
 
-  function br() {
-    return createElement("br");
-  }
+function br() {
+  return createElement("br");
+}
 
-  // for overloaded macros: row(HTMLEl, HTMLEl, ...) or row({class: "foo"})
-  function childrenShorthand(tagName, args) {
-    return createElement(
-      tagName,
-      args[0] instanceof HTMLElement || args[0] === null
-        ? { children: args }
-        : args[0]
-    );
-  }
+// for overloaded macros: row(HTMLEl, HTMLEl, ...) or row({class: "foo"})
+function childrenShorthand(tagName, args) {
+  return createElement(
+    tagName,
+    args[0] instanceof HTMLElement || args[0] === null
+      ? { children: args }
+      : args[0]
+  );
+}
 
-  function createElement(name, attrs = {}) {
-    return attributes(document.createElement(name), attrs);
-  }
+function createElement(name, attrs = {}) {
+  return attributes(document.createElement(name), attrs);
+}
 
-  function documentIcon() {
-    return createElement("img", {
-      src:
-        "data:image/png;base64," +
-        "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABCElEQVR4XmNgoCbQ0tJiU5S" +
-        "Vb1aUl2+BYSU5hU5FWUU3dLVYgYKCgoCCnPxROTk5LSDbAITl5eUVFeXkPyjKyYWiq8cAIA" +
-        "OU5OXXo4sDDfgFxJ+U5OSc0eVQAMgARTmFVUCFPgpycnlKsvJFKioqfEDN/6H4L1DOBV0fH" +
-        "IC9ICu/VklJSQ7odENlOTljqLgGkK8J8hrQkNfo+uAA4gL5RUBX7ALS/9DwfwVZBX8g/QNd" +
-        "HxxADVijJCOjCww0V2QM1OwOlOcAyv9E1wcH1DKAMi8gByIaNgKpIcIFiGhExkqyCoVAeQk" +
-        "iDJBfjS6ODPAaoCUqygNU8BLogSfYMFDuKTCp30HXN7AAAKarYBD/VuTqAAAAAElFTkSuQm" +
-        "CC",
-      width: "16",
-      height: "16",
-    });
-  }
+function documentIcon() {
+  return createElement("img", {
+    src:
+      "data:image/png;base64," +
+      "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABCElEQVR4XmNgoCbQ0tJiU5S" +
+      "Vb1aUl2+BYSU5hU5FWUU3dLVYgYKCgoCCnPxROTk5LSDbAITl5eUVFeXkPyjKyYWiq8cAIA" +
+      "OU5OXXo4sDDfgFxJ+U5OSc0eVQAMgARTmFVUCFPgpycnlKsvJFKioqfEDN/6H4L1DOBV0fH" +
+      "IC9ICu/VklJSQ7odENlOTljqLgGkK8J8hrQkNfo+uAA4gL5RUBX7ALS/9DwfwVZBX8g/QNd" +
+      "HxxADVijJCOjCww0V2QM1OwOlOcAyv9E1wcH1DKAMi8gByIaNgKpIcIFiGhExkqyCoVAeQk" +
+      "iDJBfjS6ODPAaoCUqygNU8BLogSfYMFDuKTCp30HXN7AAAKarYBD/VuTqAAAAAElFTkSuQm" +
+      "CC",
+    width: "16",
+    height: "16",
+  });
+}
 
-  function empty(el) {
-    while (el && el.firstChild) el.removeChild(el.firstChild);
-  }
+function empty(el) {
+  while (el && el.firstChild) el.removeChild(el.firstChild);
+}
 
-  function labeledRadio(name) {
-    return (textContent, value, checked = false) =>
-      createElement("label", {
-        textContent,
-        child: createElement("input", {
-          type: "radio",
-          name,
-          value,
-          checked,
-        }),
-      });
-  }
-
-  function radio(name) {
-    return (value, checked = false) =>
-      createElement("input", {
+function labeledRadio(name) {
+  return (textContent, value, checked = false) =>
+    createElement("label", {
+      textContent,
+      child: createElement("input", {
         type: "radio",
         name,
         value,
         checked,
-      });
-  }
-
-  function getRadioValue(container = document) {
-    const found = Array.from(
-      container.querySelectorAll('input[type="radio"]')
-    ).find((el) => el.checked);
-    return found ? found.value : null;
-  }
-
-  function spinner() {
-    return createElement("div", { class: "spinner" });
-  }
-
-  function table(...args) {
-    return childrenShorthand("table", args);
-  }
-
-  function tableBody(attrs) {
-    return createElement("tbody", attrs);
-  }
-
-  function tableHead(attrs) {
-    return createElement("thead", attrs);
-  }
-
-  function row(...args) {
-    return childrenShorthand("tr", args);
-  }
-
-  function headerCell(attrs) {
-    return stringShorthand("th", attrs);
-  }
-
-  function cell(attrs) {
-    return stringShorthand("td", attrs);
-  }
-
-  function option(textContent, value) {
-    if (value === undefined) value = textContent;
-    return createElement("option", { textContent, value });
-  }
-
-  function stringShorthand(tagName, attrs) {
-    if (typeof attrs === "string")
-      return createElement(tagName, { textContent: attrs });
-    else return createElement(tagName, attrs);
-  }
-
-  function tip({ element, message, onClose }) {
-    const blockers = blockAround(element);
-    const div = createElement("p", {
-      class: "tip",
-      textContent: message,
+      }),
     });
-    document.body.appendChild(div);
-    const { top, right } = element.getBoundingClientRect();
-    div.style.top = `${top}px`;
-    div.style.left = `${right}px`;
-    const cleanup = (event) => {
-      event.preventDefault();
-      div.remove();
-      blockers.forEach((blocker) => blocker.remove());
-      window.removeEventListener("mousedown", cleanup);
-      window.removeEventListener("keydown", cleanup);
-      onClose();
-    };
-    window.addEventListener("mousedown", cleanup);
-    window.addEventListener("keydown", cleanup);
-  }
+}
 
-  function blockAround(element) {
-    const { top, bottom, width, left } = element.getBoundingClientRect();
-    const divs = [
-      createElement("div", {
-        class: "blockAround",
-        style: `top: 0; height: ${top}px; left: ${left}px; width: ${width}px`,
-      }),
-      createElement("div", {
-        class: "blockAround",
-        style: `top: ${bottom}px; bottom: 0px; left: ${left}px; width: ${width}px`,
-      }),
-      createElement("div", {
-        class: "blockAround",
-        style: `top: 0; bottom: 0px; left: 0; width: ${left}px`,
-      }),
-      createElement("div", {
-        class: "blockAround",
-        style: `top: 0; bottom: 0px; left: ${left + width}px; right: 0px`,
-      }),
-    ];
-    divs.forEach((div) => document.body.appendChild(div));
-    return divs;
-  }
-
-  function modal({
-    child,
-    children,
-    innerHTML,
-    onClick,
-    onClose = () => undefined,
-    closeText = "Close",
-    onOk = null,
-    okText = "Ok",
-    blocking = true,
-    appendToBody = true,
-  }) {
-    const div = createElement("div", { class: "modal" });
-    const buttonDiv = createElement("div");
-    if (innerHTML) div.innerHTML = innerHTML;
-    if (child) div.appendChild(child);
-    if (children) children.forEach((child) => div.appendChild(child));
-    const blocker = blocking
-      ? createElement("div", { class: "overlay" })
-      : null;
-    const cleanup = () => {
-      div.remove();
-      blocker && blocker.remove();
-    };
-    const remove = () => {
-      onClose();
-      cleanup();
-    };
-    if (onClick)
-      // for children to determine when cleanup occurs
-      div.addEventListener("click", (event) => onClick({ event, cleanup }));
-    const closeButton = createElement("button", {
-      textContent: closeText,
-      onClick: remove,
+function radio(name) {
+  return (value, checked = false) =>
+    createElement("input", {
+      type: "radio",
+      name,
+      value,
+      checked,
     });
-    if (typeof onOk === "function") {
-      const okButton = createElement("button", {
-        class: "create",
-        textContent: okText,
-        onClick: () => {
-          onOk({ modal: div });
-          cleanup();
-        },
-      });
-      buttonDiv.appendChild(okButton);
-    }
-    div.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        cleanup();
-      }
-      if (event.key === "Enter") {
-        event.preventDefault();
+}
+
+function getRadioValue(container = document) {
+  const found = Array.from(
+    container.querySelectorAll('input[type="radio"]')
+  ).find((el) => el.checked);
+  return found ? found.value : null;
+}
+
+function spinner() {
+  return createElement("div", { class: "spinner" });
+}
+
+function table(...args) {
+  return childrenShorthand("table", args);
+}
+
+function tableBody(attrs) {
+  return createElement("tbody", attrs);
+}
+
+function tableHead(attrs) {
+  return createElement("thead", attrs);
+}
+
+function row(...args) {
+  return childrenShorthand("tr", args);
+}
+
+function headerCell(attrs) {
+  return stringShorthand("th", attrs);
+}
+
+function cell(attrs) {
+  return stringShorthand("td", attrs);
+}
+
+function option(textContent, value) {
+  if (value === undefined) value = textContent;
+  return createElement("option", { textContent, value });
+}
+
+function stringShorthand(tagName, attrs) {
+  if (typeof attrs === "string")
+    return createElement(tagName, { textContent: attrs });
+  else return createElement(tagName, attrs);
+}
+
+function tip({ element, message, onClose }) {
+  const blockers = blockAround(element);
+  const div = createElement("p", {
+    class: "tip",
+    textContent: message,
+  });
+  document.body.appendChild(div);
+  const { top, right } = element.getBoundingClientRect();
+  div.style.top = `${top}px`;
+  div.style.left = `${right}px`;
+  const cleanup = (event) => {
+    event.preventDefault();
+    div.remove();
+    blockers.forEach((blocker) => blocker.remove());
+    window.removeEventListener("mousedown", cleanup);
+    window.removeEventListener("keydown", cleanup);
+    onClose();
+  };
+  window.addEventListener("mousedown", cleanup);
+  window.addEventListener("keydown", cleanup);
+}
+
+function blockAround(element) {
+  const { top, bottom, width, left } = element.getBoundingClientRect();
+  const divs = [
+    createElement("div", {
+      class: "blockAround",
+      style: `top: 0; height: ${top}px; left: ${left}px; width: ${width}px`,
+    }),
+    createElement("div", {
+      class: "blockAround",
+      style: `top: ${bottom}px; bottom: 0px; left: ${left}px; width: ${width}px`,
+    }),
+    createElement("div", {
+      class: "blockAround",
+      style: `top: 0; bottom: 0px; left: 0; width: ${left}px`,
+    }),
+    createElement("div", {
+      class: "blockAround",
+      style: `top: 0; bottom: 0px; left: ${left + width}px; right: 0px`,
+    }),
+  ];
+  divs.forEach((div) => document.body.appendChild(div));
+  return divs;
+}
+
+function modal({
+  child,
+  children,
+  innerHTML,
+  onClick,
+  onClose = () => undefined,
+  closeText = "Close",
+  onOk = null,
+  okText = "Ok",
+  blocking = true,
+  appendToBody = true,
+}) {
+  const div = createElement("div", { class: "modal" });
+  const buttonDiv = createElement("div");
+  if (innerHTML) div.innerHTML = innerHTML;
+  if (child) div.appendChild(child);
+  if (children) children.forEach((child) => div.appendChild(child));
+  const blocker = blocking ? createElement("div", { class: "overlay" }) : null;
+  const cleanup = () => {
+    div.remove();
+    blocker && blocker.remove();
+  };
+  const remove = () => {
+    onClose();
+    cleanup();
+  };
+  if (onClick)
+    // for children to determine when cleanup occurs
+    div.addEventListener("click", (event) => onClick({ event, cleanup }));
+  const closeButton = createElement("button", {
+    textContent: closeText,
+    onClick: remove,
+  });
+  if (typeof onOk === "function") {
+    const okButton = createElement("button", {
+      class: "create",
+      textContent: okText,
+      onClick: () => {
         onOk({ modal: div });
         cleanup();
-      }
+      },
     });
-    buttonDiv.appendChild(closeButton);
-    div.appendChild(buttonDiv);
-    blocker && document.body.appendChild(blocker);
-    appendToBody && document.body.appendChild(div);
-    closeButton.focus();
-    return { element: div, remove };
+    buttonDiv.appendChild(okButton);
   }
+  div.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      cleanup();
+    }
+    if (event.key === "Enter") {
+      event.preventDefault();
+      onOk({ modal: div });
+      cleanup();
+    }
+  });
+  buttonDiv.appendChild(closeButton);
+  div.appendChild(buttonDiv);
+  blocker && document.body.appendChild(blocker);
+  appendToBody && document.body.appendChild(div);
+  closeButton.focus();
+  return { element: div, remove };
+}
 
-  function heading1(textContent, attrs = {}) {
-    return createElement("h1", { ...attrs, textContent });
-  }
+function heading1(textContent, attrs = {}) {
+  return createElement("h1", { ...attrs, textContent });
+}
 
-  function paragraph(textContent, attrs = {}) {
-    return createElement("p", { ...attrs, textContent });
-  }
+function paragraph(textContent, attrs = {}) {
+  return createElement("p", { ...attrs, textContent });
+}
 
-  function toast(textContent) {
-    const container = createElement("div", {
-      class: "toast",
-      textContent,
-    });
-    document.body.appendChild(container);
-    window.setTimeout(() => container.remove(), 5000);
-  }
+function toast(textContent) {
+  const container = createElement("div", {
+    class: "toast",
+    textContent,
+  });
+  document.body.appendChild(container);
+  window.setTimeout(() => container.remove(), 5000);
+}
 
-  function page({ name, children, onClick, onKeydown }) {
-    const div = createElement("div", {
-      class: `${name}Container`,
-      children,
-      onClick,
-      onKeydown,
-    });
-    return div;
-  }
+function page({ name, children, onClick, onKeydown }) {
+  const div = createElement("div", {
+    class: `${name}Container`,
+    children,
+    onClick,
+    onKeydown,
+  });
+  return div;
+}
 
-  function labeledInput(textContent, inputAttrs = {}) {
-    return createElement("label", {
-      textContent,
-      child: createElement("input", inputAttrs),
-    });
-  }
+function labeledInput(textContent, inputAttrs = {}) {
+  return createElement("label", {
+    textContent,
+    child: createElement("input", inputAttrs),
+  });
+}
 
-  function labeledDateInput(textContent = "", name = "", attrs = {}) {
-    return labeledInput(textContent, {
-      ...attrs,
-      name,
-      type: "date",
-      placeholder: "yyyy-mm-dd",
-    });
-  }
+function labeledDateInput(textContent = "", name = "", attrs = {}) {
+  return labeledInput(textContent, {
+    ...attrs,
+    name,
+    type: "date",
+    placeholder: "yyyy-mm-dd",
+  });
+}
 
-  function labeledCheckbox(textContent, name, checked = false) {
-    return labeledInput(textContent, { name, type: "checkbox", checked });
-  }
+function labeledCheckbox(textContent, name, checked = false) {
+  return labeledInput(textContent, { name, type: "checkbox", checked });
+}
 
-  function button(textContent, attrs) {
-    return createElement("button", { ...attrs, textContent });
-  }
+function button(textContent, attrs) {
+  return createElement("button", { ...attrs, textContent });
+}
 
-  /**
-   * To set the value of a <select>, the options have to be attached first.
-   * Children attribute must be processed before value attribute.
-   * createElement does not specify order of attributes, thus this function
-   * controls the processing order of the attributes.
-   */
-  function select(attrs) {
-    const el = createElement("select", attrs);
-    if (attrs.value) el.value = attrs.value;
-    return el;
-  }
+/**
+ * To set the value of a <select>, the options have to be attached first.
+ * Children attribute must be processed before value attribute.
+ * createElement does not specify order of attributes, thus this function
+ * controls the processing order of the attributes.
+ */
+function select(attrs) {
+  const el = createElement("select", attrs);
+  if (attrs.value) el.value = attrs.value;
+  return el;
+}
 
-  function update(node, newChild) {
-    empty(node);
-    node.appendChild(newChild);
-    return node;
-  }
-})();
+function update(node, newChild) {
+  empty(node);
+  node.appendChild(newChild);
+  return node;
+}
+
+export {
+  br,
+  button,
+  cell,
+  createElement,
+  documentIcon,
+  getRadioValue,
+  headerCell,
+  heading1,
+  labeledCheckbox,
+  labeledDateInput,
+  labeledInput,
+  labeledRadio,
+  modal,
+  option,
+  page,
+  paragraph,
+  radio,
+  row,
+  select,
+  spinner,
+  table,
+  tableBody,
+  tableHead,
+  tip,
+  toast,
+  update,
+};

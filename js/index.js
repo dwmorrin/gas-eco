@@ -1,6 +1,4 @@
-/* global
-  google
-  */
+/* global google */
 
 /**
  * @typedef {Object} Action

@@ -1,6 +1,6 @@
-/* global env */
-/* exported  Item */
-class Item {
+import env from "./env.js";
+
+export default class Item {
   constructor(itemData) {
     // Initially created from String[] from Google Sheets
     if (Array.isArray(itemData)) {
