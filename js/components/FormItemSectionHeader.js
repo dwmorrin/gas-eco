@@ -1,13 +1,11 @@
-  /* global HTML */
-  /* exported FormItemSectionHeader */
-  function FormItemSectionHeader(textContent) {
-    const { cell, row } = HTML;
+import { cell, row } from "../HTML";
 
-    return row(
-      cell({
-        class: "itemsSectionHeader",
-        textContent,
-        colspan: 5,
-      })
-    );
-  }
+export default function FormItemSectionHeader(textContent) {
+  return row(
+    cell({
+      class: "itemsSectionHeader",
+      textContent,
+      colspan: 5,
+    })
+  );
+}
