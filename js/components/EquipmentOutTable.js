@@ -1,4 +1,3 @@
-<script>
   /* global HTML Utility */
   /* exported EquipmentOutTable */
   function EquipmentOutTable({
@@ -87,4 +86,3 @@
       });
     }
   }
-</script>

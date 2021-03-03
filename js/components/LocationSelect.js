@@ -1,4 +1,3 @@
-<script>
   /* global env HTML Utility */
   /* exported LocationSelect */
   function LocationSelect({ form, onChange }) {
@@ -20,4 +19,3 @@
       ],
     });
   }
-</script>

@@ -1,4 +1,3 @@
-<script>
   /* global DateUtils Form HTML Item Utility */
   /* exported CheckInButton */
   function CheckInButton({ form, item, disabled, onChange, quantity }) {
@@ -128,4 +127,3 @@
         }),
     });
   }
-</script>

@@ -1,4 +1,3 @@
-<script>
   /* global HTML */
   /* exported OpenFormsTable */
   function OpenFormsTable({ openForms, showFormPage }) {
@@ -39,4 +38,3 @@
       return "inactive";
     }
   }
-</script>

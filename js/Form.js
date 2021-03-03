@@ -1,4 +1,3 @@
-<script>
   "use strict";
   /* global DateUtils Item Utility */
   /* exported Form */
@@ -199,4 +198,3 @@
       return later.start.valueOf() < earlier.end.valueOf();
     }
   }
-</script>

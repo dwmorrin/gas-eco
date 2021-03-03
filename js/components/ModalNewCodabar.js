@@ -1,4 +1,3 @@
-<script>
   /* global HTML */
   /* exported ModalNewCodabar */
   function ModalNewCodabar({ codabar, roster, onSubmit }) {
@@ -37,4 +36,3 @@
     });
     input.focus();
   }
-</script>

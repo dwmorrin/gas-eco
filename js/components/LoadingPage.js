@@ -1,4 +1,3 @@
-<script>
   /* global env HTML Utility */
   /* exported LoadingPage */
   function LoadingPage({
@@ -42,4 +41,3 @@
       ],
     });
   }
-</script>

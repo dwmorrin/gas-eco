@@ -1,4 +1,3 @@
-<script>
   /* global HTML */
   /* exported FormItemSectionHeader */
   function FormItemSectionHeader(textContent) {
@@ -12,4 +11,3 @@
       })
     );
   }
-</script>

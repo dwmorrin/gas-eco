@@ -1,4 +1,3 @@
-<script>
   /* global HTML */
   /* exported ModalNewLocation */
   function ModalNewLocation({ onChangeLocation }) {
@@ -27,4 +26,3 @@
     });
     input.focus();
   }
-</script>

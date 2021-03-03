@@ -1,4 +1,3 @@
-<script>
   /* global Form HTML Utility */
   /* exported ModalStudentNotes */
   function ModalStudentNotes({ form, student, onChange, userName }) {
@@ -108,4 +107,3 @@
     });
     input.focus();
   }
-</script>

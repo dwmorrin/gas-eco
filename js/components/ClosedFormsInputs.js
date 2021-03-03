@@ -1,4 +1,3 @@
-<script>
   "use strict";
   /* global env DateUtils HTML */
   /* exported ClosedFormsInputs */
@@ -93,4 +92,3 @@
 
     return queryInputs;
   }
-</script>

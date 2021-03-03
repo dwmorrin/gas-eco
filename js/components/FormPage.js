@@ -1,4 +1,3 @@
-<script>
   "use strict";
   /* global
     DateTimeInput
@@ -916,4 +915,3 @@
       });
     }
   }
-</script>

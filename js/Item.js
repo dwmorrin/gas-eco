@@ -1,4 +1,3 @@
-<script>
   "use strict";
   /* global Utility */
   /* exported Item */
@@ -93,4 +92,3 @@
       );
     }
   }
-</script>

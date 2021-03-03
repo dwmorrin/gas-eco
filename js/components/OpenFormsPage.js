@@ -1,4 +1,3 @@
-<script>
   /* global HTML Utility OpenFormsTable EquipmentOutTable */
   /* exported OpenFormsPage */
   function OpenFormsPage({
@@ -113,4 +112,3 @@
       }
     }
   }
-</script>

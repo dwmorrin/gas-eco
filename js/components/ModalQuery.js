@@ -1,4 +1,3 @@
-<script>
   /* global HTML Item Utility */
   /* exported ModalQuery */
   function ModalQuery({ value, inventory, roster, onOmniboxSubmit }) {
@@ -168,4 +167,3 @@
       );
     }
   }
-</script>

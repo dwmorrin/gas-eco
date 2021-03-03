@@ -1,4 +1,3 @@
-<script>
   /* global
     HTML
     Item
@@ -122,4 +121,3 @@
       return { type: "query", value: element.value };
     }
   }
-</script>

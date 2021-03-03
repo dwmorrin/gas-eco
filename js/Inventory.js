@@ -1,4 +1,3 @@
-<script>
   /* exported Inventory */
   /** Utilities for Item[], all params named `items` are Item[] */
   const Inventory = (function () {
@@ -32,4 +31,3 @@
       });
     }
   })();
-</script>

@@ -1,4 +1,3 @@
-<style>
   .toast {
     animation-duration: 2s, 5s;
     animation-name: slide-up, fade-out;
@@ -34,4 +33,3 @@
       bottom: 10%;
     }
   }
-</style>

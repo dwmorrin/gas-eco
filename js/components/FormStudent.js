@@ -1,4 +1,3 @@
-<script>
   /* global HTML */
   /* exported FormStudent */
   function FormStudent({
@@ -44,4 +43,3 @@
       },
     });
   }
-</script>

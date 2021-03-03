@@ -1,4 +1,3 @@
-<script>
   /* global Form HTML Item */
   /* exported ModalItemNotes */
   function ModalItemNotes({ form, item, onChange }) {
@@ -51,4 +50,3 @@
     });
     notesInput.focus();
   }
-</script>

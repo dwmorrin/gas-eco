@@ -1,4 +1,3 @@
-<script>
   /* global Form HTML */
   /* exported ModalNotes */
   function ModalNotes({ form, onChange, userName }) {
@@ -34,4 +33,3 @@
     });
     input.focus();
   }
-</script>

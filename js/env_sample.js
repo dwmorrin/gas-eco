@@ -1,4 +1,3 @@
-<script>
   "use strict";
   /* exported env */
   const env = (function () {
@@ -9,4 +8,3 @@
         "a friendly message users see when the app hangs on the loading page",
     };
   })();
-</script>

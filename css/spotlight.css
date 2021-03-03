@@ -1,4 +1,3 @@
-<style>
   .blockAround {
     animation-duration: 1s;
     animation-name: half-fade-in;
@@ -24,4 +23,3 @@
       opacity: 0.5;
     }
   }
-</style>

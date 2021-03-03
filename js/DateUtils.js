@@ -1,4 +1,3 @@
-<script>
   "use strict";
   /* exported DateUtils */
   const DateUtils = (function () {
@@ -80,4 +79,3 @@
       return String(n).padStart(2, "0");
     }
   })();
-</script>

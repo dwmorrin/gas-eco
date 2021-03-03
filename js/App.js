@@ -1,4 +1,3 @@
-<script>
   "use strict";
   /* global
   ClosedFormsPage
@@ -821,4 +820,3 @@
       return true;
     }
   })();
-</script>

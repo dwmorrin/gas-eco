@@ -1,4 +1,3 @@
-<script>
   /* global DateUtils Form HTML Item */
   /* exported CheckOutButton */
   function CheckOutButton({ form, item, onChange }) {
@@ -28,4 +27,3 @@
         }),
     });
   }
-</script>

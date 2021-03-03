@@ -1,4 +1,3 @@
-<script>
   /* global HTML */
   /* exported ModalQuantityChange */
   /**
@@ -22,4 +21,3 @@
     });
     newQuantityInput.focus();
   }
-</script>

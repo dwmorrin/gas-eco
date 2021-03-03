@@ -1,4 +1,3 @@
-<style>
   .spinner {
     border: 6px solid #f3f3f3;
     border-radius: 50%;
@@ -17,4 +16,3 @@
       transform: rotate(360deg);
     }
   }
-</style>

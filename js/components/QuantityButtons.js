@@ -1,4 +1,3 @@
-<script>
   /* global DateUtils Form HTML Item ModalQuantityChange Utility */
   /* exported QuantityButtons */
   function QuantityButtons({ form, item, disabled, onChange, quantity }) {
@@ -98,4 +97,3 @@
           ],
         });
   }
-</script>

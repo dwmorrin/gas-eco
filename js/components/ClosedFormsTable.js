@@ -1,4 +1,3 @@
-<script>
   "use strict";
   /* global HTML Utility */
   /* exported ClosedFormsTable */
@@ -80,4 +79,3 @@
       })
     );
   }
-</script>

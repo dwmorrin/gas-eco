@@ -1,4 +1,3 @@
-<script>
   /* exported HTML */
   const HTML = (function () {
     return {
@@ -357,4 +356,3 @@
       return node;
     }
   })();
-</script>

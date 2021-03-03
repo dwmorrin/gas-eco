@@ -1,4 +1,3 @@
-<script>
   "use strict";
   /* global ClosedFormsTable ClosedFormsInputs HTML FormFilters Utility */
   /* exported ClosedFormsPage */
@@ -159,4 +158,3 @@
       return appliedFilters.reduce((forms, func) => forms.filter(func), array);
     }
   }
-</script>

@@ -1,4 +1,3 @@
-<script>
   /* global DateUtils HTML Utility */
   /* exported ModalChangeLog */
   function ModalChangeLog({ form }) {
@@ -32,4 +31,3 @@
       ],
     });
   }
-</script>

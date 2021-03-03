@@ -1,4 +1,3 @@
-<script>
   /* global HTML Item Utility */
   /* exported ModalManualEntry */
   function ModalManualEntry({ onSubmit }) {
@@ -32,4 +31,3 @@
     });
     input.focus();
   }
-</script>

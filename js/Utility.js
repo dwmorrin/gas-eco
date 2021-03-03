@@ -1,4 +1,3 @@
-<script>
   /* exported Utility */
   const Utility = (function () {
     const sequentialGenerator = (function* () {
@@ -163,4 +162,3 @@
         .replace(/^./, (str) => str.toUpperCase());
     }
   })();
-</script>

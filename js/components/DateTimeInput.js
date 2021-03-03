@@ -1,4 +1,3 @@
-<script>
   "use strict";
   /* global DateUtils HTML Utility */
   /* exported DateTimeInput */
@@ -51,4 +50,3 @@
     );
     return inputs;
   }
-</script>

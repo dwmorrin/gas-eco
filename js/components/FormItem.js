@@ -1,4 +1,3 @@
-<script>
   /* global CheckInButton CheckOutButton HTML QuantityButtons */
   /* exported FormItem */
   /**
@@ -56,4 +55,3 @@
       }),
     ];
   }
-</script>

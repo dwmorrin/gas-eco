@@ -1,4 +1,3 @@
-<script>
   /* global env Inventory */
   /* exported FormFilters */
   const FormFilters = (function () {
@@ -109,4 +108,3 @@
       },
     };
   })();
-</script>
