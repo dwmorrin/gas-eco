@@ -43,12 +43,12 @@
     } = Utility;
     const { addOneHour, getFormattedDateTime, minutes } = DateUtils;
 
-    // enum to keep track of which page the user is currently viewing
+    // unique strings to keep track of which page the user is currently viewing
     const pages = {
-      loading: 0,
-      openForms: 1,
-      closedForms: 2,
-      form: 3,
+      loading: "loading",
+      openForms: "open",
+      closedForms: "closed",
+      form: "form",
     };
 
     // seal forces all properties to be declared here
@@ -62,6 +62,7 @@
       closedFormsSortAscending: true,
       currentPage: pages.loading,
       formInputsTouched: new Set(),
+      hasLoadedOnce: false, // to determine initial history state
       inventory: /* Item[] | null */ null,
       itemSort: "timeCheckedOutByClient",
       itemSortAscending: true,
@@ -91,25 +92,12 @@
 
     const openFormsButton = button("View Open Forms", {
       disabled: true,
-      onClick: () => {
-        loseDataWarning(() => {
-          // prevent unnecessary server call if quickly switching pages
-          if (Date.now() - state.openFormsModifiedTime > minutes(2)) {
-            state.openForms = null;
-            fetch({
-              type: "openForms",
-              onSuccess: checkForError(onOpenForms),
-              unlock: true,
-            });
-            showLoadingPage();
-          } else showOpenFormsPage();
-        });
-      },
+      onClick: () => onNavToOpenForms(),
     });
 
     const closedFormsButton = button("View Closed Forms", {
       disabled: true,
-      onClick: () => loseDataWarning(showClosedFormsPage),
+      onClick: () => onNavToClosedForms(),
     });
 
     const navigationButtons = [
@@ -202,6 +190,9 @@
       }
     });
 
+    // browser back/forward button control
+    google.script.history.setChangeHandler(handleHistory);
+
     //---- function definitions
 
     function checkForError(onSuccess, onFailure = () => undefined) {
@@ -281,8 +272,56 @@
       return el && el.textContent ? el.textContent : "anonymous";
     }
 
-    function loseDataWarning(onOk) {
-      if (state.saved || !state.undoStack.length) reset(onOk);
+    function handleHistory({ location }) {
+      const { id, type } =
+        location && location.parameter ? location.parameter : {};
+      const putback = () => {
+        id ? historyPush(id, type) : historyPush();
+      };
+      if (!location || !location.parameter || !location.parameter.page)
+        return onNavToOpenForms(true, putback); // nav to default page
+      const putbackAndError = (message) => {
+        putback();
+        displayErrorMessage(message);
+      };
+      switch (+location.parameter.page) {
+        case pages.form: {
+          const { id, type } = location.parameter;
+          if (id === "new") return onNewForm(undefined, true);
+          if (!id)
+            return putbackAndError(
+              "Error with back button (missing form ID).  Try refreshing the page."
+            );
+          // check id is valid
+          const form = state[
+            type === "open" ? "openForms" : "closedFormsFiltered"
+          ].find((f) => f.id === id);
+          if (!form) {
+            if (type === "open")
+              return putbackAndError(
+                "Error with back button (invalid form ID).  Try refreshing the page"
+              );
+            // somehow the form isn't in the current filter, user should fix filter
+            else {
+              return loseDataWarning(() => showClosedFormsPage(true), putback);
+            }
+          }
+          return loseDataWarning(
+            () => showFormPage({ form, type, skipHistory: true }),
+            putback
+          );
+        }
+        case pages.openForms:
+          return onNavToOpenForms(true, putback);
+        case pages.closedForms:
+          return onNavToClosedForms(true, putback);
+        default:
+          return console.error("unhandled history case");
+      }
+    }
+
+    function loseDataWarning(onOk, onClose = () => undefined) {
+      if (isSaved()) reset(onOk);
       else
         modal({
           children: [
@@ -292,11 +331,16 @@
           closeText: "Cancel",
           okText: "Lose changes",
           onOk: () => reset(onOk),
+          onClose,
         });
     }
 
     function isLoaded() {
       return [state.inventory, state.roster, state.openForms].every(Boolean);
+    }
+
+    function isSaved() {
+      return state.saved || !state.undoStack.length;
     }
 
     function makeFormNavigation(forms, type) {
@@ -349,7 +393,7 @@
         state.undoStack.push(currentForm);
         state.redoStack = [];
         state.saved = false;
-        showFormPage({ form: newForm });
+        showFormPage({ form: newForm, skipHistory: true });
         if (["items", "students"].includes(name)) toast(value);
       };
     }
@@ -462,6 +506,25 @@
       if (unlock) tryUnlock();
     }
 
+    function onNavToClosedForms(skipHistory = false, putback) {
+      loseDataWarning(() => showClosedFormsPage(skipHistory), putback);
+    }
+
+    function onNavToOpenForms(skipHistory = false, putback) {
+      loseDataWarning(() => {
+        // prevent unnecessary server call if quickly switching pages
+        if (Date.now() - state.openFormsModifiedTime > minutes(2)) {
+          state.openForms = null;
+          fetch({
+            type: "openForms",
+            onSuccess: checkForError(onOpenForms),
+            unlock: true,
+          });
+          showLoadingPage();
+        } else showOpenFormsPage(skipHistory);
+      }, putback);
+    }
+
     function onNeedsSignature({ form, handleStudent, netId }) {
       let canceled = false;
 
@@ -530,7 +593,7 @@
       });
     }
 
-    function onNewForm(form) {
+    function onNewForm(form, skipHistory) {
       loseDataWarning(() => {
         if (!form)
           form = new Form({
@@ -539,7 +602,7 @@
           });
         state.openForms = [...state.openForms, form];
         state.saved = false;
-        showFormPage({ form });
+        showFormPage({ form, skipHistory });
       });
     }
 
@@ -674,8 +737,9 @@
       }, minutes(0.75));
     }
 
-    function showClosedFormsPage() {
+    function showClosedFormsPage(skipHistory) {
       state.currentPage = pages.closedForms;
+      if (!skipHistory) historyPush();
       clearOpenFormsTimeout();
       update(
         pageContainer,
@@ -699,11 +763,13 @@
       autoFocus = true,
       disabled = false,
       filteredForms,
+      skipHistory = false,
       form,
       type = "open",
       waiting = false,
     }) {
       state.currentPage = pages.form;
+      if (!skipHistory) historyPush(form.id || "new", type);
       clearOpenFormsTimeout();
       if (filteredForms) state.closedFormsFiltered = filteredForms;
       if (type === "closed") disabled = true;
@@ -772,8 +838,12 @@
       );
     }
 
-    function showOpenFormsPage() {
+    function showOpenFormsPage(skipHistory) {
+      const alreadyShowing = state.currentPage === pages.openForms;
       state.currentPage = pages.openForms;
+      // initial open forms pages === history event zero
+      // do not push on initial load for correct history state
+      if (!skipHistory && state.hasLoadedOnce && !alreadyShowing) historyPush();
       setOpenFormsTimeout();
       update(
         pageContainer,
@@ -818,7 +888,12 @@
       // separating this last one allows closed forms to lag if needed
       if (state.closedForms) closedFormsButton.removeAttribute("disabled");
       showOpenFormsPage();
+      state.hasLoadedOnce = true;
       return true;
+    }
+
+    function historyPush(id, type) {
+      google.script.history.push({}, { page: state.currentPage, id, type });
     }
   })();
 </script>
