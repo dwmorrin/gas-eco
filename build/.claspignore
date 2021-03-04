@@ -1,5 +1,0 @@
-.eslintrc.js
-node_modules/**
-package-lock.json
-gs/env_sample.js
-js/env_sample.html
