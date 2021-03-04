@@ -1,3 +1,9 @@
+# exit and display some helpful info if required commands do not exist
+require = $(or $(shell command -v $(1) 2>/dev/null),$(error requires $(1): $(2)))
+_ := $(call require,inline,https://github.com/dwmorrin/py-inline-html)
+_ := $(call require,clasp,npm i -g @google/clasp && clasp login)
+_ := $(call require,rollup,npm i -g rollup)
+
 JsBundle = bundle.js
 BUILDDIR := build
 GsBundle := $(BUILDDIR)/bundle.js
@@ -28,12 +34,12 @@ $(BUILDDIR):
 	else clasp create;\
 	fi
 
-pull: 
+pull: | $(BUILDDIR)
 	cd $(BUILDDIR); clasp pull
 
-push: $(wildcard $(BUILDDIR)/*)
+push: $(wildcard $(BUILDDIR)/*) | $(BUILDDIR)
 	cd $(BUILDDIR); clasp push
 	touch push
 
-open:
+open: | $(BUILDDIR)
 	cd $(BUILDDIR); clasp open
