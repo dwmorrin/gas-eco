@@ -1,3 +1,5 @@
+/* global globalThis */
+
 import { ErrorFormCollision, ErrorFormInvalid } from "./Errors";
 import { getUserName } from "./User";
 import Form from "./Form";
@@ -13,7 +15,18 @@ import {
   writeRejectedFormToSheet,
 } from "./Database";
 
-export { doGet, doPost, include_ };
+/**
+ *! These seemingly frivolous assignments are to make both
+ *! ESLint and Rollup happy with the non-exported functions in this file.
+ * Why? Rollup will ignore the file without export or side-effects.
+ * GAS chokes on keyword "export" so harmless side-effects.
+ * Why not put these assignments in an IIFE? Web app will work,
+ * but HTMLService will not include these functions in google.script.run,
+ * thus breaking client-server communications.
+ */
+globalThis.doGet = doGet;
+globalThis.doPost = doPost;
+globalThis.include_ = include_;
 
 /**
  * @typedef {Object} Action

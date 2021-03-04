@@ -5,11 +5,12 @@ HtmlBundle := $(BUILDDIR)/index.html
 
 all: $(GsBundle) $(HtmlBundle)
 
-# rollup wants to "export", but GAS doesn't know about export
-# Maybe rollup can be configured? For now, just using sed to kill that one line
+# gs build note: IIFEs work if you attach functions
+#   to globalThis, but those functions will not be reachable by
+#   client-side code.  Use any side-effect (e.g. assignment)
+#   to convince Rollup not to skip/tree-shake your entry file.
 $(GsBundle): $(wildcard gs/*) | $(BUILDDIR)
 	rollup gs/index.js -o $@
-	if sed -i.bak '/^[[:space:]]*export/d' $@; then rm $@.bak; fi
 
 $(JsBundle): $(shell find js -type file)
 	rollup js/index.js -o $@ -f iife
@@ -24,3 +25,6 @@ $(BUILDDIR):
 push: $(wildcard $(BUILDDIR)/*)
 	cd $(BUILDDIR); clasp push
 	touch push
+
+open:
+	cd $(BUILDDIR); clasp open
