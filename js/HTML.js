@@ -6,6 +6,8 @@
  *
  * children:
  *   any falsy value will be skipped (for conditional rendering)
+ * @param {HTMLElement} el
+ * @param {ElementCreationOptions} attrs
  */
 function attributes(el, attrs) {
   try {
@@ -38,11 +40,20 @@ function attributes(el, attrs) {
   }
 }
 
+/**
+ * HTML break tag.
+ */
 function br() {
   return createElement("br");
 }
 
-// for overloaded macros: row(HTMLEl, HTMLEl, ...) or row({class: "foo"})
+/**
+ * For overloaded macros: row(HtmlEl, HtmlEl, ...) or row({class: "foo"})
+ * This is library glue and should not be exported.
+ * @param {string} tagName
+ * @param {HTMLElement[]|[ElementCreationOptions]} args
+ * @private
+ */
 function childrenShorthand(tagName, args) {
   return createElement(
     tagName,
@@ -52,10 +63,18 @@ function childrenShorthand(tagName, args) {
   );
 }
 
+/**
+ * @param {string} name
+ * @param {ElementCreationOptions} attrs
+ * @returns {HTMLElement}
+ */
 function createElement(name, attrs = {}) {
   return attributes(document.createElement(name), attrs);
 }
 
+/**
+ * Creates an img element containing data for a small (16x16) document icon.
+ */
 function documentIcon() {
   return createElement("img", {
     src:
@@ -72,10 +91,17 @@ function documentIcon() {
   });
 }
 
+/**
+ * @param {HTMLElement} el
+ */
 function empty(el) {
   while (el && el.firstChild) el.removeChild(el.firstChild);
 }
 
+/**
+ * @param {string} name
+ * @returns {(textContent: string, value: string, checked: boolean?) => HTMLElement}
+ */
 function labeledRadio(name) {
   return (textContent, value, checked = false) =>
     createElement("label", {
@@ -89,6 +115,10 @@ function labeledRadio(name) {
     });
 }
 
+/**
+ * @param {string} name
+ * @returns {(value: string, checked: boolean?) => HTMLElement}
+ */
 function radio(name) {
   return (value, checked = false) =>
     createElement("input", {
@@ -99,6 +129,13 @@ function radio(name) {
     });
 }
 
+/**
+ * Helper function to query a given container for all radio elements
+ * and return the value of the first checked element found,
+ * or null if no checked elements can be found.
+ * @param {HTMLElement} container defaults to document
+ * @returns {string | null} value of first checked element found
+ */
 function getRadioValue(container = document) {
   const found = Array.from(
     container.querySelectorAll('input[type="radio"]')
@@ -106,45 +143,77 @@ function getRadioValue(container = document) {
   return found ? found.value : null;
 }
 
+/**
+ * Creates a div.spinner element, see spinner class in css
+ */
 function spinner() {
   return createElement("div", { class: "spinner" });
 }
 
+/**
+ * @param  {HTMLElement[]} args
+ */
 function table(...args) {
   return childrenShorthand("table", args);
 }
 
+/**
+ * @param {ElementCreationOptions} attrs
+ */
 function tableBody(attrs) {
   return createElement("tbody", attrs);
 }
 
+/**
+ * @param {ElementCreationOptions} attrs
+ */
 function tableHead(attrs) {
   return createElement("thead", attrs);
 }
 
+/**
+ * @param  {HTMLElement[]} args
+ */
 function row(...args) {
   return childrenShorthand("tr", args);
 }
 
+/**
+ * @param {ElementCreationOptions} attrs
+ */
 function headerCell(attrs) {
   return stringShorthand("th", attrs);
 }
 
+/**
+ * @param {ElementCreationOptions} attrs
+ */
 function cell(attrs) {
   return stringShorthand("td", attrs);
 }
 
+/**
+ * @param {string} textContent
+ * @param {string} value
+ */
 function option(textContent, value) {
   if (value === undefined) value = textContent;
   return createElement("option", { textContent, value });
 }
 
+/**
+ * @param {string} tagName
+ * @param {ElementCreationOptions} attrs
+ */
 function stringShorthand(tagName, attrs) {
   if (typeof attrs === "string")
     return createElement(tagName, { textContent: attrs });
   else return createElement(tagName, attrs);
 }
 
+/**
+ * @param {{element: HTMLElement, message: string, onClose: () => unknown}} param0
+ */
 function tip({ element, message, onClose }) {
   const blockers = blockAround(element);
   const div = createElement("p", {
@@ -167,6 +236,9 @@ function tip({ element, message, onClose }) {
   window.addEventListener("keydown", cleanup);
 }
 
+/**
+ * @param {HTMLElement} element
+ */
 function blockAround(element) {
   const { top, bottom, width, left } = element.getBoundingClientRect();
   const divs = [
@@ -191,6 +263,22 @@ function blockAround(element) {
   return divs;
 }
 
+/**
+ * Creates a modal UI element.
+ * WARNING: side-effect by default: will append element to document.body.
+ * Side-effect can be turned off with appendToBody = false.
+ * @param {{
+ *   child: HTMLElement,
+ *   children: HTMLElement[],
+ *   innerHTML: string,
+ *   onClick: (e: MouseEvent) => unknown,
+ *   onClose: () => unknown,
+ *   onOk: () => unknown | null,
+ *   okText: string,
+ *   blocking: boolean,
+ *   appendToBody: boolean
+ * }} props
+ */
 function modal({
   child,
   children,
@@ -254,14 +342,25 @@ function modal({
   return { element: div, remove };
 }
 
+/**
+ * @param {string} textContent
+ * @param {ElementCreationOptions} attrs
+ */
 function heading1(textContent, attrs = {}) {
   return createElement("h1", { ...attrs, textContent });
 }
 
+/**
+ * @param {string} textContent
+ * @param {ElementCreationOptions} attrs
+ */
 function paragraph(textContent, attrs = {}) {
   return createElement("p", { ...attrs, textContent });
 }
 
+/**
+ * @param {string} textContent
+ */
 function toast(textContent) {
   const container = createElement("div", {
     class: "toast",
@@ -271,6 +370,14 @@ function toast(textContent) {
   window.setTimeout(() => container.remove(), 5000);
 }
 
+/**
+ * @param {{
+ *   name: string,
+ *   children: HTMLElement[],
+ *   onClick: (MouseEvent) => unknown,
+ *   onKeydown: (KeyboardEvent) => unknown
+ * }} props
+ */
 function page({ name, children, onClick, onKeydown }) {
   const div = createElement("div", {
     class: `${name}Container`,
@@ -281,6 +388,10 @@ function page({ name, children, onClick, onKeydown }) {
   return div;
 }
 
+/**
+ * @param {string} textContent
+ * @param {ElementCreationOptions} inputAttrs
+ */
 function labeledInput(textContent, inputAttrs = {}) {
   return createElement("label", {
     textContent,
@@ -288,6 +399,11 @@ function labeledInput(textContent, inputAttrs = {}) {
   });
 }
 
+/**
+ * @param {string} textContent
+ * @param {string} name
+ * @param {ElementCreationOptions} attrs
+ */
 function labeledDateInput(textContent = "", name = "", attrs = {}) {
   return labeledInput(textContent, {
     ...attrs,
@@ -297,10 +413,19 @@ function labeledDateInput(textContent = "", name = "", attrs = {}) {
   });
 }
 
+/**
+ * @param {string} textContent
+ * @param {string} name
+ * @param {boolean} checked
+ */
 function labeledCheckbox(textContent, name, checked = false) {
   return labeledInput(textContent, { name, type: "checkbox", checked });
 }
 
+/**
+ * @param {string} textContent
+ * @param {ElementCreationOptions} attrs
+ */
 function button(textContent, attrs) {
   return createElement("button", { ...attrs, textContent });
 }
@@ -310,6 +435,7 @@ function button(textContent, attrs) {
  * Children attribute must be processed before value attribute.
  * createElement does not specify order of attributes, thus this function
  * controls the processing order of the attributes.
+ * @param {ElementCreationOptions} attrs
  */
 function select(attrs) {
   const el = createElement("select", attrs);
@@ -317,6 +443,11 @@ function select(attrs) {
   return el;
 }
 
+/**
+ * Side-effect: empties node, replaces with newChild
+ * @param {HTMLElement} node
+ * @param {HTMLElement} newChild
+ */
 function update(node, newChild) {
   empty(node);
   node.appendChild(newChild);
