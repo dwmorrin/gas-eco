@@ -34,13 +34,127 @@ import ClosedFormsPage from "./components/ClosedFormsPage";
 import FormPage from "./components/FormPage";
 import LoadingPage from "./components/LoadingPage";
 import OpenFormsPage from "./components/OpenFormsPage";
+import Page from "./Page";
 
-// enum to keep track of which page the user is currently viewing
+// need reference so we can update this to change views
+const pageContainer = createElement("div");
+
 const pages = {
-  loading: 0,
-  openForms: 1,
-  closedForms: 2,
-  form: 3,
+  loading: new Page({
+    usesHistory: false,
+    name: "loading",
+    component: LoadingPage,
+    parent: pageContainer,
+    onShow(state) {
+      disableButtons();
+      if (!state.notLoading) setNotLoadingTimeout();
+      return {
+        rosterStatus: state.roster
+          ? `${state.roster.length} people downloaded`
+          : "Loading students...",
+        inventoryStatus: state.inventory
+          ? `${state.inventory.length} items downloaded`
+          : "Loading inventory...",
+        openFormsStatus: state.openForms
+          ? `${state.openForms.length} open forms downloaded`
+          : "Loading open forms...",
+        timedOut: state.notLoading,
+      };
+    },
+  }),
+  open: new Page({
+    name: "open",
+    component: OpenFormsPage,
+    parent: pageContainer,
+    onShow(state) {
+      setOpenFormsTimeout();
+      return {
+        ascending: state.openFormSortAscending,
+        itemsOutSort: state.itemsOutSort,
+        itemsOutSortAscending: state.itemsOutSortAscending,
+        onSortForms,
+        onSortItemsOut,
+        openForms: state.openForms,
+        showFormPage: (props) => showPage(pages.form, props),
+        sortedBy: state.openFormSort,
+      };
+    },
+    onHide() {
+      clearOpenFormsTimeout();
+    },
+  }),
+  closed: new Page({
+    name: "closed",
+    component: ClosedFormsPage,
+    parent: pageContainer,
+    onShow(state) {
+      return {
+        closedForms: state.closedForms,
+        closedFormsQuery: state.closedFormsQuery,
+        closedFormsSort: state.closedFormsSort,
+        closedFormsSortAscending: state.closedFormsSortAscending,
+        setClosedFormsQuery: (query) => (state.closedFormsQuery = query),
+        setClosedFormsSort: (sort, ascending) => {
+          state.closedFormsSort = sort;
+          state.closedFormsSortAscending = ascending;
+        },
+        showFormPage: (props) => showPage(pages.form, props),
+        status: ClosedFormsStatus(),
+      };
+    },
+  }),
+  form: new Page({
+    name: "form",
+    component: FormPage,
+    parent: pageContainer,
+    postShow() {
+      onAutoFocus();
+    },
+    onShow(
+      state,
+      { filteredForms, type = "open", disabled = false, form, waiting = false }
+    ) {
+      if (filteredForms) state.closedFormsFiltered = filteredForms;
+      if (type === "closed") disabled = true;
+      const forms =
+        type === "open" ? state.openForms : state.closedFormsFiltered;
+      const savable =
+        state.undoStack.length &&
+        !state.saved &&
+        !!form.location &&
+        form.validTime &&
+        form.students.some(({ timeSignedInByClient }) => timeSignedInByClient);
+
+      if (savable) setAutosave(form);
+      else clearAutosave();
+      return {
+        disabled,
+        form,
+        formIndexDisplay: `${forms.findIndex(({ id }) => id === form.id) + 1}/${
+          forms.length
+        }`,
+        formInputsTouched: state.formInputsTouched,
+        inventory: state.inventory,
+        itemSort: state.itemSort,
+        itemSortAscending: state.itemSortAscending,
+        onChange: makeOnChange(form),
+        onDelete,
+        onNeedsSignature,
+        onNewCodabar,
+        onNewForm,
+        onFormNavigation: makeFormNavigation(forms, type),
+        onRedo,
+        onSortItems: makeOnSortItems(disabled),
+        onSubmit,
+        onUndo,
+        roster: state.roster,
+        savable,
+        saved: state.saved,
+        userName: getUsername(),
+        waiting,
+      };
+    },
+  }),
 };
 
 // seal forces all properties to be declared here
@@ -54,6 +168,7 @@ const state = Object.seal({
   closedFormsSortAscending: true,
   currentPage: pages.loading,
   formInputsTouched: new Set(),
+  history: /*{page: Page, componentProps: {}}[]*/ [],
   inventory: /* Item[] | null */ null,
   itemSort: "timeCheckedOutByClient",
   itemSortAscending: true,
@@ -93,23 +208,20 @@ const openFormsButton = button("View Open Forms", {
           onSuccess: checkForError(onOpenForms),
           unlock: true,
         });
-        showLoadingPage();
-      } else showOpenFormsPage();
+        showPage(pages.loading);
+      } else showPage(pages.open);
     });
   },
 });
 
 const closedFormsButton = button("View Closed Forms", {
   disabled: true,
-  onClick: () => loseDataWarning(showClosedFormsPage),
+  onClick: () => loseDataWarning(() => showPage(pages.closed)),
 });
 
 const navigationButtons = [newFormButton, openFormsButton, closedFormsButton];
 
 const userNameDisplay = createElement("span", { class: "userNameDisplay" });
-
-// need reference so we can update this to change views
-const pageContainer = createElement("div");
 
 // Render static elements
 document.body.appendChild(
@@ -135,7 +247,7 @@ document.body.appendChild(
 );
 
 // Render initial view: loading page
-showLoadingPage();
+showPage(pages.loading);
 
 // initial server calls
 fetch({
@@ -187,7 +299,17 @@ window.addEventListener("keydown", (event) => {
   }
 });
 
+google.script.history.setChangeHandler(onHistoryNavigation);
+
 //---- function definitions
+
+function ClosedFormsStatus() {
+  return paragraph(
+    `Oldest form: ${state.closedForms[0].startTime}${
+      state.closedFormsDownloading ? ". Still downloading..." : ""
+    }`
+  );
+}
 
 function checkForError(onSuccess, onFailure = () => undefined) {
   return (...args) => {
@@ -298,7 +420,7 @@ function makeFormNavigation(forms, type) {
       return modal({
         child: paragraph(`This is the ${previous ? "first" : "last"} form.`),
       });
-    loseDataWarning(() => showFormPage({ form: forms[index], type }));
+    loseDataWarning(() => showPage(pages.form, { form: forms[index], type }));
   };
 }
 
@@ -338,7 +460,7 @@ function makeOnChange(currentForm) {
     state.undoStack.push(currentForm);
     state.redoStack = [];
     state.saved = false;
-    showFormPage({ form: newForm });
+    showPage(pages.form, { form: newForm }, true);
     if (["items", "students"].includes(name)) toast(value);
   };
 }
@@ -347,7 +469,7 @@ function makeOnSortItems(disabled) {
   return (name, form) => {
     if (state.itemSort !== name) state.itemSort = name;
     else state.itemSortAscending = !state.itemSortAscending;
-    showFormPage({ form, type: disabled ? "closed" : "open" });
+    showPage(pages.form, { form, type: disabled ? "closed" : "open" }, true);
   };
 }
 
@@ -381,7 +503,7 @@ function onClosedForms(
   else state.closedFormsDownloading = false;
 
   if (unlock && isLoaded()) closedFormsButton.removeAttribute("disabled");
-  else if (state.currentPage === pages.closedForms) updateClosedFormsPage();
+  else if (state.currentPage === pages.closed) updateClosedFormsPage();
 }
 
 function onCollision() {
@@ -403,7 +525,7 @@ function onCollision() {
         onSuccess: checkForError(onOpenForms),
         unlock: true,
       });
-      reset(() => showLoadingPage());
+      reset(() => showPage(pages.loading));
     },
   });
 }
@@ -421,7 +543,7 @@ function onDelete(form) {
         if (type === "collision") return onCollision({ payload });
       }),
     });
-    showFormPage({ form, disabled: true, waiting: true });
+    showPage(pages.form, { form, disabled: true, waiting: true }, true);
   };
 
   modal({
@@ -437,6 +559,39 @@ function onDelete(form) {
 function onError(error) {
   console.error(error);
   displayErrorMessage(error.message);
+}
+
+/**
+ * Fires when user navigates through the browser history using the back, forward
+ * buttons or selecting history from a drop down.
+ * Using state.history to store refs since event object cannot contain
+ * functions.
+ * @param {{
+ *   state: {page: Page, componentProps: {}} | null,
+ *   location: {
+ *     hash: string,
+ *     parameter: {[k:string]:string},
+ *     parameters:{[k:string]:string[]}
+ *   }
+ * }} eventObject
+ * @see https://developers.google.com/apps-script/guides/html/reference/history#eventObject
+ */
+function onHistoryNavigation(e) {
+  const putback = () => {
+    google.script.history.push(e.state, e.location.parameter);
+    // assumes need to recreate a form history
+    google.script.history.push(
+      { index: e.state.index + 1 },
+      {
+        page: pages.form.name,
+        id: state.history[e.state.index + 1].componentProps.form.id,
+      }
+    );
+  };
+  if (e.state && typeof e.state.index === "number") {
+    const { page, componentProps } = state.history[e.state.index];
+    loseDataWarning(() => showPage(page, componentProps, true), putback);
+  } else loseDataWarning(() => showPage(pages.open, undefined, true), putback);
 }
 
 /** * @param {Action} response */
@@ -482,7 +637,7 @@ function onNeedsSignature({ form, handleStudent, netId }) {
         okText: "Signature done",
         onClose: onSignatureEnd,
         onOk: () => {
-          showFormPage({ form, waiting: true });
+          showPage(pages.form, { form, waiting: true }, true);
           onSignatureEnd();
           fetch({
             type: "students",
@@ -508,7 +663,7 @@ function onNewCodabar({ netId, codabar, form }) {
       if (!students)
         displayErrorMessage("Error retrieving student list from server");
       state.roster = students.map(Object.freeze);
-      showFormPage({ form });
+      showPage(pages.form, { form }, true);
       modal({
         children: [
           heading1("Student information updated"),
@@ -528,7 +683,7 @@ function onNewForm(form) {
       });
     state.openForms = [...state.openForms, form];
     state.saved = false;
-    showFormPage({ form });
+    showPage(pages.form, { form });
   });
 }
 
@@ -540,26 +695,26 @@ function onOpenForms({ payload: { formList } }, { unlock } = {}) {
   state.openForms = openForms.map((form) => new Form(form));
   state.openFormsModifiedTime = Date.now();
   if (unlock) tryUnlock();
-  else showOpenFormsPage();
+  else showPage(pages.open, undefined, true);
 }
 
 function onRedo(currentForm) {
   if (!state.redoStack.length)
     return modal({ child: paragraph("Nothing to redo.") });
   state.undoStack.push(currentForm);
-  showFormPage({ form: state.redoStack.pop() });
+  showPage(pages.form, { form: state.redoStack.pop() }, true);
 }
 
 function onSortForms(name) {
   if (state.openFormSort !== name) state.openFormSort = name;
   else state.openFormSortAscending = !state.openFormSortAscending;
-  showOpenFormsPage();
+  showPage(pages.open, undefined, true);
 }
 
 function onSortItemsOut(name) {
   if (state.itemsOutSort !== name) state.itemsOutSort = name;
   else state.itemsOutSortAscending = !state.itemsOutSortAscending;
-  showOpenFormsPage();
+  showPage(pages.open, undefined, true);
 }
 
 /** * @param {Action} response */
@@ -586,7 +741,7 @@ function onSubmit(form) {
           (form) => form.isBlank || form.id === updatedForm.id,
           updatedForm
         );
-        return reset(() => showFormPage({ form: updatedForm }));
+        return reset(() => showPage(pages.form, { form: updatedForm }, true));
       }
       if (type === "openForms") {
         return reset(() => onOpenForms({ payload }));
@@ -599,7 +754,7 @@ function onSubmit(form) {
       }
     }),
   });
-  showFormPage({ form, disabled: true, waiting: true });
+  showPage(pages.form, { form, disabled: true, waiting: true }, true);
 }
 
 function onUndo(currentForm) {
@@ -608,7 +763,7 @@ function onUndo(currentForm) {
       child: paragraph("Nothing to undo."),
     });
   state.redoStack.push(currentForm);
-  showFormPage({ form: state.undoStack.pop() });
+  showPage(pages.form, { form: state.undoStack.pop() }, true);
 }
 
 function reset(onSuccess) {
@@ -656,138 +811,29 @@ function setNotLoadingTimeout() {
   state.notLoadingTimeoutId = window.setTimeout(() => {
     state.notLoadingTimeoutId = 0;
     state.notLoading = true;
-    showLoadingPage();
+    showPage(pages.loading);
   }, minutes(0.75));
 }
 
-function showClosedFormsPage() {
-  state.currentPage = pages.closedForms;
-  clearOpenFormsTimeout();
-  update(
-    pageContainer,
-    ClosedFormsPage({
-      closedForms: state.closedForms,
-      closedFormsQuery: state.closedFormsQuery,
-      closedFormsSort: state.closedFormsSort,
-      closedFormsSortAscending: state.closedFormsSortAscending,
-      setClosedFormsQuery: (query) => (state.closedFormsQuery = query),
-      setClosedFormsSort: (sort, ascending) => {
-        state.closedFormsSort = sort;
-        state.closedFormsSortAscending = ascending;
-      },
-      showFormPage,
-      status: ClosedFormsStatus(),
-    })
-  );
-}
-
-function showFormPage({
-  autoFocus = true,
-  disabled = false,
-  filteredForms,
-  form,
-  type = "open",
-  waiting = false,
-}) {
-  state.currentPage = pages.form;
-  clearOpenFormsTimeout();
-  if (filteredForms) state.closedFormsFiltered = filteredForms;
-  if (type === "closed") disabled = true;
-  const forms = type === "open" ? state.openForms : state.closedFormsFiltered;
-  const savable =
-    state.undoStack.length &&
-    !state.saved &&
-    !!form.location &&
-    form.validTime &&
-    form.students.some(({ timeSignedInByClient }) => timeSignedInByClient);
-
-  if (savable) setAutosave(form);
-  else clearAutosave();
-
-  update(
-    pageContainer,
-    FormPage({
-      disabled,
-      form,
-      formIndexDisplay: `${forms.findIndex(({ id }) => id === form.id) + 1}/${
-        forms.length
-      }`,
-      formInputsTouched: state.formInputsTouched,
-      inventory: state.inventory,
-      itemSort: state.itemSort,
-      itemSortAscending: state.itemSortAscending,
-      onChange: makeOnChange(form),
-      onDelete,
-      onNeedsSignature,
-      onNewCodabar,
-      onNewForm,
-      onFormNavigation: makeFormNavigation(forms, type),
-      onRedo,
-      onSortItems: makeOnSortItems(disabled),
-      onSubmit,
-      onUndo,
-      roster: state.roster,
-      savable,
-      saved: state.saved,
-      userName: getUsername(),
-      waiting,
-    })
-  );
-  if (autoFocus) onAutoFocus();
-}
-
-function showLoadingPage() {
-  state.currentPage = pages.loading;
-  disableButtons();
-  if (!state.notLoading) setNotLoadingTimeout();
-  update(
-    pageContainer,
-    LoadingPage({
-      rosterStatus: state.roster
-        ? `${state.roster.length} people downloaded`
-        : "Loading students...",
-      inventoryStatus: state.inventory
-        ? `${state.inventory.length} items downloaded`
-        : "Loading inventory...",
-      openFormsStatus: state.openForms
-        ? `${state.openForms.length} open forms downloaded`
-        : "Loading open forms...",
-      timedOut: state.notLoading,
-    })
-  );
-}
-
-function showOpenFormsPage() {
-  state.currentPage = pages.openForms;
-  setOpenFormsTimeout();
-  update(
-    pageContainer,
-    OpenFormsPage({
-      ascending: state.openFormSortAscending,
-      itemsOutSort: state.itemsOutSort,
-      itemsOutSortAscending: state.itemsOutSortAscending,
-      onSortForms,
-      onSortItemsOut,
-      openForms: state.openForms,
-      showFormPage,
-      sortedBy: state.openFormSort,
-    })
-  );
-}
-
-function ClosedFormsStatus() {
-  return paragraph(
-    `Oldest form: ${state.closedForms[0].startTime}${
-      state.closedFormsDownloading ? ". Still downloading..." : ""
-    }`
-  );
-}
-
-function updateClosedFormsPage() {
-  update(
-    pageContainer.querySelector(".closedFormsStatus"),
-    ClosedFormsStatus()
-  );
+/**
+ * @param {Page} page
+ * @param {{}} componentProps
+ */
+function showPage(page, componentProps, skipHistory = false) {
+  if (page.usesHistory && !skipHistory) {
+    const id =
+      componentProps && componentProps.form
+        ? componentProps.form.id
+        : undefined;
+    state.history.push({ page: page, componentProps });
+    google.script.history.push(
+      { index: state.history.length - 1 },
+      { page: page.name, id }
+    );
+  }
+  state.currentPage.hide(state);
+  page.show(state, componentProps);
+  state.currentPage = page;
 }
 
 /**
@@ -795,13 +841,20 @@ function updateClosedFormsPage() {
  */
 function tryUnlock() {
   if (!isLoaded()) {
-    return showLoadingPage();
+    return showPage(pages.loading);
   }
   clearNotLoading();
   openFormsButton.removeAttribute("disabled");
   newFormButton.removeAttribute("disabled");
   // separating this last one allows closed forms to lag if needed
   if (state.closedForms) closedFormsButton.removeAttribute("disabled");
-  showOpenFormsPage();
+  showPage(pages.open);
   return true;
+}
+
+function updateClosedFormsPage() {
+  update(
+    pageContainer.querySelector(".closedFormsStatus"),
+    ClosedFormsStatus()
+  );
 }
