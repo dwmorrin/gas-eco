@@ -12,7 +12,7 @@ Google Apps Script (GAS) inventory management program.
 A couple of npm packages are assumed to be globally installed:
 
 - [`clasp`](https://github.com/google/clasp)
-- `rollup`
+- [`rollup`](https://rollupjs.org)
 
 Build process uses `make` and a python script of my own called
 [`inline`](https://github.com/dwmorrin/py-inline-html).
@@ -22,6 +22,18 @@ commenting out any templating tags (e.g. `<?= scriplet ?>`) in the HTML. I
 found that the popular JS HTML parsers on npm will automatically comment out such tags.
 I almost had htmlparser2 working with this task, but it wasn't easy (lack of documentation),
 so I went with the python script (uses beautiful soup for parsing) instead.
+
+### `.clasp.json`
+
+`clasp` should be configured to use the `build` directory to sync files.
+You can manually enter this or use the `--rootDir ./build` option with `clasp`.
+
+```json
+{
+  "scriptId": "your script ID",
+  "rootDir:" "build/"
+}
+```
 
 ## Build
 

@@ -26,20 +26,8 @@ $(HtmlBundle): html/index.html $(JsBundle) $(wildcard css/*) | $(BUILDDIR)
 	  --output $@ --css css
 
 $(BUILDDIR):
-	@mkdir -p $@; cd $@;\
-	read -rp "Enter an existing script ID? [y/n] ";\
-	if [ "$$reply" = y ];\
-	then read -rp "Enter script ID: ";\
-	clasp clone "$$reply";\
-	else clasp create;\
-	fi
-
-pull: | $(BUILDDIR)
-	cd $(BUILDDIR); clasp pull
+	@mkdir -p $@
 
 push: $(wildcard $(BUILDDIR)/*) | $(BUILDDIR)
-	cd $(BUILDDIR); clasp push
+	clasp push
 	touch push
-
-open: | $(BUILDDIR)
-	cd $(BUILDDIR); clasp open
