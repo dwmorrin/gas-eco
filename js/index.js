@@ -264,7 +264,14 @@ function getUsername() {
   return el && el.textContent ? el.textContent : "anonymous";
 }
 
-function loseDataWarning(onOk) {
+/**
+ * Runs when user has unsaved work.
+ * Must include a callback function to run when user chooses OK.
+ * Optionally include a callback when user just closes the modal.
+ * @param {() => unknown} onOk
+ * @param {() => unknown} onClose
+ */
+function loseDataWarning(onOk, onClose = () => undefined) {
   if (state.saved || !state.undoStack.length) reset(onOk);
   else
     modal({
@@ -275,6 +282,7 @@ function loseDataWarning(onOk) {
       closeText: "Cancel",
       okText: "Lose changes",
       onOk: () => reset(onOk),
+      onClose,
     });
 }
 
