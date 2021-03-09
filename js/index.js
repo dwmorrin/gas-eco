@@ -160,15 +160,14 @@ const pages = {
 // seal forces all properties to be declared here
 const state = Object.seal({
   autosaveTimeoutId: 0,
-  closedForms: /* Form[] | null */ null,
-  closedFormsFiltered: /* Form[] | null */ null,
+  /** @type {(Form[] | null)} */ closedForms: null,
+  /** @type {(Form[] | null)} */ closedFormsFiltered: null,
   closedFormsDownloading: true,
   closedFormsQuery: {},
   closedFormsSort: "startTime",
   closedFormsSortAscending: true,
   currentPage: pages.loading,
   formInputsTouched: new Set(),
-  history: /*{page: Page, componentProps: {}}[]*/ [],
   inventory: /* Item[] | null */ null,
   itemSort: "timeCheckedOutByClient",
   itemSortAscending: true,
@@ -179,15 +178,15 @@ const state = Object.seal({
   notLoadingTimeoutId: 0,
   openFormSort: "startTime",
   openFormSortAscending: true,
-  openForms: /* Form[] | null */ null,
+  /** @type {(Form[] | null)} */ openForms: null,
   openFormsModifiedTime: 0,
   openFormsTimeoutContext: 0,
   openFormsTimeoutId: 0,
   overlapWarningGiven: false,
-  redoStack: /* Form */ [], // each undo is pushed into here
+  /** @type {Form[]} */ redoStack: [], // each undo is pushed into here
   roster: null,
   saved: true,
-  undoStack: /* Form */ [], // each change pushes the old Form here
+  /** @type {Form[]} */ undoStack: [], // each change pushes the old Form here
 });
 
 const newFormButton = button("New Form", {
@@ -298,8 +297,6 @@ window.addEventListener("keydown", (event) => {
     return onUndo();
   }
 });
-
-google.script.history.setChangeHandler(onHistoryNavigation);
 
 //---- function definitions
 
@@ -460,7 +457,7 @@ function makeOnChange(currentForm) {
     state.undoStack.push(currentForm);
     state.redoStack = [];
     state.saved = false;
-    showPage(pages.form, { form: newForm }, true);
+    showPage(pages.form, { form: newForm });
     if (["items", "students"].includes(name)) toast(value);
   };
 }
@@ -469,7 +466,7 @@ function makeOnSortItems(disabled) {
   return (name, form) => {
     if (state.itemSort !== name) state.itemSort = name;
     else state.itemSortAscending = !state.itemSortAscending;
-    showPage(pages.form, { form, type: disabled ? "closed" : "open" }, true);
+    showPage(pages.form, { form, type: disabled ? "closed" : "open" });
   };
 }
 
@@ -543,7 +540,7 @@ function onDelete(form) {
         if (type === "collision") return onCollision({ payload });
       }),
     });
-    showPage(pages.form, { form, disabled: true, waiting: true }, true);
+    showPage(pages.form, { form, disabled: true, waiting: true });
   };
 
   modal({
@@ -559,39 +556,6 @@ function onDelete(form) {
 function onError(error) {
   console.error(error);
   displayErrorMessage(error.message);
-}
-
-/**
- * Fires when user navigates through the browser history using the back, forward
- * buttons or selecting history from a drop down.
- * Using state.history to store refs since event object cannot contain
- * functions.
- * @param {{
- *   state: {page: Page, componentProps: {}} | null,
- *   location: {
- *     hash: string,
- *     parameter: {[k:string]:string},
- *     parameters:{[k:string]:string[]}
- *   }
- * }} eventObject
- * @see https://developers.google.com/apps-script/guides/html/reference/history#eventObject
- */
-function onHistoryNavigation(e) {
-  const putback = () => {
-    google.script.history.push(e.state, e.location.parameter);
-    // assumes need to recreate a form history
-    google.script.history.push(
-      { index: e.state.index + 1 },
-      {
-        page: pages.form.name,
-        id: state.history[e.state.index + 1].componentProps.form.id,
-      }
-    );
-  };
-  if (e.state && typeof e.state.index === "number") {
-    const { page, componentProps } = state.history[e.state.index];
-    loseDataWarning(() => showPage(page, componentProps, true), putback);
-  } else loseDataWarning(() => showPage(pages.open, undefined, true), putback);
 }
 
 /** * @param {Action} response */
@@ -637,7 +601,7 @@ function onNeedsSignature({ form, handleStudent, netId }) {
         okText: "Signature done",
         onClose: onSignatureEnd,
         onOk: () => {
-          showPage(pages.form, { form, waiting: true }, true);
+          showPage(pages.form, { form, waiting: true });
           onSignatureEnd();
           fetch({
             type: "students",
@@ -663,7 +627,7 @@ function onNewCodabar({ netId, codabar, form }) {
       if (!students)
         displayErrorMessage("Error retrieving student list from server");
       state.roster = students.map(Object.freeze);
-      showPage(pages.form, { form }, true);
+      showPage(pages.form, { form });
       modal({
         children: [
           heading1("Student information updated"),
@@ -695,26 +659,26 @@ function onOpenForms({ payload: { formList } }, { unlock } = {}) {
   state.openForms = openForms.map((form) => new Form(form));
   state.openFormsModifiedTime = Date.now();
   if (unlock) tryUnlock();
-  else showPage(pages.open, undefined, true);
+  else showPage(pages.open);
 }
 
 function onRedo(currentForm) {
   if (!state.redoStack.length)
     return modal({ child: paragraph("Nothing to redo.") });
   state.undoStack.push(currentForm);
-  showPage(pages.form, { form: state.redoStack.pop() }, true);
+  showPage(pages.form, { form: state.redoStack.pop() });
 }
 
 function onSortForms(name) {
   if (state.openFormSort !== name) state.openFormSort = name;
   else state.openFormSortAscending = !state.openFormSortAscending;
-  showPage(pages.open, undefined, true);
+  showPage(pages.open);
 }
 
 function onSortItemsOut(name) {
   if (state.itemsOutSort !== name) state.itemsOutSort = name;
   else state.itemsOutSortAscending = !state.itemsOutSortAscending;
-  showPage(pages.open, undefined, true);
+  showPage(pages.open);
 }
 
 /** * @param {Action} response */
@@ -741,7 +705,7 @@ function onSubmit(form) {
           (form) => form.isBlank || form.id === updatedForm.id,
           updatedForm
         );
-        return reset(() => showPage(pages.form, { form: updatedForm }, true));
+        return reset(() => showPage(pages.form, { form: updatedForm }));
       }
       if (type === "openForms") {
         return reset(() => onOpenForms({ payload }));
@@ -754,7 +718,7 @@ function onSubmit(form) {
       }
     }),
   });
-  showPage(pages.form, { form, disabled: true, waiting: true }, true);
+  showPage(pages.form, { form, disabled: true, waiting: true });
 }
 
 function onUndo(currentForm) {
@@ -763,7 +727,7 @@ function onUndo(currentForm) {
       child: paragraph("Nothing to undo."),
     });
   state.redoStack.push(currentForm);
-  showPage(pages.form, { form: state.undoStack.pop() }, true);
+  showPage(pages.form, { form: state.undoStack.pop() });
 }
 
 function reset(onSuccess) {
@@ -819,18 +783,7 @@ function setNotLoadingTimeout() {
  * @param {Page} page
  * @param {{}} componentProps
  */
-function showPage(page, componentProps, skipHistory = false) {
-  if (page.usesHistory && !skipHistory) {
-    const id =
-      componentProps && componentProps.form
-        ? componentProps.form.id
-        : undefined;
-    state.history.push({ page: page, componentProps });
-    google.script.history.push(
-      { index: state.history.length - 1 },
-      { page: page.name, id }
-    );
-  }
+function showPage(page, componentProps) {
   state.currentPage.hide(state);
   page.show(state, componentProps);
   state.currentPage = page;
