@@ -26,6 +26,7 @@ import {
   sort,
   tryJsonParse,
 } from "./Utility";
+import { getByBarcode } from "./Inventory";
 import { addOneHour, getFormattedDateTime, minutes } from "./DateUtils";
 import Form from "./Form";
 import Item from "./Item";
@@ -438,6 +439,36 @@ function makeOnChange(currentForm) {
           ),
         ],
       });
+    }
+
+    if (env.rules && env.rules.equipmentAllowedByLocation) {
+      if (
+        name === "items" &&
+        form.location in env.rules.equipmentAllowedByLocation
+      ) {
+        if (
+          !form.items.every(({ barcode }) =>
+            env.rules.equipmentAllowedByLocation[form.location].includes(
+              barcode
+            )
+          )
+        )
+          modal({
+            children: [
+              heading1(`${form.location} is restricted`),
+              paragraph(
+                "Warning: this room is only allowed the following items: " +
+                  env.rules.equipmentAllowedByLocation[form.location]
+                    .map((barcode) => {
+                      const item = getByBarcode(state.inventory, barcode);
+                      return item ? item.description : "";
+                    })
+                    .filter(String)
+                    .join(", ")
+              ),
+            ],
+          });
+      }
     }
 
     const newForm = new Form({
