@@ -799,14 +799,21 @@ export default function FormPage({
     });
   }
 
-  function onChangeTime({ name, values }) {
-    name = `${name}Time`;
+  function onChangeTime({ name: _name, values }) {
+    const name = `${_name}Time`;
     const { date, hour, minutes, ampm } = values;
     const [year, month, day] = date.split("-");
     const value = `${month}/${day}/${year} ${hour}:${String(minutes).padStart(
       "0",
       2
     )} ${ampm}`;
+    if (isNaN(new Date(value).valueOf()))
+      return modal({
+        children: [
+          heading1("Error"),
+          paragraph(`The value for ${_name} time is not a valid date`),
+        ],
+      });
     onChange({
       form: new Form(
         form.isBlank &&
