@@ -73,15 +73,6 @@ export default function FormPage({
   userName = "anonymous",
   waiting,
 }) {
-  const omnibox = Omnibox({
-    disabled,
-    form,
-    inventory,
-    onSubmit: onOmniboxSubmit,
-    roster,
-    waiting,
-  });
-
   const {
     itemsIn,
     itemsOut,
@@ -100,7 +91,14 @@ export default function FormPage({
           createElement("section", {
             class: "formControls",
             children: [
-              omnibox,
+              Omnibox({
+                disabled,
+                form,
+                inventory,
+                onSubmit: onOmniboxSubmit,
+                roster,
+                waiting,
+              }),
               button("Add item without barcode or ID", {
                 class: "action",
                 disabled,
@@ -884,7 +882,7 @@ export default function FormPage({
           codabar: value,
           roster,
           onSubmit: ({ netId, codabar }) =>
-            onNewCodabar({ netId, codabar, form }),
+            onNewCodabar({ netId, codabar, handleStudent }),
         });
       case "manualEntry":
         return ModalManualEntry({ onSubmit: onManualEntry });

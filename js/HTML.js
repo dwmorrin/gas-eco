@@ -276,7 +276,8 @@ function blockAround(element) {
  *   onOk: () => unknown | null,
  *   okText: string,
  *   blocking: boolean,
- *   appendToBody: boolean
+ *   appendToBody: boolean,
+ *   noClose: boolean,
  * }} props
  */
 function modal({
@@ -290,6 +291,7 @@ function modal({
   okText = "Ok",
   blocking = true,
   appendToBody = true,
+  noClose = false,
 }) {
   const div = createElement("div", { class: "modal" });
   const buttonDiv = createElement("div");
@@ -309,8 +311,9 @@ function modal({
     // for children to determine when cleanup occurs
     div.addEventListener("click", (event) => onClick({ event, cleanup }));
   const closeButton = createElement("button", {
-    textContent: closeText,
+    textContent: closeText || "",
     onClick: remove,
+    disabled: noClose,
   });
   if (typeof onOk === "function") {
     const okButton = createElement("button", {

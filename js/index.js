@@ -648,7 +648,11 @@ function onNeedsSignature({ form, handleStudent, netId }) {
   });
 }
 
-function onNewCodabar({ netId, codabar, form }) {
+function onNewCodabar({ netId, codabar, handleStudent }) {
+  const { remove } = modal({
+    noClose: true,
+    children: [heading1("Updating student info")],
+  });
   fetch({
     method: "post",
     type: "codabar",
@@ -656,15 +660,15 @@ function onNewCodabar({ netId, codabar, form }) {
     onSuccess: checkForError((response) => {
       const students = tryJsonParse(response.students);
       if (!students)
-        displayErrorMessage("Error retrieving student list from server");
+        return displayErrorMessage("Error retrieving student list from server");
       state.roster = students.map(Object.freeze);
-      showPage(pages.form, { form });
-      modal({
-        children: [
-          heading1("Student information updated"),
-          paragraph("Please try scanning the ID again to continue."),
-        ],
-      });
+      const student = state.roster.find(({ id }) => id === codabar);
+      if (!student)
+        return displayErrorMessage(
+          "Error updating student info: student not found after update."
+        );
+      handleStudent(student);
+      remove();
     }),
   });
 }
