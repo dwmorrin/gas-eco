@@ -2,7 +2,7 @@ import { createElement, heading1, paragraph, modal } from "../HTML";
 
 export default function ModalNewCodabar({ codabar, roster, onSubmit }) {
   const input = createElement("input", {
-    value: "codabar",
+    value: "",
     placeholder: "enter student's NetID",
   });
   modal({
