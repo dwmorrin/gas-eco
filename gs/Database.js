@@ -10,8 +10,6 @@ export {
   getAllStudents,
   getClosedForms,
   getOpenForms,
-  signatureEnd,
-  signatureStart,
   writeCodabar,
   writeFormToSheet,
   writeRejectedFormToSheet,
@@ -168,22 +166,4 @@ function writeFormToSheet(form, close) {
   range.setValues([values]);
   // must retrieve values from Sheet to get correct hash
   return new Form(range.getValues()[0]).setHash();
-}
-
-function signatureStart(netId) {
-  SpreadsheetApp.openById(env.students.SHEET_ID)
-    .getSheetByName(env.students.SIGNATURE_SHEET_NAME)
-    .appendRow([netId]);
-}
-
-function signatureEnd(netId) {
-  const sheet = SpreadsheetApp.openById(env.students.SHEET_ID).getSheetByName(
-    env.students.SIGNATURE_SHEET_NAME
-  );
-  const rows = sheet
-    .getDataRange()
-    .getValues()
-    .filter(([id]) => id !== netId);
-  sheet.clear();
-  if (rows.length) sheet.getRange(1, 1, rows.length, 1).setValues(rows);
 }

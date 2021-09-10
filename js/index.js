@@ -601,50 +601,30 @@ function onItems({ payload: { items } }, { unlock } = {}) {
   if (unlock) tryUnlock();
 }
 
+/**
+ * For preventing a user who has not agreed to the terms of service from
+ * using the system.
+ * Assumes the means of signing the terms of service is external to the app.
+ */
 function onNeedsSignature({ form, handleStudent, netId }) {
-  let canceled = false;
-
-  const { remove } = modal({
-    children: [heading1("Add signature"), paragraph("Please wait...")],
-    closeText: "Cancel",
-    onClose: () => (canceled = true),
-  });
-
-  const onSignatureEnd = () =>
-    fetch({
-      method: "post",
-      type: "signatureEnd",
-      payload: netId,
-    });
-
-  fetch({
-    method: "post",
-    type: "signatureStart",
-    payload: netId,
-    onSuccess: checkForError(() => {
-      if (canceled) return;
-      remove();
-      modal({
-        children: [
-          heading1("Add signature"),
-          paragraph(env.needsSignatureMessage || "Signature not found."),
-        ],
-        okText: "Signature done",
-        onClose: onSignatureEnd,
-        onOk: () => {
-          showPage(pages.form, { form, waiting: true });
-          onSignatureEnd();
-          fetch({
-            type: "students",
-            onSuccess: checkForError((response) => {
-              onStudents(response);
-              // automatically try to update the form
-              handleStudent(state.roster.find((s) => s.netId === netId));
-            }),
-          });
-        },
+  modal({
+    children: [
+      heading1("Add signature"),
+      paragraph(env.needsSignatureMessage || "Signature not found."),
+    ],
+    okText: "Refresh student info",
+    onOk: () => {
+      showPage(pages.form, { form, waiting: true });
+      fetch({
+        type: "students",
+        onSuccess: checkForError((response) => {
+          onStudents(response);
+          showPage(pages.form, { form, waiting: false });
+          // automatically try to update the form
+          handleStudent(state.roster.find((s) => s.netId === netId));
+        }),
       });
-    }),
+    },
   });
 }
 

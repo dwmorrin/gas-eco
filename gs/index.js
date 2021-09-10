@@ -8,8 +8,6 @@ import {
   getAllStudents,
   getClosedForms,
   getOpenForms,
-  signatureEnd,
-  signatureStart,
   writeCodabar,
   writeFormToSheet,
   writeRejectedFormToSheet,
@@ -141,12 +139,6 @@ function doPost({ type, payload }) {
     }
     case "rejected": // NOT USED BY CLIENT
       writeRejectedFormToSheet(new Form(payload));
-      return response({ type });
-    case "signatureEnd":
-      signatureEnd(payload);
-      return response({ type });
-    case "signatureStart":
-      signatureStart(payload);
       return response({ type });
     case "updateForm": {
       const form = new Form(JSON.parse(payload));
