@@ -712,7 +712,11 @@ export default function FormPage({
     // checking-in a student on an advance booking form
     if (!studentOnForm.timeSignedInByClient) {
       if (!studentFromRoster.signatureOnFile)
-        return onNeedsSignature({ netId: studentFromRoster.netId, form });
+        return onNeedsSignature({
+          netId: studentFromRoster.netId,
+          form,
+          handleStudent,
+        });
       change.target.value += " advance booking check-in";
       return onChange({
         form: new Form({
