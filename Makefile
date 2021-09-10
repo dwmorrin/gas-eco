@@ -1,6 +1,5 @@
 # exit and display some helpful info if required commands do not exist
 require = $(or $(shell command -v $(1) 2>/dev/null),$(error requires $(1): $(2)))
-_ := $(call require,inline,https://github.com/dwmorrin/py-inline-html)
 _ := $(call require,clasp,npm i -g @google/clasp && clasp login)
 _ := $(call require,rollup,npm i -g rollup)
 
@@ -22,8 +21,7 @@ $(JsBundle): $(shell find js -type file)
 	rollup js/index.js -o $@ -f iife
 
 $(HtmlBundle): html/index.html $(JsBundle) $(wildcard css/*) | $(BUILDDIR)
-	inline --entry html/index.html \
-	  --output $@ --css css
+	node scripts/inline.js
 
 $(BUILDDIR):
 	@mkdir -p $@
