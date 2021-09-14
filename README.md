@@ -83,7 +83,7 @@ tags.
 The visible document is created via JavaScript.
 
 The `js` directory contains all the client-side Javascript. This gets bundled
-by `rollup` and inlined by into `./build/index.html` by `inline`.
+by `rollup` and inlined by into `./build/index.html` by `scripts/inline.js`.
 
 At the top level of `js` are various utility modules, the point of entry file
 (`index.js`), and a `components` directory.
@@ -104,4 +104,4 @@ application. git should ignore the `env.js` file and `clasp` should ignore the
 #### CSS
 
 There is no bundler for the CSS files. These are just inlined into
-`./build/index.html` by `inline`.
+`./build/index.html` by `scripts/inline.js`.
