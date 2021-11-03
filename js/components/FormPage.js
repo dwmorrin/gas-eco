@@ -832,10 +832,10 @@ export default function FormPage({
     });
   }
 
-  function onClickItem({ metaKey, target }, item) {
+  function onClickItem({ ctrlKey, metaKey, target }, item) {
     if (disabled || ["button", "select"].includes(target.tagName.toLowerCase()))
       return;
-    if (metaKey) return handleItemOnForm(item);
+    if (ctrlKey || metaKey) return handleItemOnForm(item);
     ModalItemNotes({ form, item, onChange });
   }
 

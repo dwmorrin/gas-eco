@@ -35,9 +35,9 @@ export default function FormStudent({
             }),
       }),
     ],
-    onClick: ({ metaKey, target }) => {
+    onClick: ({ ctrlKey, metaKey, target }) => {
       if (disabled || target.tagName.toLowerCase() === "button") return;
-      if (metaKey) return handleStudent(student);
+      if (ctrlKey || metaKey) return handleStudent(student);
       else handleStudentNote();
     },
   });
