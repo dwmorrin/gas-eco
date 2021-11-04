@@ -26,7 +26,7 @@ export default class Item {
   }
 
   get serialized() {
-    return this.barcode && (+this.barcode < 10000 || +this.barcode > 10100);
+    return !!(this.barcode && (+this.barcode < 10000 || +this.barcode > 10100));
   }
 
   // item has been reserved in advance on the form, it has no time info
@@ -35,7 +35,7 @@ export default class Item {
   }
 
   get stagedForOut() {
-    return (
+    return !!(
       !this.missing &&
       this.timeCheckedOutByClient &&
       !this.timeCheckedOutByServer
@@ -43,7 +43,7 @@ export default class Item {
   }
 
   get isOut() {
-    return (
+    return !!(
       !this.missing &&
       this.timeCheckedOutByServer &&
       !this.timeCheckedInByClient
@@ -51,13 +51,15 @@ export default class Item {
   }
 
   get stagedForIn() {
-    return (
-      !this.missing && this.timeCheckedInByClient && !this.timeCheckedInByServer
+    return !!(
+      !this.missing &&
+      this.timeCheckedInByClient &&
+      !this.timeCheckedInByServer
     );
   }
 
   get isIn() {
-    return this.missing || this.timeCheckedInByServer;
+    return !!(this.missing || this.timeCheckedInByServer);
   }
 
   // sequential number keeps serialized items separate (unique)
