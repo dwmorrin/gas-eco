@@ -47,11 +47,7 @@ export default class Form {
 
   get hasItemsOut() {
     if (!this.items.length) return false;
-    return this.items.every(
-      ({ timeCheckedOutByServer, timeCheckedInByClient, missing }) => {
-        return timeCheckedOutByServer && !timeCheckedInByClient && !missing;
-      }
-    );
+    return this.items.some((item) => item.isOut);
   }
 
   get itemsIn() {
