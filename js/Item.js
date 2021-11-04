@@ -59,7 +59,7 @@ export default class Item {
   }
 
   get isIn() {
-    return !!(this.missing || this.timeCheckedInByServer);
+    return !this.isOut;
   }
 
   // sequential number keeps serialized items separate (unique)
