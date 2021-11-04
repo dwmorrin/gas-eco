@@ -331,6 +331,7 @@ export default function FormPage({
                     ? form.students.map((student) =>
                         FormStudent({
                           disabled,
+                          form,
                           handleStudent,
                           handleStudentNote: () =>
                             ModalStudentNotes({
@@ -339,6 +340,7 @@ export default function FormPage({
                               onChange,
                               userName,
                             }),
+                          onChange,
                           student,
                         })
                       )

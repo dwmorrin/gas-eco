@@ -1,9 +1,12 @@
 import { cell, createElement } from "../HTML";
+import SignOutButton from "./SignOutButton";
 
 export default function FormStudent({
   disabled,
+  form,
   handleStudent,
   handleStudentNote,
+  onChange,
   student,
 }) {
   return createElement("tr", {
@@ -30,9 +33,7 @@ export default function FormStudent({
           ? document.createTextNode(student.timeSignedOutByClient)
           : disabled || !student.timeSignedInByClient
           ? document.createTextNode("")
-          : createElement("i", {
-              textContent: "Scan ID to sign out",
-            }),
+          : SignOutButton({ form, student, onChange }),
       }),
     ],
     onClick: ({ ctrlKey, metaKey, target }) => {
