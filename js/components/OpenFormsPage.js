@@ -7,6 +7,7 @@ import {
   table,
   tableHead,
 } from "../HTML";
+import { formatDashedDate } from "../DateUtils";
 import {
   compareDateStrings,
   compareKey,
@@ -18,6 +19,33 @@ import {
 import OpenFormsTable from "./OpenFormsTable";
 import EquipmentOutTable from "./EquipmentOutTable";
 
+// helper function to split forms by start date into now (or past) and future
+function splitFormsIntoNowAndFuture(forms) {
+  const [year, month, date] = formatDashedDate(new Date())
+    .split("-")
+    .map(Number);
+  return forms.reduce(
+    (res, form) => {
+      const [formYear, formMonth, formDate] = formatDashedDate(
+        new Date(form.startTime)
+      )
+        .split("-")
+        .map(Number);
+      if (
+        formYear > year ||
+        (formYear === year && formMonth > month) ||
+        (formYear === year && formMonth === month && formDate > date)
+      ) {
+        res.futureForms.push(form);
+      } else {
+        res.todaysForms.push(form);
+      }
+      return res;
+    },
+    { todaysForms: [], futureForms: [] }
+  );
+}
+
 export default function OpenFormsPage({
   ascending,
   itemsOutSort,
@@ -28,6 +56,7 @@ export default function OpenFormsPage({
   onSortForms,
   onSortItemsOut,
 }) {
+  const { todaysForms, futureForms } = splitFormsIntoNowAndFuture(openForms);
   return page({
     name: "openForms",
     children: [
@@ -58,7 +87,35 @@ export default function OpenFormsPage({
           ],
         }),
         OpenFormsTable({
-          openForms: sortForms(openForms, sortedBy, ascending),
+          openForms: sortForms(todaysForms, sortedBy, ascending),
+          showFormPage,
+        })
+      ),
+      createElement("h2", { textContent: "Future Forms" }),
+      table(
+        tableHead({
+          class: "open",
+          children: [
+            headerCell({
+              class: "documentIconHeader",
+              child: documentIcon(),
+            }),
+            ...["startTime", "endTime", "location", "students"].map((text) =>
+              headerCell({
+                // class: [
+                //   "hoverBlue",
+                //   text === sortedBy
+                //     ? ` sortedBy ${ascending ? "" : "descending"}`
+                //     : "",
+                // ].join(" "),
+                // onClick: () => onSortForms(text),
+                textContent: uncamelCase(text),
+              })
+            ),
+          ],
+        }),
+        OpenFormsTable({
+          openForms: sortForms(futureForms, sortedBy, ascending),
           showFormPage,
         })
       ),
