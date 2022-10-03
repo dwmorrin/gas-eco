@@ -24,7 +24,7 @@
 
   .validTimeError::after {
     color: red;
-    content: "End time is after start time.";
+    content: "End time must be after start time.";
     font-style: italic;
   }
 
