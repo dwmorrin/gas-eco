@@ -106,6 +106,10 @@ export default function CheckInButton({
       ],
     });
   }
+
+  if (item.serialized)
+    return document.createTextNode("Scan barcode to check-in");
+
   return createElement("button", {
     class: "action",
     textContent: "Check In",
