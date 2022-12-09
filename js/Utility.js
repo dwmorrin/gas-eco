@@ -19,16 +19,12 @@ function compareStrings(a, b) {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
+/**
+ * @param {string} data
+ * @returns {Promise}
+ */
 function copyToClipboard(data) {
-  const textArea = document.createElement("textarea");
-  // ensures that copying the items will not cause the screen to scroll down
-  textArea.setAttribute("readonly", true);
-  textArea.value = data;
-  document.body.appendChild(textArea);
-  textArea.select();
-  document.execCommand("copy"); //! execCommand is deprecated, migrate to ClipboardAPI
-  // removes the text area after copying so that it is not seen
-  document.body.removeChild(textArea);
+  return navigator.clipboard.writeText(data);
 }
 
 function digestMessage(message) {

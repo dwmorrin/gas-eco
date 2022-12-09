@@ -123,8 +123,11 @@ export default function FormPage({
                           pick("barcode", "description", "id", "quantity")
                         )
                       )
+                    ).then(
+                      () => toast("Items copied"),
+                      () =>
+                        toast("You do not have permission to use the clipboard")
                     );
-                    toast("Items copied");
                   },
                 })
               ),
