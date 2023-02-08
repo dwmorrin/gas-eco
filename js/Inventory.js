@@ -1,6 +1,6 @@
 /** Utilities for Item[], all params named `items` are Item[] */
 function contains(items, query) {
-  query = query.replace(/\s/g, "").replace(/-0+/, "-");
+  query = query.replace(/\s/g, "").replace(/-0+/, "-").toUpperCase();
   return items.find((item) => {
     const id = item.id.replace(/\s/g, "").replace(/-0+/, "-");
     return query === id || item.description.toUpperCase().includes(query);
