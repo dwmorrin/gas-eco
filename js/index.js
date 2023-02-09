@@ -78,6 +78,8 @@ const pages = {
         openForms: state.openForms,
         showFormPage: (props) => showPage(pages.form, props),
         sortedBy: state.openFormSort,
+        refreshing: state.refreshing,
+        refreshOpenForms,
       };
     },
     onHide() {
@@ -185,6 +187,7 @@ const state = Object.seal({
   openFormsTimeoutId: 0,
   overlapWarningGiven: false,
   /** @type {Form[]} */ redoStack: [], // each undo is pushed into here
+  refreshing: false,
   roster: null,
   saved: true,
   /** @type {Form[]} */ undoStack: [], // each change pushes the old Form here
@@ -743,6 +746,21 @@ function onUndo(currentForm) {
     });
   state.redoStack.push(currentForm);
   showPage(pages.form, { form: state.undoStack.pop() });
+}
+
+function refreshOpenForms() {
+  state.refreshing = true;
+  clearOpenFormsTimeout();
+  fetch({
+    type: "openForms",
+    onSuccess: checkForError((response) => {
+      // if these are not equal, then the user has switched context
+      state.openFormsTimeoutContext = 0;
+      state.refreshing = false;
+      onOpenForms(response);
+    }),
+  });
+  showPage(pages.open);
 }
 
 function reset(onSuccess) {

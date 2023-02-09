@@ -1,4 +1,5 @@
 import {
+  button,
   createElement,
   documentIcon,
   headerCell,
@@ -55,12 +56,18 @@ export default function OpenFormsPage({
   sortedBy,
   onSortForms,
   onSortItemsOut,
+  refreshing,
+  refreshOpenForms,
 }) {
   const { todaysForms, futureForms } = splitFormsIntoNowAndFuture(openForms);
   return page({
     name: "openForms",
     children: [
       createElement("h2", { textContent: "Open Forms" }),
+      button("Refresh", {
+        disabled: refreshing,
+        onClick: () => refreshOpenForms(),
+      }),
       createElement("h3", {
         textContent: "click on a form to view and edit",
       }),
