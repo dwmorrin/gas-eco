@@ -3,10 +3,8 @@ import SignOutButton from "./SignOutButton";
 
 export default function FormStudent({
   disabled,
-  form,
   handleStudent,
   handleStudentNote,
-  onChange,
   student,
 }) {
   return createElement("tr", {
@@ -33,7 +31,7 @@ export default function FormStudent({
           ? document.createTextNode(student.timeSignedOutByClient)
           : disabled || !student.timeSignedInByClient
           ? document.createTextNode("")
-          : SignOutButton({ form, student, onChange }),
+          : SignOutButton({ student, handleStudent }),
       }),
     ],
     onClick: ({ ctrlKey, metaKey, target }) => {

@@ -50,6 +50,27 @@ export default class Form {
     return this.items.some((item) => item.isOut);
   }
 
+  get studentsSignedIn() {
+    return this.students.reduce(
+      (n, { timeSignedInByClient, timeSignedOutByClient }) =>
+        timeSignedInByClient && !timeSignedOutByClient ? n + 1 : n,
+      0
+    );
+  }
+
+  get groupMembersSignedIn() {
+    if (!this.bookedStudents) return 0;
+    // hacking at the booked students string, not great, what if comma in name?
+    const names = this.bookedStudents.split(/\s*,\s*(and)*\s*/);
+    return this.students.reduce(
+      (n, { name, timeSignedInByClient, timeSignedOutByClient }) =>
+        timeSignedInByClient && !timeSignedOutByClient && names.includes(name)
+          ? n + 1
+          : n,
+      0
+    );
+  }
+
   get itemsIn() {
     return groupBy(
       (item) => item.isIn,
@@ -139,6 +160,11 @@ export default class Form {
       startTime: getFormattedDateTime(copyTime(new Date(this.startTime))),
       endTime: getFormattedDateTime(copyTime(new Date(this.endTime))),
     });
+  }
+
+  hasBookedStudent(student) {
+    if (!student || !student.name) return false;
+    return this.bookedStudents.includes(student.name);
   }
 
   hasStudent(student) {

@@ -334,7 +334,6 @@ export default function FormPage({
                     ? form.students.map((student) =>
                         FormStudent({
                           disabled,
-                          form,
                           handleStudent,
                           handleStudentNote: () =>
                             ModalStudentNotes({
@@ -343,7 +342,6 @@ export default function FormPage({
                               onChange,
                               userName,
                             }),
-                          onChange,
                           student,
                         })
                       )
@@ -764,14 +762,26 @@ export default function FormPage({
     }
     // student is checking-out.
     if (studentOnForm.timeSignedInByClient) {
-      if (form.hasItemsOut) {
+      let canLeave = !form.hasItemsOut;
+      if (
+        form.hasBookedStudent(studentOnForm) &&
+        form.groupMembersSignedIn > 1
+      ) {
+        // student is a group member, and another member still present
+        canLeave = true;
+      } else if (form.studentsSignedIn > 1) {
+        // not a group member, but someone else still present
+        canLeave = true;
+      }
+
+      if (!canLeave)
         return modal({
           children: [
             heading1("Items are still checked out"),
             paragraph("Cannot check out until all gear is returned."),
           ],
         });
-      }
+
       change.target.value += " check-out";
       return onChange({
         form: new Form({
