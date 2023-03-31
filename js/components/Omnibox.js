@@ -42,12 +42,12 @@ export default function Omnibox({
   function onOmniboxSubmit(injectedValue) {
     if (["string", "number"].includes(typeof injectedValue))
       input.value = injectedValue;
-    const { type, value, error } = parse(input);
+    const { type, value, error, isBarcode } = parse(input);
     if (error)
       return modal({
         children: [heading1("Error"), paragraph(error.message)],
       });
-    onSubmit({ type, value, onOmniboxSubmit });
+    onSubmit({ isBarcode, type, value, onOmniboxSubmit });
   }
 
   /**
@@ -62,6 +62,7 @@ export default function Omnibox({
    *              "query",  // no exact match; search through roster & inventory
    *   value?: Item[] | Item | Student | string,
    *   error?: Error,
+   *   isBarcode?: boolean, // probably a barcode/scanner entry
    * }
    */
   function parse(element) {
@@ -86,7 +87,7 @@ export default function Omnibox({
       // Check student id
       const foundStudent = roster.find(({ id }) => id.toLowerCase() == value);
       if (foundStudent) {
-        return { type: "student", value: foundStudent };
+        return { type: "student", value: foundStudent, isBarcode: true };
       }
       return { type: "newCodabar", value };
     }
@@ -113,8 +114,9 @@ export default function Omnibox({
         ),
       };
 
-    const foundItem =
-      getById(inventory, value) || getByBarcode(inventory, value);
+    let foundItem = getByBarcode(inventory, value);
+    if (foundItem) return { type: "item", value: foundItem, isBarcode: true };
+    foundItem = getById(inventory, value);
     if (foundItem) return { type: "item", value: foundItem };
 
     return { type: "query", value: element.value };

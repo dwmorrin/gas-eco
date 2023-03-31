@@ -1,5 +1,5 @@
 import { cell, createElement } from "../HTML";
-import SignOutButton from "./SignOutButton";
+import ModalManualWarning from "./ModalManualWarning";
 
 export default function FormStudent({
   disabled,
@@ -31,13 +31,16 @@ export default function FormStudent({
           ? document.createTextNode(student.timeSignedOutByClient)
           : disabled || !student.timeSignedInByClient
           ? document.createTextNode("")
-          : SignOutButton({ student, handleStudent }),
+          : createElement("i", {
+              textContent: "Scan ID to sign out",
+            }),
       }),
     ],
     onClick: ({ ctrlKey, metaKey, target }) => {
       if (disabled || target.tagName.toLowerCase() === "button") return;
-      if (ctrlKey || metaKey) return handleStudent(student);
-      else handleStudentNote();
+      if (ctrlKey || metaKey)
+        return ModalManualWarning({ onOk: () => handleStudent(student, true) });
+      handleStudentNote();
     },
   });
 }

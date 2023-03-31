@@ -8,6 +8,7 @@ import LocationSelect from "./LocationSelect";
 import ModalChangeLog from "./ModalChangeLog";
 import ModalItemNotes from "./ModalItemNotes";
 import ModalManualEntry from "./ModalManualEntry";
+import ModalManualWarning from "./ModalManualWarning";
 import ModalNewCodabar from "./ModalNewCodabar";
 import ModalNewLocation from "./ModalNewLocation";
 import ModalNotes from "./ModalNotes";
@@ -545,12 +546,12 @@ export default function FormPage({
     if (!form.isBlank && saved) return "All changes saved.";
   }
 
-  function handleItem(itemFromInventory) {
+  function handleItem(itemFromInventory, manualWarning = false) {
     const itemOnForm = form.items.find((item) =>
       Item.similar(item, itemFromInventory)
     );
     if (itemOnForm && itemOnForm.serialized && !itemOnForm.isIn)
-      return handleItemOnForm(itemOnForm);
+      return handleItemOnForm(itemOnForm, manualWarning);
 
     return onChange({
       form: new Form({
@@ -569,6 +570,7 @@ export default function FormPage({
           value: itemFromInventory.id || itemFromInventory.description,
         },
       },
+      manualWarning,
     });
   }
 
@@ -631,7 +633,7 @@ export default function FormPage({
   }
 
   // only for serialized items that are not checked-in
-  function handleItemOnForm(item) {
+  function handleItemOnForm(item, manualWarning = false) {
     const change = {
       target: {
         name: "items",
@@ -675,10 +677,11 @@ export default function FormPage({
           ),
         }),
         change,
+        manualWarning,
       });
   }
 
-  function handleStudent(studentFromRoster) {
+  function handleStudent(studentFromRoster, manualWarning = false) {
     const change = {
       target: {
         name: "students",
@@ -710,6 +713,7 @@ export default function FormPage({
           ],
         }),
         change,
+        manualWarning,
       });
     }
     // checking-in a student on an advance booking form
@@ -850,7 +854,8 @@ export default function FormPage({
   function onClickItem({ ctrlKey, metaKey, target }, item) {
     if (disabled || ["button", "select"].includes(target.tagName.toLowerCase()))
       return;
-    if (ctrlKey || metaKey) return handleItemOnForm(item);
+    if (ctrlKey || metaKey)
+      return ModalManualWarning({ onOk: () => handleItemOnForm(item, true) });
     ModalItemNotes({ form, item, onChange });
   }
 
@@ -888,14 +893,16 @@ export default function FormPage({
     });
   }
 
-  function onOmniboxSubmit({ type, value, onOmniboxSubmit }) {
+  function onOmniboxSubmit({ isBarcode, type, value, onOmniboxSubmit }) {
     switch (type) {
       case "itemArray":
         return handleItemArray(value);
       case "item":
-        return handleItem(value);
+        if (isBarcode) return handleItem(value);
+        return ModalManualWarning({ onOk: () => handleItem(value, true) });
       case "student":
-        return handleStudent(value);
+        if (isBarcode) return handleStudent(value);
+        return ModalManualWarning({ onOk: () => handleStudent(value, true) });
       case "newCodabar":
         return ModalNewCodabar({
           codabar: value,

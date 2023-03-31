@@ -431,6 +431,7 @@ function makeOnChange(currentForm) {
     change: {
       target: { name, value },
     },
+    manualWarning = false,
   }) => {
     if (!state.overlapWarningGiven && getOverlappingForms(form).length) {
       state.overlapWarningGiven = true;
@@ -474,18 +475,26 @@ function makeOnChange(currentForm) {
       }
     }
 
+    const newNotes = [
+      {
+        timestamp: Date.now(),
+        author: getUsername(),
+        // body is JSON to be compatible with legacy forms
+        // if diff'ing notes vs changes can be updated, stop stringifying here
+        body: JSON.stringify([{ name, value }]),
+      },
+    ];
+
+    if (manualWarning)
+      newNotes.push({
+        timestamp: Date.now(),
+        author: getUsername(),
+        body: JSON.stringify([{ name: "manual", value: "warned" }]),
+      });
+
     const newForm = new Form({
       ...form,
-      notes: [
-        ...form.notes,
-        {
-          timestamp: Date.now(),
-          author: getUsername(),
-          // body is JSON to be compatible with legacy forms
-          // if diff'ing notes vs changes can be updated, stop stringifying here
-          body: JSON.stringify([{ name, value }]),
-        },
-      ],
+      notes: [...form.notes, ...newNotes],
     });
     state.formInputsTouched.add(name);
     state.undoStack.push(currentForm);
